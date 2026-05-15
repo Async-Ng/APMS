@@ -9,7 +9,8 @@ Hệ thống APMS giải quyết bài toán quản lý kho tri thức cá nhân 
 ### 1.1 Quản lý tài liệu (Document Management)
 - **Tải lên & Lưu trữ:** Người dùng có thể tải lên tài liệu định dạng PDF, DOCX, PPTX.
 - **Trích xuất văn bản (OCR/Parsing):** Hệ thống tự động đọc và trích xuất nội dung văn bản từ các file được tải lên để phục vụ tìm kiếm.
-- **Phân loại:** Tài liệu có thể được gắn thẻ, đưa vào các Thư mục, Môn học, hoặc Học kỳ.
+- **Tổ chức kiểu Google Drive:** Tài liệu được quản lý trong hệ thống thư mục lồng nhau (nested folders) không giới hạn cấp độ. Người dùng có thể tạo, di chuyển, đổi tên thư mục tự do.
+- **Phân loại:** Tài liệu có thể được gắn thẻ (tags) và đặt trong thư mục để phân loại theo môn học, học kỳ.
 - **Xem trước (Preview):** Cung cấp trình xem tài liệu trực tiếp trên web mà không cần tải về.
 
 ### 1.2 Tìm kiếm thông minh (Semantic Search)
@@ -26,9 +27,14 @@ Hệ thống APMS giải quyết bài toán quản lý kho tri thức cá nhân 
 - **Quản lý Quota:** Mỗi người dùng bị giới hạn dung lượng lưu trữ tối đa (ví dụ: 500MB).
 
 ### 1.5 Chia sẻ tài liệu (Document Sharing)
-- **Chia sẻ file:** Người dùng có thể chia sẻ tài liệu của mình cho người dùng khác trong hệ thống.
+- **Chia sẻ file và thư mục:** Người dùng có thể chia sẻ cả tài liệu đơn lẻ hoặc cả một thư mục (kèm toàn bộ nội dung bên trong) cho người dùng khác trong hệ thống.
+- **Kế thừa quyền (Permission Inheritance):** Khi chia sẻ một thư mục, tất cả các file và thư mục con bên trong đều được kế thừa quyền truy cập (giống Google Drive).
 - **Tương tác với tài liệu chia sẻ:** Người được chia sẻ có thể xem, tìm kiếm ngữ nghĩa và sử dụng RAG Chatbot trên tài liệu đó, giúp học nhóm và trao đổi kiến thức hiệu quả.
-- **Quản lý quyền (Permissions):** Chủ sở hữu có thể thu hồi quyền truy cập bất cứ lúc nào. Người được chia sẻ chỉ có quyền đọc (Read-only), không được phép xóa tài liệu gốc.
+- **Quản lý quyền (Permissions):** Chủ sở hữu có thể thu hồi quyền truy cập bất cứ lúc nào. Người được chia sẻ chỉ có quyền đọc (Read-only), không được phép xóa hay chỉnh sửa tài liệu gốc.
+
+### 1.6 Tổ chức & Quản lý (Organization)
+- **Starred (Đã đánh dấu):** Người dùng có thể ghim (star) bất kỳ file hoặc thư mục nào để truy cập nhanh.
+- **Trash (Thùng rác):** Xóa mềm (Soft Delete) — file/thư mục bị xóa sẽ vào Trash trước, người dùng có thể khôi phục hoặc xóa vĩnh viễn.
 
 ---
 
@@ -70,3 +76,13 @@ Hệ thống cần tuân thủ nghiêm ngặt các ràng buộc Phi chức năng
 ### 3.3 Mở rộng (Scalability)
 - **Stateless Backend:** Backend không lưu trạng thái (session lưu ở client/DB) để dễ dàng tự động mở rộng (Auto-scaling).
 - **Cơ sở dữ liệu:** MongoDB Atlas Cloud hỗ trợ việc scale dung lượng và replica tự động.
+
+---
+
+## 4. Tài liệu liên quan
+
+| Tài liệu | Mô tả |
+| :--- | :--- |
+| [`database_design.md`](./database_design.md) | Schema chi tiết 7 Collections của MongoDB, chiến lược Index và Vector Search |
+| [`coding_standards.md`](./coding_standards.md) | Tiêu chuẩn lập trình TypeScript, Node.js, Next.js, React Native |
+| [`ui_design_system.md`](./ui_design_system.md) | Hệ thống thiết kế UI (Claymorphism, bảng màu, typography) |
