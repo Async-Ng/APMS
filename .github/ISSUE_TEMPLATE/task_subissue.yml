@@ -1,0 +1,31 @@
+name: Task (Sub-issue)
+description: Create a technical task for a specific package, usually linked to a parent feature.
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: dropdown
+    id: target_package
+    attributes:
+      label: Target Package
+      description: Which package does this task belong to?
+      options:
+        - api
+        - web
+        - mobile
+        - infrastructure
+    validations:
+      required: true
+  - type: input
+    id: parent_issue
+    attributes:
+      label: Parent Issue (Epic)
+      description: Provide the issue number or link of the parent Feature Request (e.g., #123).
+    validations:
+      required: false
+  - type: textarea
+    id: task_description
+    attributes:
+      label: Task Description
+      description: Detail the technical work required for this task.
+    validations:
+      required: true

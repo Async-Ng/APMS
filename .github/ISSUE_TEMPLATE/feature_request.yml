@@ -1,0 +1,38 @@
+name: Feature Request (Epic)
+description: Propose a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement", "epic"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: checkboxes
+    id: packages
+    attributes:
+      label: Affected Packages
+      description: Select all packages that will need modifications for this feature.
+      options:
+        - label: api
+        - label: web
+        - label: mobile
+        - label: infrastructure
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What are the conditions that must be met for this feature to be considered complete? This will be used to create Sub-issues (Tasks).
+    validations:
+      required: true
