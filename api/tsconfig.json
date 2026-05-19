@@ -7,7 +7,6 @@
     "ignoreDeprecations": "6.0",
     "target": "ES2022",
     "lib": ["ES2022"],
-    "types": ["node"],
     "esModuleInterop": true,
     "sourceMap": true,
     "strict": true,
@@ -17,5 +16,8 @@
     "exactOptionalPropertyTypes": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist"],
+  "ts-node": {
+    "files": true
+  }
 }

@@ -1,14 +1,43 @@
-# Welcome to your CDK TypeScript project
+# APMS Infrastructure (AWS CDK)
 
-This is a blank project for CDK development with TypeScript.
+Defines AWS resources for APMS: S3, IAM backend user, Amazon Cognito (Google federated auth), Bedrock/Textract permissions.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Setup
 
-## Useful commands
+```bash
+pnpm install
+cp .env.example .env
+# Edit .env with your Google OAuth credentials
+```
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+## Environment variables
+
+See [`.env.example`](./.env.example). Required for deploy:
+
+| Variable | Description |
+| :--- | :--- |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID (Cognito Google IdP) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+
+Optional:
+
+| Variable | Description |
+| :--- | :--- |
+| `COGNITO_DOMAIN_PREFIX` | Cognito Hosted UI domain prefix |
+| `OAUTH_CALLBACK_URLS` | Comma-separated callback URLs for App Client |
+| `OAUTH_LOGOUT_URLS` | Comma-separated logout URLs |
+| `CDK_DEFAULT_ACCOUNT` | Target AWS account ID |
+| `CDK_DEFAULT_REGION` | Target AWS region (e.g. `us-east-1`) |
+
+Values in `.env` are loaded automatically via `dotenv` when running CDK commands. CDK context (`-c googleClientId=...`) still overrides env if set.
+
+## Commands
+
+```bash
+pnpm run build
+npx cdk synth
+npx cdk diff
+npx cdk deploy
+```
+
+After deploy, copy stack **Outputs** into `api/.env`, `web/.env.local`, and `mobile/.env`. Add `CognitoGoogleIdpRedirectUri` to Google Cloud Console as an authorized redirect URI.

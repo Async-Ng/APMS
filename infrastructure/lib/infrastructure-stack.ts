@@ -1,7 +1,21 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
+
+function parseEnvList(value: string | undefined): string[] | undefined {
+  if (!value?.trim()) {
+    return undefined;
+  }
+
+  const items = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  return items.length > 0 ? items : undefined;
+}
 
 export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -45,7 +59,112 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     // =========================================================================
-    // 2. TẠO IAM USER VÀ CẤP QUYỀN TRUY CẬP (PRINCIPLE OF LEAST PRIVILEGE)
+    // 2. AMAZON COGNITO (GOOGLE FEDERATED AUTH)
+    // =========================================================================
+    const googleClientId =
+      (this.node.tryGetContext("googleClientId") as string | undefined) ??
+      process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret =
+      (this.node.tryGetContext("googleClientSecret") as string | undefined) ??
+      process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!googleClientId || !googleClientSecret) {
+      throw new Error(
+        "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set (env or CDK context) to provision Cognito Google IdP.",
+      );
+    }
+
+    const cognitoDomainPrefix =
+      (this.node.tryGetContext("cognitoDomainPrefix") as string | undefined) ??
+      process.env.COGNITO_DOMAIN_PREFIX ??
+      `apms-${cdk.Aws.ACCOUNT_ID}`.slice(0, 63).toLowerCase();
+
+    const oauthCallbackUrls =
+      (this.node.tryGetContext("oauthCallbackUrls") as string[] | undefined) ??
+      parseEnvList(process.env.OAUTH_CALLBACK_URLS) ?? [
+        "http://localhost:3000/auth/callback",
+        "apms://auth/callback",
+      ];
+
+    const oauthLogoutUrls =
+      (this.node.tryGetContext("oauthLogoutUrls") as string[] | undefined) ??
+      parseEnvList(process.env.OAUTH_LOGOUT_URLS) ?? [
+        "http://localhost:3000/",
+        "apms://",
+      ];
+
+    const userPool = new cognito.UserPool(this, "APMSUserPool", {
+      userPoolName: "apms-user-pool",
+      selfSignUpEnabled: false,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      standardAttributes: {
+        email: { required: true, mutable: true },
+        fullname: { required: false, mutable: true },
+        profilePicture: { required: false, mutable: true },
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+        requireSymbols: true,
+      },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
+      this,
+      "APMSGoogleProvider",
+      {
+        clientId: googleClientId,
+        clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret),
+        userPool,
+        scopes: ["openid", "email", "profile"],
+        attributeMapping: {
+          email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+          givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+          familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+          profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
+        },
+      },
+    );
+
+    const userPoolClient = new cognito.UserPoolClient(this, "APMSUserPoolClient", {
+      userPool,
+      userPoolClientName: "apms-web-mobile-client",
+      generateSecret: false,
+      authFlows: {
+        userPassword: false,
+        userSrp: false,
+        custom: false,
+      },
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: oauthCallbackUrls,
+        logoutUrls: oauthLogoutUrls,
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
+      ],
+      preventUserExistenceErrors: true,
+    });
+
+    userPoolClient.node.addDependency(googleProvider);
+
+    const userPoolDomain = userPool.addDomain("APMSUserPoolDomain", {
+      cognitoDomain: { domainPrefix: cognitoDomainPrefix },
+    });
+
+    const hostedUiBaseUrl = `https://${userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`;
+
+    // =========================================================================
+    // 3. TẠO IAM USER VÀ CẤP QUYỀN TRUY CẬP (PRINCIPLE OF LEAST PRIVILEGE)
     // =========================================================================
     const apiBackendUser = new iam.User(this, "APMSBackendUser", {
       userName: "apms-backend-service-user",
@@ -95,7 +214,7 @@ export class InfrastructureStack extends cdk.Stack {
     );
 
     // =========================================================================
-    // 3. XUẤT THÔNG TIN ĐẦU RA (CLOUDFORMATION OUTPUTS)
+    // 4. XUẤT THÔNG TIN ĐẦU RA (CLOUDFORMATION OUTPUTS)
     // =========================================================================
     new cdk.CfnOutput(this, "S3BucketNameOutput", {
       value: documentBucket.bucketName,
@@ -111,6 +230,33 @@ export class InfrastructureStack extends cdk.Stack {
     new cdk.CfnOutput(this, "IAMUserANameOutput", {
       value: apiBackendUser.userName,
       description: "IAM User to connect to the Backend API",
+    });
+
+    new cdk.CfnOutput(this, "CognitoUserPoolIdOutput", {
+      value: userPool.userPoolId,
+      description: "Cognito User Pool ID (COGNITO_USER_POOL_ID)",
+    });
+
+    new cdk.CfnOutput(this, "CognitoClientIdOutput", {
+      value: userPoolClient.userPoolClientId,
+      description: "Cognito App Client ID (COGNITO_CLIENT_ID)",
+    });
+
+    new cdk.CfnOutput(this, "CognitoHostedUiDomainOutput", {
+      value: `${userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`,
+      description:
+        "Cognito Hosted UI domain for Amplify oauth.domain (NEXT_PUBLIC_COGNITO_DOMAIN)",
+    });
+
+    new cdk.CfnOutput(this, "CognitoHostedUiUrlOutput", {
+      value: hostedUiBaseUrl,
+      description: "Cognito Hosted UI base URL",
+    });
+
+    new cdk.CfnOutput(this, "CognitoGoogleIdpRedirectUriOutput", {
+      value: `${hostedUiBaseUrl}/oauth2/idpresponse`,
+      description:
+        "Add this URI as Authorized redirect URI in Google Cloud Console OAuth client",
     });
   }
 }

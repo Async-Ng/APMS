@@ -1,11 +1,13 @@
 import "dotenv/config";
 
 import { createApp } from "./app";
+import { initCognitoVerifier } from "./config/cognito";
 import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
+  initCognitoVerifier(env);
   await connectDatabase(env);
 
   const app = createApp();

@@ -40,12 +40,12 @@ My Drive (root)
 
 ### 3.1 Collection: `users`
 
-Lưu trữ thông tin tài khoản người dùng đăng nhập qua Google OAuth.
+Lưu trữ thông tin tài khoản người dùng đăng nhập qua Amazon Cognito (Google federated).
 
 | Field | Type | Ràng buộc | Mô tả |
 |---|---|---|---|
 | `_id` | `ObjectId` | PK | Primary key |
-| `googleId` | `String` | unique, required | ID duy nhất từ Google OAuth |
+| `cognitoSub` | `String` | unique, required | Subject (`sub`) từ Cognito ID token |
 | `email` | `String` | unique, required | Email tài khoản |
 | `displayName` | `String` | required | Tên hiển thị |
 | `avatarUrl` | `String` | | URL ảnh đại diện từ Google |
@@ -55,7 +55,7 @@ Lưu trữ thông tin tài khoản người dùng đăng nhập qua Google OAuth
 | `updatedAt` | `Date` | auto | |
 
 **Indexes:**
-- `googleId`: unique
+- `cognitoSub`: unique
 - `email`: unique
 
 ---

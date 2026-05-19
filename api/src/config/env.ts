@@ -6,11 +6,9 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   MONGODB_URI: z.string().min(1),
-  JWT_SECRET: z.string().min(1),
-  JWT_EXPIRES_IN: z.string().default("7d"),
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_CALLBACK_URL: z.string().url(),
+  COGNITO_USER_POOL_ID: z.string().min(1),
+  COGNITO_CLIENT_ID: z.string().min(1),
+  COGNITO_REGION: z.string().min(1).optional(),
   AWS_REGION: z.string().min(1),
   AWS_ACCESS_KEY_ID: z.string().min(1),
   AWS_SECRET_ACCESS_KEY: z.string().min(1),
@@ -32,5 +30,10 @@ export function loadEnv(): Env {
     throw new Error(`Invalid environment variables:\n${formatted}`);
   }
 
-  return result.data;
+  const data = result.data;
+
+  return {
+    ...data,
+    COGNITO_REGION: data.COGNITO_REGION ?? data.AWS_REGION,
+  };
 }

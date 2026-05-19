@@ -56,7 +56,7 @@ Users can share individual files or entire folder trees with other users. Shared
 Documents and folders can be starred for quick access. Deletion is soft — items move to Trash before permanent removal and can be restored.
 
 ### Account Management
-Authentication is handled via Google OAuth 2.0. Each account has a configurable storage quota (default: 500 MB).
+Authentication is handled via Amazon Cognito with Google as a federated identity provider. Each account has a configurable storage quota (default: 500 MB).
 
 ---
 
@@ -67,7 +67,7 @@ Authentication is handled via Google OAuth 2.0. Each account has a configurable 
                         │      Client Layer         │
                         │  Next.js Web   Expo Mobile│
                         └────────────┬─────────────┘
-                                     │ HTTPS / JWT
+                                     │ HTTPS / Cognito JWT
                         ┌────────────▼─────────────┐
                         │     Node.js / Express     │
                         │          API              │
@@ -101,6 +101,7 @@ Query Pipeline:
 | AI / LLM | Amazon Bedrock — Claude 3 Haiku (LLM), Titan Embeddings v2 (vectorization) |
 | File Storage | Amazon S3 |
 | Document Parsing | Amazon Textract (PDF), pdf-parse, mammoth (DOCX) |
+| Authentication | Amazon Cognito (Google federated IdP), AWS Amplify Auth |
 | Infrastructure | AWS CDK (TypeScript), AWS CloudFormation |
 | Package Manager | pnpm 9+ |
 
@@ -208,6 +209,7 @@ pnpm start                # opens Expo CLI
 ```bash
 cd infrastructure
 pnpm install
+cp .env.example .env   # set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
 
 # Preview the CloudFormation template without deploying
 npx cdk synth
@@ -216,13 +218,27 @@ npx cdk synth
 npx cdk deploy
 ```
 
-> **Note:** AWS credentials must be configured via `aws configure` or environment variables before running CDK commands. Review `cdk diff` output before deploying to avoid unintended resource changes.
+> **Note:** AWS credentials must be configured via `aws configure` or environment variables before running CDK commands. Review `cdk diff` output before deploying to avoid unintended resource changes. After deploy, follow [`docs/post_deploy_setup.md`](./docs/post_deploy_setup.md) (Google redirect URI, IAM access key, env files, test login).
 
 ---
 
 ## Environment Variables
 
 Copy the `.env.example` file in each package and fill in the required values. **Never commit `.env` files to version control.**
+
+### `infrastructure/.env`
+
+See [`infrastructure/.env.example`](infrastructure/.env.example). Used at `cdk synth` / `cdk deploy` time (not runtime).
+
+| Variable | Description |
+| :--- | :--- |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID for Cognito Google IdP |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `COGNITO_DOMAIN_PREFIX` | Optional Hosted UI domain prefix |
+| `OAUTH_CALLBACK_URLS` | Optional comma-separated OAuth callback URLs |
+| `OAUTH_LOGOUT_URLS` | Optional comma-separated OAuth logout URLs |
+| `CDK_DEFAULT_ACCOUNT` | Optional target AWS account |
+| `CDK_DEFAULT_REGION` | Optional target AWS region |
 
 ### `api/.env`
 
@@ -231,11 +247,9 @@ Copy the `.env.example` file in each package and fill in the required values. **
 | `PORT` | Server port (default: `4000`) |
 | `NODE_ENV` | Runtime environment (`development` or `production`) |
 | `MONGODB_URI` | MongoDB Atlas connection string |
-| `JWT_SECRET` | Secret key used to sign JWT tokens |
-| `JWT_EXPIRES_IN` | Token expiry duration (e.g. `7d`) |
-| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 client secret |
-| `GOOGLE_CALLBACK_URL` | OAuth redirect URI |
+| `COGNITO_USER_POOL_ID` | Cognito User Pool ID (from `cdk deploy` output) |
+| `COGNITO_CLIENT_ID` | Cognito App Client ID |
+| `COGNITO_REGION` | Cognito region (defaults to `AWS_REGION` if omitted) |
 | `AWS_REGION` | AWS region (e.g. `us-east-1`) |
 | `AWS_ACCESS_KEY_ID` | AWS IAM access key |
 | `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
@@ -245,13 +259,26 @@ Copy the `.env.example` file in each package and fill in the required values. **
 
 ### `web/.env.local`
 
+See [`web/.env.example`](web/.env.example).
+
 | Variable | Description |
 | :--- | :--- |
 | `NEXT_PUBLIC_API_URL` | Base URL of the backend API |
-| `NEXTAUTH_URL` | Canonical URL of the web application |
-| `NEXTAUTH_SECRET` | Secret for NextAuth.js session encryption |
-| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 client secret |
+| `NEXT_PUBLIC_APP_URL` | Canonical URL of the web app (OAuth redirect base) |
+| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | Cognito User Pool ID |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | Cognito App Client ID |
+| `NEXT_PUBLIC_COGNITO_DOMAIN` | Cognito Hosted UI domain (hostname only) |
+
+### `mobile/.env`
+
+See [`mobile/.env.example`](mobile/.env.example).
+
+| Variable | Description |
+| :--- | :--- |
+| `EXPO_PUBLIC_API_URL` | Base URL of the backend API |
+| `EXPO_PUBLIC_COGNITO_USER_POOL_ID` | Cognito User Pool ID |
+| `EXPO_PUBLIC_COGNITO_CLIENT_ID` | Cognito App Client ID |
+| `EXPO_PUBLIC_COGNITO_DOMAIN` | Cognito Hosted UI domain (hostname only) |
 
 ---
 
@@ -259,6 +286,7 @@ Copy the `.env.example` file in each package and fill in the required values. **
 
 | Document | Description |
 | :--- | :--- |
+| [Post-deploy Setup](./docs/post_deploy_setup.md) | Steps after `cdk deploy`: Google OAuth, IAM keys, env, test auth |
 | [System Overview](./docs/system_overview.md) | Business logic, technology stack, and non-functional requirements |
 | [Database Design](./docs/database_design.md) | MongoDB schema for all 7 collections, index strategy, and Vector Search configuration |
 | [Coding Standards](./docs/coding_standards.md) | TypeScript rules, project conventions, and best practices |

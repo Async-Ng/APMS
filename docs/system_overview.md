@@ -23,7 +23,7 @@ Hệ thống APMS giải quyết bài toán quản lý kho tri thức cá nhân 
 - **Quản lý phiên (Sessions):** Lưu lại lịch sử các đoạn chat theo từng phiên làm việc.
 
 ### 1.4 Quản lý tài khoản
-- **Xác thực:** Đăng nhập một chạm qua Google OAuth 2.0.
+- **Xác thực:** Đăng nhập một chạm qua Google OAuth 2.0 (Amazon Cognito User Pool + Google federated IdP).
 - **Quản lý Quota:** Mỗi người dùng bị giới hạn dung lượng lưu trữ tối đa (ví dụ: 500MB).
 
 ### 1.5 Chia sẻ tài liệu (Document Sharing)
@@ -71,7 +71,7 @@ Hệ thống cần tuân thủ nghiêm ngặt các ràng buộc Phi chức năng
 ### 3.2 Bảo mật (Security)
 - **Mã hóa:** Giao tiếp hoàn toàn qua **HTTPS/TLS**.
 - **Cô lập dữ liệu (Multi-tenancy):** Dữ liệu của user nào chỉ được truy cập bởi user đó. Context nhồi vào AI tuyệt đối không bị lẫn lộn giữa các tài khoản.
-- **Xác thực API:** Sử dụng **JWT (JSON Web Token)** để bảo mật các API endpoints.
+- **Xác thực API:** Client gửi **Cognito ID token** (JWT); API xác minh chữ ký qua JWKS của User Pool.
 
 ### 3.3 Mở rộng (Scalability)
 - **Stateless Backend:** Backend không lưu trạng thái (session lưu ở client/DB) để dễ dàng tự động mở rộng (Auto-scaling).
