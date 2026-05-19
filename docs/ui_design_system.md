@@ -1,66 +1,83 @@
-# APMS - Hệ thống Thiết kế UI/UX (UI/UX Design System)
+# APMS - UI/UX Design System (Neo-brutalism + FPT Brand)
 
-Tài liệu này định nghĩa hệ thống thiết kế giao diện và trải nghiệm người dùng cho APMS, dựa trên định hướng: **"Playful educational platform, claymorphism cards, vibrant, engaging colors"**.
+Giao diện APMS theo **Neo-brutalism** (viền đen dày, shadow cứng offset) kết hợp **3 màu logo FPT University**.
 
-## 1. Phong cách chủ đạo (Core Style)
+## 1. Phong cách chủ đạo
 
-- **Claymorphism (Đất sét 3D):** Giao diện mềm mại, thân thiện, trông giống như các khối đất sét nổi 3D hoặc được ép xuống nền. Giúp giảm căng thẳng học tập và tạo cảm giác tương tác thú vị.
-- **Playful & Vibrant:** Sử dụng màu sắc tươi sáng, năng động để kích thích cảm hứng học tập nhưng vẫn giữ được độ tương phản tốt để đọc tài liệu.
-- **Giao diện thân thiện (Friendly UI):** Góc bo tròn lớn (Large border-radius), typography dạng bo tròn (rounded fonts).
+- **Neo-brutalism:** Khối UI rõ ràng, viền ink đậm, shadow không blur.
+- **FPT brand:** Ba màu logo — Blue (F), Orange (P), Green (T).
+- **Playful & engaging:** Landing LearnHub-style trên `/login` (catalog, progress, testimonials, CTA).
 
-## 2. Hệ thống màu sắc (Color Palette)
+## 2. Brand FPT — 3 màu logo
 
-Hệ thống màu sắc cần tươi sáng (vibrant) nhưng phải đảm bảo tiêu chuẩn tương phản (Contrast 4.5:1 cho text).
+| Khối | Tên | Hex | Token |
+|------|-----|-----|-------|
+| **F** | FPT Blue (light) | `#2B8FD4` | `--color-fpt-blue` / `brutal-secondary` |
+| **P** | FPT Orange | `#F37021` | `--color-fpt-orange` / `brutal-primary` |
+| **T** | FPT Green | `#33B04A` | `--color-fpt-green` / `brutal-accent` |
 
-- **Background (Nền):** Soft Off-White `#F8FAFC` (giúp các thẻ Claymorphism nổi bật).
-- **Primary (Thương hiệu/CTA):** Vibrant Purple `#8B5CF6` (Tạo cảm giác sáng tạo, công nghệ AI).
-- **Secondary (Nhấn/Trạng thái):** 
-  - Playful Coral `#FF719A` (Dùng cho thông báo, chú ý).
-  - Mint Green `#10B981` (Dùng cho trạng thái thành công, theo dõi tiến độ).
-- **Surface (Nền Component):** White `#FFFFFF` hoặc màu nền nhạt của Primary `#EDE9FE`.
-- **Text (Chữ):** Slate-900 `#0F172A` (cho tiêu đề) và Slate-700 `#334155` (cho nội dung).
+**Neutral:**
 
-## 3. Nghệ thuật chữ (Typography)
+| Token | Hex | Dùng cho |
+|-------|-----|----------|
+| Background | `#FFF8F4` | Nền trang |
+| Surface | `#FFFFFF` | Card |
+| Ink | `#1A1A1A` | Viền, shadow, body text |
+| On-brand | `#FFFFFF` | Chữ trên nền FPT |
+| Muted | `#334155` | Mô tả phụ |
 
-Sử dụng Font Pairing kết hợp giữa sự thân thiện và tính dễ đọc của tài liệu học thuật.
+**Quy tắc:** Chữ trắng trên khối màu FPT; chữ ink trên nền trắng/cream.
 
-- **Headings (Tiêu đề):** `Quicksand` hoặc `Nunito` (Font bo tròn, thân thiện, playful).
-  - Font-weight: 700 (Bold) hoặc 800 (ExtraBold).
-- **Body Text (Nội dung tài liệu/Chat):** `Inter` (Font không chân sạch sẽ, dễ đọc nội dung dài).
-  - Kích thước chuẩn: Base 16px, Line-height: 1.5 - 1.6 để thoải mái cho mắt.
+## 3. Typography
 
-## 4. Hệ thống Component (Claymorphism Guidelines)
+- **Headings:** `Outfit` — 700–800.
+- **Body:** `Inter` — 16px, line-height 1.5–1.6.
 
-### 4.1. Cards (Thẻ tài liệu, Course Catalog)
-- **Border Radius:** `24px` hoặc `32px` (rất bo tròn).
-- **Shadow (Hiệu ứng 3D):** Cần kết hợp 2 lớp shadow:
-  - Một lớp Drop shadow nhẹ phía ngoài tạo độ nổi.
-  - Một lớp Inner shadow trắng phía trên-trái (tạo ánh sáng).
-  - Một lớp Inner shadow tối phía dưới-phải (tạo độ dày của "đất sét").
-- **Tương tác:** Khi Hover, card nổi lên một chút (`translate-y-1`) bằng Spring Animation.
+## 4. Components
 
-### 4.2. Buttons (Nút bấm, Enrollment CTA)
-- Hình dáng: Pill-shape (Bo tròn hoàn toàn 9999px).
-- Hiệu ứng: Cùng phong cách Claymorphism nhưng nổi hơn nền.
-- Trạng thái `:active`: Nút lún xuống (Scale 0.95), thay đổi shadow để mô phỏng việc bị ấn xuống.
+### 4.1. Cards
 
-### 4.3. RAG Chatbot UI
-- **Tin nhắn AI:** Thẻ bong bóng dạng Claymorphism màu nền nhạt (`#EDE9FE`).
-- **Tin nhắn User:** Thẻ bong bóng màu Primary (`#8B5CF6`), chữ trắng.
-- **Trích dẫn (Citations):** Nút nhỏ đính kèm trong tin nhắn, click vào sẽ cuộn mượt (smooth scroll) đến trang PDF tương ứng ở màn hình bên cạnh (Split-screen).
+- Nền trắng (hoặc màu FPT), viền `3px solid #1A1A1A`, `border-radius: 16px`.
+- Shadow: `4px 4px 0 #1A1A1A`.
+- Hover (tùy chọn): `translate(-2px, -2px)`, shadow `6px 6px 0`.
 
-## 5. Nguyên tắc UX (UX Guidelines)
+### 4.2. Buttons
 
-Tuân thủ các nguyên tắc từ `ui-ux-pro-max` skill:
+- Primary: nền **FPT Orange**, chữ trắng.
+- Secondary: nền **FPT Blue**, chữ trắng.
+- Ghost: nền trắng, chữ ink.
+- **Pressed:** `translate(4px, 4px)`, shadow `0 0 0` (hiệu ứng nhấn xuống).
+- Min height **44px**.
 
-- **Accessibility (CRITICAL):**
-  - Mọi nút bấm/icon (đặc biệt trên mobile) phải có kích thước chạm tối thiểu `44x44px`.
-  - Phải có Focus ring rõ ràng (2-4px) khi sử dụng phím Tab để điều hướng.
-- **Animation & Interactions (HIGH):**
-  - Sử dụng **Spring Physics** cho các chuyển động (Card hover, mở Modal, đóng/mở Chat) để tạo cảm giác tự nhiên, nảy nhẹ của phong cách Playful.
-  - Duration từ 200ms - 300ms, không được quá chậm.
-- **Layout & Responsive:**
-  - Thiết kế Mobile-first.
-  - Mobile: Navigation Bar nằm ở đáy (Bottom Nav) tối đa 5 items.
-  - Desktop: Sidebar kết hợp Grid Bento cho trang Dashboard.
-  - Không xuất hiện thanh cuộn ngang (No horizontal scroll) trên toàn bộ thiết bị.
+### 4.3. Badges
+
+- Pill, viền đen, nền **FPT Green**, chữ trắng.
+
+### 4.4. Landing navbar (`/login`)
+
+- Trái: logo **APMS** + dải 3 màu FPT.
+- Giữa: anchor `Features`, `Materials`, `Progress`, `Reviews` (scroll tới section).
+- Phải: **Sign in** (scroll `#hero`) hoặc chip user + **Sign out**.
+- Mobile web: nav links cuộn ngang; CTA luôn hiện.
+
+### 4.5. Landing sections (`/login`)
+
+| Section | Mô tả |
+|---------|--------|
+| Hero | Headline + form đăng nhập 2 cột |
+| Catalog preview | 3 card mock tài liệu (Blue / Green / Orange) |
+| Progress demo | Thanh tiến độ + stats demo |
+| Testimonials | Quote học sinh FPT |
+| Enrollment CTA | Card cam + Google sign-in |
+
+## 5. UX Guidelines
+
+- **Accessibility:** Touch target min 44×44px; focus ring 3px ink.
+- **Motion:** 150–200ms; `prefers-reduced-motion` tắt transform press.
+- **No horizontal scroll** trên mọi breakpoint.
+
+## 6. Implementation
+
+- Web tokens: [`web/app/globals.css`](../web/app/globals.css)
+- Web components: `BrutalCard`, `BrutalButton`, `GoogleSignInButton`, `web/components/landing/*`
+- Mobile colors: [`mobile/constants/colors.ts`](../mobile/constants/colors.ts)

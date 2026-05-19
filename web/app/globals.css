@@ -1,21 +1,184 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-fpt-blue: #2b8fd4;
+  --color-fpt-orange: #f37021;
+  --color-fpt-green: #33b04a;
+
+  --color-brutal-bg: #fff8f4;
+  --color-brutal-surface: #ffffff;
+  --color-brutal-ink: #1a1a1a;
+  --color-brutal-primary: var(--color-fpt-orange);
+  --color-brutal-primary-hover: #d9621a;
+  --color-brutal-secondary: var(--color-fpt-blue);
+  --color-brutal-secondary-hover: #1a7ab8;
+  --color-brutal-accent: var(--color-fpt-green);
+  --color-brutal-accent-hover: #2a963f;
+  --color-brutal-on-brand: #ffffff;
+  --color-brutal-muted: #334155;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --shadow-brutal: 4px 4px 0 0 #1a1a1a;
+  --shadow-brutal-lg: 6px 6px 0 0 #1a1a1a;
+  --shadow-brutal-sm: 2px 2px 0 0 #1a1a1a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@utility font-heading {
+  font-family: var(--font-heading);
+}
+
+@utility font-body {
+  font-family: var(--font-body);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-brutal-bg);
+    color: var(--color-brutal-ink);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    color: var(--color-brutal-ink);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .brutal-card {
+    border-radius: 1rem;
+    border: 3px solid var(--color-brutal-ink);
+    background-color: var(--color-brutal-surface);
+    box-shadow: var(--shadow-brutal);
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .brutal-card-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-brutal-lg);
+  }
+
+  .brutal-btn {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    border: 3px solid var(--color-brutal-ink);
+    padding: 0.75rem 1.25rem;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.25;
+    box-shadow: var(--shadow-brutal);
+    user-select: none;
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease,
+      background-color 150ms ease,
+      opacity 150ms ease;
+  }
+
+  .brutal-btn-primary {
+    background-color: var(--color-brutal-primary);
+    color: var(--color-brutal-on-brand);
+  }
+
+  .brutal-btn-primary:hover:not(:disabled) {
+    background-color: var(--color-brutal-primary-hover);
+  }
+
+  .brutal-btn-secondary {
+    background-color: var(--color-brutal-secondary);
+    color: var(--color-brutal-on-brand);
+  }
+
+  .brutal-btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-brutal-secondary-hover);
+  }
+
+  .brutal-btn-ghost {
+    background-color: var(--color-brutal-surface);
+    color: var(--color-brutal-ink);
+  }
+
+  .brutal-btn:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--color-brutal-ink);
+  }
+
+  .brutal-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+
+  .brutal-pressable {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--color-brutal-ink);
+    box-shadow: var(--shadow-brutal-sm);
+    user-select: none;
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .brutal-pressable:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--color-brutal-ink);
+  }
+
+  .brutal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 2px solid var(--color-brutal-ink);
+    background-color: var(--color-brutal-accent);
+    padding: 0.375rem 0.875rem;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-brutal-on-brand);
+    box-shadow: var(--shadow-brutal-sm);
+  }
+
+  .focus-brutal:focus-visible {
+    outline: 3px solid var(--color-brutal-ink);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brutal-card,
+  .brutal-btn,
+  .brutal-pressable {
+    transition: none;
+  }
+
+  .brutal-card-hover:hover {
+    transform: none;
+    box-shadow: var(--shadow-brutal);
+  }
+
+  .brutal-btn:active:not(:disabled),
+  .brutal-pressable:active {
+    transform: none;
+    opacity: 0.85;
+  }
 }

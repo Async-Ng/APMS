@@ -2,10 +2,13 @@
 
 import { fetchAuthSession } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import "@/lib/amplify";
+import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function AuthCallbackPage() {
@@ -30,7 +33,7 @@ export default function AuthCallbackPage() {
 
         finishedRef.current = true;
         await fetchMe();
-        router.replace("/");
+        router.replace("/login");
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to complete sign-in.";
@@ -50,7 +53,6 @@ export default function AuthCallbackPage() {
       }
     });
 
-    // OAuth listener (enabled in amplify.ts) exchanges ?code= on this URL, then Hub fires.
     const retryTimer = window.setTimeout(() => {
       void finishSignIn();
     }, 1500);
@@ -61,20 +63,32 @@ export default function AuthCallbackPage() {
     };
   }, [fetchMe, router]);
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 px-4">
-        <p className="max-w-md text-center text-sm text-red-600">{error}</p>
-        <a href="/login" className="text-sm text-gray-700 underline">
-          Back to login
-        </a>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <p className="text-sm text-gray-600">Completing sign-in...</p>
-    </div>
+    <main className="flex min-h-screen items-center justify-center bg-brutal-bg px-4">
+      <BrutalCard className="max-w-md text-center">
+        {error ? (
+          <div className="space-y-4">
+            <p className="rounded-lg border-2 border-brutal-ink bg-brutal-accent/30 px-3 py-2 text-sm font-medium text-brutal-ink">
+              {error}
+            </p>
+            <Link
+              href="/login"
+              className="focus-brutal inline-block font-heading font-bold underline underline-offset-4"
+            >
+              Back to login
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <Loader2
+              className="h-8 w-8 animate-spin text-brutal-ink"
+              aria-hidden="true"
+            />
+            <p className="font-heading text-lg font-extrabold">Completing sign-in...</p>
+            <p className="text-sm text-brutal-muted">Please wait a moment.</p>
+          </div>
+        )}
+      </BrutalCard>
+    </main>
   );
 }

@@ -30,7 +30,7 @@ export function configureAmplify(): void {
               domain: cognitoDomain,
               scopes: ["openid", "email", "profile"],
               redirectSignIn: [`${appUrl}/auth/callback`],
-              redirectSignOut: [`${appUrl}/`],
+              redirectSignOut: [`${appUrl}/login`],
               responseType: "code",
               providers: ["Google"],
             },

@@ -4,6 +4,8 @@ import { Link, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
+import { colors } from "../../constants/colors";
+import { brutalCardStyle } from "../../lib/brutal-style";
 import "../../lib/amplify";
 import { useAuthStore } from "../../stores/auth-store";
 
@@ -29,7 +31,7 @@ export default function AuthCallbackScreen() {
 
         finishedRef.current = true;
         await fetchMe();
-        router.replace("/");
+        router.replace("/login");
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to complete sign-in.";
@@ -68,20 +70,38 @@ export default function AuthCallbackScreen() {
           alignItems: "center",
           padding: 24,
           gap: 12,
+          backgroundColor: colors.bg,
         }}
       >
-        <Text style={{ color: "#dc2626", textAlign: "center" }}>{error}</Text>
-        <Link href="/login" style={{ color: "#374151" }}>
-          Back to login
-        </Link>
+        <View style={{ ...brutalCardStyle, padding: 20, maxWidth: 400 }}>
+          <Text style={{ color: colors.error, textAlign: "center", marginBottom: 12 }}>
+            {error}
+          </Text>
+          <Link href="/login" style={{ color: colors.fptBlue, textAlign: "center", fontWeight: "700" }}>
+            Back to login
+          </Link>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <ActivityIndicator size="large" />
-      <Text style={{ marginTop: 12, color: "#4b5563" }}>Completing sign-in...</Text>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.bg,
+        padding: 24,
+      }}
+    >
+      <View style={{ ...brutalCardStyle, padding: 24, alignItems: "center", gap: 12 }}>
+        <ActivityIndicator size="large" color={colors.fptBlue} />
+        <Text style={{ fontWeight: "800", fontSize: 18, color: colors.ink }}>
+          Completing sign-in...
+        </Text>
+        <Text style={{ color: colors.muted }}>Please wait a moment.</Text>
+      </View>
     </View>
   );
 }
