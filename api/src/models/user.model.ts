@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType, type Types } from "mongoose";
+import { Schema, model, type HydratedDocument, type InferSchemaType } from "mongoose";
 
 const STORAGE_QUOTA_BYTES = 524_288_000;
 
@@ -14,8 +14,6 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-export type UserDocument = InferSchemaType<typeof userSchema> & {
-  _id: Types.ObjectId;
-};
+export type UserDocument = HydratedDocument<InferSchemaType<typeof userSchema>>;
 
 export const User = model("User", userSchema);

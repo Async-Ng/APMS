@@ -15,6 +15,8 @@ const envSchema = z.object({
   S3_BUCKET_NAME: z.string().min(1),
   BEDROCK_MODEL_ID: z.string().min(1),
   BEDROCK_EMBEDDING_MODEL_ID: z.string().min(1),
+  MAX_UPLOAD_BYTES: z.coerce.number().default(52_428_800),
+  S3_PRESIGN_EXPIRES_SECONDS: z.coerce.number().default(900),
 });
 
 export type Env = z.infer<typeof envSchema>;

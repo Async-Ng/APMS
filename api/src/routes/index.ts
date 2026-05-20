@@ -1,11 +1,19 @@
 import { Router } from "express";
 
 import { authRouter } from "./auth.routes";
+import { documentsRouter } from "./documents.routes";
+import { driveRouter } from "./drive.routes";
+import { foldersRouter } from "./folders.routes";
 import { healthRouter } from "./health.routes";
+import { usersRouter } from "./users.routes";
 
 const apiRouter = Router();
 
 apiRouter.use("/health", healthRouter);
 apiRouter.use("/auth", authRouter);
+apiRouter.use("/users", usersRouter);
+apiRouter.use("/folders", foldersRouter);
+apiRouter.use("/documents", documentsRouter);
+apiRouter.use("/drive", driveRouter);
 
 export { apiRouter };

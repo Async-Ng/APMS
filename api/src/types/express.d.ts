@@ -1,3 +1,5 @@
+import type { UserDocument } from "../models/user.model";
+
 declare global {
   namespace Express {
     interface Request {
@@ -7,6 +9,7 @@ declare global {
         displayName: string;
         avatarUrl?: string;
       };
+      currentUser?: UserDocument;
     }
   }
 }

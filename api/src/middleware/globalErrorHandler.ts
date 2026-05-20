@@ -1,19 +1,25 @@
 import type { NextFunction, Request, Response } from "express";
 
-interface AppError extends Error {
-  statusCode?: number;
-}
+import { AppError } from "../errors/AppError";
 
 export function globalErrorHandler(
-  err: AppError,
+  err: Error,
   _req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
-  const statusCode = err.statusCode ?? 500;
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+  const message =
+    statusCode === 500 && process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : err.message || "Internal server error";
+
+  if (process.env.NODE_ENV !== "production" && statusCode === 500) {
+    console.error(err);
+  }
 
   res.status(statusCode).json({
     status: "error",
-    message: err.message || "Internal server error",
+    message,
   });
 }
