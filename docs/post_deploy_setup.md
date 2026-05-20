@@ -102,7 +102,7 @@ Auth flow không cần Bedrock.
 - `web/.env.local` — Cognito + API URL; local: `NEXT_PUBLIC_APP_URL=http://localhost:3000`
 - `mobile/.env` — Cognito + API URL
 
-**Vercel (web prod):** đặt `NEXT_PUBLIC_APP_URL` = URL production (ví dụ `https://apms-one.vercel.app`) và khớp với một callback trong `OAUTH_CALLBACK_URLS` sau `cdk deploy` (mục 2).
+**Vercel (web prod):** đặt `NEXT_PUBLIC_APP_URL` = URL production (ví dụ `https://apms-one.vercel.app`) và khớp với một callback trong `OAUTH_CALLBACK_URLS` sau `cdk deploy` (mục 2). Chi tiết: [`vercel_oauth_checklist.md`](./vercel_oauth_checklist.md).
 
 Sau khi sửa env, restart `pnpm dev`.
 
