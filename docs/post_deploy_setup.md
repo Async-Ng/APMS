@@ -13,6 +13,9 @@ Sau `cdk deploy` thành công, hoàn tất các bước sau trước khi chạy 
 | Google IdP redirect URI | `https://apms-dev.auth.ap-southeast-1.amazoncognito.com/oauth2/idpresponse` |
 | S3 bucket | `apms-documents-400715295558-ap-southeast-1` |
 | IAM backend user | `apms-backend-service-user` |
+| Cognito admin group | `admin` (output `CognitoAdminGroupNameOutput` sau deploy mới) |
+
+> Sau khi thêm group `admin` vào CDK, chạy lại `cdk deploy` rồi gán user vào group theo mục 8.
 
 ---
 
@@ -117,9 +120,21 @@ cd web && pnpm dev
 
 1. Mở http://localhost:3000 → **Sign in with Google**
 2. Sau callback, URL phải có `?code=...` — Amplify (`enable-oauth-listener`) đổi code lấy token
-3. Trang chủ hiển thị tên user; DevTools → `GET /api/auth/me` → 200
+3. Trang chủ hiển thị tên user; DevTools → `GET /api/auth/me` → 200, `data.role` là `"user"` hoặc `"admin"`
 
 Nếu kẹt ở "Completing sign-in...": kiểm tra Google redirect URI (mục 1) và restart `pnpm dev` sau khi đổi `.env.local`.
+
+### Smoke test API nền tảng (Bearer token từ bước 3)
+
+| Bước | Request | Kỳ vọng |
+|------|---------|---------|
+| 1 | `GET /api/health` | 200 |
+| 2 | `POST /api/folders` body `{ "name": "Test" }` | 201 |
+| 3 | `GET /api/drive` | 200, thấy folder |
+| 4 | `POST /api/documents/upload-intents` (PDF metadata) | 201 + `uploadUrl` |
+| 5 | PUT file lên S3 → `POST /api/documents/:id/complete` | 200, `status: processing` |
+
+Chi tiết endpoint: [`api_reference.md`](./api_reference.md).
 
 ---
 
@@ -143,3 +158,12 @@ Sau `cdk deploy`, stack tạo User Pool group **`admin`** (output `CognitoAdminG
 | `GET` | `/api/admin/users?page=1&limit=20&search=` |
 | `GET` | `/api/admin/users/:id` |
 | `PATCH` | `/api/admin/users/:id` — body `{ "storageQuotaBytes"?, "isDisabled"? }` |
+
+### Smoke test Admin (sau khi gán group)
+
+| Bước | Request | Kỳ vọng |
+|------|---------|---------|
+| 1 | User thường: `GET /api/admin/stats` | 403 |
+| 2 | Admin: `GET /api/auth/me` | `data.role` = `"admin"` |
+| 3 | Admin: `GET /api/admin/stats` | 200 |
+| 4 | Admin: `PATCH /api/admin/users/:userId` `{ "isDisabled": true }` | User đó `POST /api/folders` → 403 |

@@ -58,6 +58,14 @@ Documents and folders can be starred for quick access. Deletion is soft — item
 ### Account Management
 Authentication is handled via Amazon Cognito with Google as a federated identity provider. Each account has a configurable storage quota (default: 500 MB).
 
+### System Administration
+Administrators use the same Google sign-in. Access is granted via the Cognito User Pool group `admin`. Admin APIs (`/api/admin`) support user listing, quota adjustment, account disable/enable, and system-wide statistics. Admin UI is planned for a later phase.
+
+### API (implemented)
+The backend exposes REST endpoints for health, auth, folders, documents (presigned S3 upload), drive views (root, starred, trash), and admin. See [API Reference](./docs/api_reference.md) for the full endpoint list.
+
+**Swagger UI (dev):** With `NODE_ENV=development`, open [http://localhost:4000/api/docs](http://localhost:4000/api/docs) for interactive API docs (OpenAPI spec matches Zod validators).
+
 ---
 
 ## Architecture
@@ -138,8 +146,10 @@ APMS/
 │   └── cdk.json
 │
 ├── docs/                 # Technical documentation
+│   ├── api_reference.md
 │   ├── system_overview.md
 │   ├── database_design.md
+│   ├── post_deploy_setup.md
 │   ├── coding_standards.md
 │   └── ui_design_system.md
 │
@@ -184,6 +194,7 @@ cd api
 cp .env.example .env      # populate with your credentials
 pnpm install
 pnpm dev                  # starts on http://localhost:4000
+                          # Swagger UI: http://localhost:4000/api/docs (dev only)
 ```
 
 #### Web Application
@@ -256,6 +267,8 @@ See [`infrastructure/.env.example`](infrastructure/.env.example). Used at `cdk s
 | `S3_BUCKET_NAME` | Name of the S3 bucket for file storage |
 | `BEDROCK_MODEL_ID` | Bedrock LLM model ID (Claude 3 Haiku) |
 | `BEDROCK_EMBEDDING_MODEL_ID` | Bedrock embedding model ID (Titan Embeddings v2) |
+| `MAX_UPLOAD_BYTES` | Max single-file upload size in bytes (default: 52428800) |
+| `S3_PRESIGN_EXPIRES_SECONDS` | Presigned S3 URL TTL in seconds (default: 900) |
 
 ### `web/.env.local`
 
@@ -286,7 +299,8 @@ See [`mobile/.env.example`](mobile/.env.example).
 
 | Document | Description |
 | :--- | :--- |
-| [Post-deploy Setup](./docs/post_deploy_setup.md) | Steps after `cdk deploy`: Google OAuth, IAM keys, env, test auth |
+| [API Reference](./docs/api_reference.md) | REST endpoints (auth, drive, folders, documents, admin), Swagger UI link |
+| [Post-deploy Setup](./docs/post_deploy_setup.md) | Steps after `cdk deploy`: Google OAuth, IAM keys, env, admin group, smoke tests |
 | [System Overview](./docs/system_overview.md) | Business logic, technology stack, and non-functional requirements |
 | [Database Design](./docs/database_design.md) | MongoDB schema for all 7 collections, index strategy, and Vector Search configuration |
 | [Coding Standards](./docs/coding_standards.md) | TypeScript rules, project conventions, and best practices |

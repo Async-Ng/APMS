@@ -1,8 +1,22 @@
 # Thiết kế Cơ sở Dữ liệu (Database Design)
 
-**Phiên bản:** 1.0  
+**Phiên bản:** 1.1  
 **Cơ sở dữ liệu:** MongoDB Atlas (kích hoạt Vector Search)  
 **Mô hình tổ chức:** Kiểu Google Drive (Folder lồng nhau, Chia sẻ kế thừa, Soft Delete)
+
+### Trạng thái triển khai API (Mongoose models)
+
+| Collection | Model / API | Ghi chú |
+|------------|-------------|---------|
+| `users` | Có | `role`, `isDisabled`; sync Cognito group `admin` |
+| `folders` | Có | `/api/folders`, `/api/drive` |
+| `documents` | Có | `/api/documents`, upload presigned S3 |
+| `document_chunks` | Chưa | RAG pipeline |
+| `shares` | Chưa | Shared with me |
+| `chat_sessions` | Chưa | RAG chat |
+| `chat_messages` | Chưa | RAG chat |
+
+Tham chiếu endpoint: [`api_reference.md`](./api_reference.md).
 
 ---
 
@@ -59,6 +73,7 @@ Lưu trữ thông tin tài khoản người dùng đăng nhập qua Amazon Cogni
 **Indexes:**
 - `cognitoSub`: unique
 - `email`: unique
+- `role`, `isDisabled` — lọc admin / tài khoản vô hiệu hóa
 
 ---
 

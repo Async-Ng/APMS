@@ -28,6 +28,11 @@ Tài liệu này quy định các nguyên tắc, ràng buộc và best practices
   - Dùng đúng HTTP Methods: `GET`, `POST`, `PUT/PATCH`, `DELETE`.
   - Định dạng JSON Response chuẩn: `{ "status": "success", "data": {...} }` hoặc `{ "status": "error", "message": "..." }`.
 - **Environment Variables:** Không bao giờ hardcode credentials. Sử dụng `dotenv` và có schema xác thực các biến môi trường lúc khởi động app.
+- **Authorization (APMS):**
+  - User routes: `authenticate` → `resolveUser` → `requireActiveUser` (trừ `GET /auth/me` chỉ tới `resolveUser`).
+  - Admin routes: thêm `requireAdmin` sau `requireActiveUser`; kiểm tra `currentUser.role === "admin"`.
+  - Không hardcode admin email trong code — dùng Cognito group `admin` (claim `cognito:groups`).
+- **API catalog:** Khi thêm/sửa endpoint, cập nhật [`api_reference.md`](./api_reference.md).
 
 ## 4. Frontend (React & Next.js)
 

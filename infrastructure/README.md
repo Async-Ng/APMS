@@ -1,6 +1,6 @@
 # APMS Infrastructure (AWS CDK)
 
-Defines AWS resources for APMS: S3, IAM backend user, Amazon Cognito (Google federated auth), Bedrock/Textract permissions.
+Defines AWS resources for APMS: S3, IAM backend user, Amazon Cognito (Google federated auth + **User Pool group `admin`**), Bedrock/Textract permissions.
 
 ## Setup
 
@@ -41,3 +41,5 @@ npx cdk deploy
 ```
 
 After deploy, copy stack **Outputs** into `api/.env`, `web/.env.local`, and `mobile/.env`. Add `CognitoGoogleIdpRedirectUri` to Google Cloud Console as an authorized redirect URI.
+
+**Admin access:** Assign users to Cognito group `admin` (see `CognitoAdminGroupNameOutput`). They sign in with the same Google OAuth flow; the API reads `cognito:groups` from the ID token. See [`docs/post_deploy_setup.md`](../docs/post_deploy_setup.md) section 8 and [`docs/api_reference.md`](../docs/api_reference.md).

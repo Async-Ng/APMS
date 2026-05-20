@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
+import { mountOpenApiDocs } from "./openapi/mount";
 import { apiRouter } from "./routes";
 
 export function createApp() {
@@ -9,6 +10,8 @@ export function createApp() {
 
   app.use(cors());
   app.use(express.json());
+
+  mountOpenApiDocs(app);
 
   app.use("/api", apiRouter);
   app.get("/health", (_req, res) => {

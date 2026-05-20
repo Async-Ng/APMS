@@ -78,6 +78,7 @@ Hệ thống cần tuân thủ nghiêm ngặt các ràng buộc Phi chức năng
 - **Mã hóa:** Giao tiếp hoàn toàn qua **HTTPS/TLS**.
 - **Cô lập dữ liệu (Multi-tenancy):** Dữ liệu của user nào chỉ được truy cập bởi user đó. Context nhồi vào AI tuyệt đối không bị lẫn lộn giữa các tài khoản.
 - **Xác thực API:** Client gửi **Cognito ID token** (JWT); API xác minh chữ ký qua JWKS của User Pool.
+- **Phân quyền Admin:** Claim `cognito:groups` (group `admin`) → `role` trong DB; route `/api/admin` qua middleware `requireAdmin`. Tài khoản `isDisabled` bị chặn API user (trừ `GET /auth/me`).
 
 ### 3.3 Mở rộng (Scalability)
 - **Stateless Backend:** Backend không lưu trạng thái (session lưu ở client/DB) để dễ dàng tự động mở rộng (Auto-scaling).
@@ -85,10 +86,32 @@ Hệ thống cần tuân thủ nghiêm ngặt các ràng buộc Phi chức năng
 
 ---
 
-## 4. Tài liệu liên quan
+## 4. API đã triển khai (Implementation status)
+
+Backend Express (`api/`) hiện hỗ trợ:
+
+| Nhóm | Prefix | Trạng thái |
+|------|--------|------------|
+| Health | `/api/health` | Có |
+| Auth / Profile | `/api/auth`, `/api/users` | Có |
+| Drive views | `/api/drive` | Có (root, starred, trash) |
+| Folders | `/api/folders` | Có (CRUD, star, soft delete, restore) |
+| Documents | `/api/documents` | Có (presigned S3 upload, metadata) |
+| Admin | `/api/admin` | Có (stats, user management) |
+| Shares | — | Chưa |
+| Semantic search | — | Chưa |
+| RAG Chat | — | Chưa |
+
+Chi tiết endpoint, body, response: [`api_reference.md`](./api_reference.md).
+
+---
+
+## 5. Tài liệu liên quan
 
 | Tài liệu | Mô tả |
 | :--- | :--- |
+| [`api_reference.md`](./api_reference.md) | Tham chiếu REST API đầy đủ (auth, drive, admin, upload) |
 | [`database_design.md`](./database_design.md) | Schema chi tiết 7 Collections của MongoDB, chiến lược Index và Vector Search |
+| [`post_deploy_setup.md`](./post_deploy_setup.md) | Hướng dẫn sau `cdk deploy`, OAuth, gán admin group |
 | [`coding_standards.md`](./coding_standards.md) | Tiêu chuẩn lập trình TypeScript, Node.js, Next.js, React Native |
 | [`ui_design_system.md`](./ui_design_system.md) | Hệ thống thiết kế UI (Claymorphism, bảng màu, typography) |
