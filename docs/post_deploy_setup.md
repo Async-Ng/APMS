@@ -32,7 +32,37 @@ Không thêm `localhost` vào mục này — callback web/mobile được cấu 
 
 ---
 
-## 2. IAM access key cho API (bắt buộc)
+## 2. Cognito OAuth callback / logout (CDK — tránh `redirect_mismatch`)
+
+Nếu trên prod (Vercel) Cognito trả `error=redirect_mismatch`, nghĩa là **`redirect_uri`** mà app gửi (từ `NEXT_PUBLIC_APP_URL` + `/auth/callback` trong [`web/lib/amplify.ts`](../web/lib/amplify.ts)) **không nằm** trong danh sách **Allowed callback URLs** của App Client.
+
+### Cách sửa bằng CDK
+
+1. Trong `infrastructure/.env` (gitignored), đặt biến **comma-separated** (không khoảng trắng thừa sau dấu phẩy):
+
+   - `OAUTH_CALLBACK_URLS` — mỗi URL phải khớp tuyệt đối với URL app dùng, ví dụ:
+     - `http://localhost:3000/auth/callback`
+     - `https://<ten-project>.vercel.app/auth/callback`
+     - `apms://auth/callback` (Expo deep link nếu dùng)
+   - `OAUTH_LOGOUT_URLS` — khớp [`web/lib/amplify.ts`](../web/lib/amplify.ts): ``{NEXT_PUBLIC_APP_URL}/login`` (ví dụ `http://localhost:3000/login`, `https://<ten-project>.vercel.app/login`)
+
+2. Chạy `cd infrastructure && cdk deploy` để CloudFormation cập nhật App Client.
+
+### Vercel (bắt buộc)
+
+Trong Vercel → Project → **Settings → Environment Variables** (Production):
+
+- `NEXT_PUBLIC_APP_URL` = `https://<domain-thật-của-bạn>` (không slash cuối, đúng `https`)
+
+Sau đó **Redeploy** — biến `NEXT_PUBLIC_*` được embed lúc build.
+
+### Kiểm tra nhanh
+
+DevTools → Network khi bấm Google → request `oauth2/authorize` → xem query `redirect_uri` (decode) có **trùng một dòng** trong `OAUTH_CALLBACK_URLS` đã deploy không.
+
+---
+
+## 3. IAM access key cho API (bắt buộc)
 
 1. AWS Console → **IAM** → **Users** → `apms-backend-service-user`
 2. Tab **Security credentials** → **Create access key**
@@ -44,7 +74,7 @@ Không thêm `localhost` vào mục này — callback web/mobile được cấu 
 
 ---
 
-## 3. MongoDB Atlas (bắt buộc cho API)
+## 4. MongoDB Atlas (bắt buộc cho API)
 
 1. Tạo cluster + database user trên [MongoDB Atlas](https://www.mongodb.com/atlas)
 2. **Network Access**: cho phép IP máy dev (hoặc `0.0.0.0/0` tạm cho dev)
@@ -52,7 +82,7 @@ Không thêm `localhost` vào mục này — callback web/mobile được cấu 
 
 ---
 
-## 4. Amazon Bedrock (khi dùng upload / AI)
+## 5. Amazon Bedrock (khi dùng upload / AI)
 
 Region deploy: **ap-southeast-1**
 
@@ -64,19 +94,21 @@ Auth flow không cần Bedrock.
 
 ---
 
-## 5. File env runtime
+## 6. File env runtime
 
 Đã tạo sẵn (gitignored):
 
 - `api/.env` — điền `MONGODB_URI`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-- `web/.env.local` — Cognito + API URL
+- `web/.env.local` — Cognito + API URL; local: `NEXT_PUBLIC_APP_URL=http://localhost:3000`
 - `mobile/.env` — Cognito + API URL
+
+**Vercel (web prod):** đặt `NEXT_PUBLIC_APP_URL` = URL production (ví dụ `https://apms-one.vercel.app`) và khớp với một callback trong `OAUTH_CALLBACK_URLS` sau `cdk deploy` (mục 2).
 
 Sau khi sửa env, restart `pnpm dev`.
 
 ---
 
-## 6. Chạy và test
+## 7. Chạy và test
 
 ```powershell
 cd api && pnpm dev

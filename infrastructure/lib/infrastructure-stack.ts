@@ -89,7 +89,7 @@ export class InfrastructureStack extends cdk.Stack {
     const oauthLogoutUrls =
       (this.node.tryGetContext("oauthLogoutUrls") as string[] | undefined) ??
       parseEnvList(process.env.OAUTH_LOGOUT_URLS) ?? [
-        "http://localhost:3000/",
+        "http://localhost:3000/login",
         "apms://",
       ];
 
