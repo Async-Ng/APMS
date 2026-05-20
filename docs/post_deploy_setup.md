@@ -120,3 +120,26 @@ cd web && pnpm dev
 3. Trang chủ hiển thị tên user; DevTools → `GET /api/auth/me` → 200
 
 Nếu kẹt ở "Completing sign-in...": kiểm tra Google redirect URI (mục 1) và restart `pnpm dev` sau khi đổi `.env.local`.
+
+---
+
+## 8. Gán quyền Admin (Cognito group)
+
+Sau `cdk deploy`, stack tạo User Pool group **`admin`** (output `CognitoAdminGroupNameOutput`).
+
+1. User phải **đăng nhập Google ít nhất một lần** để xuất hiện trong Cognito User Pool.
+2. AWS Console → **Amazon Cognito** → User pools → pool APMS → **Users** → chọn user → **Add user to group** → `admin`.
+3. User **đăng xuất và đăng nhập lại** để ID token có `cognito:groups`.
+4. Kiểm tra:
+   - `GET /api/auth/me` → `data.role` = `"admin"`
+   - `GET /api/admin/stats` → 200 (Bearer token admin)
+   - User thường gọi `/api/admin/*` → 403
+
+**Admin API:**
+
+| Method | Path |
+|--------|------|
+| `GET` | `/api/admin/stats` |
+| `GET` | `/api/admin/users?page=1&limit=20&search=` |
+| `GET` | `/api/admin/users/:id` |
+| `PATCH` | `/api/admin/users/:id` — body `{ "storageQuotaBytes"?, "isDisabled"? }` |

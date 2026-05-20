@@ -36,6 +36,12 @@ Hệ thống APMS giải quyết bài toán quản lý kho tri thức cá nhân 
 - **Starred (Đã đánh dấu):** Người dùng có thể ghim (star) bất kỳ file hoặc thư mục nào để truy cập nhanh.
 - **Trash (Thùng rác):** Xóa mềm (Soft Delete) — file/thư mục bị xóa sẽ vào Trash trước, người dùng có thể khôi phục hoặc xóa vĩnh viễn.
 
+### 1.7 Quản trị hệ thống (Admin)
+- **Xác thực:** Admin là user đăng nhập Google qua Cognito, được gán vào **User Pool group `admin`**. JWT ID token chứa claim `cognito:groups`; API đồng bộ `role: "admin"` vào MongoDB.
+- **Quản lý người dùng:** Xem danh sách user, chỉnh `storageQuotaBytes`, vô hiệu hóa/kích hoạt tài khoản (`isDisabled`).
+- **Thống kê:** Tổng users, storage, documents theo trạng thái, số folder.
+- **Giới hạn:** Admin **không** truy cập/xóa tài liệu của user khác (cross-tenant moderation — phase sau). API admin: prefix `/api/admin`.
+
 ---
 
 ## 2. Công nghệ sử dụng (Technology Stack)

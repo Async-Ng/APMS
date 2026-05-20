@@ -1,10 +1,13 @@
 import type { AuthUser } from "../middleware/authenticate";
-import { User, type UserDocument } from "../models/user.model";
+import { User, type UserDocument, type UserRole } from "../models/user.model";
 
 export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument> {
+  const role: UserRole = authUser.isAdmin ? "admin" : "user";
+
   const update: Record<string, string> = {
     email: authUser.email,
     displayName: authUser.displayName,
+    role,
   };
 
   if (authUser.avatarUrl) {
@@ -34,6 +37,8 @@ export function toUserResponse(user: UserDocument) {
     email: user.email,
     displayName: user.displayName,
     avatarUrl: user.avatarUrl ?? null,
+    role: user.role,
+    isDisabled: user.isDisabled,
     storageUsedBytes: user.storageUsedBytes,
     storageQuotaBytes: user.storageQuotaBytes,
     createdAt: user.createdAt,

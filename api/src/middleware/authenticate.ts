@@ -7,6 +7,22 @@ export interface AuthUser {
   email: string;
   displayName: string;
   avatarUrl?: string;
+  groups: string[];
+  isAdmin: boolean;
+}
+
+function parseCognitoGroups(payload: Record<string, unknown>): string[] {
+  const raw = payload["cognito:groups"];
+
+  if (Array.isArray(raw)) {
+    return raw.filter((item): item is string => typeof item === "string");
+  }
+
+  if (typeof raw === "string") {
+    return [raw];
+  }
+
+  return [];
 }
 
 export async function authenticate(
@@ -37,10 +53,14 @@ export async function authenticate(
         ? payload.name
         : email;
 
+    const groups = parseCognitoGroups(payload as Record<string, unknown>);
+
     const authUser: AuthUser = {
       cognitoSub: payload.sub,
       email,
       displayName,
+      groups,
+      isAdmin: groups.includes("admin"),
     };
 
     if (typeof payload.picture === "string" && payload.picture.length > 0) {

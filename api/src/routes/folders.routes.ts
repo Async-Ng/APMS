@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import * as foldersController from "../controllers/folders.controller";
 import { authenticate } from "../middleware/authenticate";
+import { requireActiveUser } from "../middleware/requireActiveUser";
 import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
@@ -9,7 +10,7 @@ import { createFolderSchema, updateFolderSchema } from "../validators/folder.val
 
 const foldersRouter = Router();
 
-foldersRouter.use(authenticate, resolveUser);
+foldersRouter.use(authenticate, resolveUser, requireActiveUser);
 
 foldersRouter.post("/", validate({ body: createFolderSchema }), foldersController.createFolder);
 foldersRouter.get("/:id", validate({ params: objectIdParamSchema }), foldersController.getFolder);

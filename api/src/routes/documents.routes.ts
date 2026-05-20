@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import * as documentsController from "../controllers/documents.controller";
 import { authenticate } from "../middleware/authenticate";
+import { requireActiveUser } from "../middleware/requireActiveUser";
 import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
@@ -12,7 +13,7 @@ import {
 
 const documentsRouter = Router();
 
-documentsRouter.use(authenticate, resolveUser);
+documentsRouter.use(authenticate, resolveUser, requireActiveUser);
 
 documentsRouter.post(
   "/upload-intents",

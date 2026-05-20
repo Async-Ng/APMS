@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { adminRouter } from "./admin.routes";
 import { authRouter } from "./auth.routes";
 import { documentsRouter } from "./documents.routes";
 import { driveRouter } from "./drive.routes";
@@ -11,6 +12,7 @@ const apiRouter = Router();
 
 apiRouter.use("/health", healthRouter);
 apiRouter.use("/auth", authRouter);
+apiRouter.use("/admin", adminRouter);
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/folders", foldersRouter);
 apiRouter.use("/documents", documentsRouter);

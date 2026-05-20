@@ -49,6 +49,8 @@ Lưu trữ thông tin tài khoản người dùng đăng nhập qua Amazon Cogni
 | `email` | `String` | unique, required | Email tài khoản |
 | `displayName` | `String` | required | Tên hiển thị |
 | `avatarUrl` | `String` | | URL ảnh đại diện từ Google |
+| `role` | `String (enum)` | default: `"user"` | `"user"` hoặc `"admin"`. Sync từ Cognito group `admin` mỗi lần đăng nhập |
+| `isDisabled` | `Boolean` | default: false | Admin vô hiệu hóa → user không dùng được API (trừ `GET /auth/me`) |
 | `storageUsedBytes` | `Number` | default: 0 | Dung lượng đã sử dụng (bytes). Cập nhật mỗi khi upload/xóa file |
 | `storageQuotaBytes` | `Number` | default: 524288000 | Quota tối đa (default: 500MB) |
 | `createdAt` | `Date` | auto | |

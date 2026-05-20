@@ -161,6 +161,13 @@ export class InfrastructureStack extends cdk.Stack {
       cognitoDomain: { domainPrefix: cognitoDomainPrefix },
     });
 
+    const adminGroup = new cognito.CfnUserPoolGroup(this, "APMSAdminGroup", {
+      userPoolId: userPool.userPoolId,
+      groupName: "admin",
+      description: "APMS administrators with access to /api/admin endpoints",
+      precedence: 1,
+    });
+
     const hostedUiBaseUrl = `https://${userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`;
 
     // =========================================================================
@@ -257,6 +264,12 @@ export class InfrastructureStack extends cdk.Stack {
       value: `${hostedUiBaseUrl}/oauth2/idpresponse`,
       description:
         "Add this URI as Authorized redirect URI in Google Cloud Console OAuth client",
+    });
+
+    new cdk.CfnOutput(this, "CognitoAdminGroupNameOutput", {
+      value: adminGroup.groupName ?? "admin",
+      description:
+        "Cognito group for admins. In AWS Console: User Pool → Users → select user → Add user to group → admin. User must sign out and sign in again.",
     });
   }
 }

@@ -8,6 +8,8 @@ declare global {
         email: string;
         displayName: string;
         avatarUrl?: string;
+        groups: string[];
+        isAdmin: boolean;
       };
       currentUser?: UserDocument;
     }

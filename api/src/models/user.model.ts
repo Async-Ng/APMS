@@ -2,12 +2,17 @@ import { Schema, model, type HydratedDocument, type InferSchemaType } from "mong
 
 const STORAGE_QUOTA_BYTES = 524_288_000;
 
+export const USER_ROLES = ["user", "admin"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 const userSchema = new Schema(
   {
     cognitoSub: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },
     displayName: { type: String, required: true },
     avatarUrl: { type: String },
+    role: { type: String, enum: USER_ROLES, default: "user", index: true },
+    isDisabled: { type: Boolean, default: false, index: true },
     storageUsedBytes: { type: Number, default: 0 },
     storageQuotaBytes: { type: Number, default: STORAGE_QUOTA_BYTES },
   },
