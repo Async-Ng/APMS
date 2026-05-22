@@ -149,7 +149,7 @@ export async function completeUpload(user: UserDocument, documentId: string) {
   const updatedUser = await User.findOneAndUpdate(
     { _id: user._id },
     { $inc: { storageUsedBytes: document.fileSizeBytes } },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   if (!updatedUser) {

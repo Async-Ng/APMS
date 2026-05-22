@@ -16,7 +16,7 @@ function requireUser(req: Request) {
 }
 
 export const listUsers = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  const query = req.query as unknown as z.infer<typeof listUsersQuerySchema>;
+  const query = req.validatedQuery as z.infer<typeof listUsersQuerySchema>;
   const options: { page: number; limit: number; search?: string } = {
     page: query.page,
     limit: query.limit,
