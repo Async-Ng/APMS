@@ -14,7 +14,8 @@ interface UploadIntentBody {
 }
 
 interface UploadIntentResponse {
-  id: string;
+  /** The newly-created document record (with id to pass to /complete) */
+  document: DriveDocument;
   uploadUrl: string;
   s3Key: string;
   expiresIn: number;

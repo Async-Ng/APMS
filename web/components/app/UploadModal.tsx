@@ -82,9 +82,9 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
       await uploadToS3(intent.uploadUrl, selectedFile, setProgress);
       setProgress(100);
 
-      // Step 3: Mark complete
+      // Step 3: Mark complete — document.id comes from intent.document.id
       await completeUpload.mutateAsync({
-        documentId: intent.id,
+        documentId: intent.document.id,
         parentId: folderId ?? undefined,
       });
 

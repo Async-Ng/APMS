@@ -8,6 +8,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -70,7 +71,14 @@ export function DocumentCard({
   }
 
   return (
-    <div className="brutal-card brutal-card-hover group relative flex flex-col gap-2 p-3 cursor-default">
+    <div className="brutal-card brutal-card-hover group relative flex flex-col gap-2 p-3 cursor-pointer select-none">
+      {/* Document body — navigate on click */}
+      <Link
+        href={`/documents/${doc.id}`}
+        className="focus-brutal absolute inset-0 rounded-2xl"
+        aria-label={`Open document ${doc.title}`}
+      />
+
       {/* Icon row */}
       <div className="flex items-start justify-between">
         <div
