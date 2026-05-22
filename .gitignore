@@ -90,3 +90,24 @@ infrastructure/cdk-*.json
 .gemini/
 brain/
 scratch/
+
+# ==========================================
+# AI tool config files (không liên quan dự án)
+# ==========================================
+skills-lock.json
+.claude/
+.cursorrules
+.cursorignore
+.aider*
+.copilot/
+.windsurf/
+.continue/
+.roomodes
+.clinerules
+.codeium/
+.tabnine/
+
+# ==========================================
+# Local project documentation (do not commit)
+# ==========================================
+PROJECT.md
