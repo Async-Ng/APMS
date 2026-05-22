@@ -12,6 +12,7 @@ declare global {
         isAdmin: boolean;
       };
       currentUser?: UserDocument;
+      validatedQuery?: Record<string, unknown>;
     }
   }
 }

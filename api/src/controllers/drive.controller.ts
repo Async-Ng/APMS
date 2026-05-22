@@ -13,7 +13,8 @@ function requireUser(req: Request) {
 }
 
 export const listDrive = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  const parentId = typeof req.query.parentId === "string" ? req.query.parentId : undefined;
+  const parentId =
+    typeof req.validatedQuery?.parentId === "string" ? req.validatedQuery.parentId : undefined;
   const data = await driveService.listDriveContents(requireUser(req), parentId);
   sendSuccess(res, data);
 });

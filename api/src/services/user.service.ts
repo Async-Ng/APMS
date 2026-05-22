@@ -6,7 +6,7 @@ export async function updateProfile(user: UserDocument, displayName: string) {
   const updated = await User.findByIdAndUpdate(
     user._id,
     { $set: { displayName } },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   );
 
   if (!updated) {

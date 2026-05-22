@@ -20,7 +20,7 @@ export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument
       $set: update,
       $setOnInsert: { cognitoSub: authUser.cognitoSub },
     },
-    { upsert: true, new: true, runValidators: true },
+    { upsert: true, returnDocument: "after", runValidators: true },
   );
 
   if (!user) {
