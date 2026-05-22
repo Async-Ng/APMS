@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
@@ -110,6 +111,7 @@ interface PageProps {
 
 export default function DocumentDetailPage({ params }: PageProps) {
   const { documentId } = use(params);
+  const router = useRouter();
 
   const { data: doc, isLoading, isError } = useDocument(documentId);
   const [fetchUrl, setFetchUrl] = useState(false);
@@ -312,7 +314,10 @@ export default function DocumentDetailPage({ params }: PageProps) {
                   id={`doc-${documentId}-trash-btn`}
                   variant="ghost"
                   className="w-full !text-brutal-danger hover:!bg-red-50"
-                  onClick={() => deleteDoc()}
+                  onClick={() => {
+                    deleteDoc();
+                    router.back();
+                  }}
                 >
                   <Trash2 className="h-4 w-4 text-brutal-danger" />
                   Chuyển vào Thùng rác

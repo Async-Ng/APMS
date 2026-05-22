@@ -75,9 +75,24 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.delete(`/documents/${documentId}`),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
-      void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["drive"] });
+      
+      qc.setQueriesData({ queryKey: ["drive"] }, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          documents: old.documents?.filter((d: any) => d.id !== documentId),
+        };
+      });
+      return {};
+    },
+    onError: () => {
+      void qc.invalidateQueries({ queryKey: ["drive"] });
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["drive"] });
+      void qc.invalidateQueries({ queryKey: ["documents", documentId] });
     },
   });
 }
@@ -106,9 +121,45 @@ export function useToggleDocumentStar(parentId?: string) {
       starred
         ? api.patch(`/documents/${documentId}/star`)
         : api.delete(`/documents/${documentId}/star`),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
-      void qc.invalidateQueries({ queryKey: ["drive", "starred"] });
+    onMutate: async (variables) => {
+      const docKey = ["documents", variables.documentId];
+      // 1. Cancel outgoing refetches
+      await qc.cancelQueries({ queryKey: docKey });
+      
+      // 2. Snapshot previous value
+      const previousDoc = qc.getQueryData(docKey);
+      
+      // 3. Optimistically update
+      if (previousDoc) {
+        qc.setQueryData(docKey, {
+          ...(previousDoc as any),
+          isStarred: variables.starred,
+        });
+      }
+      
+      // Do the same for all drive lists
+      await qc.cancelQueries({ queryKey: ["drive"] });
+      qc.setQueriesData({ queryKey: ["drive"] }, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          documents: old.documents?.map((d: any) => 
+            d.id === variables.documentId ? { ...d, isStarred: variables.starred } : d
+          ),
+        };
+      });
+
+      return { previousDoc, docKey };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousDoc) qc.setQueryData(context.docKey, context.previousDoc);
+      void qc.invalidateQueries({ queryKey: ["drive"] });
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to sync with server
+      void qc.invalidateQueries({ queryKey: ["documents", variables.documentId] });
+      void qc.invalidateQueries({ queryKey: ["drive"] });
     },
   });
 }
