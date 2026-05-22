@@ -14,6 +14,7 @@ import { use, useState } from "react";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CustomPdfViewer } from "@/components/app/CustomPdfViewer";
 import { cn } from "@/lib/cn";
 import {
   useDeleteDocument,
@@ -64,20 +65,7 @@ function mimeLabel(mimeType: string) {
   return "Document";
 }
 
-/* ── inline PDF viewer ──────────────────────────────────────── */
 
-function PdfViewer({ url }: { url: string }) {
-  return (
-    <div className="flex-1 overflow-hidden rounded-xl border-2 border-brutal-ink shadow-brutal-sm">
-      <iframe
-        src={url}
-        title="Document preview"
-        className="h-full w-full"
-        style={{ minHeight: "70vh" }}
-      />
-    </div>
-  );
-}
 
 /* ── non-PDF preview placeholder ───────────────────────────── */
 
@@ -198,7 +186,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
 
               {/* Viewer area */}
               {isPdf && downloadUrl ? (
-                <PdfViewer url={downloadUrl} />
+                <CustomPdfViewer url={downloadUrl} />
               ) : (
                 <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />
               )}
