@@ -4,6 +4,7 @@ import { registerDocumentsPaths } from "./documents";
 import { registerDrivePaths } from "./drive";
 import { registerFoldersPaths } from "./folders";
 import { registerHealthPaths } from "./health";
+import { registerSharesPaths } from "./shares";
 import { registerUsersPaths } from "./users";
 
 export function registerAllPaths(): void {
@@ -14,4 +15,6 @@ export function registerAllPaths(): void {
   registerFoldersPaths();
   registerDocumentsPaths();
   registerAdminPaths();
+  registerSharesPaths();
 }
+
