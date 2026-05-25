@@ -93,12 +93,12 @@ Backend Express (`api/`) hiện hỗ trợ:
 | Nhóm | Prefix | Trạng thái |
 |------|--------|------------|
 | Health | `/api/health` | Có |
-| Auth / Profile | `/api/auth`, `/api/users` | Có |
-| Drive views | `/api/drive` | Có (root, starred, trash) |
+| Auth / Profile | `/api/auth`, `/api/users` | Có (thêm `GET /api/users/search`) |
+| Drive views | `/api/drive` | Có (root, starred, trash, **shared**) |
 | Folders | `/api/folders` | Có (CRUD, star, soft delete, restore) |
 | Documents | `/api/documents` | Có (presigned S3 upload, metadata) |
 | Admin | `/api/admin` | Có (stats, user management) |
-| Shares | — | Chưa |
+| Shares | `/api/shares` | **Có** (batch share, revoke, with-me, by-me) |
 | Semantic search | — | Chưa |
 | RAG Chat | — | Chưa |
 

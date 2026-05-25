@@ -35,10 +35,8 @@ export function generateOpenApiDocument() {
       { name: "Drive", description: "Drive views (root, starred, trash)" },
       { name: "Folders", description: "Folder management" },
       { name: "Documents", description: "Documents and S3 upload" },
-      {
-        name: "Admin",
-        description: "Admin-only operations (Cognito group admin)",
-      },
+      { name: "Admin", description: "Admin-only operations (Cognito group admin)" },
+      { name: "Shares", description: "Share folders and documents with other users" },
     ],
   });
 

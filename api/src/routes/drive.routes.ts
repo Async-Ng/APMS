@@ -13,6 +13,7 @@ driveRouter.use(authenticate, resolveUser, requireActiveUser);
 
 driveRouter.get("/starred", driveController.listStarred);
 driveRouter.get("/trash", driveController.listTrash);
+driveRouter.get("/shared", driveController.listSharedWithMe);
 driveRouter.get("/", validate({ query: optionalParentIdQuerySchema }), driveController.listDrive);
 
 export { driveRouter };

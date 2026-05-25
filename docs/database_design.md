@@ -12,7 +12,7 @@
 | `folders` | Có | `/api/folders`, `/api/drive` |
 | `documents` | Có | `/api/documents`, upload presigned S3 |
 | `document_chunks` | Chưa | RAG pipeline |
-| `shares` | Chưa | Shared with me |
+| `shares` | **Có** | `/api/shares` (batch), `/api/drive/shared`, permission inheritance |
 | `chat_sessions` | Chưa | RAG chat |
 | `chat_messages` | Chưa | RAG chat |
 

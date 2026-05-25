@@ -28,3 +28,9 @@ export const listTrash = catchAsync(async (req: Request, res: Response): Promise
   const data = await driveService.listTrash(requireUser(req));
   sendSuccess(res, data);
 });
+
+export const listSharedWithMe = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const data = await driveService.listSharedWithMe(requireUser(req));
+  sendSuccess(res, data);
+});
+

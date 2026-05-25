@@ -5,6 +5,7 @@ import { Document, toDocumentResponse } from "../models/document.model";
 import { Folder, toFolderResponse } from "../models/folder.model";
 import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
+import { listSharedWithMe as listSharedWithMeService } from "./share.service";
 
 export async function listDriveContents(
   user: UserDocument,
@@ -72,3 +73,28 @@ export async function listTrash(user: UserDocument) {
     documents: documents.map((doc) => toDocumentResponse(doc)),
   };
 }
+
+/**
+ * Drive view "Shared with me" — delegates to share.service for consistency.
+ * Returns folders and documents shared with the current user, grouped by type.
+ */
+export async function listSharedWithMe(user: UserDocument) {
+  const items = await listSharedWithMeService(user);
+
+  const folders = items
+    .filter((i) => i.resource?.type === "folder")
+    .map((i) => ({
+      share: i.share,
+      ...(i.resource as { type: "folder"; data: ReturnType<typeof toFolderResponse> }).data,
+    }));
+
+  const documents = items
+    .filter((i) => i.resource?.type === "document")
+    .map((i) => ({
+      share: i.share,
+      ...(i.resource as { type: "document"; data: ReturnType<typeof toDocumentResponse> }).data,
+    }));
+
+  return { folders, documents };
+}
+
