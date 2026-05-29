@@ -8,6 +8,8 @@ export interface AppUser {
   email: string;
   displayName: string;
   avatarUrl: string | null;
+  role: "user" | "admin";
+  isDisabled: boolean;
   storageUsedBytes: number;
   storageQuotaBytes: number;
   createdAt: string;

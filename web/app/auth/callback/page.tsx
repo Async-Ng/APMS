@@ -33,7 +33,7 @@ export default function AuthCallbackPage() {
 
         finishedRef.current = true;
         await fetchMe();
-        router.replace("/login");
+        router.replace("/drive");
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to complete sign-in.";
