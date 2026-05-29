@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
-import type { DriveDocument } from "@/lib/queries/drive";
+import type { DriveContents, DriveDocument } from "@/lib/queries/drive";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -78,20 +78,23 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["drive"] });
       
-      qc.setQueriesData({ queryKey: ["drive"] }, (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          documents: old.documents?.filter((d: any) => d.id !== documentId),
-        };
-      });
+      qc.setQueriesData(
+        { queryKey: ["drive"] },
+        (old: DriveContents | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            documents: old.documents.filter((d) => d.id !== documentId),
+          };
+        },
+      );
       return {};
     },
     onError: () => {
       void qc.invalidateQueries({ queryKey: ["drive"] });
     },
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ["drive"] });
+      void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
       void qc.invalidateQueries({ queryKey: ["documents", documentId] });
     },
   });
@@ -132,22 +135,27 @@ export function useToggleDocumentStar(parentId?: string) {
       // 3. Optimistically update
       if (previousDoc) {
         qc.setQueryData(docKey, {
-          ...(previousDoc as any),
+          ...(previousDoc as DriveDocument),
           isStarred: variables.starred,
         });
       }
       
       // Do the same for all drive lists
       await qc.cancelQueries({ queryKey: ["drive"] });
-      qc.setQueriesData({ queryKey: ["drive"] }, (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          documents: old.documents?.map((d: any) => 
-            d.id === variables.documentId ? { ...d, isStarred: variables.starred } : d
-          ),
-        };
-      });
+      qc.setQueriesData(
+        { queryKey: ["drive"] },
+        (old: DriveContents | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            documents: old.documents.map((d) =>
+              d.id === variables.documentId
+                ? { ...d, isStarred: variables.starred }
+                : d,
+            ),
+          };
+        },
+      );
 
       return { previousDoc, docKey };
     },
@@ -159,7 +167,7 @@ export function useToggleDocumentStar(parentId?: string) {
     onSettled: (_, __, variables) => {
       // Always refetch to sync with server
       void qc.invalidateQueries({ queryKey: ["documents", variables.documentId] });
-      void qc.invalidateQueries({ queryKey: ["drive"] });
+      void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
     },
   });
 }

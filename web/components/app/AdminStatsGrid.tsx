@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, FolderOpen, HardDrive, Users } from "lucide-react";
+import { FileText, HardDrive, Users } from "lucide-react";
 
 import { useAdminStats } from "@/lib/queries/admin";
 

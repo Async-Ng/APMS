@@ -8,7 +8,6 @@ import { cn } from "@/lib/cn";
 interface TopbarProps {
   breadcrumbs: BreadcrumbItem[];
   onMenuOpen: () => void;
-  isCollapsed: boolean;
   onUploadClick?: () => void;
   actions?: React.ReactNode;
   className?: string;
@@ -23,7 +22,6 @@ interface TopbarProps {
 export function Topbar({
   breadcrumbs,
   onMenuOpen,
-  isCollapsed,
   onUploadClick,
   actions,
   className,

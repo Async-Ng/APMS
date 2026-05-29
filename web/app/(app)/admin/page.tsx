@@ -23,7 +23,6 @@ export default function AdminPage() {
       <Topbar
         breadcrumbs={[{ label: "Admin Panel" }]}
         onMenuOpen={() => {}}
-        isCollapsed={false}
       />
 
       <main className="flex-1 space-y-8 p-4 sm:p-6" id="main-content">

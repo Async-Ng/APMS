@@ -149,7 +149,6 @@ export default function DocumentDetailPage({ params }: PageProps) {
       <Topbar
         breadcrumbs={breadcrumbs}
         onMenuOpen={() => {}}
-        isCollapsed={false}
       />
 
       <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6" id="main-content">

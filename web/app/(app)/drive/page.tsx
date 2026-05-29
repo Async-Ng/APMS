@@ -30,7 +30,6 @@ export default function DrivePage() {
       <Topbar
         breadcrumbs={[{ label: "My Drive" }]}
         onMenuOpen={() => {}} // hoisted to layout via context in real app; noop here
-        isCollapsed={false}
         onUploadClick={() => setUploadOpen(true)}
         actions={
           <BrutalButton

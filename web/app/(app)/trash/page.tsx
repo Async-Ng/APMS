@@ -93,7 +93,6 @@ export default function TrashPage() {
       <Topbar
         breadcrumbs={[{ label: "Trash" }]}
         onMenuOpen={() => {}}
-        isCollapsed={false}
       />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">

@@ -41,7 +41,6 @@ export default function FolderPage({ params }: PageProps) {
       <Topbar
         breadcrumbs={breadcrumbs}
         onMenuOpen={() => {}}
-        isCollapsed={false}
         onUploadClick={() => setUploadOpen(true)}
         actions={
           <BrutalButton
