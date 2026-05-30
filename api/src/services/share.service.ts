@@ -277,6 +277,37 @@ export async function listSharedByMe(user: UserDocument): Promise<SharedByMeItem
 }
 
 // ---------------------------------------------------------------------------
+// getSharedDocumentIds — returns all document IDs accessible to a user via shares
+// ---------------------------------------------------------------------------
+
+export async function getSharedDocumentIds(userId: Types.ObjectId): Promise<Types.ObjectId[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shares = await Share.find({ sharedWithUserId: userId } as any).select("resourceType resourceId");
+
+  const docIds: Types.ObjectId[] = [];
+  const folderIds: Types.ObjectId[] = [];
+
+  for (const share of shares) {
+    const rid = share.resourceId as unknown as Types.ObjectId;
+    if ((share.resourceType as unknown as string) === "document") {
+      docIds.push(rid);
+    } else {
+      folderIds.push(rid);
+    }
+  }
+
+  if (folderIds.length > 0) {
+    const folderDocs = await ApmsDocument.find({
+      folderId: { $in: folderIds },
+      deletedAt: null,
+    }).select("_id");
+    docIds.push(...(folderDocs.map((d) => d._id) as Types.ObjectId[]));
+  }
+
+  return docIds;
+}
+
+// ---------------------------------------------------------------------------
 // checkShareAccess — used internally by other services (future use)
 // Returns true if `user` has read access to the given resource via shares
 // (direct share OR inherited from a parent folder using $graphLookup).

@@ -2,10 +2,12 @@ import { Router } from "express";
 
 import { adminRouter } from "./admin.routes";
 import { authRouter } from "./auth.routes";
+import { chatRouter } from "./chat.routes";
 import { documentsRouter } from "./documents.routes";
 import { driveRouter } from "./drive.routes";
 import { foldersRouter } from "./folders.routes";
 import { healthRouter } from "./health.routes";
+import { searchRouter } from "./search.routes";
 import { sharesRouter } from "./shares.routes";
 import { usersRouter } from "./users.routes";
 
@@ -19,5 +21,7 @@ apiRouter.use("/folders", foldersRouter);
 apiRouter.use("/documents", documentsRouter);
 apiRouter.use("/drive", driveRouter);
 apiRouter.use("/shares", sharesRouter);
+apiRouter.use("/search", searchRouter);
+apiRouter.use("/chat", chatRouter);
 
 export { apiRouter };
