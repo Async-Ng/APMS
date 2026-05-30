@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 
 import { AmplifyProvider } from "@/components/AmplifyProvider";
+import { ReactQueryProvider } from "@/lib/query-client";
 
 import "./globals.css";
 
@@ -33,7 +34,9 @@ export default function RootLayout({
       className={`${outfit.variable} ${inter.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col bg-brutal-bg font-body text-brutal-ink">
-        <AmplifyProvider>{children}</AmplifyProvider>
+        <AmplifyProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </AmplifyProvider>
       </body>
     </html>
   );

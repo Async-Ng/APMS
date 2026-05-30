@@ -16,11 +16,28 @@
   --color-brutal-accent-hover: #2a963f;
   --color-brutal-on-brand: #ffffff;
   --color-brutal-muted: #334155;
+  --color-brutal-danger: #e53e3e;
+  --color-brutal-danger-hover: #c53030;
+
   --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
   --shadow-brutal: 4px 4px 0 0 #1a1a1a;
   --shadow-brutal-lg: 6px 6px 0 0 #1a1a1a;
   --shadow-brutal-sm: 2px 2px 0 0 #1a1a1a;
+
+  /* Z-index scale */
+  --z-sidebar: 40;
+  --z-topbar: 50;
+  --z-dropdown: 60;
+  --z-modal-overlay: 80;
+  --z-modal: 90;
+  --z-toast: 200;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  --topbar-height: 60px;
 }
 
 @utility font-heading {
@@ -162,6 +179,68 @@
     outline: 3px solid var(--color-brutal-ink);
     outline-offset: 2px;
   }
+}
+
+/* ── Skeleton shimmer ─────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #ede8e2 25%,
+      #f5f0eb 50%,
+      #ede8e2 75%
+    );
+    background-size: 800px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 0.5rem;
+  }
+
+  /* ── Status badge variants ────────────────────── */
+  .status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+  }
+  .status-processing {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-color: #3b82f6;
+  }
+  .status-ready {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-color: var(--color-brutal-accent);
+  }
+  .status-failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #f87171;
+  }
+}
+
+/* ── Custom scrollbar ─────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4b9b0;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a89990;
 }
 
 @media (prefers-reduced-motion: reduce) {
