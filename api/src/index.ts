@@ -4,11 +4,14 @@ import { createApp } from "./app";
 import { initCognitoVerifier } from "./config/cognito";
 import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
+import { startDocumentWorker } from "./workers/document.worker";
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
   initCognitoVerifier(env);
   await connectDatabase(env);
+
+  startDocumentWorker();
 
   const app = createApp();
 

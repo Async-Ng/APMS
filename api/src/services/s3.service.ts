@@ -1,4 +1,8 @@
-import { HeadObjectCommand, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -37,6 +41,27 @@ export async function createPresignedGetUrl(s3Key: string): Promise<string> {
   });
 
   return getSignedUrl(getS3Client(), command, { expiresIn: env.S3_PRESIGN_EXPIRES_SECONDS });
+}
+
+export async function getObjectBuffer(s3Key: string): Promise<Buffer> {
+  const env = getEnv();
+  const command = new GetObjectCommand({
+    Bucket: env.S3_BUCKET_NAME,
+    Key: s3Key,
+  });
+
+  const response = await getS3Client().send(command);
+
+  if (!response.Body) {
+    throw new AppError("Object not found on S3", 404);
+  }
+
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
 }
 
 export async function verifyUploadedObject(

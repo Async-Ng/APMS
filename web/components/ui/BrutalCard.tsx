@@ -1,16 +1,27 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-interface BrutalCardProps {
+interface BrutalCardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
-  className?: string;
   hover?: boolean;
 }
 
-export function BrutalCard({ children, className, hover = false }: BrutalCardProps) {
+export function BrutalCard({
+  children,
+  className,
+  hover = false,
+  ...props
+}: BrutalCardProps) {
   return (
-    <div className={cn("brutal-card w-full p-6 sm:p-8", hover && "brutal-card-hover", className)}>
+    <div
+      className={cn(
+        "brutal-card w-full p-6 sm:p-8",
+        hover && "brutal-card-hover",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
