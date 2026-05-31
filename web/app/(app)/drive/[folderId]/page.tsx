@@ -1,6 +1,7 @@
 "use client";
 
-import { FolderPlus } from "lucide-react";
+import { FolderPlus, MessageSquare } from "lucide-react";
+import Link from "next/link";
 import { use, useState } from "react";
 
 import { DocumentCard } from "@/components/app/DocumentCard";
@@ -49,15 +50,29 @@ export default function FolderPage({ params }: PageProps) {
         onMenuOpen={() => {}}
         onUploadClick={() => setUploadOpen(true)}
         actions={
-          <BrutalButton
-            id={`folder-${folderId}-new-folder-btn`}
-            variant="ghost"
-            onClick={() => setFolderModalOpen(true)}
-            className="hidden sm:inline-flex"
-          >
-            <FolderPlus className="h-4 w-4" aria-hidden="true" />
-            New Folder
-          </BrutalButton>
+          <>
+            <Link
+              href={`/chat?contextType=folder&contextId=${folderId}`}
+              className="hidden sm:inline-flex"
+            >
+              <BrutalButton
+                id={`folder-${folderId}-ask-ai-btn`}
+                variant="ghost"
+              >
+                <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                Hỏi AI
+              </BrutalButton>
+            </Link>
+            <BrutalButton
+              id={`folder-${folderId}-new-folder-btn`}
+              variant="ghost"
+              onClick={() => setFolderModalOpen(true)}
+              className="hidden sm:inline-flex"
+            >
+              <FolderPlus className="h-4 w-4" aria-hidden="true" />
+              New Folder
+            </BrutalButton>
+          </>
         }
       />
 

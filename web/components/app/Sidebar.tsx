@@ -5,6 +5,7 @@ import {
   HardDrive,
   LogOut,
   Menu,
+  MessageSquare,
   Share2,
   ShieldCheck,
   Star,
@@ -42,6 +43,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Shared",
     href: "/shared",
     icon: <Share2 className="h-5 w-5 shrink-0" />,
+  },
+  {
+    label: "AI Chat",
+    href: "/chat",
+    icon: <MessageSquare className="h-5 w-5 shrink-0" />,
   },
   {
     label: "Trash",

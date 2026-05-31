@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   Presentation,
+  MessageSquare,
   Share2,
   Star,
   Trash2,
@@ -319,6 +320,20 @@ export default function DocumentDetailPage({ params }: PageProps) {
                   <Share2 className="h-4 w-4" />
                   Chia sẻ
                 </BrutalButton>
+
+                <Link
+                  href={`/chat?contextType=document&contextId=${documentId}`}
+                  className="w-full"
+                >
+                  <BrutalButton
+                    id={`doc-${documentId}-ask-ai-btn`}
+                    variant="ghost"
+                    className="w-full"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Hỏi AI
+                  </BrutalButton>
+                </Link>
 
                 <BrutalButton
                   id={`doc-${documentId}-star-btn`}
