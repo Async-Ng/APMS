@@ -9,6 +9,7 @@ import {
 } from "../models/folder.model";
 import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
+import { findReadableFolder } from "./share.service";
 
 async function findActiveFolder(
   folderId: Types.ObjectId,
@@ -133,7 +134,7 @@ export async function createFolder(
 }
 
 export async function getFolder(user: UserDocument, folderId: string) {
-  const folder = await findActiveFolder(parseObjectId(folderId), user._id);
+  const folder = await findReadableFolder(user._id, parseObjectId(folderId));
   return toFolderResponse(folder);
 }
 

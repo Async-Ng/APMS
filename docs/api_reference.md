@@ -164,7 +164,9 @@ Prefix `/api/shares`. Cho phép chia sẻ folder hoặc document với **nhiều
 
 ### 7.3 Quyền kế thừa (Permission Inheritance)
 
-Khi user B được chia sẻ một **folder**, tất cả subfolder và document bên trong đều được kế thừa quyền truy cập. Backend dùng `$graphLookup` để tìm ancestor chain và kiểm tra qua hàm `checkShareAccess` (nội bộ, dùng cho phase sau khi shared user cần truy cập trực tiếp).
+Khi user B được chia sẻ một **folder**, tất cả subfolder và document bên trong đều được kế thừa quyền **đọc** (read-only). Backend dùng `$graphLookup` (ancestors khi kiểm tra quyền, descendants khi liệt kê nội dung) qua `checkShareAccess` / `findReadableDocument` / `findReadableFolder`.
+
+Người được chia sẻ có thể: `GET /api/documents/:id` (kèm `?download=true`), `GET /api/folders/:id`, `GET /api/drive?parentId=<folderId>`, semantic search và RAG chat trên tài liệu đó. **Không** được PATCH/DELETE/star/upload trên tài nguyên của người khác.
 
 ---
 

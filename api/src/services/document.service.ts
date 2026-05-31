@@ -12,6 +12,7 @@ import { Folder } from "../models/folder.model";
 import { User, type UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
 import * as s3Service from "./s3.service";
+import { findReadableDocument } from "./share.service";
 
 async function findActiveDocument(
   documentId: Types.ObjectId,
@@ -174,7 +175,7 @@ export async function getDocument(
   documentId: string,
   options?: { includeDownloadUrl?: boolean },
 ) {
-  const document = await findActiveDocument(parseObjectId(documentId), user._id);
+  const document = await findReadableDocument(user._id, parseObjectId(documentId));
 
   const extras: { downloadUrl?: string } = {};
   if (options?.includeDownloadUrl && document.status !== "pending") {
