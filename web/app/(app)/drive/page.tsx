@@ -3,6 +3,7 @@
 import { FolderPlus } from "lucide-react";
 import { useState } from "react";
 
+import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
@@ -38,15 +39,18 @@ export default function DrivePage() {
         onMenuOpen={() => {}} // hoisted to layout via context in real app; noop here
         onUploadClick={() => setUploadOpen(true)}
         actions={
-          <BrutalButton
-            id="new-folder-btn"
-            variant="ghost"
-            onClick={() => setFolderModalOpen(true)}
-            className="hidden sm:inline-flex"
-          >
-            <FolderPlus className="h-4 w-4" aria-hidden="true" />
-            New Folder
-          </BrutalButton>
+          <>
+            <AskAiLink id="drive-ask-ai-btn" href="/chat" />
+            <BrutalButton
+              id="new-folder-btn"
+              variant="ghost"
+              onClick={() => setFolderModalOpen(true)}
+              className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
+            >
+              <FolderPlus className="h-4 w-4" aria-hidden="true" />
+              New Folder
+            </BrutalButton>
+          </>
         }
       />
 

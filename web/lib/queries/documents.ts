@@ -165,9 +165,9 @@ export function useToggleDocumentStar(parentId?: string) {
       void qc.invalidateQueries({ queryKey: ["drive"] });
     },
     onSettled: (_, __, variables) => {
-      // Always refetch to sync with server
       void qc.invalidateQueries({ queryKey: ["documents", variables.documentId] });
       void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
+      void qc.invalidateQueries({ queryKey: ["drive", "starred"] });
     },
   });
 }

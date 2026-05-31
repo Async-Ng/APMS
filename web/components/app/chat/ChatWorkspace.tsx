@@ -161,7 +161,7 @@ export function ChatWorkspace({
           {/* Center — chat */}
           <section
             className={cn(
-              "brutal-card flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+              "brutal-card flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl",
               mobileTab !== "chat" && "hidden lg:flex",
             )}
           >

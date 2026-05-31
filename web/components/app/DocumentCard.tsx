@@ -135,33 +135,66 @@ export function DocumentCard({
         aria-label={`Open document ${doc.title}`}
       />
 
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-brutal-ink shadow-brutal-sm"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink shadow-brutal-sm"
           style={{ backgroundColor: fileIconBg(doc.mimeType) }}
           aria-hidden="true"
         >
           <FileIcon mimeType={doc.mimeType} />
         </div>
 
-        {menuItems.length > 0 && (
-          <div className="relative z-10">
+        {!isShared && (
+          <div className="relative z-10 ml-auto flex shrink-0 items-center gap-0.5">
             <button
-              id={`doc-menu-${doc.id}`}
-              onClick={() => setMenuOpen((v) => !v)}
+              type="button"
+              id={`doc-star-${doc.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleStar({
+                  documentId: doc.id,
+                  starred: !doc.isStarred,
+                });
+              }}
               className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
-              aria-label={`Actions for ${doc.title}`}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
+              aria-label={doc.isStarred ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
+              aria-pressed={doc.isStarred}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Star
+                className={cn(
+                  "h-4 w-4 text-brutal-muted",
+                  doc.isStarred &&
+                    "fill-brutal-primary text-brutal-primary",
+                )}
+              />
             </button>
 
-            {menuOpen && (
-              <ContextMenu
-                onClose={() => setMenuOpen(false)}
-                items={menuItems}
-              />
+            {menuItems.length > 0 && (
+              <>
+                <button
+                  id={`doc-menu-${doc.id}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMenuOpen((v) => !v);
+                  }}
+                  className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
+                  aria-label={`Actions for ${doc.title}`}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+
+                {menuOpen && (
+                  <ContextMenu
+                    onClose={() => setMenuOpen(false)}
+                    items={menuItems}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -177,13 +210,6 @@ export function DocumentCard({
           {formatBytes(doc.fileSizeBytes)}
         </span>
       </div>
-
-      {doc.isStarred && !isShared && (
-        <Star
-          className="absolute bottom-2 right-2 h-3.5 w-3.5 fill-brutal-primary text-brutal-primary"
-          aria-label="Starred"
-        />
-      )}
     </div>
   );
 }

@@ -29,9 +29,9 @@ export function ChatComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3"
+      className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3 sm:p-4"
     >
-      <div className="flex gap-2">
+      <div className="flex items-end gap-2">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -44,17 +44,17 @@ export function ChatComposer({
           placeholder="Đặt câu hỏi về tài liệu…"
           rows={2}
           disabled={disabled || isPending}
-          className="focus-brutal min-h-[52px] flex-1 resize-none rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium shadow-brutal-sm outline-none disabled:opacity-50"
+          className="focus-brutal min-h-[52px] min-w-0 flex-1 resize-none rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink shadow-brutal-sm outline-none placeholder:text-brutal-muted disabled:opacity-50"
         />
         <BrutalButton
           type="submit"
           variant="primary"
           disabled={!content.trim() || disabled || isPending}
           loading={isPending}
-          className="!h-auto self-end"
+          className="!h-[52px] !w-[52px] !min-w-[52px] shrink-0 !p-0"
           aria-label="Gửi tin nhắn"
         >
-          <Send className="h-4 w-4" />
+          {!isPending && <Send className="h-5 w-5 shrink-0" aria-hidden="true" />}
         </BrutalButton>
       </div>
     </form>

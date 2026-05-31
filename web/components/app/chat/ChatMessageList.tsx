@@ -50,7 +50,7 @@ export function ChatMessageList({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-2">
       {messages.map((message) => {
         const isUser = message.role === "user";
         const isActive = activeMessageId === message.id;

@@ -5,7 +5,6 @@ import {
   Download,
   FileText,
   Presentation,
-  MessageSquare,
   Share2,
   Star,
   Trash2,
@@ -14,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
+import { AskAiLink } from "@/components/app/AskAiLink";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -321,19 +321,11 @@ export default function DocumentDetailPage({ params }: PageProps) {
                   Chia sẻ
                 </BrutalButton>
 
-                <Link
+                <AskAiLink
+                  id={`doc-${documentId}-ask-ai-btn`}
                   href={`/chat?contextType=document&contextId=${documentId}`}
-                  className="w-full"
-                >
-                  <BrutalButton
-                    id={`doc-${documentId}-ask-ai-btn`}
-                    variant="ghost"
-                    className="w-full"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Hỏi AI
-                  </BrutalButton>
-                </Link>
+                  layout="block"
+                />
 
                 <BrutalButton
                   id={`doc-${documentId}-star-btn`}

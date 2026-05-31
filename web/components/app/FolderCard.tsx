@@ -88,36 +88,66 @@ export function FolderCard({
         aria-label={`Open folder ${folder.name}`}
       />
 
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-brutal-ink shadow-brutal-sm"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink shadow-brutal-sm"
           style={{ backgroundColor: folderIconColor(folder.color) }}
           aria-hidden="true"
         >
           <Folder className="h-6 w-6 text-white" strokeWidth={2} />
         </div>
 
-        {!isShared && menuItems.length > 0 && (
-          <div className="relative z-10">
+        {!isShared && (
+          <div className="relative z-10 ml-auto flex shrink-0 items-center gap-0.5">
             <button
-              id={`folder-menu-${folder.id}`}
+              type="button"
+              id={`folder-star-${folder.id}`}
               onClick={(e) => {
                 e.preventDefault();
-                setMenuOpen((v) => !v);
+                e.stopPropagation();
+                toggleStar({
+                  folderId: folder.id,
+                  starred: !folder.isStarred,
+                });
               }}
               className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
-              aria-label={`Actions for ${folder.name}`}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
+              aria-label={folder.isStarred ? "Bỏ đánh dấu sao" : "Đánh dấu sao"}
+              aria-pressed={folder.isStarred}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Star
+                className={cn(
+                  "h-4 w-4 text-brutal-muted",
+                  folder.isStarred &&
+                    "fill-brutal-primary text-brutal-primary",
+                )}
+              />
             </button>
 
-            {menuOpen && (
-              <ContextMenu
-                onClose={() => setMenuOpen(false)}
-                items={menuItems}
-              />
+            {menuItems.length > 0 && (
+              <>
+                <button
+                  id={`folder-menu-${folder.id}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMenuOpen((v) => !v);
+                  }}
+                  className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
+                  aria-label={`Actions for ${folder.name}`}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+
+                {menuOpen && (
+                  <ContextMenu
+                    onClose={() => setMenuOpen(false)}
+                    items={menuItems}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -126,13 +156,6 @@ export function FolderCard({
       <p className="truncate text-sm font-bold text-brutal-ink leading-snug">
         {folder.name}
       </p>
-
-      {folder.isStarred && !isShared && (
-        <Star
-          className="absolute bottom-2 right-2 h-3.5 w-3.5 fill-brutal-primary text-brutal-primary"
-          aria-label="Starred"
-        />
-      )}
     </div>
   );
 }
