@@ -12,6 +12,31 @@ import { Folder } from "../models/folder.model";
 import { User, type UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
 import * as s3Service from "./s3.service";
+import { checkShareAccess } from "./share.service";
+
+async function findAccessibleActiveDocument(
+  documentId: Types.ObjectId,
+  user: UserDocument,
+): Promise<DocumentDocument> {
+  const owned = await Document.findOne({
+    _id: documentId,
+    ownerId: user._id,
+    deletedAt: null,
+  });
+  if (owned) return owned;
+
+  const hasAccess = await checkShareAccess(user._id, "document", documentId);
+  if (!hasAccess) {
+    throw new AppError("Document not found", 404);
+  }
+
+  const document = await Document.findOne({ _id: documentId, deletedAt: null });
+  if (!document) {
+    throw new AppError("Document not found", 404);
+  }
+
+  return document;
+}
 
 async function findActiveDocument(
   documentId: Types.ObjectId,
@@ -174,7 +199,10 @@ export async function getDocument(
   documentId: string,
   options?: { includeDownloadUrl?: boolean },
 ) {
-  const document = await findActiveDocument(parseObjectId(documentId), user._id);
+  const document = await findAccessibleActiveDocument(
+    parseObjectId(documentId),
+    user,
+  );
 
   const extras: { downloadUrl?: string } = {};
   if (options?.includeDownloadUrl && document.status !== "pending") {

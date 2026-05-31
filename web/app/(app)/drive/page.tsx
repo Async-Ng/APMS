@@ -7,6 +7,7 @@ import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
 import { FolderModal } from "@/components/app/FolderModal";
+import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { UploadModal } from "@/components/app/UploadModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -21,6 +22,11 @@ export default function DrivePage() {
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
   const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [shareTarget, setShareTarget] = useState<{
+    resourceType: "folder" | "document";
+    resourceId: string;
+    resourceName: string;
+  } | null>(null);
 
   const isEmpty =
     !isLoading && data?.folders.length === 0 && data?.documents.length === 0;
@@ -86,6 +92,13 @@ export default function DrivePage() {
                       folder={folder}
                       parentId={undefined}
                       onRename={setRenameFolder}
+                      onShare={(f) =>
+                        setShareTarget({
+                          resourceType: "folder",
+                          resourceId: f.id,
+                          resourceName: f.name,
+                        })
+                      }
                     />
                   ))}
                 </FileGrid>
@@ -108,6 +121,13 @@ export default function DrivePage() {
                       document={doc}
                       parentId={undefined}
                       onRename={setRenameDoc}
+                      onShare={(d) =>
+                        setShareTarget({
+                          resourceType: "document",
+                          resourceId: d.id,
+                          resourceName: d.title,
+                        })
+                      }
                     />
                   ))}
                 </FileGrid>
@@ -141,6 +161,15 @@ export default function DrivePage() {
           parentId={null}
           documentToRename={renameDoc}
           onClose={() => setRenameDoc(null)}
+        />
+      )}
+
+      {shareTarget && (
+        <ShareModal
+          resourceType={shareTarget.resourceType}
+          resourceId={shareTarget.resourceId}
+          resourceName={shareTarget.resourceName}
+          onClose={() => setShareTarget(null)}
         />
       )}
     </>

@@ -9,6 +9,31 @@ import {
 } from "../models/folder.model";
 import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
+import { checkShareAccess } from "./share.service";
+
+async function findAccessibleActiveFolder(
+  folderId: Types.ObjectId,
+  user: UserDocument,
+): Promise<FolderDocument> {
+  const owned = await Folder.findOne({
+    _id: folderId,
+    ownerId: user._id,
+    deletedAt: null,
+  });
+  if (owned) return owned;
+
+  const hasAccess = await checkShareAccess(user._id, "folder", folderId);
+  if (!hasAccess) {
+    throw new AppError("Folder not found", 404);
+  }
+
+  const folder = await Folder.findOne({ _id: folderId, deletedAt: null });
+  if (!folder) {
+    throw new AppError("Folder not found", 404);
+  }
+
+  return folder;
+}
 
 async function findActiveFolder(
   folderId: Types.ObjectId,
@@ -133,7 +158,10 @@ export async function createFolder(
 }
 
 export async function getFolder(user: UserDocument, folderId: string) {
-  const folder = await findActiveFolder(parseObjectId(folderId), user._id);
+  const folder = await findAccessibleActiveFolder(
+    parseObjectId(folderId),
+    user,
+  );
   return toFolderResponse(folder);
 }
 

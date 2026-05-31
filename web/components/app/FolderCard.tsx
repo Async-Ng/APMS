@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder, MoreVertical, Star, Trash2 } from "lucide-react";
+import { Folder, MoreVertical, Share2, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -17,13 +17,63 @@ function folderIconColor(color: string | null): string {
 interface FolderCardProps {
   folder: DriveFolder;
   parentId?: string;
+  variant?: "default" | "shared";
   onRename: (folder: DriveFolder) => void;
+  onShare?: (folder: DriveFolder) => void;
 }
 
-export function FolderCard({ folder, parentId, onRename }: FolderCardProps) {
+export function FolderCard({
+  folder,
+  parentId,
+  variant = "default",
+  onRename,
+  onShare,
+}: FolderCardProps) {
+  const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
   const { mutate: toggleStar } = useToggleFolderStar(parentId);
   const { mutate: deleteFolder } = useDeleteFolder(folder.id, parentId);
+
+  const menuItems = isShared
+    ? []
+    : [
+        ...(onShare
+          ? [
+              {
+                label: "Share",
+                icon: <Share2 className="h-4 w-4" />,
+                onClick: () => onShare(folder),
+              },
+            ]
+          : []),
+        {
+          label: folder.isStarred ? "Unstar" : "Star",
+          icon: (
+            <Star
+              className={cn(
+                "h-4 w-4",
+                folder.isStarred && "fill-brutal-primary text-brutal-primary",
+              )}
+            />
+          ),
+          onClick: () =>
+            toggleStar({
+              folderId: folder.id,
+              starred: !folder.isStarred,
+            }),
+        },
+        {
+          label: "Rename",
+          icon: <span className="text-base">✏️</span>,
+          onClick: () => onRename(folder),
+        },
+        {
+          label: "Move to Trash",
+          icon: <Trash2 className="h-4 w-4 text-brutal-danger" />,
+          onClick: () => deleteFolder(),
+          danger: true,
+        },
+      ];
 
   return (
     <div
@@ -32,14 +82,12 @@ export function FolderCard({ folder, parentId, onRename }: FolderCardProps) {
         "cursor-pointer select-none",
       )}
     >
-      {/* Folder body — navigate on click */}
       <Link
         href={`/drive/${folder.id}`}
         className="focus-brutal absolute inset-0 rounded-2xl"
         aria-label={`Open folder ${folder.name}`}
       />
 
-      {/* Icon row */}
       <div className="flex items-start justify-between">
         <div
           className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-brutal-ink shadow-brutal-sm"
@@ -49,66 +97,37 @@ export function FolderCard({ folder, parentId, onRename }: FolderCardProps) {
           <Folder className="h-6 w-6 text-white" strokeWidth={2} />
         </div>
 
-        {/* Context menu trigger — above the Link overlay */}
-        <div className="relative z-10">
-          <button
-            id={`folder-menu-${folder.id}`}
-            onClick={(e) => {
-              e.preventDefault();
-              setMenuOpen((v) => !v);
-            }}
-            className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
-            aria-label={`Actions for ${folder.name}`}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
+        {!isShared && menuItems.length > 0 && (
+          <div className="relative z-10">
+            <button
+              id={`folder-menu-${folder.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen((v) => !v);
+              }}
+              className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-transparent transition-all hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm"
+              aria-label={`Actions for ${folder.name}`}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
 
-          {menuOpen && (
-            <ContextMenu
-              onClose={() => setMenuOpen(false)}
-              items={[
-                {
-                  label: folder.isStarred ? "Unstar" : "Star",
-                  icon: (
-                    <Star
-                      className={cn(
-                        "h-4 w-4",
-                        folder.isStarred && "fill-brutal-primary text-brutal-primary",
-                      )}
-                    />
-                  ),
-                  onClick: () =>
-                    toggleStar({
-                      folderId: folder.id,
-                      starred: !folder.isStarred,
-                    }),
-                },
-                {
-                  label: "Rename",
-                  icon: <span className="text-base">✏️</span>,
-                  onClick: () => onRename(folder),
-                },
-                {
-                  label: "Move to Trash",
-                  icon: <Trash2 className="h-4 w-4 text-brutal-danger" />,
-                  onClick: () => deleteFolder(),
-                  danger: true,
-                },
-              ]}
-            />
-          )}
-        </div>
+            {menuOpen && (
+              <ContextMenu
+                onClose={() => setMenuOpen(false)}
+                items={menuItems}
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Name */}
       <p className="truncate text-sm font-bold text-brutal-ink leading-snug">
         {folder.name}
       </p>
 
-      {/* Star indicator */}
-      {folder.isStarred && (
+      {folder.isStarred && !isShared && (
         <Star
           className="absolute bottom-2 right-2 h-3.5 w-3.5 fill-brutal-primary text-brutal-primary"
           aria-label="Starred"

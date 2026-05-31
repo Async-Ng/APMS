@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   Presentation,
+  Share2,
   Star,
   Trash2,
 } from "lucide-react";
@@ -12,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
+import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -117,6 +119,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
   const [fetchUrl, setFetchUrl] = useState(false);
   const { data: withUrl } = useDocumentDownloadUrl(documentId, fetchUrl);
 
+  const [shareOpen, setShareOpen] = useState(false);
   const { mutate: toggleStar } = useToggleDocumentStar();
   const { mutate: deleteDoc } = useDeleteDocument(documentId);
 
@@ -290,6 +293,16 @@ export default function DocumentDetailPage({ params }: PageProps) {
                 </BrutalButton>
 
                 <BrutalButton
+                  id={`doc-${documentId}-share-btn`}
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setShareOpen(true)}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Chia sẻ
+                </BrutalButton>
+
+                <BrutalButton
                   id={`doc-${documentId}-star-btn`}
                   variant={doc.isStarred ? "secondary" : "ghost"}
                   className="w-full"
@@ -326,6 +339,15 @@ export default function DocumentDetailPage({ params }: PageProps) {
           </div>
         )}
       </main>
+
+      {shareOpen && doc && (
+        <ShareModal
+          resourceType="document"
+          resourceId={doc.id}
+          resourceName={doc.title}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </>
   );
 }
