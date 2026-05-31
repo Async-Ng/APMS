@@ -1,8 +1,12 @@
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 
 import { AppError } from "../errors/AppError";
-import { Document as ApmsDocument, toDocumentResponse } from "../models/document.model";
-import { Folder, toFolderResponse } from "../models/folder.model";
+import {
+  Document as ApmsDocument,
+  toDocumentResponse,
+  type DocumentDocument,
+} from "../models/document.model";
+import { Folder, toFolderResponse, type FolderDocument } from "../models/folder.model";
 import { Share, toShareResponse, type ShareDocument } from "../models/share.model";
 import { User } from "../models/user.model";
 import type { UserDocument } from "../models/user.model";
@@ -277,40 +281,7 @@ export async function listSharedByMe(user: UserDocument): Promise<SharedByMeItem
 }
 
 // ---------------------------------------------------------------------------
-// getSharedDocumentIds — returns all document IDs accessible to a user via shares
-// ---------------------------------------------------------------------------
-
-export async function getSharedDocumentIds(userId: Types.ObjectId): Promise<Types.ObjectId[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shares = await Share.find({ sharedWithUserId: userId } as any).select("resourceType resourceId");
-
-  const docIds: Types.ObjectId[] = [];
-  const folderIds: Types.ObjectId[] = [];
-
-  for (const share of shares) {
-    const rid = share.resourceId as unknown as Types.ObjectId;
-    if ((share.resourceType as unknown as string) === "document") {
-      docIds.push(rid);
-    } else {
-      folderIds.push(rid);
-    }
-  }
-
-  if (folderIds.length > 0) {
-    const folderDocs = await ApmsDocument.find({
-      folderId: { $in: folderIds },
-      deletedAt: null,
-    }).select("_id");
-    docIds.push(...(folderDocs.map((d) => d._id) as Types.ObjectId[]));
-  }
-
-  return docIds;
-}
-
-// ---------------------------------------------------------------------------
-// checkShareAccess — used internally by other services (future use)
-// Returns true if `user` has read access to the given resource via shares
-// (direct share OR inherited from a parent folder using $graphLookup).
+// checkShareAccess — read access via shares (direct or inherited from ancestors)
 // ---------------------------------------------------------------------------
 
 export async function checkShareAccess(
@@ -368,4 +339,171 @@ export async function checkShareAccess(
   } as any);
 
   return share !== null;
+}
+
+// ---------------------------------------------------------------------------
+// Folder tree helpers (descendants — for shared folder inheritance)
+// ---------------------------------------------------------------------------
+
+/** All folder IDs in the subtree rooted at each of `rootIds` (includes roots). */
+async function getDescendantFolderIds(rootIds: Types.ObjectId[]): Promise<Types.ObjectId[]> {
+  if (rootIds.length === 0) {
+    return [];
+  }
+
+  const results = await Folder.aggregate<{
+    allIds: Types.ObjectId[];
+  }>([
+    { $match: { _id: { $in: rootIds }, deletedAt: null } },
+    {
+      $graphLookup: {
+        from: "folders",
+        startWith: "$_id",
+        connectFromField: "_id",
+        connectToField: "parentId",
+        as: "descendants",
+        maxDepth: 50,
+      },
+    },
+    {
+      $project: {
+        allIds: {
+          $concatArrays: [["$_id"], "$descendants._id"],
+        },
+      },
+    },
+  ]);
+
+  const seen = new Set<string>();
+  const ids: Types.ObjectId[] = [];
+  for (const row of results) {
+    for (const id of row.allIds ?? []) {
+      const key = id.toString();
+      if (!seen.has(key)) {
+        seen.add(key);
+        ids.push(id);
+      }
+    }
+  }
+  return ids;
+}
+
+/** Document IDs under `folderId` and all nested subfolders. */
+export async function getDocumentIdsInFolderTree(
+  folderId: Types.ObjectId,
+): Promise<Types.ObjectId[]> {
+  const folderIds = await getDescendantFolderIds([folderId]);
+  if (folderIds.length === 0) {
+    return [];
+  }
+
+  const docs = await ApmsDocument.find({
+    folderId: { $in: folderIds },
+    deletedAt: null,
+  }).select("_id");
+
+  return docs.map((d) => d._id as Types.ObjectId);
+}
+
+// ---------------------------------------------------------------------------
+// getSharedDocumentIds — all document IDs accessible via shares (incl. subfolders)
+// ---------------------------------------------------------------------------
+
+export async function getSharedDocumentIds(userId: Types.ObjectId): Promise<Types.ObjectId[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shares = await Share.find({ sharedWithUserId: userId } as any).select(
+    "resourceType resourceId",
+  );
+
+  const idSet = new Set<string>();
+  const folderRootIds: Types.ObjectId[] = [];
+
+  for (const share of shares) {
+    const rid = share.resourceId as unknown as Types.ObjectId;
+    if ((share.resourceType as unknown as string) === "document") {
+      idSet.add(rid.toString());
+    } else {
+      folderRootIds.push(rid);
+    }
+  }
+
+  if (folderRootIds.length > 0) {
+    const allFolderIds = await getDescendantFolderIds(folderRootIds);
+    const folderDocs = await ApmsDocument.find({
+      folderId: { $in: allFolderIds },
+      deletedAt: null,
+    }).select("_id");
+    for (const d of folderDocs) {
+      idSet.add(d._id.toString());
+    }
+  }
+
+  return [...idSet].map((s) => new Types.ObjectId(s));
+}
+
+// ---------------------------------------------------------------------------
+// Read access helpers (owner or shared read)
+// ---------------------------------------------------------------------------
+
+export async function findReadableDocument(
+  userId: Types.ObjectId,
+  documentId: Types.ObjectId,
+): Promise<DocumentDocument> {
+  const doc = await ApmsDocument.findOne({ _id: documentId, deletedAt: null });
+  if (!doc) {
+    throw new AppError("Document not found", 404);
+  }
+
+  const ownerId = doc.ownerId as Types.ObjectId;
+  if (ownerId.equals(userId)) {
+    return doc;
+  }
+
+  if (await checkShareAccess(userId, "document", documentId)) {
+    return doc;
+  }
+
+  throw new AppError("Document not found", 404);
+}
+
+export async function findReadableFolder(
+  userId: Types.ObjectId,
+  folderId: Types.ObjectId,
+): Promise<FolderDocument> {
+  const folder = await Folder.findOne({ _id: folderId, deletedAt: null });
+  if (!folder) {
+    throw new AppError("Folder not found", 404);
+  }
+
+  const ownerId = folder.ownerId as Types.ObjectId;
+  if (ownerId.equals(userId)) {
+    return folder;
+  }
+
+  if (await checkShareAccess(userId, "folder", folderId)) {
+    return folder;
+  }
+
+  throw new AppError("Folder not found", 404);
+}
+
+export async function resolveDriveParentAccess(
+  userId: Types.ObjectId,
+  parentId: Types.ObjectId,
+): Promise<{ parent: FolderDocument; contentOwnerId: Types.ObjectId }> {
+  const parent = await Folder.findOne({ _id: parentId, deletedAt: null });
+  if (!parent) {
+    throw new AppError("Folder not found", 404);
+  }
+
+  const contentOwnerId = parent.ownerId as Types.ObjectId;
+  if (contentOwnerId.equals(userId)) {
+    return { parent, contentOwnerId };
+  }
+
+  if (await checkShareAccess(userId, "folder", parentId)) {
+    return { parent, contentOwnerId };
+  }
+
+  throw new AppError("Folder not found", 404);
 }

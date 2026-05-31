@@ -9,7 +9,11 @@ import { Document } from "../models/document.model";
 import { Folder } from "../models/folder.model";
 import { parseObjectId } from "../utils/objectId";
 import * as bedrockService from "./bedrock.service";
-import { checkShareAccess, getSharedDocumentIds } from "./share.service";
+import {
+  checkShareAccess,
+  getDocumentIdsInFolderTree,
+  getSharedDocumentIds,
+} from "./share.service";
 
 const CONTEXT_CHUNKS = 5;
 const HISTORY_MESSAGES = 10;
@@ -50,13 +54,7 @@ async function buildVectorSearchFilter(
   }
 
   if (contextType === "folder" && contextId) {
-    const folderDocIds = await Document.find({
-      folderId: contextId,
-      deletedAt: null,
-    })
-      .select("_id")
-      .lean();
-    const ids = folderDocIds.map((d) => d._id);
+    const ids = await getDocumentIdsInFolderTree(contextId);
     return { documentId: { $in: ids } };
   }
 

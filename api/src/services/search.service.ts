@@ -3,6 +3,7 @@ import type { Types } from "mongoose";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import * as bedrockService from "./bedrock.service";
+import { getSharedDocumentIds } from "./share.service";
 
 export interface SearchResult {
   documentId: string;
@@ -19,6 +20,12 @@ export async function semanticSearch(
 ): Promise<SearchResult[]> {
   const queryVector = await bedrockService.embedText(query);
 
+  const sharedDocIds = await getSharedDocumentIds(userId);
+  const vectorFilter =
+    sharedDocIds.length > 0
+      ? { $or: [{ ownerId: userId }, { documentId: { $in: sharedDocIds } }] }
+      : { ownerId: userId };
+
   // Atlas Vector Search via aggregation pipeline
   const results = await DocumentChunk.aggregate([
     {
@@ -26,7 +33,7 @@ export async function semanticSearch(
         index: "embedding_vector_index",
         path: "embedding",
         queryVector,
-        filter: { ownerId: userId },
+        filter: vectorFilter,
         numCandidates: limit * 10,
         limit,
       },

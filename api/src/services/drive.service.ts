@@ -1,11 +1,13 @@
 import type { Types } from "mongoose";
 
-import { AppError } from "../errors/AppError";
 import { Document, toDocumentResponse } from "../models/document.model";
 import { Folder, toFolderResponse } from "../models/folder.model";
 import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
-import { listSharedWithMe as listSharedWithMeService } from "./share.service";
+import {
+  listSharedWithMe as listSharedWithMeService,
+  resolveDriveParentAccess,
+} from "./share.service";
 
 export async function listDriveContents(
   user: UserDocument,
@@ -14,27 +16,25 @@ export async function listDriveContents(
   const ownerId = user._id;
   let resolvedParentId: Types.ObjectId | null = null;
 
+  let contentOwnerId = ownerId;
+
   if (parentId && parentId !== "null") {
     resolvedParentId = parseObjectId(parentId, "parentId");
-    const parent = await Folder.findOne({
-      _id: resolvedParentId,
+    const { contentOwnerId: parentOwnerId } = await resolveDriveParentAccess(
       ownerId,
-      deletedAt: null,
-    });
-
-    if (!parent) {
-      throw new AppError("Folder not found", 404);
-    }
+      resolvedParentId,
+    );
+    contentOwnerId = parentOwnerId;
   }
 
   const [folders, documents] = await Promise.all([
     Folder.find({
-      ownerId,
+      ownerId: contentOwnerId,
       parentId: resolvedParentId,
       deletedAt: null,
     }).sort({ name: 1 }),
     Document.find({
-      ownerId,
+      ownerId: contentOwnerId,
       folderId: resolvedParentId,
       deletedAt: null,
     }).sort({ title: 1 }),
