@@ -15,7 +15,7 @@ const INDEX_DEFINITION = {
       {
         type: "vector",
         path: "embedding",
-        numDimensions: 1536,
+        numDimensions: 1024,
         similarity: "cosine",
       },
       {
@@ -60,18 +60,26 @@ async function main(): Promise<void> {
 
   if (existing.length > 0) {
     const idx = existing[0] as { status?: string; latestDefinition?: { fields?: unknown[] } };
-    const currentFields = idx.latestDefinition?.fields ?? [];
-    const hasDocumentIdFilter = (currentFields as Array<{ path?: string }>).some(
-      (f) => f.path === "documentId",
-    );
+    const currentFields = (idx.latestDefinition?.fields ?? []) as Array<{
+      path?: string;
+      type?: string;
+      numDimensions?: number;
+    }>;
+    const vectorField = currentFields.find((f) => f.type === "vector" && f.path === "embedding");
+    const currentDims = vectorField?.numDimensions;
+    const hasDocumentIdFilter = currentFields.some((f) => f.path === "documentId");
+    const dimsOk = currentDims === 1024;
 
-    if (hasDocumentIdFilter) {
+    if (hasDocumentIdFilter && dimsOk) {
       console.log(`[setup] Index "${INDEX_NAME}" already up to date — status: ${idx.status ?? "unknown"}`);
       return;
     }
 
-    // Index exists but missing documentId filter — update it
-    console.log(`[setup] Index "${INDEX_NAME}" exists but needs updating (missing documentId filter)...`);
+    const reasons: string[] = [];
+    if (!hasDocumentIdFilter) reasons.push("missing documentId filter");
+    if (!dimsOk) reasons.push(`dimensions ${currentDims ?? "unknown"} → 1024`);
+
+    console.log(`[setup] Index "${INDEX_NAME}" needs updating (${reasons.join(", ")})...`);
     await collection.updateSearchIndex(INDEX_NAME, INDEX_DEFINITION.definition);
     console.log("[setup] Index updated. Rebuilding may take 1–2 minutes.");
     return;

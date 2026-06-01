@@ -163,7 +163,7 @@ export async function sendMessage(
   });
 
   // Embed the user query
-  const queryVector = await bedrockService.embedText(content);
+  const queryVector = await bedrockService.embedText(content, "search_query");
 
   // Build vector search filter based on session scope
   const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
@@ -225,8 +225,28 @@ export async function sendMessage(
       ? `You are a helpful AI assistant. Answer the user's question using ONLY the following document excerpts as context. If the answer is not in the context, say you don't know.\n\nContext:\n${contextText}`
       : "You are a helpful AI assistant. No relevant document context was found for this question. Answer to the best of your ability or let the user know you need more documents.";
 
-  // Call Claude
-  const assistantText = await bedrockService.chatWithContext(systemPrompt, historyMessages);
+  let assistantText: string;
+  try {
+    assistantText = await bedrockService.chatWithContext(systemPrompt, historyMessages);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes("use case details")) {
+      throw new AppError(
+        "Model chat chưa được kích hoạt trên Bedrock. Vào Model catalog và bật Amazon Nova Micro.",
+        503,
+      );
+    }
+    if (msg.includes("Too many tokens") || msg.includes("ThrottlingException")) {
+      throw new AppError("Đã vượt quota Bedrock. Thử lại sau vài phút.", 429);
+    }
+    if (msg.includes("not authorized") || msg.includes("AccessDenied")) {
+      throw new AppError(
+        "Không có quyền gọi model chat trên Bedrock. Chạy lại cdk deploy hoặc bật Nova Micro trong Model catalog.",
+        503,
+      );
+    }
+    throw error;
+  }
 
   // Build citations from retrieved chunks
   const citations = chunkResults

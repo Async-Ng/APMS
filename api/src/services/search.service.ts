@@ -18,7 +18,7 @@ export async function semanticSearch(
   query: string,
   limit: number,
 ): Promise<SearchResult[]> {
-  const queryVector = await bedrockService.embedText(query);
+  const queryVector = await bedrockService.embedText(query, "search_query");
 
   const sharedDocIds = await getSharedDocumentIds(userId);
   const vectorFilter =
