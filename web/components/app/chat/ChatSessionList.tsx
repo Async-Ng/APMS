@@ -3,8 +3,10 @@
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
 import type { ChatSession } from "@/lib/queries/chat";
 import { useChatSessions, useDeleteSession } from "@/lib/queries/chat";
@@ -33,14 +35,23 @@ export function ChatSessionList({
   const router = useRouter();
   const { data: sessions, isLoading } = useChatSessions();
   const { mutate: deleteSession, isPending: isDeleting } = useDeleteSession();
+  const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(
+    null,
+  );
 
-  function handleDelete(e: React.MouseEvent, session: ChatSession) {
+  function handleDeleteClick(e: React.MouseEvent, session: ChatSession) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm(`Xóa cuộc trò chuyện "${session.title}"?`)) return;
-    deleteSession(session.id, {
+    setSessionToDelete(session);
+  }
+
+  function confirmDelete() {
+    if (!sessionToDelete) return;
+    const { id } = sessionToDelete;
+    deleteSession(id, {
       onSuccess: () => {
-        if (activeSessionId === session.id) {
+        setSessionToDelete(null);
+        if (activeSessionId === id) {
           router.push("/chat");
         }
       },
@@ -48,6 +59,29 @@ export function ChatSessionList({
   }
 
   return (
+    <>
+      <ConfirmDialog
+        open={sessionToDelete !== null}
+        title="Xóa cuộc trò chuyện?"
+        description={
+          <>
+            Bạn sắp xóa{" "}
+            <span className="font-bold text-brutal-ink">
+              &ldquo;{sessionToDelete?.title}&rdquo;
+            </span>
+            . Hành động này không thể hoàn tác.
+          </>
+        }
+        confirmLabel="Xóa"
+        cancelLabel="Huỷ"
+        tone="danger"
+        isPending={isDeleting}
+        onClose={() => {
+          if (!isDeleting) setSessionToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+      />
+
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-heading text-xs font-bold uppercase tracking-widest text-brutal-muted">
@@ -95,10 +129,10 @@ export function ChatSessionList({
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleDelete(e, session)}
+                  onClick={(e) => handleDeleteClick(e, session)}
                   disabled={isDeleting}
                   className="focus-brutal shrink-0 rounded-lg p-1 opacity-0 transition-opacity hover:bg-red-50 group-hover:opacity-100"
-                  aria-label={`Delete ${session.title}`}
+                  aria-label={`Xóa ${session.title}`}
                 >
                   <Trash2 className="h-3.5 w-3.5 text-brutal-danger" />
                 </button>
@@ -108,5 +142,6 @@ export function ChatSessionList({
         </ul>
       )}
     </div>
+    </>
   );
 }
