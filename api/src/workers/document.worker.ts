@@ -5,7 +5,9 @@ const POLL_INTERVAL_MS = 30_000;
 let running = false;
 
 async function runOnce(): Promise<void> {
-  const pending = await Document.find({ status: "processing" }).select("_id").lean();
+  const pending = await Document.find({ status: { $in: ["processing", "failed"] } })
+    .select("_id")
+    .lean();
 
   if (pending.length === 0) return;
 

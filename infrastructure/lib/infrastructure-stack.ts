@@ -207,16 +207,29 @@ export class InfrastructureStack extends cdk.Stack {
       }),
     );
 
-    // Quyền hạn gọi Amazon Bedrock (Claude 3 Haiku và Titan Embeddings)
+    // Bedrock: Nova Micro (inference profile APAC) + Cohere Embed
     apiBackendUser.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["bedrock:InvokeModel"],
-        // Giới hạn chỉ được gọi đúng 2 mô hình mà dự án APMS đăng ký sử dụng
+        actions: ["bedrock:InvokeModel", "bedrock:Converse"],
         resources: [
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0`,
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/amazon.titan-embed-text-v2:0`,
+          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/cohere.embed-english-v3`,
+          // Inference profile APAC Nova có thể route sang nhiều region
+          `arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0`,
+          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/apac.amazon.nova-micro-v1:0`,
         ],
+      }),
+    );
+
+    // Cohere (third-party) cần subscribe Marketplace lần đầu — thiếu quyền này Bedrock trả AccessDenied
+    apiBackendUser.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "aws-marketplace:Subscribe",
+          "aws-marketplace:ViewSubscriptions",
+        ],
+        resources: ["*"],
       }),
     );
 

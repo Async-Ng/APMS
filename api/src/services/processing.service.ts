@@ -10,11 +10,16 @@ import * as s3Service from "./s3.service";
 export async function processDocument(documentId: Types.ObjectId): Promise<void> {
   const document = await Document.findById(documentId);
 
-  if (!document || document.status !== "processing") {
+  if (!document || !["processing", "failed"].includes(document.status)) {
     return;
   }
 
   try {
+    if (document.status === "failed") {
+      document.status = "processing";
+      await document.save();
+    }
+
     console.log(`[processing] Starting document ${documentId.toString()}`);
 
     // 1. Download file from S3

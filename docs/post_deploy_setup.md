@@ -90,8 +90,40 @@ DevTools → Network khi bấm Google → request `oauth2/authorize` → xem que
 Region deploy: **ap-southeast-1**
 
 1. AWS Console → **Amazon Bedrock** → region **Asia Pacific (Singapore)**
-2. **Model access** → bật Claude 3 Haiku và Titan Embeddings v2
-3. Nếu model không khả dụng ở region này, đổi `BEDROCK_*` trong `api/.env` theo model ID hỗ trợ
+2. **Model catalog** (hoặc Model access) → tìm **Cohere Embed English v3** → **Enable** / chấp nhận **EULA** (bắt buộc; nếu thiếu, lỗi Marketplace / `agreementAvailability: NOT_AVAILABLE`)
+3. Bật **Amazon Nova Micro** (`amazon.nova-micro-v1:0`) cho chat/RAG — model AWS, **không** cần Anthropic use case form. `BEDROCK_MODEL_ID` trong `api/.env` phải khớp.
+4. Region **ap-southeast-1** không hỗ trợ Titan Embeddings v2 — dùng Cohere trong `BEDROCK_EMBEDDING_MODEL_ID` (xem `api/.env.example`)
+5. Chạy lại `pnpm setup:atlas` nếu đổi model embedding (vector index = **1024** chiều)
+6. **IAM** — `cd infrastructure && npx cdk deploy` (policy đã có `bedrock:InvokeModel` + `aws-marketplace:Subscribe` cho `apms-backend-service-user`).
+
+   | Lỗi trong log | Nguyên nhân | Cách xử lý |
+   |---------------|-------------|------------|
+   | `no identity-based policy allows bedrock:InvokeModel` | Thiếu IAM hoặc chưa propagate | `cdk deploy`, đợi ~2 phút |
+   | `Marketplace actions (Subscribe, ViewSubscriptions)` | Chưa bật model / chưa EULA ở bước 2 | Bedrock Model catalog → Enable Cohere |
+   | Vẫn lỗi sau Enable | Subscription chưa xong | Đợi 2–15 phút, gọi lại API |
+
+   Policy thủ công (nếu không dùng CDK): IAM → `apms-backend-service-user` → inline policy JSON gồm cả Bedrock và Marketplace:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": "bedrock:InvokeModel",
+         "Resource": [
+           "arn:aws:bedrock:ap-southeast-1::foundation-model/cohere.embed-english-v3",
+           "arn:aws:bedrock:ap-southeast-1::foundation-model/amazon.nova-micro-v1:0"
+         ]
+       },
+       {
+         "Effect": "Allow",
+         "Action": ["aws-marketplace:Subscribe", "aws-marketplace:ViewSubscriptions"],
+         "Resource": "*"
+       }
+     ]
+   }
+   ```
 
 Auth flow không cần Bedrock.
 

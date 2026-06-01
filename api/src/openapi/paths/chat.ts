@@ -99,7 +99,7 @@ export function registerChatPaths(): void {
     tags: ["Chat"],
     summary: "Create a new chat session",
     description:
-      "contextType controls which documents Claude uses as context:\n- `all`: owned + shared documents\n- `folder`: documents inside the specified folder\n- `document`: one specific document\n\nUser must own or have a share on the folder/document.",
+      "contextType controls which documents the AI uses as context:\n- `all`: owned + shared documents\n- `folder`: documents inside the specified folder\n- `document`: one specific document\n\nUser must own or have a share on the folder/document.",
     security: [...bearerSecurity],
     request: {
       body: {
@@ -169,7 +169,7 @@ export function registerChatPaths(): void {
     tags: ["Chat"],
     summary: "Send a message and get an AI response",
     description:
-      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Claude 3 Haiku via Bedrock, returns answer with citations.",
+      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Amazon Nova Micro via Bedrock Converse, returns answer with citations.",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,
