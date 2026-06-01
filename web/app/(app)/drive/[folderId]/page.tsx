@@ -3,10 +3,12 @@
 import { FolderPlus } from "lucide-react";
 import { use, useState } from "react";
 
+import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
 import { FolderModal } from "@/components/app/FolderModal";
+import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { UploadModal } from "@/components/app/UploadModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -26,6 +28,11 @@ export default function FolderPage({ params }: PageProps) {
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
   const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [shareTarget, setShareTarget] = useState<{
+    resourceType: "folder" | "document";
+    resourceId: string;
+    resourceName: string;
+  } | null>(null);
 
   const isEmpty =
     !isLoading && data?.folders.length === 0 && data?.documents.length === 0;
@@ -43,15 +50,21 @@ export default function FolderPage({ params }: PageProps) {
         onMenuOpen={() => {}}
         onUploadClick={() => setUploadOpen(true)}
         actions={
-          <BrutalButton
-            id={`folder-${folderId}-new-folder-btn`}
-            variant="ghost"
-            onClick={() => setFolderModalOpen(true)}
-            className="hidden sm:inline-flex"
-          >
-            <FolderPlus className="h-4 w-4" aria-hidden="true" />
-            New Folder
-          </BrutalButton>
+          <>
+            <AskAiLink
+              id={`folder-${folderId}-ask-ai-btn`}
+              href={`/chat?contextType=folder&contextId=${folderId}`}
+            />
+            <BrutalButton
+              id={`folder-${folderId}-new-folder-btn`}
+              variant="ghost"
+              onClick={() => setFolderModalOpen(true)}
+              className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
+            >
+              <FolderPlus className="h-4 w-4" aria-hidden="true" />
+              New Folder
+            </BrutalButton>
+          </>
         }
       />
 
@@ -93,6 +106,13 @@ export default function FolderPage({ params }: PageProps) {
                       folder={folder}
                       parentId={folderId}
                       onRename={setRenameFolder}
+                      onShare={(f) =>
+                        setShareTarget({
+                          resourceType: "folder",
+                          resourceId: f.id,
+                          resourceName: f.name,
+                        })
+                      }
                     />
                   ))}
                 </FileGrid>
@@ -114,6 +134,13 @@ export default function FolderPage({ params }: PageProps) {
                       document={doc}
                       parentId={folderId}
                       onRename={setRenameDoc}
+                      onShare={(d) =>
+                        setShareTarget({
+                          resourceType: "document",
+                          resourceId: d.id,
+                          resourceName: d.title,
+                        })
+                      }
                     />
                   ))}
                 </FileGrid>
@@ -143,6 +170,15 @@ export default function FolderPage({ params }: PageProps) {
           parentId={folderId}
           documentToRename={renameDoc}
           onClose={() => setRenameDoc(null)}
+        />
+      )}
+
+      {shareTarget && (
+        <ShareModal
+          resourceType={shareTarget.resourceType}
+          resourceId={shareTarget.resourceId}
+          resourceName={shareTarget.resourceName}
+          onClose={() => setShareTarget(null)}
         />
       )}
     </>

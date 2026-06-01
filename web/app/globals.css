@@ -261,3 +261,13 @@
     opacity: 0.85;
   }
 }
+
+/* DOCX preview (docx-preview) */
+.docx-viewer-root .docx-wrapper {
+  padding: 1.5rem;
+  background: #fff;
+}
+
+.docx-viewer-root section.docx {
+  max-width: 100%;
+}
