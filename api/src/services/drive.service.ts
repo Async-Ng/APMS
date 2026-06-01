@@ -13,7 +13,8 @@ export async function listDriveContents(
   user: UserDocument,
   parentId?: string | null,
 ) {
-  const ownerId = user._id;
+  const userId = user._id;
+  let contentOwnerId: Types.ObjectId = userId;
   let resolvedParentId: Types.ObjectId | null = null;
 
   let contentOwnerId = ownerId;

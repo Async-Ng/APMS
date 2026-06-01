@@ -56,8 +56,7 @@ export function BrutalButton({
       )}
       {...props}
     >
-      {loading ? <Spinner /> : null}
-      {children}
+      {loading ? <Spinner /> : children}
     </button>
   );
 }
