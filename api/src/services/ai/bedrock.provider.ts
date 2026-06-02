@@ -63,6 +63,9 @@ export async function embedText(
 ): Promise<number[]> {
   const env = getEnv();
   const modelId = env.BEDROCK_EMBEDDING_MODEL_ID;
+  if (!modelId) {
+    throw new Error("BEDROCK_EMBEDDING_MODEL_ID is not configured");
+  }
 
   const command = new InvokeModelCommand({
     modelId,
@@ -80,9 +83,13 @@ export async function chatWithContext(
   messages: ChatTurn[],
 ): Promise<string> {
   const env = getEnv();
+  const modelId = env.BEDROCK_MODEL_ID;
+  if (!modelId) {
+    throw new Error("BEDROCK_MODEL_ID is not configured");
+  }
 
   const command = new ConverseCommand({
-    modelId: env.BEDROCK_MODEL_ID,
+    modelId,
     system: [{ text: systemPrompt }],
     messages: messages.map((m) => ({
       role: m.role,
