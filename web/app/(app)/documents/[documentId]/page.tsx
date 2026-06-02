@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   Presentation,
+  Share2,
   Star,
   Trash2,
 } from "lucide-react";
@@ -12,11 +13,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
+import { AskAiLink } from "@/components/app/AskAiLink";
+import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CustomDocxViewer } from "@/components/app/CustomDocxViewer";
+import { CustomOfficeViewer } from "@/components/app/CustomOfficeViewer";
 import { CustomPdfViewer } from "@/components/app/CustomPdfViewer";
 import { cn } from "@/lib/cn";
+import {
+  canPreviewInBrowser,
+  isDocxMime,
+  isPdfMime,
+  isPptxMime,
+  mimeLabel,
+} from "@/lib/mime";
 import {
   useDeleteDocument,
   useDocumentDownloadUrl,
@@ -59,16 +71,7 @@ function fileIconBg(mimeType: string) {
   return "var(--color-brutal-secondary)";
 }
 
-function mimeLabel(mimeType: string) {
-  if (mimeType.includes("pdf")) return "PDF Document";
-  if (mimeType.includes("presentation")) return "PowerPoint Presentation";
-  if (mimeType.includes("word")) return "Word Document";
-  return "Document";
-}
-
-
-
-/* ── non-PDF preview placeholder ───────────────────────────── */
+/* ── non-previewable placeholder ───────────────────────────── */
 
 function NoPreview({
   mimeType,
@@ -117,15 +120,51 @@ export default function DocumentDetailPage({ params }: PageProps) {
   const [fetchUrl, setFetchUrl] = useState(false);
   const { data: withUrl } = useDocumentDownloadUrl(documentId, fetchUrl);
 
+  const [shareOpen, setShareOpen] = useState(false);
   const { mutate: toggleStar } = useToggleDocumentStar();
   const { mutate: deleteDoc } = useDeleteDocument(documentId);
 
-  const isPdf = doc?.mimeType.includes("pdf");
   const downloadUrl = withUrl?.downloadUrl;
+  const canPreview = doc ? canPreviewInBrowser(doc.mimeType) : false;
+  const isPdf = isPdfMime(doc?.mimeType);
+  const isDocx = isDocxMime(doc?.mimeType);
+  const isPptx = isPptxMime(doc?.mimeType);
 
-  // Tự động fetch URL khi trang load (để PDF hiển thị ngay)
-  if (!fetchUrl && doc && doc.status !== "pending") {
+  // Fetch presigned URL for any in-browser preview (PDF, DOCX, PPTX)
+  if (!fetchUrl && doc && canPreview && doc.status !== "pending") {
     setFetchUrl(true);
+  }
+
+  function renderViewer() {
+    if (!doc) return null;
+
+    if (fetchUrl && !downloadUrl) {
+      return (
+        <div className="flex items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg py-24">
+          <div className="text-center">
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
+            <p className="text-sm text-brutal-muted">Đang tải tài liệu…</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!downloadUrl || !canPreview) {
+      return <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />;
+    }
+
+    if (isPdf) return <CustomPdfViewer url={downloadUrl} />;
+    if (isDocx) return <CustomDocxViewer url={downloadUrl} />;
+    if (isPptx) {
+      return (
+        <CustomOfficeViewer
+          url={downloadUrl}
+          title="PowerPoint preview"
+        />
+      );
+    }
+
+    return <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />;
   }
 
   function handleDownload() {
@@ -185,24 +224,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
                 </h1>
               </div>
 
-              {/* Viewer area */}
-              {isPdf && downloadUrl ? (
-                <CustomPdfViewer url={downloadUrl} />
-              ) : (
-                <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />
-              )}
-
-              {/* Loading indicator for URL fetch */}
-              {fetchUrl && !downloadUrl && isPdf && (
-                <div className="flex items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg py-24">
-                  <div className="text-center">
-                    <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
-                    <p className="text-sm text-brutal-muted">
-                      Đang tải tài liệu…
-                    </p>
-                  </div>
-                </div>
-              )}
+              {renderViewer()}
             </div>
 
             {/* ── Right: metadata panel ─────────────────────── */}
@@ -290,6 +312,22 @@ export default function DocumentDetailPage({ params }: PageProps) {
                 </BrutalButton>
 
                 <BrutalButton
+                  id={`doc-${documentId}-share-btn`}
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setShareOpen(true)}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Chia sẻ
+                </BrutalButton>
+
+                <AskAiLink
+                  id={`doc-${documentId}-ask-ai-btn`}
+                  href={`/chat?contextType=document&contextId=${documentId}`}
+                  layout="block"
+                />
+
+                <BrutalButton
                   id={`doc-${documentId}-star-btn`}
                   variant={doc.isStarred ? "secondary" : "ghost"}
                   className="w-full"
@@ -326,6 +364,15 @@ export default function DocumentDetailPage({ params }: PageProps) {
           </div>
         )}
       </main>
+
+      {shareOpen && doc && (
+        <ShareModal
+          resourceType="document"
+          resourceId={doc.id}
+          resourceName={doc.title}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </>
   );
 }

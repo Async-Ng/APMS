@@ -140,7 +140,7 @@ Các đoạn văn bản (chunks) được trích xuất và vector hóa từ tà
 | `chunkIndex` | `Number` | required | Thứ tự chunk trong tài liệu (bắt đầu từ 0) |
 | `content` | `String` | required | Nội dung văn bản của đoạn này |
 | `pageNumber` | `Number` | | Trang chứa đoạn này (dùng để hiển thị Citation) |
-| `embedding` | `Number[]` | required | Vector 1536 chiều từ Amazon Titan Embeddings |
+| `embedding` | `Number[]` | required | Vector **1024** chiều từ Google Gemini `gemini-embedding-001` |
 
 **Indexes:**
 - `documentId` — xóa batch toàn bộ chunks khi document bị xóa
@@ -152,7 +152,7 @@ Các đoạn văn bản (chunks) được trích xuất và vector hóa từ tà
     "fields": [{
       "type": "vector",
       "path": "embedding",
-      "numDimensions": 1536,
+      "numDimensions": 1024,
       "similarity": "cosine"
     }, {
       "type": "filter",
@@ -250,7 +250,7 @@ interface Citation {
 [User query]
      │
      ▼
-Titan Embeddings → query_vector (1536 dims)
+Gemini Embeddings (gemini-embedding-001) → query_vector (1024 dims)
      │
      ▼
 Atlas Vector Search:
@@ -262,7 +262,7 @@ Atlas Vector Search:
 [context = 5 chunks.content]
      │
      ▼
-Claude 3 Haiku:
+Gemini Chat (gemini-2.5-flash, tự động fallback khi quota hết):
   system: "Chỉ dùng context bên dưới để trả lời..."
   context: chunks
   question: user query

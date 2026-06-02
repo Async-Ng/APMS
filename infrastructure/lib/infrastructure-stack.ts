@@ -194,6 +194,8 @@ export class InfrastructureStack extends cdk.Stack {
     );
 
     // Quyền hạn gọi dịch vụ Amazon Textract để OCR trích xuất text từ văn bản
+    // NOTE: Textract hiện không được dùng — extraction dùng pdf-parse + mammoth (local, không tốn chi phí)
+    // Giữ lại permission để dễ enable về sau nếu cần OCR tài liệu scan
     apiBackendUser.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -201,33 +203,6 @@ export class InfrastructureStack extends cdk.Stack {
           "textract:DetectDocumentText",
           "textract:StartDocumentAnalysis",
           "textract:GetDocumentAnalysis",
-        ],
-        // Textract là service không định danh cụ thể resource ARN khi gọi API xử lý nhanh
-        resources: ["*"],
-      }),
-    );
-
-    // Bedrock: Nova Micro (inference profile APAC) + Cohere Embed
-    apiBackendUser.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ["bedrock:InvokeModel", "bedrock:Converse"],
-        resources: [
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/cohere.embed-english-v3`,
-          // Inference profile APAC Nova có thể route sang nhiều region
-          `arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0`,
-          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/apac.amazon.nova-micro-v1:0`,
-        ],
-      }),
-    );
-
-    // Cohere (third-party) cần subscribe Marketplace lần đầu — thiếu quyền này Bedrock trả AccessDenied
-    apiBackendUser.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "aws-marketplace:Subscribe",
-          "aws-marketplace:ViewSubscriptions",
         ],
         resources: ["*"],
       }),
