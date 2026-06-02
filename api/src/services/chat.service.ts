@@ -8,7 +8,7 @@ import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import { Folder } from "../models/folder.model";
 import { parseObjectId } from "../utils/objectId";
-import * as bedrockService from "./bedrock.service";
+import * as aiService from "./ai/ai.service";
 import {
   checkShareAccess,
   getDocumentIdsInFolderTree,
@@ -163,7 +163,7 @@ export async function sendMessage(
   });
 
   // Embed the user query
-  const queryVector = await bedrockService.embedText(content, "search_query");
+  const queryVector = await aiService.embedText(content, "search_query");
 
   // Build vector search filter based on session scope
   const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
@@ -227,22 +227,69 @@ export async function sendMessage(
 
   let assistantText: string;
   try {
-    assistantText = await bedrockService.chatWithContext(systemPrompt, historyMessages);
+    assistantText = await aiService.chatWithContext(systemPrompt, historyMessages);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    if (msg.includes("use case details")) {
+    const usingGemini = aiService.getActiveProvider() === "gemini";
+    // #region agent log
+    fetch("http://127.0.0.1:7917/ingest/7c4e892b-25cc-49b0-931a-8bc2ae5d7ab8", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "94cae1" },
+      body: JSON.stringify({
+        sessionId: "94cae1",
+        hypothesisId: "H4",
+        location: "chat.service.ts:sendMessage",
+        message: "chatWithContext error",
+        data: { usingGemini, errorMsg: msg.slice(0, 500) },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (
+      usingGemini &&
+      (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded"))
+    ) {
       throw new AppError(
-        "Model chat chưa được kích hoạt trên Bedrock. Vào Model catalog và bật Amazon Nova Micro.",
+        "Đã vượt quota Gemini API (free tier). Đợi vài phút rồi thử lại, đổi GEMINI_CHAT_MODEL, hoặc bật billing tại Google AI Studio.",
+        429,
+      );
+    }
+    if (usingGemini && (msg.includes("API key") || msg.includes("403"))) {
+      throw new AppError(
+        "GEMINI_API_KEY không hợp lệ. Tạo key tại Google AI Studio (định dạng thường bắt đầu AIza...).",
         503,
       );
     }
-    if (msg.includes("Too many tokens") || msg.includes("ThrottlingException")) {
-      throw new AppError("Đã vượt quota Bedrock. Thử lại sau vài phút.", 429);
-    }
-    if (msg.includes("not authorized") || msg.includes("AccessDenied")) {
+    if (usingGemini && (msg.includes("404") || msg.includes("not found"))) {
       throw new AppError(
-        "Không có quyền gọi model chat trên Bedrock. Chạy lại cdk deploy hoặc bật Nova Micro trong Model catalog.",
+        "Model Gemini không tồn tại. Dùng GEMINI_EMBEDDING_MODEL=gemini-embedding-001 và model chat hỗ trợ generateContent.",
+        500,
+      );
+    }
+
+    if (!usingGemini && msg.includes("use case details")) {
+      throw new AppError(
+        "Model chat chưa được kích hoạt trên Bedrock. Vào Model catalog và bật Amazon Nova Micro, hoặc đặt AI_PROVIDER=gemini.",
         503,
+      );
+    }
+    if (!usingGemini && (msg.includes("Too many tokens") || msg.includes("ThrottlingException"))) {
+      throw new AppError(
+        "Đã vượt quota Bedrock (Nova). Thử lại sau, tăng quota AWS, hoặc đặt GEMINI_API_KEY + AI_PROVIDER=auto để fallback.",
+        429,
+      );
+    }
+    if (!usingGemini && (msg.includes("not authorized") || msg.includes("AccessDenied"))) {
+      throw new AppError(
+        "Không có quyền gọi Nova trên Bedrock. Bật Nova Micro, chạy `cd infrastructure && npx cdk deploy`, hoặc dùng AI_PROVIDER=gemini.",
+        503,
+      );
+    }
+    if (!usingGemini && (msg.includes("on-demand throughput isn't supported") || msg.includes("inference profile"))) {
+      throw new AppError(
+        "Cấu hình model chat sai: dùng BEDROCK_MODEL_ID=apac.amazon.nova-micro-v1:0 (không dùng amazon.nova-micro-v1:0 trực tiếp).",
+        500,
       );
     }
     throw error;

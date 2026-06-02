@@ -85,47 +85,33 @@ DevTools → Network khi bấm Google → request `oauth2/authorize` → xem que
 
 ---
 
-## 5. Amazon Bedrock (khi dùng upload / AI)
+## 5. Google Gemini API (khi dùng upload / AI)
 
-Region deploy: **ap-southeast-1**
+Project dùng **Google Gemini** làm AI provider duy nhất (embedding + chat). Không cần cấu hình Amazon Bedrock.
 
-1. AWS Console → **Amazon Bedrock** → region **Asia Pacific (Singapore)**
-2. **Model catalog** (hoặc Model access) → tìm **Cohere Embed English v3** → **Enable** / chấp nhận **EULA** (bắt buộc; nếu thiếu, lỗi Marketplace / `agreementAvailability: NOT_AVAILABLE`)
-3. Bật **Amazon Nova Micro** (`amazon.nova-micro-v1:0`) cho chat/RAG — model AWS, **không** cần Anthropic use case form. `BEDROCK_MODEL_ID` trong `api/.env` phải khớp.
-4. Region **ap-southeast-1** không hỗ trợ Titan Embeddings v2 — dùng Cohere trong `BEDROCK_EMBEDDING_MODEL_ID` (xem `api/.env.example`)
-5. Chạy lại `pnpm setup:atlas` nếu đổi model embedding (vector index = **1024** chiều)
-6. **IAM** — `cd infrastructure && npx cdk deploy` (policy đã có `bedrock:InvokeModel` + `aws-marketplace:Subscribe` cho `apms-backend-service-user`).
-
-   | Lỗi trong log | Nguyên nhân | Cách xử lý |
-   |---------------|-------------|------------|
-   | `no identity-based policy allows bedrock:InvokeModel` | Thiếu IAM hoặc chưa propagate | `cdk deploy`, đợi ~2 phút |
-   | `Marketplace actions (Subscribe, ViewSubscriptions)` | Chưa bật model / chưa EULA ở bước 2 | Bedrock Model catalog → Enable Cohere |
-   | Vẫn lỗi sau Enable | Subscription chưa xong | Đợi 2–15 phút, gọi lại API |
-
-   Policy thủ công (nếu không dùng CDK): IAM → `apms-backend-service-user` → inline policy JSON gồm cả Bedrock và Marketplace:
-
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": "bedrock:InvokeModel",
-         "Resource": [
-           "arn:aws:bedrock:ap-southeast-1::foundation-model/cohere.embed-english-v3",
-           "arn:aws:bedrock:ap-southeast-1::foundation-model/amazon.nova-micro-v1:0"
-         ]
-       },
-       {
-         "Effect": "Allow",
-         "Action": ["aws-marketplace:Subscribe", "aws-marketplace:ViewSubscriptions"],
-         "Resource": "*"
-       }
-     ]
-   }
+1. Lấy API key tại [Google AI Studio](https://aistudio.google.com/apikey) — miễn phí, không cần form.
+2. Trong `api/.env`:
+   ```
+   AI_PROVIDER=gemini
+   GEMINI_API_KEY=<key>
+   GEMINI_CHAT_MODEL=gemini-2.5-flash
+   GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+   ```
+3. Khi `gemini-2.5-flash` hết quota (429), API tự động fallback theo thứ tự:
+   `gemini-3.1-flash-lite` (500 RPD) → `gemini-2.5-flash-lite` → `gemini-3.5-flash` → `gemini-3-flash`
+4. **Embedding không có fallback** — `gemini-embedding-001` phải nhất quán giữa lúc index (upload) và query (chat). Nếu đổi embedding model, phải re-index toàn bộ documents:
+   ```powershell
+   npx tsx --env-file=.env scripts/reindex-gemini.ts
    ```
 
-Auth flow không cần Bedrock.
+| Biến | Mô tả |
+|------|--------|
+| `AI_PROVIDER` | `gemini` (mặc định) \| `auto` (Bedrock trước, fallback Gemini) \| `bedrock` |
+| `GEMINI_API_KEY` | Bắt buộc |
+| `GEMINI_CHAT_MODEL` | Mặc định `gemini-2.5-flash` |
+| `GEMINI_EMBEDDING_MODEL` | Mặc định `gemini-embedding-001` (1024 dims) |
+
+Auth flow không cần Gemini.
 
 ---
 

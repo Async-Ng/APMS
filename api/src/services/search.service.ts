@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
-import * as bedrockService from "./bedrock.service";
+import * as aiService from "./ai/ai.service";
 import { getSharedDocumentIds } from "./share.service";
 
 export interface SearchResult {
@@ -18,7 +18,7 @@ export async function semanticSearch(
   query: string,
   limit: number,
 ): Promise<SearchResult[]> {
-  const queryVector = await bedrockService.embedText(query, "search_query");
+  const queryVector = await aiService.embedText(query, "search_query");
 
   const sharedDocIds = await getSharedDocumentIds(userId);
   const vectorFilter =

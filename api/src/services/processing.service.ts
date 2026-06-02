@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
-import * as bedrockService from "./bedrock.service";
+import * as aiService from "./ai/ai.service";
 import { chunkText } from "./chunking.service";
 import { extractText } from "./extraction.service";
 import * as s3Service from "./s3.service";
@@ -42,7 +42,7 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
       await DocumentChunk.deleteMany({ documentId: document._id });
 
       for (const chunk of chunks) {
-        const embedding = await bedrockService.embedText(chunk.content);
+        const embedding = await aiService.embedText(chunk.content);
 
         await DocumentChunk.create({
           documentId: document._id,

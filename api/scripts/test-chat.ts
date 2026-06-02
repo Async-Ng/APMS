@@ -7,6 +7,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 
 import { loadEnv } from "../src/config/env";
+import { getActiveProvider } from "../src/services/ai/ai.service";
 import * as chatService from "../src/services/chat.service";
 import { User } from "../src/models/user.model";
 
@@ -33,12 +34,13 @@ async function main(): Promise<void> {
   });
   console.log(`[test-chat] Session created: ${session.id}`);
 
-  console.log("[test-chat] Sending message (embed → vector search → Nova)...");
+  console.log(`[test-chat] AI_PROVIDER=${env.AI_PROVIDER}, active before send: ${getActiveProvider()}`);
+  console.log("[test-chat] Sending message (embed → vector search → chat)...");
   const start = Date.now();
   const result = await chatService.sendMessage(user, session.id, question);
   const ms = Date.now() - start;
 
-  console.log(`[test-chat] Done in ${ms}ms`);
+  console.log(`[test-chat] Done in ${ms}ms, active provider after send: ${getActiveProvider()}`);
   console.log("\n--- Assistant reply ---\n");
   console.log(result.assistantMessage.content);
   console.log("\n--- Citations ---\n");
