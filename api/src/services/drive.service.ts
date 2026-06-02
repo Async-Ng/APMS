@@ -17,12 +17,10 @@ export async function listDriveContents(
   let contentOwnerId: Types.ObjectId = userId;
   let resolvedParentId: Types.ObjectId | null = null;
 
-  let contentOwnerId = ownerId;
-
   if (parentId && parentId !== "null") {
     resolvedParentId = parseObjectId(parentId, "parentId");
     const { contentOwnerId: parentOwnerId } = await resolveDriveParentAccess(
-      ownerId,
+      userId,
       resolvedParentId,
     );
     contentOwnerId = parentOwnerId;
