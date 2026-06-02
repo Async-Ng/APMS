@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { StorageBar } from "@/components/ui/StorageBar";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -77,13 +78,15 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, clearUser } = useAuthStore();
 
   const handleSignOut = useCallback(async () => {
     await signOut();
     clearUser();
+    queryClient.clear(); // xóa toàn bộ cache (sessions, documents, ...) tránh lộ data sang user khác
     router.replace("/login");
-  }, [clearUser, router]);
+  }, [clearUser, queryClient, router]);
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.adminOnly || user?.role === "admin",
