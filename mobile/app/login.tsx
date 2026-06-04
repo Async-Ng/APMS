@@ -1,5 +1,5 @@
 import { signInWithRedirect } from "aws-amplify/auth";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { colors } from "../constants/colors";
@@ -35,6 +35,8 @@ type SectionKey = (typeof navLinks)[number]["key"];
 
 export default function LoginScreen() {
   const scrollRef = useRef<ScrollView>(null);
+  const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const sectionOffsets = useRef<Record<SectionKey, number>>({
     hero: 0,
     catalog: 0,
@@ -43,7 +45,19 @@ export default function LoginScreen() {
   });
 
   async function handleGoogleSignIn() {
-    await signInWithRedirect({ provider: "Google" });
+    if (signingIn) return;
+    setAuthError(null);
+    setSigningIn(true);
+    try {
+      await signInWithRedirect({ provider: "Google" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!message.toLowerCase().includes("canceled")) {
+        setAuthError("Sign-in failed. Please try again.");
+      }
+    } finally {
+      setSigningIn(false);
+    }
   }
 
   function scrollToSection(key: SectionKey) {
@@ -174,16 +188,20 @@ export default function LoginScreen() {
         <Text style={{ color: colors.muted, fontSize: 14 }}>
           Use your Google account to continue.
         </Text>
+        {authError && (
+          <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{authError}</Text>
+        )}
         <Pressable
           onPress={() => void handleGoogleSignIn()}
+          disabled={signingIn}
           style={({ pressed }) => ({
             ...brutalCtaStyle,
-            backgroundColor: colors.fptBlue,
+            backgroundColor: signingIn ? colors.muted : colors.fptBlue,
             ...pressedBrutalStyle(pressed),
           })}
         >
           <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            Continue with Google
+            {signingIn ? "Opening browser..." : "Continue with Google"}
           </Text>
         </Pressable>
         <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
@@ -298,15 +316,16 @@ export default function LoginScreen() {
         </Text>
         <Pressable
           onPress={() => void handleGoogleSignIn()}
+          disabled={signingIn}
           style={({ pressed }) => ({
             ...brutalCtaStyle,
-            backgroundColor: colors.fptBlue,
+            backgroundColor: signingIn ? colors.muted : colors.fptBlue,
             width: "100%",
             ...pressedBrutalStyle(pressed),
           })}
         >
           <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            Continue with Google
+            {signingIn ? "Opening browser..." : "Continue with Google"}
           </Text>
         </Pressable>
       </View>
