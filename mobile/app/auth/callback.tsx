@@ -17,9 +17,7 @@ export default function AuthCallbackScreen() {
 
   useEffect(() => {
     async function finishSignIn() {
-      if (finishedRef.current) {
-        return;
-      }
+      if (finishedRef.current) return;
 
       try {
         const session = await fetchAuthSession({ forceRefresh: true });
@@ -31,29 +29,22 @@ export default function AuthCallbackScreen() {
 
         finishedRef.current = true;
         await fetchMe();
-        router.replace("/login");
+        router.replace("/(tabs)/drive");
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to complete sign-in.";
-        setError(message);
+        setError(err instanceof Error ? err.message : "Failed to complete sign-in.");
       }
     }
 
     const unsubscribe = Hub.listen("auth", ({ payload }) => {
       if (payload.event === "signInWithRedirect") {
         void finishSignIn();
-        return;
-      }
-
-      if (payload.event === "signInWithRedirect_failure") {
+      } else if (payload.event === "signInWithRedirect_failure") {
         const data = payload.data as { message?: string } | undefined;
         setError(data?.message ?? "Sign-in failed. Please try again.");
       }
     });
 
-    const retryTimer = setTimeout(() => {
-      void finishSignIn();
-    }, 1500);
+    const retryTimer = setTimeout(() => void finishSignIn(), 1500);
 
     return () => {
       clearTimeout(retryTimer);
@@ -63,20 +54,9 @@ export default function AuthCallbackScreen() {
 
   if (error) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 24,
-          gap: 12,
-          backgroundColor: colors.bg,
-        }}
-      >
-        <View style={{ ...brutalCardStyle, padding: 20, maxWidth: 400 }}>
-          <Text style={{ color: colors.error, textAlign: "center", marginBottom: 12 }}>
-            {error}
-          </Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: colors.bg }}>
+        <View style={{ ...brutalCardStyle, padding: 20, maxWidth: 400, gap: 12 }}>
+          <Text style={{ color: colors.error, textAlign: "center", fontSize: 14 }}>{error}</Text>
           <Link href="/login" style={{ color: colors.fptBlue, textAlign: "center", fontWeight: "700" }}>
             Back to login
           </Link>
@@ -86,20 +66,10 @@ export default function AuthCallbackScreen() {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.bg,
-        padding: 24,
-      }}
-    >
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg, padding: 24 }}>
       <View style={{ ...brutalCardStyle, padding: 24, alignItems: "center", gap: 12 }}>
         <ActivityIndicator size="large" color={colors.fptBlue} />
-        <Text style={{ fontWeight: "800", fontSize: 18, color: colors.ink }}>
-          Completing sign-in...
-        </Text>
+        <Text style={{ fontWeight: "800", fontSize: 18, color: colors.ink }}>Completing sign-in...</Text>
         <Text style={{ color: colors.muted }}>Please wait a moment.</Text>
       </View>
     </View>

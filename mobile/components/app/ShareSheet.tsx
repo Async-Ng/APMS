@@ -1,0 +1,250 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery, useMutation } from "@tanstack/react-query";
+
+import { colors } from "../../constants/colors";
+import { api } from "../../lib/api-client";
+import { BrutalButton } from "../ui/BrutalButton";
+
+interface UserResult {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+interface ShareSheetProps {
+  visible: boolean;
+  resourceType: "folder" | "document";
+  resourceId: string;
+  resourceName: string;
+  onDismiss: () => void;
+}
+
+export function ShareSheet({ visible, resourceType, resourceId, resourceName, onDismiss }: ShareSheetProps) {
+  const insets = useSafeAreaInsets();
+  const translateY = useRef(new Animated.Value(600)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<UserResult[]>([]);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    if (visible) {
+      setQuery("");
+      setSelected([]);
+      setDebouncedQuery("");
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(translateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 600, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible, opacity, translateY]);
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedQuery(query), 400);
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+  }, [query]);
+
+  const searchQuery = useQuery({
+    queryKey: ["users-search", debouncedQuery],
+    queryFn: async () => {
+      if (debouncedQuery.trim().length < 2) return [] as UserResult[];
+      const res = await api.get<{ status: string; data: UserResult[] }>("/users/search", {
+        params: debouncedQuery.includes("@") ? { email: debouncedQuery } : { displayName: debouncedQuery },
+      });
+      return res.data.data;
+    },
+    enabled: debouncedQuery.trim().length >= 2,
+  });
+
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/shares", {
+        resourceType,
+        resourceId,
+        sharedWithUserIds: selected.map((u) => u.id),
+      });
+    },
+    onSuccess: () => {
+      onDismiss();
+    },
+  });
+
+  function toggleUser(user: UserResult) {
+    setSelected((prev) =>
+      prev.find((u) => u.id === user.id) ? prev.filter((u) => u.id !== user.id) : [...prev, user],
+    );
+  }
+
+  const results = (searchQuery.data ?? []).filter((u) => !selected.find((s) => s.id === u.id));
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <Pressable style={{ flex: 1 }} onPress={onDismiss}>
+          <Animated.View
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
+          >
+            <Pressable>
+              <Animated.View
+                style={{
+                  backgroundColor: colors.bg,
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  borderWidth: 3,
+                  borderBottomWidth: 0,
+                  borderColor: colors.ink,
+                  paddingHorizontal: 20,
+                  paddingBottom: insets.bottom + 16,
+                  maxHeight: 520,
+                  transform: [{ translateY }],
+                }}
+              >
+                <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+                  <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
+                </View>
+
+                <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8 }}>
+                  Share "{resourceName}"
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 16, marginTop: 2 }}>
+                  Search by name or email
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    borderWidth: 3,
+                    borderColor: colors.ink,
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    backgroundColor: colors.surface,
+                    marginBottom: 12,
+                    minHeight: 48,
+                  }}
+                >
+                  <Ionicons name="search-outline" size={18} color={colors.muted} />
+                  <TextInput
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Search users..."
+                    placeholderTextColor={colors.muted}
+                    style={{ flex: 1, fontSize: 15, color: colors.ink }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  {searchQuery.isFetching && <ActivityIndicator size="small" color={colors.fptBlue} />}
+                </View>
+
+                {selected.length > 0 && (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                    {selected.map((u) => (
+                      <Pressable
+                        key={u.id}
+                        onPress={() => toggleUser(u)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          backgroundColor: colors.fptBlue,
+                          borderWidth: 2,
+                          borderColor: colors.ink,
+                          borderRadius: 999,
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.onBrand }}>{u.displayName}</Text>
+                        <Ionicons name="close" size={12} color={colors.onBrand} />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                {results.length > 0 && (
+                  <FlatList
+                    data={results}
+                    keyExtractor={(u) => u.id}
+                    style={{ maxHeight: 160 }}
+                    renderItem={({ item }) => (
+                      <Pressable
+                        onPress={() => toggleUser(item)}
+                        style={({ pressed }) => ({
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 12,
+                          paddingVertical: 10,
+                          paddingHorizontal: 4,
+                          backgroundColor: pressed ? "#F0F0F0" : "transparent",
+                          borderRadius: 8,
+                          minHeight: 48,
+                        })}
+                      >
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            borderWidth: 2,
+                            borderColor: colors.ink,
+                            backgroundColor: colors.fptGreen,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: "800", color: colors.onBrand }}>
+                            {item.displayName[0]?.toUpperCase() ?? "?"}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.ink }}>{item.displayName}</Text>
+                          <Text style={{ fontSize: 12, color: colors.muted }}>{item.email}</Text>
+                        </View>
+                        <Ionicons name="add-circle-outline" size={22} color={colors.fptGreen} />
+                      </Pressable>
+                    )}
+                  />
+                )}
+
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                  <BrutalButton label="Cancel" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
+                  <BrutalButton
+                    label={`Share (${selected.length})`}
+                    onPress={() => shareMutation.mutate()}
+                    variant="secondary"
+                    loading={shareMutation.isPending}
+                    disabled={selected.length === 0}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
