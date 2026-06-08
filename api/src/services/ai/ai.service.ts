@@ -2,6 +2,9 @@ import { loadEnv } from "../../config/env";
 import type { AiProviderName, ChatTurn, EmbeddingInputType } from "./types";
 import * as bedrockProvider from "./bedrock.provider";
 import * as geminiProvider from "./gemini.provider";
+import * as localEmbeddingProvider from "./local-embedding.provider";
+
+export { initLocalEmbedding } from "./local-embedding.provider";
 
 export type { ChatTurn, EmbeddingInputType, AiProviderName } from "./types";
 
@@ -101,7 +104,9 @@ export async function embedText(
   const env = loadEnv();
   // Embedding MUST use a consistent provider — never mix providers between
   // indexing (document upload) and querying (chat), or vector search breaks.
-  // Rule: if AI_PROVIDER=gemini → use Gemini; otherwise always use Bedrock.
+  if (env.AI_PROVIDER === "local") {
+    return localEmbeddingProvider.embedText(text, inputType);
+  }
   if (env.AI_PROVIDER === "gemini") {
     return geminiProvider.embedText(text, inputType);
   }

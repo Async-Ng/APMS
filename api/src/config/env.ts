@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-const aiProviderSchema = z.enum(["auto", "bedrock", "gemini"]);
+/**
+ * AI provider modes:
+ * - "local"   : Embedding via @xenova/transformers (free, in-process). Chat still uses Gemini/Bedrock.
+ * - "gemini"  : Both embedding and chat via Gemini API.
+ * - "bedrock" : Both embedding and chat via AWS Bedrock.
+ * - "auto"    : Bedrock first, fallback to Gemini on error.
+ */
+const aiProviderSchema = z.enum(["auto", "bedrock", "gemini", "local"]);
 
 const envSchema = z
   .object({
@@ -24,8 +31,15 @@ const envSchema = z
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
     MAX_UPLOAD_BYTES: z.coerce.number().default(52_428_800),
     S3_PRESIGN_EXPIRES_SECONDS: z.coerce.number().default(900),
+    BEDROCK_EMBED_DELAY_MS: z.coerce.number().int().min(0).default(200),
+    BEDROCK_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
+    BEDROCK_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
+    CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(0).default(50),
   })
   .superRefine((data, ctx) => {
+    // local provider handles embedding in-process; chat may still use Gemini or Bedrock
+    if (data.AI_PROVIDER === "local") return;
+
     if (
       (data.AI_PROVIDER === "gemini" || data.AI_PROVIDER === "auto") &&
       !data.GEMINI_API_KEY?.trim()

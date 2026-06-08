@@ -1,6 +1,7 @@
 import { ConverseCommand, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 
 import { getBedrockClient, getEnv } from "../../config/aws";
+import { withBedrockRetry } from "./bedrock-retry";
 import type { ChatTurn, EmbeddingInputType } from "./types";
 
 interface TitanEmbeddingResponse {
@@ -74,7 +75,10 @@ export async function embedText(
     body: Buffer.from(JSON.stringify(buildEmbeddingRequestBody(modelId, text, inputType))),
   });
 
-  const response = await getBedrockClient().send(command);
+  const response = await withBedrockRetry(
+    () => getBedrockClient().send(command),
+    "embed",
+  );
   return parseEmbeddingResponse(modelId, Buffer.from(response.body).toString());
 }
 
@@ -101,7 +105,10 @@ export async function chatWithContext(
     },
   });
 
-  const response = await getBedrockClient().send(command);
+  const response = await withBedrockRetry(
+    () => getBedrockClient().send(command),
+    "chat",
+  );
 
   const text =
     response.output?.message?.content

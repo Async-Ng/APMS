@@ -14,6 +14,8 @@ Sau `cdk deploy` thành công, hoàn tất các bước sau trước khi chạy 
 | S3 bucket | `apms-documents-400715295558-ap-southeast-1` |
 | IAM backend user | `apms-backend-service-user` |
 | Cognito admin group | `admin` (output `CognitoAdminGroupNameOutput` sau deploy mới) |
+| Bedrock chat model | `apac.amazon.nova-micro-v1:0` (`BedrockChatModelIdOutput`) |
+| Bedrock embedding model | `cohere.embed-english-v3` (`BedrockEmbeddingModelIdOutput`) |
 
 > Sau khi thêm group `admin` vào CDK, chạy lại `cdk deploy` rồi gán user vào group theo mục 8.
 
@@ -85,11 +87,67 @@ DevTools → Network khi bấm Google → request `oauth2/authorize` → xem que
 
 ---
 
-## 5. Google Gemini API (khi dùng upload / AI)
+## 5. AI provider (upload / semantic search / RAG chat)
 
-Project dùng **Google Gemini** làm AI provider duy nhất (embedding + chat). Không cần cấu hình Amazon Bedrock.
+Chọn **một** provider nhất quán cho embedding (index + query). Đổi provider → rebuild vector index và re-embed documents.
 
-1. Lấy API key tại [Google AI Studio](https://aistudio.google.com/apikey) — miễn phí, không cần form.
+### 5a. Amazon Bedrock (khuyến nghị khi đã deploy CDK)
+
+IAM user `apms-backend-service-user` nhận quyền `bedrock:InvokeModel` + `bedrock:Converse` sau `cdk deploy`. Copy model IDs từ stack outputs `BedrockChatModelIdOutput` / `BedrockEmbeddingModelIdOutput`.
+
+**Bước 1 — Bật model trên AWS Console (bắt buộc, CDK không làm được)**
+
+1. AWS Console → region **`ap-southeast-1`** → **Amazon Bedrock** → **Model catalog** (hoặc Model access)
+2. Bật:
+   - **Cohere Embed English v3** (`cohere.embed-english-v3`) — embedding
+   - **Amazon Nova Micro** — chat
+3. Nếu Cohere yêu cầu Marketplace subscription hoặc use case form → submit và chờ approve
+
+**Bước 2 — `api/.env`**
+
+```
+AI_PROVIDER=bedrock
+BEDROCK_MODEL_ID=apac.amazon.nova-micro-v1:0
+BEDROCK_EMBEDDING_MODEL_ID=cohere.embed-english-v3
+```
+
+Không cần `GEMINI_API_KEY` khi `AI_PROVIDER=bedrock`.
+
+**Bước 3 — Rebuild vector index (1024 dims)**
+
+Nếu trước đó dùng local embedding (384 dims) hoặc đổi từ Gemini, làm theo [`api/scripts/rebuild-vector-index-bedrock.md`](../api/scripts/rebuild-vector-index-bedrock.md).
+
+| Biến | Mô tả |
+|------|--------|
+| `AI_PROVIDER` | `bedrock` |
+| `BEDROCK_MODEL_ID` | Mặc định `apac.amazon.nova-micro-v1:0` (dùng inference profile `apac.*`, không gọi `amazon.nova-micro-v1:0` trực tiếp) |
+| `BEDROCK_EMBEDDING_MODEL_ID` | Mặc định `cohere.embed-english-v3` (1024 dims) |
+
+Lỗi thường gặp: `AccessDenied` → kiểm tra `cdk deploy` + Model catalog; `inference profile` → sai `BEDROCK_MODEL_ID`; vector search rỗng → chưa rebuild index 1024 dims.
+
+### 5c. Giới hạn sử dụng Bedrock (cost + quota)
+
+**CDK monitoring** (cần `ALERT_EMAIL` trong `infrastructure/.env`):
+
+1. Đặt `ALERT_EMAIL=<email-thật>` → `cd infrastructure && npx cdk deploy`
+2. Mở email AWS SNS → **Confirm subscription**
+3. Kiểm tra **Billing → Budgets** → budget `apms-bedrock-monthly` ($20, filter Amazon Bedrock)
+4. Kiểm tra **CloudWatch → Alarms** → 2 alarm invocations/ngày (embed 500, chat 200)
+
+**Biến API** (`api/.env`):
+
+| Biến | Mặc định | Mô tả |
+|------|----------|--------|
+| `BEDROCK_EMBED_DELAY_MS` | `200` | Delay giữa mỗi chunk embed khi `AI_PROVIDER=bedrock` |
+| `BEDROCK_MAX_RETRIES` | `3` | Retry khi Bedrock throttle |
+| `BEDROCK_RETRY_BASE_MS` | `1000` | Base exponential backoff |
+| `CHAT_DAILY_LIMIT_PER_USER` | `50` | Max tin chat/user/ngày (`0` = tắt) |
+
+**Service Quotas:** AWS Console → Service Quotas → Amazon Bedrock → ghi RPM/TPM của Cohere + Nova; request tăng quota nếu re-embed nhiều file.
+
+### 5b. Google Gemini (thay thế)
+
+1. Lấy API key tại [Google AI Studio](https://aistudio.google.com/apikey)
 2. Trong `api/.env`:
    ```
    AI_PROVIDER=gemini
@@ -97,21 +155,19 @@ Project dùng **Google Gemini** làm AI provider duy nhất (embedding + chat). 
    GEMINI_CHAT_MODEL=gemini-2.5-flash
    GEMINI_EMBEDDING_MODEL=gemini-embedding-001
    ```
-3. Khi `gemini-2.5-flash` hết quota (429), API tự động fallback theo thứ tự:
-   `gemini-3.1-flash-lite` (500 RPD) → `gemini-2.5-flash-lite` → `gemini-3.5-flash` → `gemini-3-flash`
-4. **Embedding không có fallback** — `gemini-embedding-001` phải nhất quán giữa lúc index (upload) và query (chat). Nếu đổi embedding model, phải re-index toàn bộ documents:
+3. Re-index khi đổi embedding model:
    ```powershell
+   cd api
    npx tsx --env-file=.env scripts/reindex-gemini.ts
    ```
 
 | Biến | Mô tả |
 |------|--------|
-| `AI_PROVIDER` | `gemini` (mặc định) \| `auto` (Bedrock trước, fallback Gemini) \| `bedrock` |
-| `GEMINI_API_KEY` | Bắt buộc |
-| `GEMINI_CHAT_MODEL` | Mặc định `gemini-2.5-flash` |
+| `AI_PROVIDER` | `gemini` \| `auto` (Bedrock chat trước, fallback Gemini — cần cả Bedrock + Gemini) |
+| `GEMINI_API_KEY` | Bắt buộc khi `gemini` hoặc `auto` |
 | `GEMINI_EMBEDDING_MODEL` | Mặc định `gemini-embedding-001` (1024 dims) |
 
-Auth flow không cần Gemini.
+Auth flow không cần AI provider.
 
 ---
 
