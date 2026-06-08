@@ -149,7 +149,7 @@ export function ChatWorkspace({
               <ChatSourcePanel onSessionCreated={onSessionCreated} />
             ) : session ? (
               <>
-                <ChatContextBadge session={session} />
+                <ChatContextBadge session={session} messages={session.messages} />
                 <p className="text-xs text-brutal-muted">
                   Phạm vi nguồn cố định khi tạo phiên. Tạo cuộc trò chuyện mới để
                   đổi.

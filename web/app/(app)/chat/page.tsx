@@ -27,10 +27,6 @@ function ChatLandingContent() {
       .mutateAsync({
         contextType,
         contextId,
-        title:
-          contextType === "document"
-            ? "Hỏi về tài liệu"
-            : "Hỏi về folder",
       })
       .then((session) => {
         router.replace(`/chat/${session.id}`);

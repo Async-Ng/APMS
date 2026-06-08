@@ -30,6 +30,9 @@ const chatSessionSchema = registry.register(
       contextId: z.string().nullable().openapi({
         description: "Folder or document ID when contextType is not 'all'",
       }),
+      contextLabel: z.string().nullable().openapi({
+        description: "Resolved document title or folder name when contextType is not 'all'",
+      }),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })
@@ -140,6 +143,34 @@ export function registerChatPaths(): void {
     request: { params: objectIdParamSchema },
     responses: {
       200: jsonResponse(sessionDetailResponse, "Session detail with messages"),
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
+
+  // PATCH /api/chat/sessions/:id
+  registry.registerPath({
+    method: "patch",
+    path: "/api/chat/sessions/{id}",
+    tags: ["Chat"],
+    summary: "Rename a chat session",
+    security: [...bearerSecurity],
+    request: {
+      params: objectIdParamSchema,
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              title: z.string().min(1).max(255).openapi({ example: "Hỏi về WDP26" }),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: jsonResponse(sessionResponse, "Session updated"),
+      400: error400("Validation error"),
       401: error401,
       403: error403,
       404: error404,

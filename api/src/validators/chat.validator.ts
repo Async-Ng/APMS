@@ -13,6 +13,10 @@ export const createSessionSchema = z
     { message: "contextId is required when contextType is 'folder' or 'document'" },
   );
 
+export const updateSessionSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+});
+
 export const sendMessageSchema = z.object({
   content: z.string().trim().min(1).max(10_000),
 });

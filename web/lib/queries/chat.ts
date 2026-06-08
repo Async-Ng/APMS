@@ -19,6 +19,7 @@ export interface ChatSession {
   title: string;
   contextType: ChatContextType;
   contextId: string | null;
+  contextLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,6 +105,35 @@ export function useDeleteSession() {
     onSuccess: (_data, sessionId) => {
       void qc.invalidateQueries({ queryKey: chatKeys.sessions });
       qc.removeQueries({ queryKey: chatKeys.session(sessionId) });
+    },
+  });
+}
+
+export function useUpdateSession(sessionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (title: string) => {
+      const res = await api.patch<{ status: string; data: ChatSession }>(
+        `/chat/sessions/${sessionId}`,
+        { title },
+      );
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+      const current = qc.getQueryData<ChatSessionDetail>(
+        chatKeys.session(sessionId),
+      );
+      if (current) {
+        qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+          ...current,
+          title: data.title,
+          contextLabel: data.contextLabel,
+          updatedAt: data.updatedAt,
+        });
+      } else {
+        void qc.invalidateQueries({ queryKey: chatKeys.session(sessionId) });
+      }
     },
   });
 }
