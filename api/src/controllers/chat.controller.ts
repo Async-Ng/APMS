@@ -28,6 +28,15 @@ export const getSession = catchAsync(async (req: Request, res: Response): Promis
   sendSuccess(res, data);
 });
 
+export const updateSession = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const data = await chatService.updateSession(
+    requireUser(req),
+    getRouteParam(req, "id"),
+    req.body,
+  );
+  sendSuccess(res, data);
+});
+
 export const deleteSession = catchAsync(async (req: Request, res: Response): Promise<void> => {
   await chatService.deleteSession(requireUser(req), getRouteParam(req, "id"));
   res.status(204).send();

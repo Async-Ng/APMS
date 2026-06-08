@@ -18,7 +18,6 @@ export default function ChatSessionPage({ params }: PageProps) {
       <ChatWorkspace
         sessionId={sessionId}
         onSessionCreated={(id) => router.push(`/chat/${id}`)}
-        onNewChat={() => router.push("/chat")}
       />
     </div>
   );
