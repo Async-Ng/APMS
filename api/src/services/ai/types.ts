@@ -7,6 +7,7 @@ export interface ChatTurn {
   content: string;
 }
 
-export const EMBEDDING_DIMENSIONS = 1024;
+/** Dimensions for Xenova/bge-small-en-v1.5 (local embedding model, Render Free compatible) */
+export const EMBEDDING_DIMENSIONS = 384;
 
-export const CHAT_MAX_OUTPUT_TOKENS = 1024;
+export const CHAT_MAX_OUTPUT_TOKENS = 512;

@@ -1,5 +1,6 @@
 import type { Types } from "mongoose";
 
+import { loadEnv } from "../config/env";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import * as aiService from "./ai/ai.service";
@@ -41,6 +42,10 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
       // Delete any existing chunks first (retry safety)
       await DocumentChunk.deleteMany({ documentId: document._id });
 
+      const env = loadEnv();
+      const embedDelayMs =
+        env.AI_PROVIDER === "bedrock" ? env.BEDROCK_EMBED_DELAY_MS : 0;
+
       for (const chunk of chunks) {
         const embedding = await aiService.embedText(chunk.content);
 
@@ -52,6 +57,10 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
           pageNumber: chunk.pageNumber,
           embedding,
         });
+
+        if (embedDelayMs > 0) {
+          await new Promise<void>((resolve) => setTimeout(resolve, embedDelayMs));
+        }
       }
 
       console.log(

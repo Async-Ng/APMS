@@ -25,6 +25,8 @@ const chatMessageSchema = new Schema(
   { timestamps: true },
 );
 
+chatMessageSchema.index({ sessionId: 1, role: 1, createdAt: -1 });
+
 export type ChatMessageDocument = HydratedDocument<InferSchemaType<typeof chatMessageSchema>>;
 export const ChatMessage = model("ChatMessage", chatMessageSchema);
 

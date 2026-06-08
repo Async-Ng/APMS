@@ -1,6 +1,7 @@
 import type { Types } from "mongoose";
 import type { UserDocument } from "../models/user.model";
 
+import { loadEnv } from "../config/env";
 import { AppError } from "../errors/AppError";
 import { ChatMessage, toChatMessageResponse } from "../models/chat-message.model";
 import { ChatSession, toChatSessionResponse } from "../models/chat-session.model";
@@ -15,8 +16,32 @@ import {
   getSharedDocumentIds,
 } from "./share.service";
 
-const CONTEXT_CHUNKS = 5;
-const HISTORY_MESSAGES = 10;
+const CONTEXT_CHUNKS = 3;    // top-3 chunks ≈ 40% fewer input tokens vs top-5
+const HISTORY_MESSAGES = 6;  // 3 recent turns ≈ 40% fewer history tokens vs 10
+
+async function assertChatDailyLimit(userId: Types.ObjectId): Promise<void> {
+  const limit = loadEnv().CHAT_DAILY_LIMIT_PER_USER;
+  if (limit === 0) return;
+
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const sessionIds = await ChatSession.find({ userId }).distinct("_id");
+  if (sessionIds.length === 0) return;
+
+  const count = await ChatMessage.countDocuments({
+    sessionId: { $in: sessionIds },
+    role: "user",
+    createdAt: { $gte: startOfDay },
+  });
+
+  if (count >= limit) {
+    throw new AppError(
+      `Đã đạt giới hạn ${limit} tin chat/ngày. Thử lại vào ngày mai.`,
+      429,
+    );
+  }
+}
 
 async function findSession(sessionId: Types.ObjectId, userId: Types.ObjectId) {
   const session = await ChatSession.findOne({ _id: sessionId, userId });
@@ -154,6 +179,8 @@ export async function sendMessage(
 ) {
   const id = parseObjectId(sessionId);
   const session = await findSession(id, user._id);
+
+  await assertChatDailyLimit(user._id);
 
   // Save user message
   const userMessage = await ChatMessage.create({

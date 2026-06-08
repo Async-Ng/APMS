@@ -4,6 +4,7 @@ import { createApp } from "./app";
 import { initCognitoVerifier } from "./config/cognito";
 import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
+import { initLocalEmbedding } from "./services/ai/ai.service";
 import { startDocumentWorker } from "./workers/document.worker";
 
 async function bootstrap(): Promise<void> {
@@ -12,6 +13,11 @@ async function bootstrap(): Promise<void> {
   await connectDatabase(env);
 
   startDocumentWorker();
+
+  // Preload local embedding model to avoid cold-load on first request
+  if (env.AI_PROVIDER === "local") {
+    await initLocalEmbedding();
+  }
 
   const app = createApp();
 
