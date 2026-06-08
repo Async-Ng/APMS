@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type ChatContextType = "all" | "folder" | "document";
+export type ChatContextType = "all" | "folder" | "document" | "documents";
 
 export interface ChatCitation {
   documentId: string;
@@ -19,6 +19,7 @@ export interface ChatSession {
   title: string;
   contextType: ChatContextType;
   contextId: string | null;
+  contextIds?: string[];
   contextLabel?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +42,7 @@ export interface CreateSessionBody {
   title?: string;
   contextType: ChatContextType;
   contextId?: string;
+  contextIds?: string[];
 }
 
 export interface SendMessageResult {

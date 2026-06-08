@@ -29,6 +29,7 @@ function resolveDocumentLabel(
 function ContextTypeLabel({ type }: { type: ChatSession["contextType"] }) {
   if (type === "all") return <>Toàn bộ tài liệu</>;
   if (type === "folder") return <>Một folder</>;
+  if (type === "documents") return <>Nhiều tài liệu</>;
   return <>Một tài liệu</>;
 }
 
@@ -62,6 +63,22 @@ export function ChatContextBadge({ session, messages }: ChatContextBadgeProps) {
           </p>
         </div>
       </Link>
+    );
+  }
+
+  if (contextType === "documents") {
+    return (
+      <div className="flex items-start gap-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm">
+        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brutal-secondary" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-brutal-muted">
+            <ContextTypeLabel type={contextType} />
+          </p>
+          <p className="truncate font-semibold text-brutal-ink">
+            {contextLabel ?? "Không xác định"}
+          </p>
+        </div>
+      </div>
     );
   }
 

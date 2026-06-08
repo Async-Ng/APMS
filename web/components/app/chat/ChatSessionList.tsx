@@ -203,12 +203,12 @@ function SessionListItem({
 
 interface ChatSessionListProps {
   activeSessionId?: string;
-  onNewChat: () => void;
+  onOpenPicker: () => void;
 }
 
 export function ChatSessionList({
   activeSessionId,
-  onNewChat,
+  onOpenPicker,
 }: ChatSessionListProps) {
   const router = useRouter();
   const { data: sessions, isLoading } = useChatSessions();
@@ -268,8 +268,8 @@ export function ChatSessionList({
           <BrutalButton
             variant="ghost"
             className="!h-8 !px-2 !py-1"
-            onClick={onNewChat}
-            aria-label="Cuộc trò chuyện mới"
+          onClick={onOpenPicker}
+          aria-label="Cuộc trò chuyện mới"
           >
             <Plus className="h-4 w-4" />
           </BrutalButton>

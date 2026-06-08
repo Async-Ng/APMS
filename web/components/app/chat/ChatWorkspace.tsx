@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
 import { cn } from "@/lib/cn";
@@ -15,7 +15,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatSessionList } from "./ChatSessionList";
-import { ChatSourcePanel } from "./ChatSourcePanel";
+import { ChatSourcePickerModal } from "./ChatSourcePickerModal";
 import { CitationPanel } from "./CitationPanel";
 
 type MobileTab = "sources" | "chat" | "citations";
@@ -27,17 +27,18 @@ function citationKey(c: ChatCitation): string {
 interface ChatWorkspaceProps {
   sessionId?: string;
   isNewChat?: boolean;
+  autoOpenPicker?: boolean;
   onSessionCreated: (id: string) => void;
-  onNewChat: () => void;
 }
 
 export function ChatWorkspace({
   sessionId,
   isNewChat = false,
+  autoOpenPicker = false,
   onSessionCreated,
-  onNewChat,
 }: ChatWorkspaceProps) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<ChatCitation | null>(
     null,
   );
@@ -51,6 +52,12 @@ export function ChatWorkspace({
     isNewChat ? undefined : sessionId,
   );
   const sendMessage = useSendMessage(sessionId ?? "");
+
+  useEffect(() => {
+    if (autoOpenPicker && isNewChat) {
+      setPickerOpen(true);
+    }
+  }, [autoOpenPicker, isNewChat]);
 
   const handleSelectCitation = useCallback(
     (message: ChatMessage, citation: ChatCitation) => {
@@ -105,6 +112,12 @@ export function ChatWorkspace({
 
   return (
     <>
+      <ChatSourcePickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSessionCreated={onSessionCreated}
+      />
+
       <Topbar breadcrumbs={[{ label: "AI Chat" }]} onMenuOpen={() => {}} />
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -142,12 +155,10 @@ export function ChatWorkspace({
           >
             <ChatSessionList
               activeSessionId={sessionId}
-              onNewChat={onNewChat}
+              onOpenPicker={() => setPickerOpen(true)}
             />
 
-            {isNewChat ? (
-              <ChatSourcePanel onSessionCreated={onSessionCreated} />
-            ) : session ? (
+            {session ? (
               <>
                 <ChatContextBadge session={session} messages={session.messages} />
                 <p className="text-xs text-brutal-muted">
@@ -168,10 +179,10 @@ export function ChatWorkspace({
             {isNewChat ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
                 <p className="font-heading text-lg font-extrabold">
-                  Chọn nguồn bên trái
+                  Nhấn + để chọn nguồn tài liệu
                 </p>
                 <p className="text-sm text-brutal-muted">
-                  Sau khi bắt đầu, bạn có thể chat tại đây.
+                  Chọn tài liệu hoặc folder từ My Drive, xem lại rồi bắt đầu trò chuyện.
                 </p>
               </div>
             ) : isLoading ? (

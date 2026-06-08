@@ -27,6 +27,7 @@ const GENERIC_SESSION_TITLES = new Set([
 type SessionLike = {
   contextType: string;
   contextId?: Types.ObjectId | null;
+  contextIds?: Types.ObjectId[];
 };
 
 async function resolveContextLabels(
@@ -36,9 +37,11 @@ async function resolveContextLabels(
   const folderIds: Types.ObjectId[] = [];
 
   for (const s of sessions) {
-    if (!s.contextId) continue;
-    if (s.contextType === "document") docIds.push(s.contextId);
-    else if (s.contextType === "folder") folderIds.push(s.contextId);
+    if (s.contextType === "document" && s.contextId) docIds.push(s.contextId);
+    else if (s.contextType === "folder" && s.contextId) folderIds.push(s.contextId);
+    else if (s.contextType === "documents" && s.contextIds?.length) {
+      docIds.push(...s.contextIds);
+    }
   }
 
   const labelMap = new Map<string, string>();
@@ -127,21 +130,51 @@ function contextLabelFromMessages(
   return null;
 }
 
+function formatDocumentsLabel(
+  contextIds: Types.ObjectId[],
+  labelMap: Map<string, string>,
+): string | null {
+  if (contextIds.length === 0) return null;
+  const titles = contextIds
+    .map((id) => labelMap.get(id.toString()))
+    .filter((t): t is string => !!t);
+  if (titles.length === 0) return null;
+  if (titles.length === 1) return titles[0]!;
+  return `${titles[0]!} + ${titles.length - 1} tài liệu`;
+}
+
 function getContextLabel(
   session: SessionLike,
   labelMap: Map<string, string>,
 ): string | null {
-  if (session.contextType === "all" || !session.contextId) return null;
+  if (session.contextType === "all") return null;
+  if (session.contextType === "documents" && session.contextIds?.length) {
+    return formatDocumentsLabel(session.contextIds, labelMap);
+  }
+  if (!session.contextId) return null;
   return labelMap.get(session.contextId.toString()) ?? null;
 }
 
 async function resolveDefaultTitle(
-  contextType: "all" | "folder" | "document",
+  contextType: "all" | "folder" | "document" | "documents",
   contextId: Types.ObjectId | null,
+  contextIds: Types.ObjectId[],
+  labelMap?: Map<string, string>,
 ): Promise<string> {
   if (contextType === "document" && contextId) {
     const doc = await Document.findById(contextId).select("title").lean();
     if (doc) return doc.title;
+  }
+  if (contextType === "documents" && contextIds.length > 0) {
+    if (labelMap) {
+      const label = formatDocumentsLabel(contextIds, labelMap);
+      if (label) return label;
+    }
+    const docs = await Document.find({ _id: { $in: contextIds } })
+      .select("title")
+      .lean();
+    if (docs.length === 1) return docs[0]!.title;
+    if (docs.length > 1) return `${docs[0]!.title} + ${docs.length - 1} tài liệu`;
   }
   if (contextType === "folder" && contextId) {
     const folder = await Folder.findById(contextId).select("name").lean();
@@ -176,13 +209,27 @@ async function assertContextAccess(
   }
 }
 
+async function assertDocumentsAccess(
+  user: UserDocument,
+  contextIds: Types.ObjectId[],
+): Promise<void> {
+  for (const contextId of contextIds) {
+    await assertContextAccess(user, "document", contextId);
+  }
+}
+
 async function buildVectorSearchFilter(
   user: UserDocument,
   contextType: string,
   contextId: Types.ObjectId | null,
+  contextIds: Types.ObjectId[] = [],
 ): Promise<Record<string, unknown>> {
   if (contextType === "document" && contextId) {
     return { documentId: contextId };
+  }
+
+  if (contextType === "documents" && contextIds.length > 0) {
+    return { documentId: { $in: contextIds } };
   }
 
   if (contextType === "folder" && contextId) {
@@ -204,23 +251,38 @@ async function buildVectorSearchFilter(
 
 export async function createSession(
   user: UserDocument,
-  input: { title?: string; contextType: string; contextId?: string },
+  input: { title?: string; contextType: string; contextId?: string; contextIds?: string[] },
 ) {
-  const contextType = (input.contextType ?? "all") as "all" | "folder" | "document";
+  const contextType = (input.contextType ?? "all") as
+    | "all"
+    | "folder"
+    | "document"
+    | "documents";
 
   let contextId: Types.ObjectId | null = null;
+  let contextIds: Types.ObjectId[] = [];
 
-  if (contextType !== "all") {
+  if (contextType === "folder" || contextType === "document") {
     if (!input.contextId) {
       throw new AppError("contextId is required when contextType is folder or document", 400);
     }
     contextId = parseObjectId(input.contextId, "contextId");
     await assertContextAccess(user, contextType, contextId);
+  } else if (contextType === "documents") {
+    if (!input.contextIds?.length) {
+      throw new AppError("contextIds is required when contextType is documents", 400);
+    }
+    contextIds = input.contextIds.map((id) => parseObjectId(id, "contextIds"));
+    await assertDocumentsAccess(user, contextIds);
   }
+
+  const labelMap = await resolveContextLabels([
+    { contextType, contextId, contextIds },
+  ]);
 
   let title = input.title?.trim();
   if (!title || GENERIC_SESSION_TITLES.has(title)) {
-    title = await resolveDefaultTitle(contextType, contextId);
+    title = await resolveDefaultTitle(contextType, contextId, contextIds, labelMap);
   }
 
   const session = await ChatSession.create({
@@ -228,9 +290,9 @@ export async function createSession(
     title,
     contextType,
     contextId,
+    contextIds,
   });
 
-  const labelMap = await resolveContextLabels([session]);
   return {
     ...toChatSessionResponse(session),
     contextLabel: getContextLabel(session, labelMap),
@@ -253,6 +315,7 @@ export async function listSessions(user: UserDocument) {
       title: displayTitle(s.title, contextLabel),
       contextType: s.contextType as string,
       contextId: s.contextId ? s.contextId.toString() : null,
+      contextIds: (s.contextIds ?? []).map((id) => id.toString()),
       contextLabel,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
@@ -345,10 +408,12 @@ export async function sendMessage(
 
   // Build vector search filter based on session scope
   const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
+  const contextIds = (session.contextIds ?? []) as Types.ObjectId[];
   const vectorSearchFilter = await buildVectorSearchFilter(
     user,
     session.contextType as string,
     contextId,
+    contextIds,
   );
 
   // Retrieve relevant chunks via Atlas Vector Search
