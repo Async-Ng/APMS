@@ -27,7 +27,7 @@ export default function AuthCallbackPage() {
         const session = await fetchAuthSession({ forceRefresh: true });
 
         if (!session.tokens?.idToken) {
-          setError("Sign-in did not return a valid session.");
+          setError("Đăng nhập không thành công. Vui lòng thử lại.");
           return;
         }
 
@@ -35,9 +35,7 @@ export default function AuthCallbackPage() {
         await fetchMe();
         router.replace("/drive");
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to complete sign-in.";
-        setError(message);
+        setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
       }
     }
 
@@ -49,7 +47,7 @@ export default function AuthCallbackPage() {
 
       if (payload.event === "signInWithRedirect_failure") {
         const data = payload.data as { message?: string } | undefined;
-        setError(data?.message ?? "Sign-in failed. Please try again.");
+        setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     });
 

@@ -232,10 +232,16 @@ export class InfrastructureStack extends cdk.Stack {
     apiBackendUser.addToPrincipalPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["bedrock:Converse"],
+        actions: [
+          "bedrock:Converse",
+          "bedrock:ConverseStream",
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream",
+        ],
         resources: [
-          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/${bedrockChatModelId}`,
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/amazon.nova-micro-v1:0`,
+          // Profile id contains ":" (e.g. apac.amazon.nova-micro-v1:0) — wildcard avoids IAM ARN parse issues
+          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/*`,
+          "arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0",
         ],
       }),
     );

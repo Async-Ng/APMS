@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import {
   Document as ApmsDocument,
   toDocumentResponse,
@@ -25,12 +25,12 @@ async function assertResourceOwner(
   if (resourceType === "folder") {
     const folder = await Folder.findOne({ _id: resourceId, ownerId, deletedAt: null });
     if (!folder) {
-      throw new AppError("Folder not found or you do not own it", 404);
+      throw createAppError(ErrorCode.SHARE_RESOURCE_NOT_FOUND, 404);
     }
   } else {
     const doc = await ApmsDocument.findOne({ _id: resourceId, ownerId, deletedAt: null });
     if (!doc) {
-      throw new AppError("Document not found or you do not own it", 404);
+      throw createAppError(ErrorCode.SHARE_RESOURCE_NOT_FOUND, 404);
     }
   }
 }
@@ -78,7 +78,7 @@ export async function createShares(
   const invalidCount = recipientIds.length - validRecipientIds.length;
 
   if (validRecipientIds.length === 0) {
-    throw new AppError("None of the specified users were found or are active", 400);
+    throw createAppError(ErrorCode.SHARE_NO_RECIPIENTS, 400);
   }
 
   // 4. Build share documents
@@ -132,12 +132,12 @@ export async function revokeShare(owner: UserDocument, shareId: string): Promise
 
   const share = await Share.findById(id);
   if (!share) {
-    throw new AppError("Share not found", 404);
+    throw createAppError(ErrorCode.SHARE_NOT_FOUND, 404);
   }
 
   const ownerId = owner._id;
   if (!(share.ownerId as unknown as Types.ObjectId).equals(ownerId)) {
-    throw new AppError("You do not have permission to revoke this share", 403);
+    throw createAppError(ErrorCode.SHARE_FORBIDDEN, 403);
   }
 
   await share.deleteOne();
@@ -451,7 +451,7 @@ export async function findReadableDocument(
 ): Promise<DocumentDocument> {
   const doc = await ApmsDocument.findOne({ _id: documentId, deletedAt: null });
   if (!doc) {
-    throw new AppError("Document not found", 404);
+    throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
   }
 
   const ownerId = doc.ownerId as Types.ObjectId;
@@ -463,7 +463,7 @@ export async function findReadableDocument(
     return doc;
   }
 
-  throw new AppError("Document not found", 404);
+  throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
 }
 
 export async function findReadableFolder(
@@ -472,7 +472,7 @@ export async function findReadableFolder(
 ): Promise<FolderDocument> {
   const folder = await Folder.findOne({ _id: folderId, deletedAt: null });
   if (!folder) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 
   const ownerId = folder.ownerId as Types.ObjectId;
@@ -484,7 +484,7 @@ export async function findReadableFolder(
     return folder;
   }
 
-  throw new AppError("Folder not found", 404);
+  throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
 }
 
 export async function resolveDriveParentAccess(
@@ -493,7 +493,7 @@ export async function resolveDriveParentAccess(
 ): Promise<{ parent: FolderDocument; contentOwnerId: Types.ObjectId }> {
   const parent = await Folder.findOne({ _id: parentId, deletedAt: null });
   if (!parent) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 
   const contentOwnerId = parent.ownerId as Types.ObjectId;
@@ -505,5 +505,5 @@ export async function resolveDriveParentAccess(
     return { parent, contentOwnerId };
   }
 
-  throw new AppError("Folder not found", 404);
+  throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
 }

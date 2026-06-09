@@ -17,6 +17,7 @@ import { AskAiLink } from "@/components/app/AskAiLink";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CustomDocxViewer } from "@/components/app/CustomDocxViewer";
 import { CustomOfficeViewer } from "@/components/app/CustomOfficeViewer";
@@ -193,9 +194,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
       <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6" id="main-content">
         {/* Error */}
         {isError && (
-          <div className="rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-            Không thể tải tài liệu. Vui lòng thử lại.
-          </div>
+          <ErrorAlert message="Không tải được tài liệu. Vui lòng thử lại." />
         )}
 
         {/* Loading skeleton */}

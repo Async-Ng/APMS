@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 
-import { AppError } from "../errors/AppError";
+import { unauthorizedError } from "../errors/unauthorized";
 import * as driveService from "../services/drive.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 
 function requireUser(req: Request) {
   if (!req.currentUser) {
-    throw new AppError("Unauthorized", 401);
+    throw unauthorizedError();
   }
   return req.currentUser;
 }

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
 import type { ChatSession } from "@/lib/queries/chat";
 import {
@@ -129,9 +130,9 @@ function SessionListItem({
             aria-label="Đổi tên cuộc trò chuyện"
           />
           {editError && (
-            <p className="mt-1 text-xs font-medium text-brutal-danger" role="alert">
-              {editError}
-            </p>
+            <div className="mt-1">
+              <ErrorAlert message={editError} variant="inline" />
+            </div>
           )}
           <div className="mt-2 flex gap-1">
             <button

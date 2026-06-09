@@ -2,6 +2,7 @@
 
 import { FileText, HardDrive, Users } from "lucide-react";
 
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useAdminStats } from "@/lib/queries/admin";
 
 function formatBytes(bytes: number): string {
@@ -49,9 +50,7 @@ export function AdminStatsGrid() {
 
   if (isError) {
     return (
-      <p className="rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-        Failed to load statistics.
-      </p>
+      <ErrorAlert message="Không tải được thống kê. Vui lòng thử lại." />
     );
   }
 

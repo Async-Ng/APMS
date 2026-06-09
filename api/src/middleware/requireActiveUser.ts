@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 
 export function requireActiveUser(
   req: Request,
@@ -8,12 +8,12 @@ export function requireActiveUser(
   next: NextFunction,
 ): void {
   if (!req.currentUser) {
-    next(new AppError("Unauthorized", 401));
+    next(createAppError(ErrorCode.AUTH_UNAUTHORIZED, 401));
     return;
   }
 
   if (req.currentUser.isDisabled) {
-    next(new AppError("Account disabled", 403));
+    next(createAppError(ErrorCode.AUTH_DISABLED, 403));
     return;
   }
 

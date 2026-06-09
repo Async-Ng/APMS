@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FileGrid } from "@/components/app/FileGrid";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
 import type { CreateSessionBody } from "@/lib/queries/chat";
@@ -542,9 +543,9 @@ export function ChatSourcePickerModal({
               )}
 
               {error && (
-                <p className="mt-3 text-xs font-medium text-brutal-danger" role="alert">
-                  {error}
-                </p>
+                <div className="mt-3">
+                  <ErrorAlert message={error} variant="inline" />
+                </div>
               )}
             </div>
 

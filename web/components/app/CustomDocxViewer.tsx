@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+
 interface CustomDocxViewerProps {
   url: string;
 }
@@ -71,7 +73,9 @@ export function CustomDocxViewer({ url }: CustomDocxViewerProps) {
           </div>
         )}
         {error && (
-          <p className="p-4 text-center font-bold text-brutal-danger">{error}</p>
+          <div className="p-4">
+            <ErrorAlert message={error} />
+          </div>
         )}
         <div
           ref={containerRef}

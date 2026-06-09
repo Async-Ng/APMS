@@ -205,20 +205,4 @@ export function useSendMessage(sessionId: string) {
   });
 }
 
-export function getApiErrorMessage(err: unknown): string {
-  if (
-    err &&
-    typeof err === "object" &&
-    "response" in err &&
-    err.response &&
-    typeof err.response === "object" &&
-    "data" in err.response &&
-    err.response.data &&
-    typeof err.response.data === "object" &&
-    "message" in err.response.data &&
-    typeof (err.response.data as { message: string }).message === "string"
-  ) {
-    return (err.response.data as { message: string }).message;
-  }
-  return "Something went wrong. Please try again.";
-}
+export { getApiErrorMessage, getUserErrorMessage } from "@/lib/errors";

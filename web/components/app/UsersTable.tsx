@@ -181,7 +181,7 @@ export function UsersTable() {
                   colSpan={6}
                   className="px-4 py-6 text-center text-sm text-brutal-danger"
                 >
-                  Failed to load users. Please refresh.
+                  Không tải được danh sách người dùng. Vui lòng thử lại.
                 </td>
               </tr>
             )}

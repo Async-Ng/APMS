@@ -17,6 +17,7 @@ import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { cn } from "@/lib/cn";
 import {
@@ -233,9 +234,12 @@ export default function SharedPage() {
         <ShareTabs active={tab} onChange={setTab} />
 
         {activeQuery.isError && (
-          <p className="rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-            Failed to load shared items.
-          </p>
+          <ErrorAlert
+            className="mb-4"
+            message="Không tải được mục đã chia sẻ. Vui lòng thử lại."
+            actionLabel="Tải lại"
+            onAction={() => window.location.reload()}
+          />
         )}
 
         {tab === "browse" && (

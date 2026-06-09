@@ -6,6 +6,7 @@ import { FileGrid } from "@/components/app/FileGrid";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
@@ -103,9 +104,12 @@ export default function TrashPage() {
         </div>
 
         {isError && (
-          <p className="mb-4 rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-            Failed to load Trash. Please refresh.
-          </p>
+          <ErrorAlert
+            className="mb-4"
+            message="Không tải được thùng rác. Vui lòng thử lại."
+            actionLabel="Tải lại"
+            onAction={() => window.location.reload()}
+          />
         )}
 
         {isLoading ? (

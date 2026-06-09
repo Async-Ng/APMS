@@ -1,7 +1,7 @@
 import type { Types } from "mongoose";
 
 import { isAllowedMimeType } from "../constants/upload";
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import { getEnv } from "../config/aws";
 import {
   Document,
@@ -25,7 +25,7 @@ async function findActiveDocument(
   });
 
   if (!document) {
-    throw new AppError("Document not found", 404);
+    throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
   }
 
   return document;
@@ -38,7 +38,7 @@ async function findDocumentIncludingTrash(
   const document = await Document.findOne({ _id: documentId, ownerId });
 
   if (!document) {
-    throw new AppError("Document not found", 404);
+    throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
   }
 
   return document;
@@ -59,7 +59,7 @@ async function assertFolderValid(
   });
 
   if (!folder) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 }
 
@@ -68,11 +68,13 @@ function assertQuota(user: UserDocument, additionalBytes: number): void {
   const maxBytes = Math.min(env.MAX_UPLOAD_BYTES, user.storageQuotaBytes - user.storageUsedBytes);
 
   if (additionalBytes > maxBytes) {
-    throw new AppError("Storage quota exceeded", 403);
+    throw createAppError(ErrorCode.STORAGE_QUOTA, 403);
   }
 
   if (additionalBytes > env.MAX_UPLOAD_BYTES) {
-    throw new AppError(`File exceeds maximum upload size of ${env.MAX_UPLOAD_BYTES} bytes`, 400);
+    throw createAppError(ErrorCode.UPLOAD_TOO_LARGE, 400, {
+      technicalDetail: `maxBytes=${env.MAX_UPLOAD_BYTES}`,
+    });
   }
 }
 
@@ -87,7 +89,7 @@ export async function createUploadIntent(
   },
 ) {
   if (!isAllowedMimeType(input.mimeType)) {
-    throw new AppError("Unsupported file type", 400);
+    throw createAppError(ErrorCode.UNSUPPORTED_FILE, 400);
   }
 
   assertQuota(user, input.fileSizeBytes);
@@ -132,11 +134,11 @@ export async function completeUpload(user: UserDocument, documentId: string) {
   });
 
   if (!document) {
-    throw new AppError("Document not found", 404);
+    throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
   }
 
   if (document.status !== "pending") {
-    throw new AppError("Document upload already completed or failed", 400);
+    throw createAppError(ErrorCode.UPLOAD_ALREADY_COMPLETED, 400);
   }
 
   await s3Service.verifyUploadedObject(
@@ -154,14 +156,14 @@ export async function completeUpload(user: UserDocument, documentId: string) {
   );
 
   if (!updatedUser) {
-    throw new AppError("User not found", 404);
+    throw createAppError(ErrorCode.USER_NOT_FOUND, 404);
   }
 
   if (updatedUser.storageUsedBytes > updatedUser.storageQuotaBytes) {
     await User.findByIdAndUpdate(user._id, {
       $inc: { storageUsedBytes: -document.fileSizeBytes },
     });
-    throw new AppError("Storage quota exceeded", 403);
+    throw createAppError(ErrorCode.STORAGE_QUOTA, 403);
   }
 
   document.status = "processing";
@@ -221,7 +223,7 @@ export async function restoreDocument(user: UserDocument, documentId: string) {
   const document = await findDocumentIncludingTrash(parseObjectId(documentId), user._id);
 
   if (!document.deletedAt) {
-    throw new AppError("Document is not in trash", 400);
+    throw createAppError(ErrorCode.DOCUMENT_NOT_IN_TRASH, 400);
   }
 
   if (document.folderId) {
@@ -231,7 +233,7 @@ export async function restoreDocument(user: UserDocument, documentId: string) {
     });
 
     if (!folder || folder.deletedAt) {
-      throw new AppError("Restore the parent folder first", 400);
+      throw createAppError(ErrorCode.RESTORE_PARENT_FIRST, 400);
     }
   }
 

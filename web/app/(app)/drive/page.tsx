@@ -13,6 +13,7 @@ import { Topbar } from "@/components/app/Topbar";
 import { UploadModal } from "@/components/app/UploadModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
@@ -56,9 +57,12 @@ export default function DrivePage() {
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
         {isError && (
-          <p className="rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-            Failed to load drive contents. Please refresh the page.
-          </p>
+          <ErrorAlert
+            className="mb-4"
+            message="Không tải được tài liệu. Kiểm tra kết nối mạng và thử lại."
+            actionLabel="Tải lại"
+            onAction={() => window.location.reload()}
+          />
         )}
 
         {isLoading ? (

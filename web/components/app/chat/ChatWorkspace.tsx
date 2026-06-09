@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
+import { getUserErrorMessage } from "@/lib/errors";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
-import {
-  getApiErrorMessage,
-  useChatSession,
-  useSendMessage,
-} from "@/lib/queries/chat";
+import { useChatSession, useSendMessage } from "@/lib/queries/chat";
 
 import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
@@ -95,7 +93,7 @@ export function ChatWorkspace({
           }
         },
         onError: (err) => {
-          setSendError(getApiErrorMessage(err));
+          setSendError(getUserErrorMessage(err));
         },
       });
     },
@@ -190,9 +188,9 @@ export function ChatWorkspace({
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
               </div>
             ) : isError || !session ? (
-              <p className="p-4 text-sm font-medium text-brutal-danger">
-                Không tải được cuộc trò chuyện.
-              </p>
+              <div className="p-4">
+                <ErrorAlert message="Không tải được cuộc trò chuyện. Vui lòng thử lại." />
+              </div>
             ) : (
               <>
                 <div className="shrink-0 border-b-2 border-brutal-ink px-4 py-2">
@@ -209,12 +207,9 @@ export function ChatWorkspace({
                   onSelectMessage={handleSelectMessage}
                 />
                 {sendError && (
-                  <p
-                    className="shrink-0 px-4 pb-2 text-xs font-medium text-brutal-danger"
-                    role="alert"
-                  >
-                    {sendError}
-                  </p>
+                  <div className="shrink-0 px-4 pb-2">
+                    <ErrorAlert message={sendError} variant="inline" />
+                  </div>
                 )}
                 <ChatComposer
                   onSend={handleSend}
