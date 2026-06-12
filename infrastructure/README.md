@@ -30,7 +30,7 @@ Optional:
 | `CDK_DEFAULT_ACCOUNT` | Target AWS account ID |
 | `CDK_DEFAULT_REGION` | Target AWS region (e.g. `ap-southeast-1`) |
 | `BEDROCK_MODEL_ID` | Chat model for IAM scope (default `apac.amazon.nova-micro-v1:0`) |
-| `BEDROCK_EMBEDDING_MODEL_ID` | Embedding model for IAM scope (default `cohere.embed-english-v3`) |
+| `BEDROCK_EMBEDDING_MODEL_ID` | Embedding model for IAM scope (default `global.cohere.embed-v4:0`) |
 | `BEDROCK_BUDGET_LIMIT_USD` | Monthly Bedrock budget threshold (default `20`) |
 
 Values in `.env` are loaded automatically via `dotenv` when running CDK commands. CDK context (`-c googleClientId=...`) still overrides env if set.
@@ -41,7 +41,7 @@ Values in `.env` are loaded automatically via `dotenv` when running CDK commands
 | :--- | :--- | :--- |
 | S3 | `PutObject`, `GetObject`, `DeleteObject`, `ListBucket` | Document storage |
 | Textract | `DetectDocumentText`, `StartDocumentAnalysis`, `GetDocumentAnalysis` | Optional OCR (not used by default) |
-| Bedrock | `InvokeModel` on Cohere embed model | Document/query embeddings |
+| Bedrock | `InvokeModel` on Cohere Embed v4 inference profile + foundation models | Document/query embeddings |
 | Bedrock | `Converse` on Nova inference profile | RAG chat |
 
 CDK grants IAM only. You must still **enable models** in the Bedrock Model Catalog (AWS Console) and set `AI_PROVIDER=bedrock` in `api/.env`. See [`docs/post_deploy_setup.md`](../docs/post_deploy_setup.md) sections 5a–5c.

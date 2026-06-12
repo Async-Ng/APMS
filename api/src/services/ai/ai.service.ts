@@ -39,8 +39,8 @@ function activateGeminiFallback(reason: string): void {
   if (resolvedProvider === "gemini") return;
   resolvedProvider = "gemini";
   console.warn(
-    `[ai] Bedrock unavailable (${reason}). Switched to Gemini for this process. ` +
-      "Re-upload documents if chunks were embedded with Cohere for best search quality.",
+    `[ai] Bedrock unavailable (${reason}). Switched to Vertex Gemini for this process. ` +
+      "Re-embed documents if chunks used a different embedding provider.",
   );
 }
 
@@ -67,31 +67,6 @@ async function withProvider<T>(
     try {
       return await geminiFn();
     } catch (geminiError) {
-      const gMsg = geminiError instanceof Error ? geminiError.message : String(geminiError);
-      const gName = geminiError instanceof Error ? geminiError.name : "unknown";
-      // #region agent log
-      fetch("http://127.0.0.1:7917/ingest/7c4e892b-25cc-49b0-931a-8bc2ae5d7ab8", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "94cae1" },
-        body: JSON.stringify({
-          sessionId: "94cae1",
-          hypothesisId: "H1-H5",
-          location: "ai.service.ts:withProvider",
-          message: "gemini fallback failed",
-          data: {
-            operation,
-            bedrockReason: reason.slice(0, 200),
-            geminiErrorName: gName,
-            geminiErrorMsg: gMsg.slice(0, 500),
-            keyPrefix: env.GEMINI_API_KEY?.slice(0, 4) ?? "none",
-            keyLength: env.GEMINI_API_KEY?.length ?? 0,
-            chatModel: env.GEMINI_CHAT_MODEL,
-            embedModel: env.GEMINI_EMBEDDING_MODEL,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       throw geminiError;
     }
   }

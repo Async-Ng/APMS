@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { AppError } from "../errors/AppError";
+import { ErrorCode, ERROR_MESSAGES } from "../errors/error-codes";
 
 export function globalErrorHandler(
   err: Error,
@@ -8,18 +9,35 @@ export function globalErrorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
-  const message =
-    statusCode === 500 && process.env.NODE_ENV === "production"
-      ? "Internal server error"
-      : err.message || "Internal server error";
+  const isAppError = err instanceof AppError;
+  const statusCode = isAppError ? err.statusCode : 500;
 
-  if (process.env.NODE_ENV !== "production" && statusCode === 500) {
-    console.error(err);
+  const userMessage =
+    statusCode === 500 && process.env.NODE_ENV === "production"
+      ? ERROR_MESSAGES.INTERNAL_ERROR
+      : isAppError
+        ? err.message
+        : ERROR_MESSAGES.INTERNAL_ERROR;
+
+  const code =
+    isAppError && err.code
+      ? err.code
+      : statusCode === 500
+        ? ErrorCode.INTERNAL_ERROR
+        : undefined;
+
+  if (process.env.NODE_ENV !== "production") {
+    if (isAppError && err.technicalDetail) {
+      console.error(`[AppError:${err.code ?? "unknown"}] ${err.technicalDetail}`);
+    }
+    if (statusCode === 500) {
+      console.error(err);
+    }
   }
 
   res.status(statusCode).json({
     status: "error",
-    message,
+    ...(code ? { code } : {}),
+    message: userMessage,
   });
 }

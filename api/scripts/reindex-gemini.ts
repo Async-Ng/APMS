@@ -52,7 +52,7 @@ async function main() {
   console.log(`Reset ${updated.modifiedCount} document(s) to status "processing"`);
 
   console.log("\nDone. Start (or restart) the API server — the document worker will");
-  console.log("automatically re-embed all documents using Gemini embedding-001.");
+  console.log("automatically re-embed all documents via Vertex AI (gemini-embedding-001).");
 
   await mongoose.disconnect();
 }

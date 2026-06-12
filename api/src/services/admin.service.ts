@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import { Document as ApmsDocument } from "../models/document.model";
 import { Folder } from "../models/folder.model";
 import { User, type UserDocument } from "../models/user.model";
@@ -40,7 +40,7 @@ export async function getUserById(userId: string) {
   const user = await User.findById(parseObjectId(userId));
 
   if (!user) {
-    throw new AppError("User not found", 404);
+    throw createAppError(ErrorCode.USER_NOT_FOUND, 404);
   }
 
   return toUserResponse(user);
@@ -55,16 +55,16 @@ export async function updateUser(
   const target = await User.findById(targetId);
 
   if (!target) {
-    throw new AppError("User not found", 404);
+    throw createAppError(ErrorCode.USER_NOT_FOUND, 404);
   }
 
   if (input.isDisabled === true && target._id.equals(admin._id)) {
-    throw new AppError("Cannot disable your own account", 400);
+    throw createAppError(ErrorCode.CANNOT_DISABLE_SELF, 400);
   }
 
   if (input.storageQuotaBytes !== undefined) {
     if (input.storageQuotaBytes < target.storageUsedBytes) {
-      throw new AppError("Quota cannot be less than current storage used", 400);
+      throw createAppError(ErrorCode.QUOTA_TOO_LOW, 400);
     }
     target.storageQuotaBytes = input.storageQuotaBytes;
   }

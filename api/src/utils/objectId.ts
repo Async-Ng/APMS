@@ -1,10 +1,12 @@
 import { Types } from "mongoose";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 
 export function parseObjectId(value: string, fieldName = "id"): Types.ObjectId {
   if (!Types.ObjectId.isValid(value)) {
-    throw new AppError(`Invalid ${fieldName}`, 400);
+    throw createAppError(ErrorCode.VALIDATION_ERROR, 400, {
+      technicalDetail: `Invalid ${fieldName}`,
+    });
   }
   return new Types.ObjectId(value);
 }

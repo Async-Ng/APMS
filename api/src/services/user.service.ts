@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import { User, type UserDocument } from "../models/user.model";
 import { toUserResponse } from "./auth.service";
 
@@ -12,7 +12,7 @@ export async function updateProfile(user: UserDocument, displayName: string) {
   );
 
   if (!updated) {
-    throw new AppError("User not found", 404);
+    throw createAppError(ErrorCode.USER_NOT_FOUND, 404);
   }
 
   return toUserResponse(updated);

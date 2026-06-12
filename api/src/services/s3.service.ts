@@ -8,6 +8,7 @@ import { randomUUID } from "crypto";
 
 import { getEnv, getS3Client } from "../config/aws";
 import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 
 export function buildS3Key(userId: string, originalFilename: string): string {
   const sanitized = originalFilename.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -53,7 +54,7 @@ export async function getObjectBuffer(s3Key: string): Promise<Buffer> {
   const response = await getS3Client().send(command);
 
   if (!response.Body) {
-    throw new AppError("Object not found on S3", 404);
+    throw createAppError(ErrorCode.NOT_FOUND, 404, { technicalDetail: "S3 object missing" });
   }
 
   const chunks: Uint8Array[] = [];
@@ -80,16 +81,16 @@ export async function verifyUploadedObject(
     );
 
     if (!head.ContentLength || head.ContentLength !== expectedSize) {
-      throw new AppError("Uploaded file size does not match", 400);
+      throw createAppError(ErrorCode.UPLOAD_FAILED, 400, { technicalDetail: "size mismatch" });
     }
 
     if (head.ContentType && head.ContentType !== expectedMimeType) {
-      throw new AppError("Uploaded file type does not match", 400);
+      throw createAppError(ErrorCode.UPLOAD_FAILED, 400, { technicalDetail: "mime mismatch" });
     }
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError("File not found on S3. Upload may have failed.", 400);
+    throw createAppError(ErrorCode.UPLOAD_FAILED, 400, { technicalDetail: "S3 head failed" });
   }
 }

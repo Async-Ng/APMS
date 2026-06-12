@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError, type ZodType } from "zod";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 
 interface ValidationSchemas {
   body?: ZodType;
@@ -27,7 +27,7 @@ export function validate(schemas: ValidationSchemas) {
         const message = error.issues
           .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
           .join("; ");
-        next(new AppError(message, 400));
+        next(createAppError(ErrorCode.VALIDATION_ERROR, 400, { technicalDetail: message }));
         return;
       }
       next(error);

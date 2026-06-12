@@ -1,0 +1,139 @@
+import { isAxiosError } from "axios";
+
+/** Mirrors api/src/errors/error-codes.ts — user-facing Vietnamese messages */
+export const ErrorCode = {
+  AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
+  AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
+  AUTH_DISABLED: "AUTH_DISABLED",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  NOT_FOUND: "NOT_FOUND",
+  FORBIDDEN: "FORBIDDEN",
+  CONFLICT: "CONFLICT",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  FOLDER_NOT_FOUND: "FOLDER_NOT_FOUND",
+  DOCUMENT_NOT_FOUND: "DOCUMENT_NOT_FOUND",
+  FOLDER_NAME_EXISTS: "FOLDER_NAME_EXISTS",
+  FOLDER_CYCLE: "FOLDER_CYCLE",
+  FOLDER_NOT_IN_TRASH: "FOLDER_NOT_IN_TRASH",
+  DOCUMENT_NOT_IN_TRASH: "DOCUMENT_NOT_IN_TRASH",
+  RESTORE_PARENT_FIRST: "RESTORE_PARENT_FIRST",
+  STORAGE_QUOTA: "STORAGE_QUOTA",
+  UPLOAD_TOO_LARGE: "UPLOAD_TOO_LARGE",
+  UNSUPPORTED_FILE: "UNSUPPORTED_FILE",
+  UPLOAD_FAILED: "UPLOAD_FAILED",
+  UPLOAD_ALREADY_COMPLETED: "UPLOAD_ALREADY_COMPLETED",
+  SHARE_NOT_FOUND: "SHARE_NOT_FOUND",
+  SHARE_FORBIDDEN: "SHARE_FORBIDDEN",
+  SHARE_NO_RECIPIENTS: "SHARE_NO_RECIPIENTS",
+  SHARE_RESOURCE_NOT_FOUND: "SHARE_RESOURCE_NOT_FOUND",
+  CHAT_DAILY_LIMIT: "CHAT_DAILY_LIMIT",
+  CHAT_QUOTA_BEDROCK: "CHAT_QUOTA_BEDROCK",
+  CHAT_QUOTA_GEMINI: "CHAT_QUOTA_GEMINI",
+  CHAT_AI_UNAVAILABLE: "CHAT_AI_UNAVAILABLE",
+  CHAT_SESSION_NOT_FOUND: "CHAT_SESSION_NOT_FOUND",
+  CHAT_ACCESS_DENIED: "CHAT_ACCESS_DENIED",
+  USER_NOT_FOUND: "USER_NOT_FOUND",
+  CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
+  QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
+} as const;
+
+export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
+  AUTH_UNAUTHORIZED: "Bạn cần đăng nhập để tiếp tục.",
+  AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+  AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
+  VALIDATION_ERROR: "Dữ liệu không hợp lệ. Vui lòng kiểm tra và thử lại.",
+  NOT_FOUND: "Không tìm thấy nội dung yêu cầu.",
+  FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",
+  CONFLICT: "Thao tác không thể hoàn tất do xung đột dữ liệu.",
+  INTERNAL_ERROR: "Đã xảy ra lỗi. Vui lòng thử lại sau.",
+  FOLDER_NOT_FOUND: "Không tìm thấy thư mục.",
+  DOCUMENT_NOT_FOUND: "Không tìm thấy tài liệu.",
+  FOLDER_NAME_EXISTS: "Đã có thư mục cùng tên tại vị trí này.",
+  FOLDER_CYCLE: "Không thể di chuyển thư mục vào chính nó hoặc thư mục con.",
+  FOLDER_NOT_IN_TRASH: "Thư mục không nằm trong thùng rác.",
+  DOCUMENT_NOT_IN_TRASH: "Tài liệu không nằm trong thùng rác.",
+  RESTORE_PARENT_FIRST: "Hãy khôi phục thư mục cha trước.",
+  STORAGE_QUOTA: "Bạn đã hết dung lượng lưu trữ. Hãy xóa bớt tài liệu hoặc liên hệ quản trị viên.",
+  UPLOAD_TOO_LARGE: "Tệp quá lớn. Vui lòng chọn tệp nhỏ hơn.",
+  UNSUPPORTED_FILE: "Định dạng tệp không được hỗ trợ. Chỉ chấp nhận PDF, DOCX, PPTX.",
+  UPLOAD_FAILED: "Tải lên thất bại. Vui lòng thử lại.",
+  UPLOAD_ALREADY_COMPLETED: "Tệp này đã được tải lên trước đó.",
+  SHARE_NOT_FOUND: "Không tìm thấy lượt chia sẻ.",
+  SHARE_FORBIDDEN: "Bạn không có quyền thu hồi lượt chia sẻ này.",
+  SHARE_NO_RECIPIENTS: "Không tìm thấy người nhận hợp lệ để chia sẻ.",
+  SHARE_RESOURCE_NOT_FOUND: "Không tìm thấy tài liệu hoặc thư mục để chia sẻ.",
+  CHAT_DAILY_LIMIT: "Đã hết lượt chat hôm nay. Vui lòng thử lại vào ngày mai.",
+  CHAT_QUOTA_BEDROCK: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",
+  CHAT_QUOTA_GEMINI: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",
+  CHAT_AI_UNAVAILABLE: "Không thể trả lời ngay lúc này. Vui lòng thử lại sau.",
+  CHAT_SESSION_NOT_FOUND: "Không tìm thấy cuộc trò chuyện.",
+  CHAT_ACCESS_DENIED: "Bạn không có quyền truy cập nội dung này.",
+  USER_NOT_FOUND: "Không tìm thấy người dùng.",
+  CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",
+  QUOTA_TOO_LOW: "Dung lượng mới không thể nhỏ hơn dung lượng đang sử dụng.",
+};
+
+const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";
+const NETWORK_MESSAGE =
+  "Không thể kết nối máy chủ. Kiểm tra kết nối mạng và thử lại.";
+
+const HTTP_FALLBACK: Record<number, string> = {
+  401: ERROR_MESSAGES.AUTH_UNAUTHORIZED,
+  403: ERROR_MESSAGES.FORBIDDEN,
+  404: ERROR_MESSAGES.NOT_FOUND,
+  409: ERROR_MESSAGES.CONFLICT,
+  429: ERROR_MESSAGES.CHAT_QUOTA_BEDROCK,
+  500: ERROR_MESSAGES.INTERNAL_ERROR,
+  503: ERROR_MESSAGES.CHAT_AI_UNAVAILABLE,
+};
+
+interface ApiErrorBody {
+  code?: string;
+  message?: string;
+}
+
+function isErrorCode(value: string): value is ErrorCodeType {
+  return value in ERROR_MESSAGES;
+}
+
+function extractApiBody(err: unknown): ApiErrorBody | null {
+  if (!isAxiosError(err)) return null;
+  const data = err.response?.data;
+  if (!data || typeof data !== "object") return null;
+  return data as ApiErrorBody;
+}
+
+/** Resolve a user-friendly Vietnamese message from an API or network error. */
+export function getUserErrorMessage(err: unknown): string {
+  if (isAxiosError(err)) {
+    if (!err.response) {
+      return NETWORK_MESSAGE;
+    }
+
+    const body = extractApiBody(err);
+    const code = body?.code;
+    const serverMessage = body?.message;
+
+    if (code && isErrorCode(code)) {
+      return ERROR_MESSAGES[code];
+    }
+
+    if (typeof serverMessage === "string" && serverMessage.length > 0) {
+      return serverMessage;
+    }
+
+    const status = err.response.status;
+    return HTTP_FALLBACK[status] ?? DEFAULT_MESSAGE;
+  }
+
+  if (err instanceof Error && err.message.length > 0) {
+    return err.message;
+  }
+
+  return DEFAULT_MESSAGE;
+}
+
+/** @deprecated Use getUserErrorMessage */
+export const getApiErrorMessage = getUserErrorMessage;

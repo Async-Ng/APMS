@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import { Document as ApmsDocument } from "../models/document.model";
 import {
   Folder,
@@ -22,7 +22,7 @@ async function findActiveFolder(
   });
 
   if (!folder) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 
   return folder;
@@ -35,7 +35,7 @@ async function findFolderIncludingTrash(
   const folder = await Folder.findOne({ _id: folderId, ownerId });
 
   if (!folder) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 
   return folder;
@@ -72,10 +72,7 @@ async function assertUniqueName(
   const existing = await Folder.findOne(query);
 
   if (existing) {
-    throw new AppError(
-      "A folder with this name already exists in this location",
-      409,
-    );
+    throw createAppError(ErrorCode.FOLDER_NAME_EXISTS, 409);
   }
 }
 
@@ -152,10 +149,7 @@ export async function updateFolder(
       : null;
 
     if (newParentId && (await wouldCreateCycle(id, newParentId, user._id))) {
-      throw new AppError(
-        "Cannot move folder into itself or its descendant",
-        400,
-      );
+      throw createAppError(ErrorCode.FOLDER_CYCLE, 400);
     }
 
     await assertParentValid(newParentId, user._id);
@@ -214,7 +208,7 @@ export async function deleteFolder(user: UserDocument, folderId: string) {
 
   const folder = await Folder.findById(rootId);
   if (!folder) {
-    throw new AppError("Folder not found", 404);
+    throw createAppError(ErrorCode.FOLDER_NOT_FOUND, 404);
   }
 
   return toFolderResponse(folder);
@@ -225,7 +219,7 @@ export async function restoreFolder(user: UserDocument, folderId: string) {
   const folder = await findFolderIncludingTrash(id, user._id);
 
   if (!folder.deletedAt) {
-    throw new AppError("Folder is not in trash", 400);
+    throw createAppError(ErrorCode.FOLDER_NOT_IN_TRASH, 400);
   }
 
   if (folder.parentId) {
@@ -235,7 +229,7 @@ export async function restoreFolder(user: UserDocument, folderId: string) {
     });
 
     if (!parent || parent.deletedAt) {
-      throw new AppError("Restore the parent folder first", 400);
+      throw createAppError(ErrorCode.RESTORE_PARENT_FIRST, 400);
     }
   }
 

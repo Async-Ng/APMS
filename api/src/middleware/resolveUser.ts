@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { AppError } from "../errors/AppError";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 import { syncUserFromAuth } from "../services/auth.service";
 
 export async function resolveUser(
@@ -10,7 +10,7 @@ export async function resolveUser(
 ): Promise<void> {
   try {
     if (!req.authUser) {
-      throw new AppError("Unauthorized", 401);
+      throw createAppError(ErrorCode.AUTH_UNAUTHORIZED, 401);
     }
 
     req.currentUser = await syncUserFromAuth(req.authUser);

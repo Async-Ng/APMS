@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { AppError } from "../errors/AppError";
+import { unauthorizedError } from "../errors/unauthorized";
 import * as documentService from "../services/document.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
@@ -8,7 +8,7 @@ import { getRouteParam } from "../utils/params";
 
 function requireUser(req: Request) {
   if (!req.currentUser) {
-    throw new AppError("Unauthorized", 401);
+    throw unauthorizedError();
   }
   return req.currentUser;
 }

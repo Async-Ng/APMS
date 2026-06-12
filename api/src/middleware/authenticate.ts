@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { getCognitoVerifier } from "../config/cognito";
+import { ErrorCode, ERROR_MESSAGES } from "../errors/error-codes";
 
 export interface AuthUser {
   cognitoSub: string;
@@ -33,7 +34,11 @@ export async function authenticate(
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ status: "error", message: "Unauthorized" });
+    res.status(401).json({
+      status: "error",
+      code: ErrorCode.AUTH_UNAUTHORIZED,
+      message: ERROR_MESSAGES.AUTH_UNAUTHORIZED,
+    });
     return;
   }
 
@@ -44,7 +49,11 @@ export async function authenticate(
     const email = typeof payload.email === "string" ? payload.email : undefined;
 
     if (!email) {
-      res.status(401).json({ status: "error", message: "Token missing email claim" });
+      res.status(401).json({
+        status: "error",
+        code: ErrorCode.AUTH_TOKEN_INVALID,
+        message: ERROR_MESSAGES.AUTH_TOKEN_INVALID,
+      });
       return;
     }
 
@@ -70,6 +79,10 @@ export async function authenticate(
     req.authUser = authUser;
     next();
   } catch {
-    res.status(401).json({ status: "error", message: "Invalid or expired token" });
+    res.status(401).json({
+      status: "error",
+      code: ErrorCode.AUTH_TOKEN_INVALID,
+      message: ERROR_MESSAGES.AUTH_TOKEN_INVALID,
+    });
   }
 }

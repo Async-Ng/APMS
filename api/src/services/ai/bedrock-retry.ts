@@ -27,6 +27,7 @@ export async function withBedrockRetry<T>(
   const baseMs = env.BEDROCK_RETRY_BASE_MS;
 
   let lastError: unknown;
+  let sawThrottle = false;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -34,8 +35,12 @@ export async function withBedrockRetry<T>(
     } catch (error) {
       lastError = error;
 
+      if (isBedrockThrottleError(error)) {
+        sawThrottle = true;
+      }
+
       if (!isBedrockThrottleError(error) || attempt >= maxRetries) {
-        throw error;
+        break;
       }
 
       const delayMs = baseMs * 2 ** attempt + Math.floor(Math.random() * 250);
@@ -45,6 +50,16 @@ export async function withBedrockRetry<T>(
       );
       await sleep(delayMs);
     }
+  }
+
+  if (
+    sawThrottle &&
+    lastError instanceof Error &&
+    lastError.name === "AccessDeniedException"
+  ) {
+    throw new Error(
+      `Too many tokens per day (Bedrock ${label} quota exhausted after retries). ${lastError.message}`,
+    );
   }
 
   throw lastError instanceof Error

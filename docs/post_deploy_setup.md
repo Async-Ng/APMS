@@ -15,7 +15,7 @@ Sau `cdk deploy` thành công, hoàn tất các bước sau trước khi chạy 
 | IAM backend user | `apms-backend-service-user` |
 | Cognito admin group | `admin` (output `CognitoAdminGroupNameOutput` sau deploy mới) |
 | Bedrock chat model | `apac.amazon.nova-micro-v1:0` (`BedrockChatModelIdOutput`) |
-| Bedrock embedding model | `cohere.embed-english-v3` (`BedrockEmbeddingModelIdOutput`) |
+| Bedrock embedding model | `global.cohere.embed-v4:0` (`BedrockEmbeddingModelIdOutput`) |
 
 > Sau khi thêm group `admin` vào CDK, chạy lại `cdk deploy` rồi gán user vào group theo mục 8.
 
@@ -99,31 +99,51 @@ IAM user `apms-backend-service-user` nhận quyền `bedrock:InvokeModel` + `bed
 
 1. AWS Console → region **`ap-southeast-1`** → **Amazon Bedrock** → **Model catalog** (hoặc Model access)
 2. Bật:
-   - **Cohere Embed English v3** (`cohere.embed-english-v3`) — embedding
+   - **Cohere Embed v4** (`cohere.embed-v4:0` / `global.cohere.embed-v4:0`) — embedding
    - **Amazon Nova Micro** — chat
 3. Nếu Cohere yêu cầu Marketplace subscription hoặc use case form → submit và chờ approve
+
+**Bước 1b — Request tăng quota Embed V4 (khuyến nghị)**
+
+AWS Console → **Service Quotas** → **Amazon Bedrock** → search `Embed V4`. Request increase các quota **Account level**:
+
+| Quota | Đề xuất |
+|-------|---------|
+| Cross-region model inference **tokens** per minute for Cohere Embed V4 | 300,000+ |
+| Cross-region model inference **requests** per minute for Cohere Embed V4 | 2,000+ |
+| Global cross-region model inference **tokens** per minute | 300,000+ |
+| Global cross-region model inference **requests** per minute | 2,000+ |
+
+Chờ **Approved** trước khi re-embed hàng loạt. In-region on-demand quota thường **Not adjustable** — dùng `global.cohere.embed-v4:0` để tăng quota qua console.
 
 **Bước 2 — `api/.env`**
 
 ```
 AI_PROVIDER=bedrock
 BEDROCK_MODEL_ID=apac.amazon.nova-micro-v1:0
-BEDROCK_EMBEDDING_MODEL_ID=cohere.embed-english-v3
+BEDROCK_EMBEDDING_MODEL_ID=global.cohere.embed-v4:0
+BEDROCK_EMBEDDING_OUTPUT_DIMENSION=1024
 ```
 
-Không cần `GEMINI_API_KEY` khi `AI_PROVIDER=bedrock`.
+Đặt `BEDROCK_EMBEDDING_MODEL_ID=global.cohere.embed-v4:0` trong `infrastructure/.env` trước `cdk deploy` để IAM + stack output khớp.
 
-**Bước 3 — Rebuild vector index (1024 dims)**
+Không cần `GOOGLE_CLOUD_PROJECT` khi `AI_PROVIDER=bedrock`.
 
-Nếu trước đó dùng local embedding (384 dims) hoặc đổi từ Gemini, làm theo [`api/scripts/rebuild-vector-index-bedrock.md`](../api/scripts/rebuild-vector-index-bedrock.md).
+**Bước 3 — Re-embed sau khi đổi model**
+
+- Chỉ đổi v3 → v4 (vẫn 1024 dims): `npx tsx --env-file=.env scripts/reindex-bedrock-embed.ts`
+- Đổi số chiều (384/1024) hoặc từ Gemini: [`api/scripts/rebuild-vector-index-bedrock.md`](../api/scripts/rebuild-vector-index-bedrock.md)
+
+Smoke test embedding: `npx tsx --env-file=.env scripts/test-embed.ts`
 
 | Biến | Mô tả |
 |------|--------|
 | `AI_PROVIDER` | `bedrock` |
 | `BEDROCK_MODEL_ID` | Mặc định `apac.amazon.nova-micro-v1:0` (dùng inference profile `apac.*`, không gọi `amazon.nova-micro-v1:0` trực tiếp) |
-| `BEDROCK_EMBEDDING_MODEL_ID` | Mặc định `cohere.embed-english-v3` (1024 dims) |
+| `BEDROCK_EMBEDDING_MODEL_ID` | Mặc định `global.cohere.embed-v4:0` (1024 dims qua `output_dimension`) |
+| `BEDROCK_EMBEDDING_OUTPUT_DIMENSION` | Mặc định `1024` — phải khớp MongoDB vector index |
 
-Lỗi thường gặp: `AccessDenied` → kiểm tra `cdk deploy` + Model catalog; `inference profile` → sai `BEDROCK_MODEL_ID`; vector search rỗng → chưa rebuild index 1024 dims.
+Lỗi thường gặp: `AccessDenied` → `cdk deploy` + Model catalog + IAM inference-profile; `inference profile` → sai `BEDROCK_MODEL_ID`; vector search rỗng → chưa re-embed; `embeddings.float` → model v4 nhưng code/env v3.
 
 ### 5c. Giới hạn sử dụng Bedrock (cost + quota)
 
@@ -143,31 +163,91 @@ Lỗi thường gặp: `AccessDenied` → kiểm tra `cdk deploy` + Model catalo
 | `BEDROCK_RETRY_BASE_MS` | `1000` | Base exponential backoff |
 | `CHAT_DAILY_LIMIT_PER_USER` | `50` | Max tin chat/user/ngày (`0` = tắt) |
 
-**Service Quotas:** AWS Console → Service Quotas → Amazon Bedrock → ghi RPM/TPM của Cohere + Nova; request tăng quota nếu re-embed nhiều file.
+**Service Quotas:** AWS Console → Service Quotas → Amazon Bedrock → Embed V4 (global/cross-region, Account level) + Nova Micro; request tăng quota trước khi re-embed nhiều file.
 
-### 5b. Google Gemini (thay thế)
+### 5b. Vertex AI Gemini (primary — ADC only)
 
-1. Lấy API key tại [Google AI Studio](https://aistudio.google.com/apikey)
-2. Trong `api/.env`:
-   ```
-   AI_PROVIDER=gemini
-   GEMINI_API_KEY=<key>
-   GEMINI_CHAT_MODEL=gemini-2.5-flash
-   GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-   ```
-3. Re-index khi đổi embedding model:
-   ```powershell
-   cd api
-   npx tsx --env-file=.env scripts/reindex-gemini.ts
-   ```
+Org policy GCP có thể **cấm API keys** ("API keys are disallowed") — dùng **Application Default Credentials**, không dùng Google AI Studio API key.
+
+**Bước 1 — GCP project**
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → tạo project
+2. Bật **Vertex AI API** (`aiplatform.googleapis.com`) + **billing**
+3. IAM → Service Account → role **Vertex AI User** (`roles/aiplatform.user`)
+4. Tạo JSON key → lưu ngoài repo
+
+**Bước 2 — ADC local**
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="D:\path\to\vertex-sa-key.json"
+```
+
+Hoặc: `gcloud auth application-default login` + `gcloud config set project <project-id>` (chỉ dev).
+
+**Bước 3 — `api/.env`**
+
+```
+AI_PROVIDER=gemini
+GOOGLE_CLOUD_PROJECT=<gcp-project-id>
+GOOGLE_CLOUD_LOCATION=asia-southeast1
+GOOGLE_APPLICATION_CREDENTIALS=D:\path\to\vertex-sa-key.json
+GEMINI_CHAT_MODEL=gemini-2.5-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_EMBEDDING_OUTPUT_DIMENSION=1024
+GEMINI_EMBED_DELAY_MS=200
+```
+
+**Bước 4 — Smoke test + re-index**
+
+```powershell
+cd api
+npx tsx --env-file=.env scripts/test-embed.ts
+npx tsx --env-file=.env scripts/reindex-gemini.ts
+```
+
+Restart API — worker re-embed documents ở `processing`.
 
 | Biến | Mô tả |
 |------|--------|
-| `AI_PROVIDER` | `gemini` \| `auto` (Bedrock chat trước, fallback Gemini — cần cả Bedrock + Gemini) |
-| `GEMINI_API_KEY` | Bắt buộc khi `gemini` hoặc `auto` |
+| `AI_PROVIDER` | `gemini` (mặc định) \| `auto` (Bedrock trước, Vertex fallback) |
+| `GOOGLE_CLOUD_PROJECT` | Bắt buộc khi `gemini` hoặc `auto` |
+| `GOOGLE_CLOUD_LOCATION` | Mặc định `asia-southeast1` (hoặc `global`) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path tới service account JSON (ADC) |
 | `GEMINI_EMBEDDING_MODEL` | Mặc định `gemini-embedding-001` (1024 dims) |
+| `GEMINI_EMBED_DELAY_MS` | Delay giữa chunk embed (mặc định `200`) |
 
-Auth flow không cần AI provider.
+**Cảnh báo credit GCP (Budget 90%)**
+
+GCP gửi email tới **Billing Account Administrator / Billing Account User** khi chi tiêu (trước credit) đạt 50% / **90%** / 100% ngân sách.
+
+```powershell
+# Chỉnh số credit thực tế (VND) — mặc định 7,900,051 VND (theo GCP Console)
+$env:GCP_CREDIT_BUDGET_VND = "7900051"
+cd api
+.\scripts\setup-gcp-credit-budget.ps1
+```
+
+Console: [Billing → Budgets](https://console.cloud.google.com/billing/budgets) → budget `APMS GCP Credits 90pct` (filter project APMS, `exclude-all-credits` = theo dõi tiêu hao credit).
+
+**Quota Vertex AI (50 users/ngày — chat + upload)**
+
+Ước lượng peak: 50 chat đồng thời (~50 embed + 50 generate/phút) + worker embed tài liệu (~300 RPM với `GEMINI_EMBED_DELAY_MS=200`).
+
+| Hạng mục | Quota hiện tại (project) | Đủ 50 users? |
+|----------|--------------------------|--------------|
+| `gemini-embedding` TPM (`asia-southeast1`) | ~1M/min | Đủ; đã request tăng lên 2M |
+| Online prediction RPM (`asia-southeast1`) | ~30,000/min | Đủ |
+| `gemini-2.5-flash` chat | Dynamic Shared Quota | Không request RPM cố định; code có fallback model + retry embed |
+
+```powershell
+cd api
+.\scripts\check-vertex-quota-limits.ps1      # xem limit hiện tại
+.\scripts\request-vertex-quotas-50users.ps1  # gửi request tăng quota (nếu cần)
+```
+
+Theo dõi request: [Quotas → Increase requests](https://console.cloud.google.com/iam-admin/quotas/increase-requests). Bật **Quota adjuster** cho Vertex AI API để GCP tự đề xuất tăng khi usage tăng.
+
+Auth flow (Cognito) không cần AI provider.
 
 ---
 

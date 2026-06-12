@@ -27,10 +27,6 @@ function ChatLandingContent() {
       .mutateAsync({
         contextType,
         contextId,
-        title:
-          contextType === "document"
-            ? "Hỏi về tài liệu"
-            : "Hỏi về folder",
       })
       .then((session) => {
         router.replace(`/chat/${session.id}`);
@@ -52,8 +48,8 @@ function ChatLandingContent() {
     <div className="flex min-h-0 flex-1 flex-col">
       <ChatWorkspace
         isNewChat
+        autoOpenPicker
         onSessionCreated={(id) => router.push(`/chat/${id}`)}
-        onNewChat={() => router.push("/chat")}
       />
     </div>
   );

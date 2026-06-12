@@ -5,6 +5,8 @@ import { useCallback, useRef, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { getUserErrorMessage } from "@/lib/errors";
 import {
   uploadToS3,
   useCompleteUpload,
@@ -45,10 +47,10 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
   /* Validate file */
   function validateFile(file: File): string | null {
     if (!ALLOWED_MIME.includes(file.type as (typeof ALLOWED_MIME)[number])) {
-      return "Only PDF, DOCX, and PPTX files are allowed.";
+      return "Chỉ chấp nhận tệp PDF, DOCX và PPTX.";
     }
     if (file.size > MAX_BYTES) {
-      return "File size must be under 50 MB.";
+      return "Dung lượng tệp không được vượt quá 50 MB.";
     }
     return null;
   }
@@ -90,9 +92,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
 
       setStep("done");
     } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : "Upload failed. Please try again.",
-      );
+      setErrorMsg(getUserErrorMessage(err));
       setStep("error");
     }
   }, [selectedFile, folderId, uploadIntent, completeUpload]);
@@ -211,14 +211,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 }}
               />
 
-              {errorMsg && (
-                <p
-                  role="alert"
-                  className="rounded-xl border-2 border-brutal-danger bg-red-50 px-3 py-2 text-sm font-medium text-brutal-danger"
-                >
-                  {errorMsg}
-                </p>
-              )}
+              {errorMsg && <ErrorAlert message={errorMsg} variant="inline" />}
 
               <BrutalButton
                 variant="primary"

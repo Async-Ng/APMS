@@ -7,6 +7,7 @@ import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
 import { Topbar } from "@/components/app/Topbar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { useStarred } from "@/lib/queries/drive";
 
@@ -24,9 +25,12 @@ export default function StarredPage() {
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
         {isError && (
-          <p className="rounded-xl border-2 border-brutal-ink bg-red-50 px-4 py-3 text-sm font-medium text-brutal-danger">
-            Failed to load starred items.
-          </p>
+          <ErrorAlert
+            className="mb-4"
+            message="Không tải được mục đã gắn sao. Vui lòng thử lại."
+            actionLabel="Tải lại"
+            onAction={() => window.location.reload()}
+          />
         )}
 
         {isLoading ? (

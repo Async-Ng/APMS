@@ -2,10 +2,10 @@
 
 import { Search, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { isAxiosError } from "axios";
-
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { getUserErrorMessage } from "@/lib/errors";
 import {
   useCreateShares,
   useRevokeShare,
@@ -20,14 +20,6 @@ export interface ShareModalProps {
   resourceId: string;
   resourceName: string;
   onClose: () => void;
-}
-
-function getApiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const message = err.response?.data?.message;
-    if (typeof message === "string") return message;
-  }
-  return "Something went wrong. Please try again.";
 }
 
 function UserAvatar({ user }: { user: ShareUser }) {
@@ -131,7 +123,7 @@ export function ShareModal({
     try {
       await revokeShare.mutateAsync(shareId);
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      setError(getUserErrorMessage(err));
     }
   }
 
@@ -154,7 +146,7 @@ export function ShareModal({
         result.skipped > 0 ? ` (${result.skipped} skipped)` : "";
 
       if (createdCount === 0) {
-        setError("No new shares were created. Users may already have access.");
+        setError("Không có lượt chia sẻ mới. Người nhận có thể đã có quyền truy cập.");
       } else {
         setSuccess(
           `Shared with ${createdCount} user${createdCount > 1 ? "s" : ""}${skippedNote}.`,
@@ -162,7 +154,7 @@ export function ShareModal({
         setSelectedUsers([]);
       }
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      setError(getUserErrorMessage(err));
     }
   }
 
@@ -337,11 +329,7 @@ export function ShareModal({
               </div>
             )}
 
-            {error && (
-              <p role="alert" className="text-xs font-medium text-brutal-danger">
-                {error}
-              </p>
-            )}
+            {error && <ErrorAlert message={error} variant="inline" />}
             {success && (
               <p
                 role="status"

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { api } from "@/lib/api-client";
+import { getUserErrorMessage } from "@/lib/errors";
 
 export interface AppUser {
   id: string;
@@ -34,11 +35,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await api.get<{ status: string; data: AppUser }>("/auth/me");
       set({ user: response.data.data, isLoading: false });
-    } catch {
+    } catch (err) {
       set({
         user: null,
         isLoading: false,
-        error: "Failed to load user profile",
+        error: getUserErrorMessage(err),
       });
     }
   },

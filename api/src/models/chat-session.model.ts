@@ -1,6 +1,6 @@
 import { Schema, model, type HydratedDocument, type InferSchemaType } from "mongoose";
 
-export const CHAT_CONTEXT_TYPES = ["all", "folder", "document"] as const;
+export const CHAT_CONTEXT_TYPES = ["all", "folder", "document", "documents"] as const;
 export type ChatContextType = (typeof CHAT_CONTEXT_TYPES)[number];
 
 const chatSessionSchema = new Schema(
@@ -14,6 +14,7 @@ const chatSessionSchema = new Schema(
       required: true,
     },
     contextId: { type: Schema.Types.ObjectId, default: null },
+    contextIds: { type: [Schema.Types.ObjectId], default: [] },
   },
   { timestamps: true },
 );
@@ -28,6 +29,7 @@ export function toChatSessionResponse(session: ChatSessionDocument) {
     title: session.title,
     contextType: session.contextType as ChatContextType,
     contextId: session.contextId ? session.contextId.toString() : null,
+    contextIds: (session.contextIds ?? []).map((id) => id.toString()),
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };

@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-export type ChatContextType = "all" | "folder" | "document";
+export type ChatContextType = "all" | "folder" | "document" | "documents";
 
 export interface ChatCitation {
   documentId: string;
@@ -19,6 +19,8 @@ export interface ChatSession {
   title: string;
   contextType: ChatContextType;
   contextId: string | null;
+  contextIds?: string[];
+  contextLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +42,7 @@ export interface CreateSessionBody {
   title?: string;
   contextType: ChatContextType;
   contextId?: string;
+  contextIds?: string[];
 }
 
 export interface SendMessageResult {
@@ -104,6 +107,35 @@ export function useDeleteSession() {
     onSuccess: (_data, sessionId) => {
       void qc.invalidateQueries({ queryKey: chatKeys.sessions });
       qc.removeQueries({ queryKey: chatKeys.session(sessionId) });
+    },
+  });
+}
+
+export function useUpdateSession(sessionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (title: string) => {
+      const res = await api.patch<{ status: string; data: ChatSession }>(
+        `/chat/sessions/${sessionId}`,
+        { title },
+      );
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+      const current = qc.getQueryData<ChatSessionDetail>(
+        chatKeys.session(sessionId),
+      );
+      if (current) {
+        qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+          ...current,
+          title: data.title,
+          contextLabel: data.contextLabel,
+          updatedAt: data.updatedAt,
+        });
+      } else {
+        void qc.invalidateQueries({ queryKey: chatKeys.session(sessionId) });
+      }
     },
   });
 }
@@ -173,20 +205,4 @@ export function useSendMessage(sessionId: string) {
   });
 }
 
-export function getApiErrorMessage(err: unknown): string {
-  if (
-    err &&
-    typeof err === "object" &&
-    "response" in err &&
-    err.response &&
-    typeof err.response === "object" &&
-    "data" in err.response &&
-    err.response.data &&
-    typeof err.response.data === "object" &&
-    "message" in err.response.data &&
-    typeof (err.response.data as { message: string }).message === "string"
-  ) {
-    return (err.response.data as { message: string }).message;
-  }
-  return "Something went wrong. Please try again.";
-}
+export { getApiErrorMessage, getUserErrorMessage } from "@/lib/errors";

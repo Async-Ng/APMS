@@ -140,7 +140,7 @@ Các đoạn văn bản (chunks) được trích xuất và vector hóa từ tà
 | `chunkIndex` | `Number` | required | Thứ tự chunk trong tài liệu (bắt đầu từ 0) |
 | `content` | `String` | required | Nội dung văn bản của đoạn này |
 | `pageNumber` | `Number` | | Trang chứa đoạn này (dùng để hiển thị Citation) |
-| `embedding` | `Number[]` | required | Vector **1024** chiều từ Google Gemini `gemini-embedding-001` |
+| `embedding` | `Number[]` | required | Vector **1024** chiều từ Vertex AI `gemini-embedding-001` (L2-normalized) |
 
 **Indexes:**
 - `documentId` — xóa batch toàn bộ chunks khi document bị xóa

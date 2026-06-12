@@ -1,21 +1,19 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
+import { getUserErrorMessage } from "@/lib/errors";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
-import {
-  getApiErrorMessage,
-  useChatSession,
-  useSendMessage,
-} from "@/lib/queries/chat";
+import { useChatSession, useSendMessage } from "@/lib/queries/chat";
 
 import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatSessionList } from "./ChatSessionList";
-import { ChatSourcePanel } from "./ChatSourcePanel";
+import { ChatSourcePickerModal } from "./ChatSourcePickerModal";
 import { CitationPanel } from "./CitationPanel";
 
 type MobileTab = "sources" | "chat" | "citations";
@@ -27,17 +25,18 @@ function citationKey(c: ChatCitation): string {
 interface ChatWorkspaceProps {
   sessionId?: string;
   isNewChat?: boolean;
+  autoOpenPicker?: boolean;
   onSessionCreated: (id: string) => void;
-  onNewChat: () => void;
 }
 
 export function ChatWorkspace({
   sessionId,
   isNewChat = false,
+  autoOpenPicker = false,
   onSessionCreated,
-  onNewChat,
 }: ChatWorkspaceProps) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<ChatCitation | null>(
     null,
   );
@@ -51,6 +50,12 @@ export function ChatWorkspace({
     isNewChat ? undefined : sessionId,
   );
   const sendMessage = useSendMessage(sessionId ?? "");
+
+  useEffect(() => {
+    if (autoOpenPicker && isNewChat) {
+      setPickerOpen(true);
+    }
+  }, [autoOpenPicker, isNewChat]);
 
   const handleSelectCitation = useCallback(
     (message: ChatMessage, citation: ChatCitation) => {
@@ -88,7 +93,7 @@ export function ChatWorkspace({
           }
         },
         onError: (err) => {
-          setSendError(getApiErrorMessage(err));
+          setSendError(getUserErrorMessage(err));
         },
       });
     },
@@ -105,6 +110,12 @@ export function ChatWorkspace({
 
   return (
     <>
+      <ChatSourcePickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSessionCreated={onSessionCreated}
+      />
+
       <Topbar breadcrumbs={[{ label: "AI Chat" }]} onMenuOpen={() => {}} />
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -142,14 +153,12 @@ export function ChatWorkspace({
           >
             <ChatSessionList
               activeSessionId={sessionId}
-              onNewChat={onNewChat}
+              onOpenPicker={() => setPickerOpen(true)}
             />
 
-            {isNewChat ? (
-              <ChatSourcePanel onSessionCreated={onSessionCreated} />
-            ) : session ? (
+            {session ? (
               <>
-                <ChatContextBadge session={session} />
+                <ChatContextBadge session={session} messages={session.messages} />
                 <p className="text-xs text-brutal-muted">
                   Phạm vi nguồn cố định khi tạo phiên. Tạo cuộc trò chuyện mới để
                   đổi.
@@ -168,10 +177,10 @@ export function ChatWorkspace({
             {isNewChat ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
                 <p className="font-heading text-lg font-extrabold">
-                  Chọn nguồn bên trái
+                  Nhấn + để chọn nguồn tài liệu
                 </p>
                 <p className="text-sm text-brutal-muted">
-                  Sau khi bắt đầu, bạn có thể chat tại đây.
+                  Chọn tài liệu hoặc folder từ My Drive, xem lại rồi bắt đầu trò chuyện.
                 </p>
               </div>
             ) : isLoading ? (
@@ -179,9 +188,9 @@ export function ChatWorkspace({
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
               </div>
             ) : isError || !session ? (
-              <p className="p-4 text-sm font-medium text-brutal-danger">
-                Không tải được cuộc trò chuyện.
-              </p>
+              <div className="p-4">
+                <ErrorAlert message="Không tải được cuộc trò chuyện. Vui lòng thử lại." />
+              </div>
             ) : (
               <>
                 <div className="shrink-0 border-b-2 border-brutal-ink px-4 py-2">
@@ -198,12 +207,9 @@ export function ChatWorkspace({
                   onSelectMessage={handleSelectMessage}
                 />
                 {sendError && (
-                  <p
-                    className="shrink-0 px-4 pb-2 text-xs font-medium text-brutal-danger"
-                    role="alert"
-                  >
-                    {sendError}
-                  </p>
+                  <div className="shrink-0 px-4 pb-2">
+                    <ErrorAlert message={sendError} variant="inline" />
+                  </div>
                 )}
                 <ChatComposer
                   onSend={handleSend}

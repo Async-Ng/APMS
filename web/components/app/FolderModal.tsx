@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { getUserErrorMessage } from "@/lib/errors";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useCreateFolder, useUpdateFolder } from "@/lib/queries/drive";
 import { useUpdateDocument } from "@/lib/queries/documents";
@@ -76,7 +78,7 @@ export function FolderModal({
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Name cannot be empty.");
+      setError("Tên không được để trống.");
       return;
     }
 
@@ -93,8 +95,8 @@ export function FolderModal({
         });
       }
       onClose();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(getUserErrorMessage(err));
     }
   }
 
@@ -161,13 +163,9 @@ export function FolderModal({
               aria-describedby={error ? "folder-name-error" : undefined}
             />
             {error && (
-              <p
-                id="folder-name-error"
-                role="alert"
-                className="text-xs font-medium text-brutal-danger"
-              >
-                {error}
-              </p>
+              <div id="folder-name-error">
+                <ErrorAlert message={error} variant="inline" />
+              </div>
             )}
           </div>
 
