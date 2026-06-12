@@ -7,7 +7,7 @@ export interface ChatTurn {
   content: string;
 }
 
-/** Dimensions for Xenova/bge-small-en-v1.5 (local embedding model, Render Free compatible) */
+/** Dimensions for Xenova/bge-small-en-v1.5 (local provider only — Vertex/Bedrock use 1024 via env) */
 export const EMBEDDING_DIMENSIONS = 384;
 
 export const CHAT_MAX_OUTPUT_TOKENS = 512;

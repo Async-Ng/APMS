@@ -215,7 +215,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     // Quyền gọi Amazon Bedrock — embedding (Cohere) + chat (Nova Micro)
     const bedrockEmbeddingModelId =
-      process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "cohere.embed-english-v3";
+      process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "global.cohere.embed-v4:0";
     const bedrockChatModelId =
       process.env.BEDROCK_MODEL_ID ?? "apac.amazon.nova-micro-v1:0";
 
@@ -224,7 +224,12 @@ export class InfrastructureStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ["bedrock:InvokeModel"],
         resources: [
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/${bedrockEmbeddingModelId}`,
+          // global.cohere.embed-v4:0 and other inference profiles
+          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/*`,
+          // In-region fallback: cohere.embed-v4:0
+          "arn:aws:bedrock:*::foundation-model/cohere.embed-v4:0",
+          // Rollback: cohere.embed-english-v3
+          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/cohere.embed-english-v3`,
         ],
       }),
     );

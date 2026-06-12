@@ -1,44 +1,68 @@
-import {
-  GoogleGenerativeAI,
-  TaskType,
-  type Content,
-  type EmbedContentRequest,
-} from "@google/generative-ai";
+import { GoogleGenAI, type Content } from "@google/genai";
 
 import { loadEnv } from "../../config/env";
+import { normalizeVector } from "./embedding-utils";
+import { withGeminiRetry } from "./gemini-retry";
 import type { ChatTurn, EmbeddingInputType } from "./types";
-import { CHAT_MAX_OUTPUT_TOKENS, EMBEDDING_DIMENSIONS } from "./types";
+import { CHAT_MAX_OUTPUT_TOKENS } from "./types";
 
 /**
  * Ordered list of chat models to try when the primary model hits a 429 quota error.
- * Models are tried in sequence until one succeeds.
  * The primary model from GEMINI_CHAT_MODEL env var is always tried first.
- * Order: highest RPD first to maximise daily capacity.
  */
 const CHAT_FALLBACK_MODELS = [
-  "gemini-2.5-flash",         // 20 RPD, 5 RPM
-  "gemini-3.1-flash-lite",    // 500 RPD, 15 RPM — highest daily quota
-  "gemini-2.5-flash-lite",    // 20 RPD, 10 RPM
-  "gemini-3.5-flash",         // 20 RPD, 5 RPM
-  "gemini-3-flash",           // 20 RPD, 5 RPM
+  "gemini-2.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3-flash",
 ];
+
+const FULLY_NORMALIZED_EMBEDDING_DIMS = 3072;
 
 function isQuotaError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
-  return msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded") || msg.includes("Too Many Requests");
+  return (
+    msg.includes("429") ||
+    msg.includes("quota") ||
+    msg.includes("Quota exceeded") ||
+    msg.includes("Too Many Requests") ||
+    msg.includes("RESOURCE_EXHAUSTED")
+  );
 }
 
-function getClient(): GoogleGenerativeAI {
+function getVertexClient(): GoogleGenAI {
   const env = loadEnv();
-  const apiKey = env.GEMINI_API_KEY;
-  if (!apiKey?.trim()) {
-    throw new Error("GEMINI_API_KEY is not configured");
+  if (!env.GOOGLE_CLOUD_PROJECT?.trim()) {
+    throw new Error("GOOGLE_CLOUD_PROJECT is not configured (required for Vertex AI)");
   }
-  return new GoogleGenerativeAI(apiKey);
+
+  return new GoogleGenAI({
+    vertexai: true,
+    project: env.GOOGLE_CLOUD_PROJECT,
+    location: env.GOOGLE_CLOUD_LOCATION,
+  });
 }
 
-function embeddingTaskType(inputType: EmbeddingInputType): TaskType {
-  return inputType === "search_query" ? TaskType.RETRIEVAL_QUERY : TaskType.RETRIEVAL_DOCUMENT;
+function embeddingTaskType(inputType: EmbeddingInputType): string {
+  return inputType === "search_query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT";
+}
+
+function extractEmbeddingValues(result: {
+  embeddings?: Array<{ values?: number[] }>;
+  embedding?: { values?: number[] };
+}): number[] {
+  const fromList = result.embeddings?.[0]?.values;
+  if (fromList?.length) {
+    return [...fromList];
+  }
+
+  const fromSingle = result.embedding?.values;
+  if (fromSingle?.length) {
+    return [...fromSingle];
+  }
+
+  throw new Error("Vertex embedding response missing values");
 }
 
 export async function embedText(
@@ -46,51 +70,61 @@ export async function embedText(
   inputType: EmbeddingInputType = "search_document",
 ): Promise<number[]> {
   const env = loadEnv();
-  const genAI = getClient();
-  const model = genAI.getGenerativeModel({ model: env.GEMINI_EMBEDDING_MODEL });
+  const ai = getVertexClient();
+  const outputDimension = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
 
-  const embedRequest = {
-    content: { role: "user", parts: [{ text }] },
-    taskType: embeddingTaskType(inputType),
-    outputDimensionality: EMBEDDING_DIMENSIONS,
-  } as EmbedContentRequest & { outputDimensionality: number };
+  const result = await withGeminiRetry(
+    () =>
+      ai.models.embedContent({
+        model: env.GEMINI_EMBEDDING_MODEL,
+        contents: text,
+        config: {
+          taskType: embeddingTaskType(inputType),
+          outputDimensionality: outputDimension,
+        },
+      }),
+    "embed",
+  );
 
-  const result = await model.embedContent(embedRequest);
+  let values = extractEmbeddingValues(result);
 
-  const values = result.embedding.values;
-  if (!values?.length) {
-    throw new Error("Gemini embedding response missing values");
-  }
-
-  if (values.length !== EMBEDDING_DIMENSIONS) {
+  if (values.length !== outputDimension) {
     throw new Error(
-      `Gemini embedding dimension mismatch: expected ${EMBEDDING_DIMENSIONS}, got ${values.length}`,
+      `Gemini embedding dimension mismatch: expected ${outputDimension}, got ${values.length}`,
     );
   }
 
-  return [...values];
+  if (outputDimension < FULLY_NORMALIZED_EMBEDDING_DIMS) {
+    values = normalizeVector(values);
+  }
+
+  return values;
+}
+
+function toGenAiContents(messages: ChatTurn[]): Content[] {
+  return messages.map((message) => ({
+    role: message.role === "assistant" ? "model" : "user",
+    parts: [{ text: message.content }],
+  }));
 }
 
 async function tryChatWithModel(
-  genAI: GoogleGenerativeAI,
+  ai: GoogleGenAI,
   modelName: string,
   systemPrompt: string,
-  history: Content[],
-  lastMessage: string,
+  messages: ChatTurn[],
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({
+  const response = await ai.models.generateContent({
     model: modelName,
-    systemInstruction: systemPrompt,
-    generationConfig: {
+    contents: toGenAiContents(messages),
+    config: {
+      systemInstruction: systemPrompt,
       maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
       temperature: 0.3,
     },
   });
 
-  const chat = model.startChat({ history });
-  const result = await chat.sendMessage(lastMessage);
-  const text = result.response.text().trim();
-
+  const text = response.text?.trim() ?? "";
   if (!text) {
     throw new Error(`Gemini model ${modelName} returned empty assistant message`);
   }
@@ -103,7 +137,7 @@ export async function chatWithContext(
   messages: ChatTurn[],
 ): Promise<string> {
   const env = loadEnv();
-  const genAI = getClient();
+  const ai = getVertexClient();
 
   if (messages.length === 0) {
     throw new Error("chatWithContext requires at least one message");
@@ -114,25 +148,21 @@ export async function chatWithContext(
     throw new Error("Last chat message must be from user");
   }
 
-  const history: Content[] = messages.slice(0, -1).map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
-
-  // Build deduplicated model list: primary model first, then fallbacks
   const primaryModel = env.GEMINI_CHAT_MODEL;
   const modelsToTry = [
     primaryModel,
-    ...CHAT_FALLBACK_MODELS.filter((m) => m !== primaryModel),
+    ...CHAT_FALLBACK_MODELS.filter((model) => model !== primaryModel),
   ];
 
   let lastError: unknown;
 
   for (const modelName of modelsToTry) {
     try {
-      const text = await tryChatWithModel(genAI, modelName, systemPrompt, history, last.content);
+      const text = await tryChatWithModel(ai, modelName, systemPrompt, messages);
       if (modelName !== primaryModel) {
-        console.warn(`[gemini] Primary model "${primaryModel}" quota exceeded. Used fallback "${modelName}".`);
+        console.warn(
+          `[gemini] Primary model "${primaryModel}" quota exceeded. Used fallback "${modelName}".`,
+        );
       }
       return text;
     } catch (error) {
@@ -141,14 +171,12 @@ export async function chatWithContext(
         lastError = error;
         continue;
       }
-      // Non-quota error (auth, model not found, etc.) — fail immediately
       throw error;
     }
   }
 
-  // All models exhausted
   throw new Error(
     `All Gemini chat models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
-    `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
 }

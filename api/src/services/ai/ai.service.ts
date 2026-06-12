@@ -39,8 +39,8 @@ function activateGeminiFallback(reason: string): void {
   if (resolvedProvider === "gemini") return;
   resolvedProvider = "gemini";
   console.warn(
-    `[ai] Bedrock unavailable (${reason}). Switched to Gemini for this process. ` +
-      "Re-upload documents if chunks were embedded with Cohere for best search quality.",
+    `[ai] Bedrock unavailable (${reason}). Switched to Vertex Gemini for this process. ` +
+      "Re-embed documents if chunks used a different embedding provider.",
   );
 }
 

@@ -44,7 +44,11 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
 
       const env = loadEnv();
       const embedDelayMs =
-        env.AI_PROVIDER === "bedrock" ? env.BEDROCK_EMBED_DELAY_MS : 0;
+        env.AI_PROVIDER === "bedrock"
+          ? env.BEDROCK_EMBED_DELAY_MS
+          : env.AI_PROVIDER === "gemini"
+            ? env.GEMINI_EMBED_DELAY_MS
+            : 0;
 
       for (const chunk of chunks) {
         const embedding = await aiService.embedText(chunk.content);
