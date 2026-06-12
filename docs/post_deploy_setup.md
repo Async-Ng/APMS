@@ -321,3 +321,21 @@ Sau `cdk deploy`, stack tạo User Pool group **`admin`** (output `CognitoAdminG
 | 2 | Admin: `GET /api/auth/me` | `data.role` = `"admin"` |
 | 3 | Admin: `GET /api/admin/stats` | 200 |
 | 4 | Admin: `PATCH /api/admin/users/:userId` `{ "isDisabled": true }` | User đó `POST /api/folders` → 403 |
+
+---
+
+## 9. Trash purge cron (bắt buộc production)
+
+Item trong Trash được **xóa vĩnh viễn** sau `TRASH_RETENTION_DAYS` ngày (mặc định **30**). Cấu hình trong `api/.env`:
+
+```env
+TRASH_RETENTION_DAYS=30
+```
+
+Chạy script purge **mỗi ngày** trên server (cron, systemd timer, hoặc CI scheduled job):
+
+```bash
+cd api && pnpm purge:trash
+```
+
+Script: [`api/scripts/purge-trash.ts`](../api/scripts/purge-trash.ts) — xóa documents/folders có `deletedAt` cũ hơn retention, gồm S3 object, `document_chunks`, shares, và giảm `storageUsedBytes`.

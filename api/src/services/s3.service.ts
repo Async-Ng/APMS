@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -63,6 +64,16 @@ export async function getObjectBuffer(s3Key: string): Promise<Buffer> {
   }
 
   return Buffer.concat(chunks);
+}
+
+export async function deleteObject(s3Key: string): Promise<void> {
+  const env = getEnv();
+  await getS3Client().send(
+    new DeleteObjectCommand({
+      Bucket: env.S3_BUCKET_NAME,
+      Key: s3Key,
+    }),
+  );
 }
 
 export async function verifyUploadedObject(
