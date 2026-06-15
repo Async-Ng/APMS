@@ -70,7 +70,7 @@ export function CitationCard({ citation, index, onPress }: CitationCardProps) {
       )}
 
       <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }} numberOfLines={3}>
-        "{citation.excerpt}"
+        &ldquo;{citation.excerpt}&rdquo;
       </Text>
     </Pressable>
   );

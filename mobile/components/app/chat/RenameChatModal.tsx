@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors } from "../../constants/colors";
-import { BrutalButton } from "../ui/BrutalButton";
+import { colors } from "../../../constants/colors";
+import { BrutalButton } from "../../ui/BrutalButton";
 
 interface RenameChatModalProps {
   visible: boolean;

@@ -57,10 +57,6 @@ function SessionListItem({
     }
   }, [isEditing]);
 
-  useEffect(() => {
-    if (!isEditing) setEditTitle(session.title);
-  }, [session.title, isEditing]);
-
   function handleRenameClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();

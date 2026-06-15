@@ -126,7 +126,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                 </View>
 
                 <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8 }}>
-                  Chia sẻ "{resourceName}"
+                  Chia sẻ &ldquo;{resourceName}&rdquo;
                 </Text>
                 <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 16, marginTop: 2 }}>
                   Tìm theo tên hoặc email
