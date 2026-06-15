@@ -36,6 +36,9 @@ const chatSessionSchema = registry.register(
       contextLabel: z.string().nullable().openapi({
         description: "Resolved document title or folder name when contextType is not 'all'",
       }),
+      isPinned: z.boolean().openapi({
+        description: "Whether the session is pinned to the top of the list",
+      }),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })
@@ -131,7 +134,7 @@ export function registerChatPaths(): void {
     path: "/api/chat/sessions",
     tags: ["Chat"],
     summary: "List all chat sessions",
-    description: "Returns sessions sorted by most recently updated.",
+    description: "Returns sessions with pinned sessions first, then sorted by most recently updated.",
     security: [...bearerSecurity],
     responses: {
       200: jsonResponse(sessionListResponse, "Sessions list"),
@@ -161,16 +164,21 @@ export function registerChatPaths(): void {
     method: "patch",
     path: "/api/chat/sessions/{id}",
     tags: ["Chat"],
-    summary: "Rename a chat session",
+    summary: "Update chat session (rename and/or pin)",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,
       body: {
         content: {
           "application/json": {
-            schema: z.object({
-              title: z.string().min(1).max(255).openapi({ example: "Hỏi về WDP26" }),
-            }),
+            schema: z
+              .object({
+                title: z.string().min(1).max(255).optional().openapi({ example: "Hỏi về WDP26" }),
+                isPinned: z.boolean().optional().openapi({ example: true }),
+              })
+              .refine((data) => data.title !== undefined || data.isPinned !== undefined, {
+                message: "At least one of title or isPinned is required",
+              }),
           },
         },
       },

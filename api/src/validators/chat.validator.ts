@@ -31,9 +31,14 @@ export const createSessionSchema = z
     }
   });
 
-export const updateSessionSchema = z.object({
-  title: z.string().trim().min(1).max(255),
-});
+export const updateSessionSchema = z
+  .object({
+    title: z.string().trim().min(1).max(255).optional(),
+    isPinned: z.boolean().optional(),
+  })
+  .refine((data) => data.title !== undefined || data.isPinned !== undefined, {
+    message: "At least one of title or isPinned is required",
+  });
 
 export const sendMessageSchema = z.object({
   content: z.string().trim().min(1).max(10_000),

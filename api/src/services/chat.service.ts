@@ -329,7 +329,7 @@ export async function createSession(
 
 export async function listSessions(user: UserDocument) {
   const sessions = await ChatSession.find({ userId: user._id })
-    .sort({ updatedAt: -1 })
+    .sort({ isPinned: -1, updatedAt: -1 })
     .lean();
 
   const labelMap = await resolveContextLabels(sessions);
@@ -345,6 +345,7 @@ export async function listSessions(user: UserDocument) {
       contextId: s.contextId ? s.contextId.toString() : null,
       contextIds: (s.contextIds ?? []).map((id) => id.toString()),
       contextLabel,
+      isPinned: s.isPinned ?? false,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     };
@@ -394,12 +395,17 @@ export async function getSession(user: UserDocument, sessionId: string) {
 export async function updateSession(
   user: UserDocument,
   sessionId: string,
-  input: { title: string },
+  input: { title?: string; isPinned?: boolean },
 ) {
   const id = parseObjectId(sessionId);
   const session = await findSession(id, user._id);
 
-  session.title = input.title.trim();
+  if (input.title !== undefined) {
+    session.title = input.title.trim();
+  }
+  if (input.isPinned !== undefined) {
+    session.isPinned = input.isPinned;
+  }
   await session.save();
 
   const labelMap = await resolveContextLabels([session]);
