@@ -8,6 +8,7 @@ import {
   listSharedWithMe as listSharedWithMeService,
   resolveDriveParentAccess,
 } from "./share.service";
+import { computePermanentDeleteAt } from "./trash-purge.service";
 
 export async function listDriveContents(
   user: UserDocument,
@@ -68,8 +69,14 @@ export async function listTrash(user: UserDocument) {
   ]);
 
   return {
-    folders: folders.map(toFolderResponse),
-    documents: documents.map((doc) => toDocumentResponse(doc)),
+    folders: folders.map((folder) => ({
+      ...toFolderResponse(folder),
+      permanentDeleteAt: folder.deletedAt ? computePermanentDeleteAt(folder.deletedAt) : null,
+    })),
+    documents: documents.map((doc) => ({
+      ...toDocumentResponse(doc),
+      permanentDeleteAt: doc.deletedAt ? computePermanentDeleteAt(doc.deletedAt) : null,
+    })),
   };
 }
 

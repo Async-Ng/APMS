@@ -41,6 +41,8 @@ export function registerDrivePaths(): void {
     path: "/api/drive/trash",
     tags: ["Drive"],
     summary: "List trash items",
+    description:
+      "Trashed items include permanentDeleteAt (deletedAt + TRASH_RETENTION_DAYS, default 30 days).",
     security: [...bearerSecurity],
     responses: {
       200: jsonResponse(driveContentsSuccessResponseSchema, "Trashed folders and documents"),

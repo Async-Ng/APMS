@@ -197,7 +197,26 @@ GEMINI_EMBEDDING_OUTPUT_DIMENSION=1024
 GEMINI_EMBED_DELAY_MS=200
 ```
 
-**Bước 4 — Smoke test + re-index**
+**Bước 4 — Render / PaaS (production API)**
+
+Render không có `gcloud login` và không đọc được path Windows. API tự bootstrap ADC từ biến `GOOGLE_APPLICATION_CREDENTIALS_JSON` lúc khởi động ([`api/src/config/gcp-credentials.ts`](../api/src/config/gcp-credentials.ts)).
+
+1. Render → Web Service API → **Environment**
+2. Đặt (hoặc xác nhận):
+
+   | Biến | Giá trị |
+   |------|---------|
+   | `NODE_ENV` | `production` |
+   | `AI_PROVIDER` | `gemini` |
+   | `GOOGLE_CLOUD_PROJECT` | GCP project ID |
+   | `GOOGLE_CLOUD_LOCATION` | `asia-southeast1` |
+   | `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Toàn bộ nội dung file JSON service account (một dòng, Render Secret) |
+
+3. **Xóa** `GOOGLE_APPLICATION_CREDENTIALS` nếu đang trỏ path Windows (`D:\...`)
+4. **Manual Deploy** sau khi đổi env
+5. Log boot phải có: `[gcp] ADC configured from GOOGLE_APPLICATION_CREDENTIALS_JSON → ...`
+
+**Bước 5 — Smoke test + re-index**
 
 ```powershell
 cd api
@@ -212,7 +231,8 @@ Restart API — worker re-embed documents ở `processing`.
 | `AI_PROVIDER` | `gemini` (mặc định) \| `auto` (Bedrock trước, Vertex fallback) |
 | `GOOGLE_CLOUD_PROJECT` | Bắt buộc khi `gemini` hoặc `auto` |
 | `GOOGLE_CLOUD_LOCATION` | Mặc định `asia-southeast1` (hoặc `global`) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path tới service account JSON (ADC) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path tới service account JSON (ADC) — **local dev** |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Toàn bộ JSON service account — **Render / PaaS** |
 | `GEMINI_EMBEDDING_MODEL` | Mặc định `gemini-embedding-001` (1024 dims) |
 | `GEMINI_EMBED_DELAY_MS` | Delay giữa chunk embed (mặc định `200`) |
 
@@ -321,3 +341,21 @@ Sau `cdk deploy`, stack tạo User Pool group **`admin`** (output `CognitoAdminG
 | 2 | Admin: `GET /api/auth/me` | `data.role` = `"admin"` |
 | 3 | Admin: `GET /api/admin/stats` | 200 |
 | 4 | Admin: `PATCH /api/admin/users/:userId` `{ "isDisabled": true }` | User đó `POST /api/folders` → 403 |
+
+---
+
+## 9. Trash purge cron (bắt buộc production)
+
+Item trong Trash được **xóa vĩnh viễn** sau `TRASH_RETENTION_DAYS` ngày (mặc định **30**). Cấu hình trong `api/.env`:
+
+```env
+TRASH_RETENTION_DAYS=30
+```
+
+Chạy script purge **mỗi ngày** trên server (cron, systemd timer, hoặc CI scheduled job):
+
+```bash
+cd api && pnpm purge:trash
+```
+
+Script: [`api/scripts/purge-trash.ts`](../api/scripts/purge-trash.ts) — xóa documents/folders có `deletedAt` cũ hơn retention, gồm S3 object, `document_chunks`, shares, và giảm `storageUsedBytes`.

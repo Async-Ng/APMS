@@ -9,6 +9,7 @@ import {
   documentSuccessResponseSchema,
   uploadIntentSuccessResponseSchema,
 } from "../schemas/document";
+import { permanentDeleteSuccessResponseSchema } from "../schemas/common";
 import {
   bearerSecurity,
   error400,
@@ -105,6 +106,24 @@ export function registerDocumentsPaths(): void {
     responses: {
       200: jsonResponse(documentSuccessResponseSchema, "Updated document"),
       400: error400("Validation error"),
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/api/documents/{id}/permanent",
+    tags: ["Documents"],
+    summary: "Permanently delete document from trash",
+    description:
+      "Removes S3 object, vector chunks, shares, and DB record. Decrements storage quota for completed uploads.",
+    security: [...bearerSecurity],
+    request: { params: idParams },
+    responses: {
+      200: jsonResponse(permanentDeleteSuccessResponseSchema, "Permanently deleted"),
+      400: error400("Document not in trash"),
       401: error401,
       403: error403,
       404: error404,

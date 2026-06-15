@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { unauthorizedError } from "../errors/unauthorized";
 import * as documentService from "../services/document.service";
+import * as trashPurgeService from "../services/trash-purge.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
@@ -46,6 +47,16 @@ export const deleteDocument = catchAsync(async (req: Request, res: Response): Pr
   const data = await documentService.deleteDocument(requireUser(req), getRouteParam(req, "id"));
   sendSuccess(res, data);
 });
+
+export const permanentlyDeleteDocument = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    await trashPurgeService.permanentlyDeleteDocumentByUser(
+      requireUser(req),
+      getRouteParam(req, "id"),
+    );
+    sendSuccess(res, { deleted: true });
+  },
+);
 
 export const restoreDocument = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const data = await documentService.restoreDocument(

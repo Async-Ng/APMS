@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { unauthorizedError } from "../errors/unauthorized";
 import * as folderService from "../services/folder.service";
+import * as trashPurgeService from "../services/trash-purge.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
@@ -36,6 +37,16 @@ export const deleteFolder = catchAsync(async (req: Request, res: Response): Prom
   const data = await folderService.deleteFolder(requireUser(req), getRouteParam(req, "id"));
   sendSuccess(res, data);
 });
+
+export const permanentlyDeleteFolder = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    await trashPurgeService.permanentlyDeleteFolderByUser(
+      requireUser(req),
+      getRouteParam(req, "id"),
+    );
+    sendSuccess(res, { deleted: true });
+  },
+);
 
 export const restoreFolder = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const data = await folderService.restoreFolder(requireUser(req), getRouteParam(req, "id"));

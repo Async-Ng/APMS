@@ -4,8 +4,11 @@ import { createApp } from "./app";
 import { initCognitoVerifier } from "./config/cognito";
 import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
+import { initGcpCredentials } from "./config/gcp-credentials";
 import { initLocalEmbedding } from "./services/ai/ai.service";
 import { startDocumentWorker } from "./workers/document.worker";
+
+initGcpCredentials();
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv();

@@ -42,3 +42,12 @@ export const apiHealthDataSchema = z.object({
 });
 
 export const apiHealthResponseSchema = successEnvelope(apiHealthDataSchema, "ApiHealth");
+
+export const permanentDeleteDataSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export const permanentDeleteSuccessResponseSchema = successEnvelope(
+  permanentDeleteDataSchema,
+  "PermanentDelete",
+);

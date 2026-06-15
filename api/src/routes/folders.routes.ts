@@ -20,6 +20,11 @@ foldersRouter.patch(
   foldersController.updateFolder,
 );
 foldersRouter.delete(
+  "/:id/permanent",
+  validate({ params: objectIdParamSchema }),
+  foldersController.permanentlyDeleteFolder,
+);
+foldersRouter.delete(
   "/:id",
   validate({ params: objectIdParamSchema }),
   foldersController.deleteFolder,

@@ -41,6 +41,7 @@ const envSchema = z
     BEDROCK_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     BEDROCK_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
     CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(0).default(50),
+    TRASH_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
   })
   .superRefine((data, ctx) => {
     if (data.AI_PROVIDER === "local") return;

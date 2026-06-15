@@ -12,6 +12,7 @@ export const folderSchema = registry.register(
       color: z.string(),
       isStarred: z.boolean(),
       deletedAt: z.coerce.date().nullable(),
+      permanentDeleteAt: z.coerce.date().nullable().optional(),
       createdAt: z.coerce.date(),
       updatedAt: z.coerce.date(),
     })

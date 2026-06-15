@@ -22,6 +22,9 @@ build/
 .env.production.local
 *.pem
 
+# GCP service account keys (local dev)
+api/.gcp/
+
 # ==========================================
 # OS & Editor Files
 # ==========================================

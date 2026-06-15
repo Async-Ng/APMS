@@ -2,6 +2,7 @@ import { objectIdParamSchema } from "../../validators/common.validator";
 import { createFolderSchema, updateFolderSchema } from "../../validators/folder.validator";
 import { registry } from "../setup";
 import { folderSuccessResponseSchema } from "../schemas/folder";
+import { permanentDeleteSuccessResponseSchema } from "../schemas/common";
 import {
   bearerSecurity,
   error400,
@@ -77,6 +78,24 @@ export function registerFoldersPaths(): void {
       403: error403,
       404: error404,
       409: error409,
+    },
+  });
+
+  registry.registerPath({
+    method: "delete",
+    path: "/api/folders/{id}/permanent",
+    tags: ["Folders"],
+    summary: "Permanently delete folder from trash",
+    description:
+      "Purges trashed documents in the folder tree, revokes shares, and removes folder records.",
+    security: [...bearerSecurity],
+    request: { params: idParams },
+    responses: {
+      200: jsonResponse(permanentDeleteSuccessResponseSchema, "Permanently deleted"),
+      400: error400("Folder not in trash"),
+      401: error401,
+      403: error403,
+      404: error404,
     },
   });
 

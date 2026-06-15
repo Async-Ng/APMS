@@ -36,6 +36,11 @@ documentsRouter.patch(
   documentsController.updateDocument,
 );
 documentsRouter.delete(
+  "/:id/permanent",
+  validate({ params: objectIdParamSchema }),
+  documentsController.permanentlyDeleteDocument,
+);
+documentsRouter.delete(
   "/:id",
   validate({ params: objectIdParamSchema }),
   documentsController.deleteDocument,
