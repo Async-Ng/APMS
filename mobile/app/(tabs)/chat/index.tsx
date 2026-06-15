@@ -11,11 +11,18 @@ import {
 } from "react-native";
 
 import { ActionSheet } from "../../../components/app/ActionSheet";
+import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import { brutalCtaStyle, pressedBrutalStyle } from "../../../lib/brutal-style";
-import { type ChatSession, useChatSessions, useCreateChatSession, useDeleteChatSession } from "../../../hooks/useChat";
+import {
+  type ChatSession,
+  useChatSessions,
+  useCreateChatSession,
+  useDeleteChatSession,
+  useUpdateChatSession,
+} from "../../../hooks/useChat";
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -32,6 +39,7 @@ const CONTEXT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   all: "layers-outline",
   folder: "folder-outline",
   document: "document-text-outline",
+  documents: "documents-outline",
 };
 
 export default function ChatSessionsScreen() {
@@ -41,8 +49,10 @@ export default function ChatSessionsScreen() {
   const { data: sessions, isLoading, refetch, isRefetching } = useChatSessions();
   const createSession = useCreateChatSession();
   const deleteSession = useDeleteChatSession();
+  const updateSession = useUpdateChatSession();
 
   const [actionTarget, setActionTarget] = useState<ChatSession | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ChatSession | null>(null);
 
   useEffect(() => {
     if (params.contextType && params.contextId) {
@@ -66,6 +76,19 @@ export default function ChatSessionsScreen() {
     createSession.mutate(
       { contextType: "all", title: "Cuộc trò chuyện mới" },
       { onSuccess: (session) => router.push(`/(tabs)/chat/${session.id}`) },
+    );
+  }
+
+  function handleRenameConfirm(title: string) {
+    if (!renameTarget) return;
+    updateSession.mutate(
+      { sessionId: renameTarget.id, body: { title } },
+      {
+        onSuccess: () => {
+          setRenameTarget(null);
+          setActionTarget(null);
+        },
+      },
     );
   }
 
@@ -172,9 +195,14 @@ export default function ChatSessionsScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }} numberOfLines={1}>
-                    {item.title}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {item.isPinned && (
+                      <Ionicons name="pin" size={14} color={colors.fptOrange} />
+                    )}
+                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: colors.ink }} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                  </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
                     <View
                       style={{
@@ -201,11 +229,40 @@ export default function ChatSessionsScreen() {
         />
       )}
 
+      <RenameChatModal
+        visible={renameTarget !== null}
+        initialTitle={renameTarget?.title ?? ""}
+        loading={updateSession.isPending}
+        onDismiss={() => setRenameTarget(null)}
+        onConfirm={handleRenameConfirm}
+      />
+
       <ActionSheet
         visible={actionTarget !== null}
         title={actionTarget?.title ?? ""}
         subtitle="Phiên trò chuyện"
         actions={[
+          {
+            label: "Đổi tên",
+            icon: "pencil-outline",
+            onPress: () => {
+              if (actionTarget) {
+                setRenameTarget(actionTarget);
+              }
+            },
+          },
+          {
+            label: actionTarget?.isPinned ? "Bỏ ghim" : "Ghim cuộc trò chuyện",
+            icon: actionTarget?.isPinned ? "pin-outline" : "pin",
+            onPress: () => {
+              if (actionTarget) {
+                updateSession.mutate({
+                  sessionId: actionTarget.id,
+                  body: { isPinned: !actionTarget.isPinned },
+                });
+              }
+            },
+          },
           {
             label: "Xóa cuộc trò chuyện",
             icon: "trash-outline",

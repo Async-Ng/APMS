@@ -36,6 +36,18 @@ const chatSessionSchema = registry.register(
       contextLabel: z.string().nullable().openapi({
         description: "Resolved document title or folder name when contextType is not 'all'",
       }),
+      contextDocuments: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+          }),
+        )
+        .openapi({
+          description: "Resolved document list when contextType is document or documents",
+        }),
+      isPinned: z.boolean().openapi({ example: false }),
+      pinnedAt: z.string().datetime().nullable().openapi({ example: null }),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })
@@ -161,7 +173,7 @@ export function registerChatPaths(): void {
     method: "patch",
     path: "/api/chat/sessions/{id}",
     tags: ["Chat"],
-    summary: "Rename a chat session",
+    summary: "Update chat session (title, pin)",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,
@@ -169,7 +181,8 @@ export function registerChatPaths(): void {
         content: {
           "application/json": {
             schema: z.object({
-              title: z.string().min(1).max(255).openapi({ example: "Hỏi về WDP26" }),
+              title: z.string().min(1).max(255).optional().openapi({ example: "Hỏi về WDP26" }),
+              isPinned: z.boolean().optional().openapi({ example: true }),
             }),
           },
         },

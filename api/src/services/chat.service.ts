@@ -72,10 +72,11 @@ async function resolveContextLabels(
 
   if (docIds.length > 0) {
     const docs = await Document.find({ _id: { $in: docIds } })
-      .select("_id title deletedAt")
+      .select("_id title originalFilename deletedAt")
       .lean();
     for (const d of docs) {
-      const label = d.deletedAt ? `${d.title} (đã xóa)` : d.title;
+      const name = d.title?.trim() || d.originalFilename?.trim() || "Tài liệu";
+      const label = d.deletedAt ? `${name} (đã xóa)` : name;
       labelMap.set(d._id.toString(), label);
     }
   }
@@ -99,15 +100,18 @@ async function enrichContextLabelsFromCitations(
   sessions: SessionWithId[],
   labelMap: Map<string, string>,
 ): Promise<void> {
-  const missing = sessions.filter(
-    (s) =>
-      s.contextType === "document" &&
-      s.contextId &&
-      !labelMap.has(s.contextId.toString()),
-  );
-  if (missing.length === 0) return;
+  const sessionsNeedingEnrichment = sessions.filter((s) => {
+    if (s.contextType === "document" && s.contextId) {
+      return !labelMap.has(s.contextId.toString());
+    }
+    if (s.contextType === "documents" && s.contextIds?.length) {
+      return s.contextIds.some((id) => !labelMap.has(id.toString()));
+    }
+    return false;
+  });
+  if (sessionsNeedingEnrichment.length === 0) return;
 
-  const sessionIds = missing.map((s) => s._id);
+  const sessionIds = sessionsNeedingEnrichment.map((s) => s._id);
   const messages = await ChatMessage.find({
     sessionId: { $in: sessionIds },
     "citations.0": { $exists: true },
@@ -116,16 +120,24 @@ async function enrichContextLabelsFromCitations(
     .sort({ createdAt: -1 })
     .lean();
 
-  for (const s of missing) {
-    const contextIdStr = s.contextId!.toString();
+  for (const s of sessionsNeedingEnrichment) {
+    const targetIds = new Set<string>();
+    if (s.contextType === "document" && s.contextId) {
+      targetIds.add(s.contextId.toString());
+    } else if (s.contextType === "documents" && s.contextIds?.length) {
+      for (const id of s.contextIds) {
+        const idStr = id.toString();
+        if (!labelMap.has(idStr)) targetIds.add(idStr);
+      }
+    }
+
     for (const msg of messages) {
       if (msg.sessionId.toString() !== s._id.toString()) continue;
-      const hit = msg.citations.find(
-        (c) => c.documentId.toString() === contextIdStr,
-      );
-      if (hit?.documentTitle) {
-        labelMap.set(contextIdStr, hit.documentTitle);
-        break;
+      for (const c of msg.citations) {
+        const docId = c.documentId.toString();
+        if (targetIds.has(docId) && c.documentTitle) {
+          labelMap.set(docId, c.documentTitle);
+        }
       }
     }
   }
@@ -177,6 +189,44 @@ function getContextLabel(
   }
   if (!session.contextId) return null;
   return labelMap.get(session.contextId.toString()) ?? null;
+}
+
+function getContextDocuments(
+  session: SessionLike,
+  labelMap: Map<string, string>,
+): Array<{ id: string; title: string }> {
+  if (session.contextType === "documents" && session.contextIds?.length) {
+    return session.contextIds.map((id) => {
+      const idStr = id.toString();
+      return {
+        id: idStr,
+        title: labelMap.get(idStr) ?? "Tài liệu không còn tồn tại",
+      };
+    });
+  }
+  if (session.contextType === "document" && session.contextId) {
+    const idStr = session.contextId.toString();
+    return [
+      {
+        id: idStr,
+        title: labelMap.get(idStr) ?? "Tài liệu không còn tồn tại",
+      },
+    ];
+  }
+  return [];
+}
+
+function withContextFields<T extends SessionLike>(
+  session: T,
+  labelMap: Map<string, string>,
+  title: string,
+) {
+  const contextLabel = getContextLabel(session, labelMap);
+  return {
+    contextLabel,
+    contextDocuments: getContextDocuments(session, labelMap),
+    title: displayTitle(title, contextLabel),
+  };
 }
 
 async function resolveDefaultTitle(
@@ -323,28 +373,31 @@ export async function createSession(
 
   return {
     ...toChatSessionResponse(session),
-    contextLabel: getContextLabel(session, labelMap),
+    ...withContextFields(session, labelMap, session.title),
   };
 }
 
 export async function listSessions(user: UserDocument) {
   const sessions = await ChatSession.find({ userId: user._id })
-    .sort({ updatedAt: -1 })
+    .sort({ isPinned: -1, pinnedAt: -1, updatedAt: -1 })
     .lean();
 
   const labelMap = await resolveContextLabels(sessions);
   await enrichContextLabelsFromCitations(sessions, labelMap);
 
   return sessions.map((s) => {
-    const contextLabel = getContextLabel(s, labelMap);
+    const ctx = withContextFields(s, labelMap, s.title);
     return {
       id: s._id.toString(),
       userId: s.userId.toString(),
-      title: displayTitle(s.title, contextLabel),
+      title: ctx.title,
       contextType: s.contextType as string,
       contextId: s.contextId ? s.contextId.toString() : null,
       contextIds: (s.contextIds ?? []).map((id) => id.toString()),
-      contextLabel,
+      contextLabel: ctx.contextLabel,
+      contextDocuments: ctx.contextDocuments,
+      isPinned: s.isPinned ?? false,
+      pinnedAt: s.pinnedAt ?? null,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     };
@@ -371,10 +424,24 @@ export async function getSession(user: UserDocument, sessionId: string) {
     );
   }
 
+  if (session.contextType === "documents" && session.contextIds?.length) {
+    for (const msg of messages) {
+      for (const c of msg.citations) {
+        const idStr = c.documentId.toString();
+        if (!labelMap.has(idStr)) {
+          labelMap.set(idStr, c.documentTitle);
+        }
+      }
+    }
+  }
+
+  const ctx = withContextFields(session, labelMap, session.title);
+
   return {
     ...toChatSessionResponse(session),
-    title: displayTitle(session.title, contextLabel),
-    contextLabel,
+    title: displayTitle(session.title, contextLabel ?? ctx.contextLabel),
+    contextLabel: contextLabel ?? ctx.contextLabel,
+    contextDocuments: ctx.contextDocuments,
     messages: messages.map((m) => ({
       id: m._id.toString(),
       sessionId: m.sessionId.toString(),
@@ -394,18 +461,26 @@ export async function getSession(user: UserDocument, sessionId: string) {
 export async function updateSession(
   user: UserDocument,
   sessionId: string,
-  input: { title: string },
+  input: { title?: string; isPinned?: boolean },
 ) {
   const id = parseObjectId(sessionId);
   const session = await findSession(id, user._id);
 
-  session.title = input.title.trim();
+  if (input.title !== undefined) {
+    session.title = input.title.trim();
+  }
+  if (input.isPinned !== undefined) {
+    session.isPinned = input.isPinned;
+    session.pinnedAt = input.isPinned ? new Date() : null;
+  }
   await session.save();
 
   const labelMap = await resolveContextLabels([session]);
+  const ctx = withContextFields(session, labelMap, session.title);
   return {
     ...toChatSessionResponse(session),
-    contextLabel: getContextLabel(session, labelMap),
+    contextLabel: ctx.contextLabel,
+    contextDocuments: ctx.contextDocuments,
   };
 }
 

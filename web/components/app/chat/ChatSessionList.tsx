@@ -17,6 +17,8 @@ import {
   useUpdateSession,
 } from "@/lib/queries/chat";
 
+import { ChatSessionPinButton } from "./ChatSessionPinButton";
+
 function formatRelative(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -84,15 +86,18 @@ function SessionListItem({
       return;
     }
 
-    updateSession.mutate(trimmed, {
-      onSuccess: () => {
-        setIsEditing(false);
-        setEditError(null);
+    updateSession.mutate(
+      { title: trimmed },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          setEditError(null);
+        },
+        onError: (err) => {
+          setEditError(getApiErrorMessage(err));
+        },
       },
-      onError: (err) => {
-        setEditError(getApiErrorMessage(err));
-      },
-    });
+    );
   }
 
   if (isEditing) {
@@ -177,25 +182,32 @@ function SessionListItem({
             {formatRelative(session.updatedAt)}
           </p>
         </div>
-        <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={handleRenameClick}
-            disabled={isDeleting}
-            className="focus-brutal rounded-lg p-1 hover:bg-brutal-bg"
-            aria-label={`Đổi tên ${session.title}`}
-          >
-            <Pencil className="h-3.5 w-3.5 text-brutal-muted" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => onDeleteClick(e, session)}
-            disabled={isDeleting}
-            className="focus-brutal rounded-lg p-1 hover:bg-red-50"
-            aria-label={`Xóa ${session.title}`}
-          >
-            <Trash2 className="h-3.5 w-3.5 text-brutal-danger" />
-          </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <ChatSessionPinButton
+            sessionId={session.id}
+            isPinned={session.isPinned ?? false}
+            title={session.title}
+          />
+          <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={handleRenameClick}
+              disabled={isDeleting}
+              className="focus-brutal rounded-lg p-1 hover:bg-brutal-bg"
+              aria-label={`Đổi tên ${session.title}`}
+            >
+              <Pencil className="h-3.5 w-3.5 text-brutal-muted" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => onDeleteClick(e, session)}
+              disabled={isDeleting}
+              className="focus-brutal rounded-lg p-1 hover:bg-red-50"
+              aria-label={`Xóa ${session.title}`}
+            >
+              <Trash2 className="h-3.5 w-3.5 text-brutal-danger" />
+            </button>
+          </div>
         </div>
       </Link>
     </li>
@@ -269,8 +281,8 @@ export function ChatSessionList({
           <BrutalButton
             variant="ghost"
             className="!h-8 !px-2 !py-1"
-          onClick={onOpenPicker}
-          aria-label="Cuộc trò chuyện mới"
+            onClick={onOpenPicker}
+            aria-label="Cuộc trò chuyện mới"
           >
             <Plus className="h-4 w-4" />
           </BrutalButton>
