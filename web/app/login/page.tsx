@@ -3,6 +3,7 @@
 import "@/lib/amplify";
 import { signInWithRedirect, signOut } from "aws-amplify/auth";
 import { BookOpen, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CatalogPreviewCard } from "@/components/landing/CatalogPreviewCard";
@@ -20,12 +21,14 @@ function SignInPanel({
   user,
   isLoading,
   onGoogleSignIn,
+  onContinue,
   onSignOut,
 }: {
   isAuthLoading: boolean;
   user: { displayName: string } | null;
   isLoading: boolean;
   onGoogleSignIn: () => void;
+  onContinue: () => void;
   onSignOut: () => void;
 }) {
   if (isAuthLoading) {
@@ -39,9 +42,9 @@ function SignInPanel({
           <h2 className="font-heading text-2xl font-extrabold">Welcome back</h2>
           <p className="text-sm text-brutal-muted">You are signed in and ready to go.</p>
         </div>
-        <p className="rounded-xl border-2 border-brutal-ink bg-brutal-secondary px-4 py-3 text-sm font-medium text-brutal-on-brand shadow-[2px_2px_0_0_#1A1A1A]">
-          Signed in as <span className="font-bold">{user.displayName}</span>
-        </p>
+        <BrutalButton variant="primary" className="w-full" onClick={onContinue}>
+          Continue as <span className="font-bold">{user.displayName}</span>
+        </BrutalButton>
         <BrutalButton variant="secondary" className="w-full" onClick={onSignOut}>
           Sign out
         </BrutalButton>
@@ -62,12 +65,19 @@ function SignInPanel({
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { user, isLoading: isAuthLoading, fetchMe, clearUser } = useAuthStore();
 
   useEffect(() => {
     void fetchMe();
   }, [fetchMe]);
+
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      router.replace("/drive");
+    }
+  }, [isAuthLoading, user, router]);
 
   async function handleGoogleSignIn() {
     setIsLoading(true);
@@ -81,6 +91,10 @@ export default function LoginPage() {
   async function handleSignOut() {
     await signOut();
     clearUser();
+  }
+
+  function handleContinue() {
+    router.push("/drive");
   }
 
   const showEnrollmentCta = !isAuthLoading && !user;
@@ -137,6 +151,7 @@ export default function LoginPage() {
                   user={user}
                   isLoading={isLoading}
                   onGoogleSignIn={() => void handleGoogleSignIn()}
+                  onContinue={handleContinue}
                   onSignOut={() => void handleSignOut()}
                 />
               </div>
