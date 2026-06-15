@@ -16,11 +16,12 @@ const chatSessionSchema = new Schema(
     contextId: { type: Schema.Types.ObjectId, default: null },
     contextIds: { type: [Schema.Types.ObjectId], default: [] },
     isPinned: { type: Boolean, default: false },
+    pinnedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
-chatSessionSchema.index({ userId: 1, isPinned: 1 });
+chatSessionSchema.index({ userId: 1, isPinned: -1, pinnedAt: -1, updatedAt: -1 });
 
 export type ChatSessionDocument = HydratedDocument<InferSchemaType<typeof chatSessionSchema>>;
 export const ChatSession = model("ChatSession", chatSessionSchema);
@@ -34,6 +35,7 @@ export function toChatSessionResponse(session: ChatSessionDocument) {
     contextId: session.contextId ? session.contextId.toString() : null,
     contextIds: (session.contextIds ?? []).map((id) => id.toString()),
     isPinned: session.isPinned ?? false,
+    pinnedAt: session.pinnedAt ?? null,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };

@@ -19,7 +19,7 @@ export default function StarredPage() {
   return (
     <>
       <Topbar
-        breadcrumbs={[{ label: "Starred" }]}
+        breadcrumbs={[{ label: "Đã gắn sao" }]}
         onMenuOpen={() => {}}
       />
 
@@ -40,8 +40,8 @@ export default function StarredPage() {
         ) : isEmpty ? (
           <EmptyState
             icon={<Star className="h-12 w-12 text-brutal-primary" strokeWidth={1.5} />}
-            title="No starred items"
-            description="Star folders and files for quick access. They'll appear here."
+            title="Chưa có mục gắn sao"
+            description="Gắn sao thư mục và tệp để truy cập nhanh. Chúng sẽ hiển thị tại đây."
           />
         ) : (
           <div className="space-y-6">
@@ -51,7 +51,7 @@ export default function StarredPage() {
                   id="starred-folders-heading"
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Starred Folders
+                  Thư mục đã gắn sao
                 </h2>
                 <FileGrid>
                   {data?.folders.map((folder) => (
@@ -71,7 +71,7 @@ export default function StarredPage() {
                   id="starred-docs-heading"
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Starred Files
+                  Tệp đã gắn sao
                 </h2>
                 <FileGrid>
                   {data?.documents.map((doc) => (

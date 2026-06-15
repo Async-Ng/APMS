@@ -40,14 +40,14 @@ export function FolderCard({
         ...(onShare
           ? [
               {
-                label: "Share",
+                label: "Chia sẻ",
                 icon: <Share2 className="h-4 w-4" />,
                 onClick: () => onShare(folder),
               },
             ]
           : []),
         {
-          label: folder.isStarred ? "Unstar" : "Star",
+          label: folder.isStarred ? "Bỏ gắn sao" : "Gắn sao",
           icon: (
             <Star
               className={cn(
@@ -63,12 +63,12 @@ export function FolderCard({
             }),
         },
         {
-          label: "Rename",
+          label: "Đổi tên",
           icon: <span className="text-base">✏️</span>,
           onClick: () => onRename(folder),
         },
         {
-          label: "Move to Trash",
+          label: "Chuyển vào thùng rác",
           icon: <Trash2 className="h-4 w-4 text-brutal-danger" />,
           onClick: () => deleteFolder(),
           danger: true,

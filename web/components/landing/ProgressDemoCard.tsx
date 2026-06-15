@@ -7,33 +7,33 @@ export function ProgressDemoCard() {
       <div className="space-y-6">
         <div className="space-y-2">
           <h2 className="font-heading text-2xl font-extrabold sm:text-3xl">
-            Your study progress
+            Tiến độ học tập
           </h2>
           <p className="text-sm text-brutal-muted">
-            Track how many materials are indexed and ready for AI chat.
+            Theo dõi số tài liệu đã index và sẵn sàng cho trò chuyện AI.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border-2 border-brutal-ink bg-brutal-secondary px-4 py-3 text-brutal-on-brand shadow-[2px_2px_0_0_#1A1A1A]">
-            <p className="text-xs font-bold uppercase opacity-90">Indexed</p>
+            <p className="text-xs font-bold uppercase opacity-90">Đã index</p>
             <p className="font-heading text-2xl font-extrabold">
               {progressDemo.indexed}/{progressDemo.total}
             </p>
           </div>
           <div className="rounded-xl border-2 border-brutal-ink bg-brutal-accent px-4 py-3 text-brutal-on-brand shadow-[2px_2px_0_0_#1A1A1A]">
-            <p className="text-xs font-bold uppercase opacity-90">Completion</p>
+            <p className="text-xs font-bold uppercase opacity-90">Hoàn thành</p>
             <p className="font-heading text-2xl font-extrabold">{progressDemo.percent}%</p>
           </div>
           <div className="rounded-xl border-2 border-brutal-ink bg-brutal-primary px-4 py-3 text-brutal-on-brand shadow-[2px_2px_0_0_#1A1A1A]">
-            <p className="text-xs font-bold uppercase opacity-90">AI chats</p>
+            <p className="text-xs font-bold uppercase opacity-90">Lượt chat AI</p>
             <p className="font-heading text-2xl font-extrabold">{progressDemo.chats}</p>
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm font-bold">
-            <span>Materials indexed</span>
+            <span>Tài liệu đã index</span>
             <span>{progressDemo.percent}%</span>
           </div>
           <div className="h-4 overflow-hidden rounded-full border-2 border-brutal-ink bg-brutal-surface shadow-[2px_2px_0_0_#1A1A1A]">

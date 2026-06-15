@@ -14,8 +14,8 @@ interface UploadSheetProps {
 }
 
 const FILE_TYPES = [
-  { label: "PDF Document", ext: ".pdf", mime: "application/pdf", icon: "document-text" as const, color: "#E53E3E" },
-  { label: "Word Document", ext: ".docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", icon: "document" as const, color: colors.fptBlue },
+  { label: "Tài liệu PDF", ext: ".pdf", mime: "application/pdf", icon: "document-text" as const, color: "#E53E3E" },
+  { label: "Tài liệu Word", ext: ".docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", icon: "document" as const, color: colors.fptBlue },
   { label: "PowerPoint", ext: ".pptx", mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation", icon: "easel" as const, color: colors.fptOrange },
 ];
 
@@ -71,10 +71,10 @@ export function UploadSheet({ visible, onDismiss, onUploadStart }: UploadSheetPr
               </View>
 
               <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8, marginBottom: 4 }}>
-                Upload Document
+                Tải lên tài liệu
               </Text>
               <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 20 }}>
-                Supported: PDF, DOCX, PPTX · Max 50 MB
+                Hỗ trợ: PDF, DOCX, PPTX · Tối đa 50 MB
               </Text>
 
               <View style={{ gap: 12, marginBottom: 20 }}>
@@ -99,7 +99,7 @@ export function UploadSheet({ visible, onDismiss, onUploadStart }: UploadSheetPr
                       transform: pressed ? [{ translateX: 4 }, { translateY: 4 }] : [],
                     })}
                     accessibilityRole="button"
-                    accessibilityLabel={`Upload ${type.label}`}
+                    accessibilityLabel={`Tải lên ${type.label}`}
                   >
                     <View
                       style={{
@@ -124,7 +124,7 @@ export function UploadSheet({ visible, onDismiss, onUploadStart }: UploadSheetPr
                 ))}
               </View>
 
-              <BrutalButton label="Cancel" onPress={onDismiss} variant="ghost" fullWidth />
+              <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" fullWidth />
             </Animated.View>
           </Pressable>
         </Animated.View>

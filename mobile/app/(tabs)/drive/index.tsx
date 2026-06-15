@@ -45,17 +45,17 @@ export default function DriveRoot() {
   function buildFolderActions(folder: DriveFolder): ActionItem[] {
     return [
       {
-        label: folder.isStarred ? "Unstar" : "Star",
+        label: folder.isStarred ? "Bỏ gắn sao" : "Gắn sao",
         icon: folder.isStarred ? "star" : "star-outline",
         onPress: () => toggleFolderStar.mutate({ id: folder.id, star: !folder.isStarred }),
       },
       {
-        label: "Share",
+        label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => setShareTarget({ type: "folder", id: folder.id, name: folder.name }),
       },
       {
-        label: "Delete",
+        label: "Xóa",
         icon: "trash-outline",
         destructive: true,
         onPress: () => deleteFolder.mutate(folder.id),
@@ -66,22 +66,22 @@ export default function DriveRoot() {
   function buildDocumentActions(doc: DriveDocument): ActionItem[] {
     return [
       {
-        label: doc.isStarred ? "Unstar" : "Star",
+        label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
         icon: doc.isStarred ? "star" : "star-outline",
         onPress: () => toggleDocumentStar.mutate({ id: doc.id, star: !doc.isStarred }),
       },
       {
-        label: "Share",
+        label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => setShareTarget({ type: "document", id: doc.id, name: doc.title }),
       },
       {
-        label: "Chat about this",
+        label: "Trò chuyện về tài liệu này",
         icon: "chatbubble-outline",
         onPress: () => router.push({ pathname: "/(tabs)/chat", params: { contextType: "document", contextId: doc.id, contextName: doc.title } }),
       },
       {
-        label: "Delete",
+        label: "Xóa",
         icon: "trash-outline",
         destructive: true,
         onPress: () => deleteDocument.mutate(doc.id),
@@ -98,13 +98,13 @@ export default function DriveRoot() {
   const listData: ListItem[] = [
     ...(folders.length > 0
       ? [
-          { type: "header" as const, key: "header-folders", label: "Folders", count: folders.length },
+          { type: "header" as const, key: "header-folders", label: "Thư mục", count: folders.length },
           ...folders.map((f) => ({ type: "folder" as const, key: `f-${f.id}`, item: f })),
         ]
       : []),
     ...(documents.length > 0
       ? [
-          { type: "header" as const, key: "header-docs", label: "Files", count: documents.length },
+          { type: "header" as const, key: "header-docs", label: "Tệp", count: documents.length },
           ...documents.map((d) => ({ type: "document" as const, key: `d-${d.id}`, item: d })),
         ]
       : []),
@@ -127,9 +127,9 @@ export default function DriveRoot() {
         }}
       >
         <View>
-          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>My Drive</Text>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Drive của tôi</Text>
           <Text style={{ fontSize: 12, color: colors.muted }}>
-            {folders.length} folder{folders.length !== 1 ? "s" : ""} · {documents.length} file{documents.length !== 1 ? "s" : ""}
+            {folders.length} thư mục · {documents.length} tệp
           </Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -145,7 +145,7 @@ export default function DriveRoot() {
               alignItems: "center",
               justifyContent: "center",
             })}
-            accessibilityLabel="Starred items"
+            accessibilityLabel="Đã gắn sao"
           >
             <Ionicons name="star-outline" size={20} color={colors.ink} />
           </Pressable>
@@ -161,7 +161,7 @@ export default function DriveRoot() {
               alignItems: "center",
               justifyContent: "center",
             })}
-            accessibilityLabel="Trash"
+            accessibilityLabel="Thùng rác"
           >
             <Ionicons name="trash-outline" size={20} color={colors.ink} />
           </Pressable>
@@ -223,9 +223,9 @@ export default function DriveRoot() {
             return (
               <EmptyState
                 icon="folder-open-outline"
-                title="Drive is empty"
-                description="Upload your first document or create a folder to get started."
-                action={{ label: "Upload file", onPress: () => setShowUpload(true) }}
+                title="Drive trống"
+                description="Tải lên tài liệu đầu tiên hoặc tạo thư mục để bắt đầu."
+                action={{ label: "Tải lên tệp", onPress: () => setShowUpload(true) }}
               />
             );
           }}
@@ -262,7 +262,7 @@ export default function DriveRoot() {
             })}
           >
             <Ionicons name="folder-open-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>New folder</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Thư mục mới</Text>
           </Pressable>
           <Pressable
             onPress={() => { setShowFab(false); setShowUpload(true); }}
@@ -285,7 +285,7 @@ export default function DriveRoot() {
             })}
           >
             <Ionicons name="cloud-upload-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Upload file</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Tải lên tệp</Text>
           </Pressable>
         </View>
       )}
@@ -303,7 +303,7 @@ export default function DriveRoot() {
           backgroundColor: showFab ? colors.ink : colors.fptOrange,
           ...pressedBrutalStyle(pressed),
         })}
-        accessibilityLabel="Add item"
+        accessibilityLabel="Thêm mục"
         accessibilityRole="button"
       >
         <Ionicons name={showFab ? "close" : "add"} size={28} color={colors.onBrand} />
@@ -322,7 +322,7 @@ export default function DriveRoot() {
       <ActionSheet
         visible={actionTarget !== null}
         title={actionTarget?.kind === "folder" ? actionTarget.item.name : (actionTarget?.kind === "document" ? actionTarget.item.title : "")}
-        subtitle={actionTarget?.kind === "folder" ? "Folder" : "Document"}
+        subtitle={actionTarget?.kind === "folder" ? "Thư mục" : "Tài liệu"}
         actions={
           actionTarget?.kind === "folder"
             ? buildFolderActions(actionTarget.item)

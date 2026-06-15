@@ -143,13 +143,13 @@ export function ShareModal({
 
       const createdCount = result.created.length;
       const skippedNote =
-        result.skipped > 0 ? ` (${result.skipped} skipped)` : "";
+        result.skipped > 0 ? ` (${result.skipped} đã bỏ qua)` : "";
 
       if (createdCount === 0) {
         setError("Không có lượt chia sẻ mới. Người nhận có thể đã có quyền truy cập.");
       } else {
         setSuccess(
-          `Shared with ${createdCount} user${createdCount > 1 ? "s" : ""}${skippedNote}.`,
+          `Đã chia sẻ với ${createdCount} người${skippedNote}.`,
         );
         setSelectedUsers([]);
       }
@@ -182,13 +182,13 @@ export function ShareModal({
             id="share-modal-title"
             className="font-heading text-xl font-extrabold leading-tight"
           >
-            Share &ldquo;{resourceName}&rdquo;
+            Chia sẻ &ldquo;{resourceName}&rdquo;
           </h2>
           <button
             onClick={onClose}
             disabled={isPending}
             className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg disabled:opacity-50"
-            aria-label="Close"
+            aria-label="Đóng"
           >
             <X className="h-4 w-4" />
           </button>
@@ -199,7 +199,7 @@ export function ShareModal({
           {existingRecipients.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-semibold text-brutal-ink">
-                People with access
+                Người có quyền truy cập
               </p>
               <ul className="space-y-2">
                 {existingRecipients.map((share) => {
@@ -216,7 +216,7 @@ export function ShareModal({
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-brutal-ink">
-                          {user?.displayName ?? "Unknown user"}
+                          {user?.displayName ?? "Người dùng không xác định"}
                         </p>
                         <p className="truncate text-xs text-brutal-muted">
                           {user?.email ?? share.sharedWithUserId}
@@ -228,7 +228,7 @@ export function ShareModal({
                         disabled={isPending}
                         className="focus-brutal rounded-lg border-2 border-brutal-ink px-2 py-1 text-xs font-semibold text-brutal-danger transition-colors hover:bg-red-50 disabled:opacity-50"
                       >
-                        Revoke
+                        Thu hồi
                       </button>
                     </li>
                   );
@@ -244,7 +244,7 @@ export function ShareModal({
                 htmlFor="share-search-input"
                 className="block text-sm font-semibold text-brutal-ink"
               >
-                Add people
+                Thêm người
               </label>
               <div className="relative">
                 <Search
@@ -259,15 +259,15 @@ export function ShareModal({
                     setQuery(e.target.value);
                     setError(null);
                   }}
-                  placeholder="Email or display name…"
+                  placeholder="Email hoặc tên hiển thị…"
                   className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface py-2.5 pl-10 pr-3 text-sm font-medium shadow-brutal-sm outline-none"
                   autoComplete="off"
                 />
               </div>
               <p className="text-xs text-brutal-muted">
                 {searchByEmail && debouncedQuery
-                  ? "Exact email match"
-                  : "Partial name match (min 2 characters)"}
+                  ? "Khớp chính xác email"
+                  : "Khớp một phần tên (tối thiểu 2 ký tự)"}
               </p>
             </div>
 
@@ -275,10 +275,10 @@ export function ShareModal({
             {debouncedQuery.trim().length >= 2 && (
               <div className="max-h-40 overflow-y-auto rounded-xl border-2 border-brutal-ink bg-brutal-surface">
                 {isSearching ? (
-                  <p className="px-3 py-2 text-sm text-brutal-muted">Searching…</p>
+                  <p className="px-3 py-2 text-sm text-brutal-muted">Đang tìm…</p>
                 ) : filteredResults.length === 0 ? (
                   <p className="px-3 py-2 text-sm text-brutal-muted">
-                    No users found.
+                    Không tìm thấy người dùng.
                   </p>
                 ) : (
                   <ul>
@@ -320,7 +320,7 @@ export function ShareModal({
                       type="button"
                       onClick={() => removeSelected(user.id)}
                       className="focus-brutal rounded-full p-0.5 hover:bg-brutal-bg"
-                      aria-label={`Remove ${user.displayName}`}
+                      aria-label={`Xóa ${user.displayName}`}
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -347,7 +347,7 @@ export function ShareModal({
                 onClick={onClose}
                 disabled={isPending}
               >
-                Cancel
+                Huỷ
               </BrutalButton>
               <BrutalButton
                 type="submit"
@@ -355,7 +355,7 @@ export function ShareModal({
                 className="flex-1"
                 disabled={isPending || selectedUsers.length === 0}
               >
-                {isPending ? "Sharing…" : "Share"}
+                {isPending ? "Đang chia sẻ…" : "Chia sẻ"}
               </BrutalButton>
             </div>
           </form>

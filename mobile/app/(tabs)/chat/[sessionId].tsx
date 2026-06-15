@@ -14,14 +14,22 @@ import {
 
 import { ChatBubble, ThinkingBubble } from "../../../components/app/chat/ChatBubble";
 import { CitationStrip } from "../../../components/app/chat/CitationCard";
+import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
+import { ActionSheet } from "../../../components/app/ActionSheet";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
-import { type ChatMessage, useChatSession, useSendMessage } from "../../../hooks/useChat";
+import {
+  type ChatMessage,
+  useChatSession,
+  useSendMessage,
+  useUpdateChatSession,
+} from "../../../hooks/useChat";
 
 const CONTEXT_LABELS: Record<string, string> = {
-  all: "All documents",
-  folder: "Folder",
-  document: "Document",
+  all: "Tất cả tài liệu",
+  folder: "Thư mục",
+  document: "Tài liệu",
+  documents: "Nhiều tài liệu",
 };
 
 export default function ChatSessionScreen() {
@@ -29,9 +37,12 @@ export default function ChatSessionScreen() {
   const router = useRouter();
   const { data: session, isLoading } = useChatSession(sessionId);
   const sendMessage = useSendMessage();
+  const updateSession = useUpdateChatSession();
 
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
@@ -94,14 +105,19 @@ export default function ChatSessionScreen() {
             alignItems: "center",
             justifyContent: "center",
           })}
-          accessibilityLabel="Back to sessions"
+          accessibilityLabel="Quay lại danh sách"
         >
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 17, fontWeight: "800", color: colors.ink }} numberOfLines={1}>
-            {session?.title ?? "Chat"}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {session?.isPinned && (
+              <Ionicons name="pin" size={14} color={colors.fptOrange} />
+            )}
+            <Text style={{ flex: 1, fontSize: 17, fontWeight: "800", color: colors.ink }} numberOfLines={1}>
+              {session?.title ?? "Trò chuyện"}
+            </Text>
+          </View>
           {session && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Ionicons name="layers-outline" size={11} color={colors.muted} />
@@ -111,7 +127,65 @@ export default function ChatSessionScreen() {
             </View>
           )}
         </View>
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            borderWidth: 2,
+            borderColor: colors.ink,
+            backgroundColor: pressed ? "#F0F0F0" : colors.surface,
+            alignItems: "center",
+            justifyContent: "center",
+          })}
+          accessibilityLabel="Tùy chọn cuộc trò chuyện"
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color={colors.ink} />
+        </Pressable>
       </View>
+
+      <RenameChatModal
+        visible={renameOpen}
+        initialTitle={session?.title ?? ""}
+        loading={updateSession.isPending}
+        onDismiss={() => setRenameOpen(false)}
+        onConfirm={(title) => {
+          updateSession.mutate(
+            { sessionId, body: { title } },
+            { onSuccess: () => setRenameOpen(false) },
+          );
+        }}
+      />
+
+      <ActionSheet
+        visible={menuOpen}
+        title={session?.title ?? "Trò chuyện"}
+        subtitle="Phiên trò chuyện"
+        actions={[
+          {
+            label: "Đổi tên",
+            icon: "pencil-outline",
+            onPress: () => {
+              setMenuOpen(false);
+              setRenameOpen(true);
+            },
+          },
+          {
+            label: session?.isPinned ? "Bỏ ghim" : "Ghim cuộc trò chuyện",
+            icon: session?.isPinned ? "pin-outline" : "pin",
+            onPress: () => {
+              if (session) {
+                updateSession.mutate({
+                  sessionId,
+                  body: { isPinned: !session.isPinned },
+                });
+              }
+            },
+          },
+        ]}
+        onDismiss={() => setMenuOpen(false)}
+      />
 
       {/* Messages */}
       <KeyboardAvoidingView
@@ -157,10 +231,10 @@ export default function ChatSessionScreen() {
                   <Ionicons name="chatbubble-ellipses" size={28} color={colors.onBrand} />
                 </View>
                 <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink, textAlign: "center" }}>
-                  Start the conversation
+                  Bắt đầu cuộc trò chuyện
                 </Text>
                 <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center", marginTop: 6, lineHeight: 18, paddingHorizontal: 20 }}>
-                  Ask anything about your documents. Every answer is grounded in your materials.
+                  Hỏi bất cứ điều gì về tài liệu của bạn. Mọi câu trả lời đều dựa trên tài liệu của bạn.
                 </Text>
               </View>
             }
@@ -199,7 +273,7 @@ export default function ChatSessionScreen() {
             ref={inputRef}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask about your documents..."
+            placeholder="Hỏi về tài liệu của bạn..."
             placeholderTextColor={colors.muted}
             multiline
             maxLength={2000}
@@ -241,7 +315,7 @@ export default function ChatSessionScreen() {
               elevation: pressed || !input.trim() ? 0 : 3,
               transform: pressed && !!input.trim() ? [{ translateX: 3 }, { translateY: 3 }] : [],
             })}
-            accessibilityLabel="Send message"
+            accessibilityLabel="Gửi tin nhắn"
             accessibilityRole="button"
           >
             <Ionicons

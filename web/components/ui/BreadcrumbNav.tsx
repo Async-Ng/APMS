@@ -17,7 +17,7 @@ interface BreadcrumbNavProps {
 export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label="Đường dẫn"
       className={cn("flex items-center gap-1 overflow-x-auto", className)}
     >
       <ol className="flex items-center gap-1 text-sm font-medium">

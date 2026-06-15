@@ -12,12 +12,12 @@ import { useCreateFolder, useUpdateFolder } from "@/lib/queries/drive";
 import { useUpdateDocument } from "@/lib/queries/documents";
 
 const FOLDER_COLORS = [
-  { label: "Orange", value: "#F37021" }, // FPT Orange
-  { label: "Blue", value: "#2B8FD4" },   // FPT Blue
-  { label: "Green", value: "#33B04A" },  // FPT Green
-  { label: "Rose", value: "#f43f5e" },
-  { label: "Amber", value: "#f59e0b" },
-  { label: "Slate", value: "#64748b" },
+  { label: "Cam", value: "#F37021" },
+  { label: "Xanh dương", value: "#2B8FD4" },
+  { label: "Xanh lá", value: "#33B04A" },
+  { label: "Hồng", value: "#f43f5e" },
+  { label: "Vàng", value: "#f59e0b" },
+  { label: "Xám", value: "#64748b" },
 ] as const;
 
 interface FolderModalProps {
@@ -101,10 +101,10 @@ export function FolderModal({
   }
 
   const title = isDocRename
-    ? "Rename File"
+    ? "Đổi tên tệp"
     : isRename
-      ? "Rename Folder"
-      : "New Folder";
+      ? "Đổi tên thư mục"
+      : "Thư mục mới";
 
   return (
     <div
@@ -131,7 +131,7 @@ export function FolderModal({
           <button
             onClick={onClose}
             className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg"
-            aria-label="Close"
+            aria-label="Đóng"
           >
             <X className="h-4 w-4" />
           </button>
@@ -144,7 +144,7 @@ export function FolderModal({
               htmlFor="folder-name-input"
               className="block text-sm font-semibold text-brutal-ink"
             >
-              {isDocRename ? "File title" : "Folder name"}{" "}
+              {isDocRename ? "Tiêu đề tệp" : "Tên thư mục"}{" "}
               <span className="text-brutal-danger" aria-hidden="true">*</span>
             </label>
             <input
@@ -159,7 +159,7 @@ export function FolderModal({
               required
               maxLength={100}
               className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2.5 text-sm font-medium text-brutal-ink placeholder:text-brutal-muted shadow-brutal-sm outline-none"
-              placeholder={isDocRename ? "Enter file title…" : "e.g. Physics Notes"}
+              placeholder={isDocRename ? "Nhập tiêu đề tệp…" : "vd. Ghi chú Vật lý"}
               aria-describedby={error ? "folder-name-error" : undefined}
             />
             {error && (
@@ -172,7 +172,7 @@ export function FolderModal({
           {/* Color picker — only for folders */}
           {!isDocRename && (
             <div className="space-y-1.5">
-              <p className="text-sm font-semibold text-brutal-ink">Color</p>
+              <p className="text-sm font-semibold text-brutal-ink">Màu</p>
               <div className="flex gap-2">
                 {FOLDER_COLORS.map((c) => (
                   <button
@@ -189,7 +189,7 @@ export function FolderModal({
                           ? "2px 2px 0 0 #1A1A1A"
                           : "none",
                     }}
-                    aria-label={`Color: ${c.label}`}
+                    aria-label={`Màu: ${c.label}`}
                     aria-pressed={color === c.value}
                   />
                 ))}
@@ -206,7 +206,7 @@ export function FolderModal({
               onClick={onClose}
               disabled={isPending}
             >
-              Cancel
+              Huỷ
             </BrutalButton>
             <BrutalButton
               type="submit"
@@ -214,7 +214,7 @@ export function FolderModal({
               className="flex-1"
               disabled={isPending || !name.trim()}
             >
-              {isPending ? "Saving…" : isCreate ? "Create" : "Save"}
+              {isPending ? "Đang lưu…" : isCreate ? "Tạo" : "Lưu"}
             </BrutalButton>
           </div>
         </form>

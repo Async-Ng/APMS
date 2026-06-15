@@ -77,28 +77,28 @@ export function DocumentCard({
   const menuItems = isShared
     ? [
         {
-          label: "Download",
+          label: "Tải xuống",
           icon: <Download className="h-4 w-4" />,
           onClick: () => setTriggerDownload(true),
         },
       ]
     : [
         {
-          label: "Download",
+          label: "Tải xuống",
           icon: <Download className="h-4 w-4" />,
           onClick: () => setTriggerDownload(true),
         },
         ...(onShare
           ? [
               {
-                label: "Share",
+                label: "Chia sẻ",
                 icon: <Share2 className="h-4 w-4" />,
                 onClick: () => onShare(doc),
               },
             ]
           : []),
         {
-          label: doc.isStarred ? "Unstar" : "Star",
+          label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
           icon: (
             <Star
               className={cn(
@@ -115,12 +115,12 @@ export function DocumentCard({
             }),
         },
         {
-          label: "Rename",
+          label: "Đổi tên",
           icon: <span className="text-base leading-none">✏️</span>,
           onClick: () => onRename(doc),
         },
         {
-          label: "Move to Trash",
+          label: "Chuyển vào thùng rác",
           icon: <Trash2 className="h-4 w-4 text-brutal-danger" />,
           onClick: () => deleteDoc(),
           danger: true,

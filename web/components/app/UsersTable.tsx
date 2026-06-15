@@ -44,7 +44,7 @@ function QuotaCell({
       <button
         onClick={() => setEditing(true)}
         className="focus-brutal rounded px-2 py-1 text-sm tabular-nums underline-offset-2 hover:underline"
-        title="Click to edit quota"
+        title="Nhấn để sửa hạn mức"
       >
         {formatBytes(user.storageQuotaBytes)}
       </button>
@@ -60,7 +60,7 @@ function QuotaCell({
         onBlur={commit}
         onKeyDown={(e) => e.key === "Enter" && commit()}
         className="focus-brutal w-20 rounded border-2 border-brutal-ink px-2 py-1 text-sm tabular-nums"
-        aria-label="Storage quota in MB"
+        aria-label="Hạn mức lưu trữ (MB)"
         autoFocus
         min="1"
       />
@@ -128,34 +128,34 @@ export function UsersTable() {
           type="search"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Search by email or name…"
+          placeholder="Tìm theo email hoặc tên…"
           className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface py-2.5 pl-9 pr-4 text-sm outline-none shadow-brutal-sm"
-          aria-label="Search users"
+          aria-label="Tìm người dùng"
         />
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border-2 border-brutal-ink shadow-brutal">
-        <table className="min-w-full text-sm" aria-label="User management table">
+        <table className="min-w-full text-sm" aria-label="Bảng quản lý người dùng">
           <thead>
             <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                User
+                Người dùng
               </th>
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                Role
+                Vai trò
               </th>
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                Storage Used
+                Đã dùng
               </th>
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                Quota
+                Hạn mức
               </th>
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                Status
+                Trạng thái
               </th>
               <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-                Actions
+                Thao tác
               </th>
             </tr>
           </thead>
@@ -234,7 +234,7 @@ export function UsersTable() {
                           : "border-brutal-ink/20 bg-brutal-bg text-brutal-muted",
                       )}
                     >
-                      {user.role}
+                      {user.role === "admin" ? "quản trị" : "người dùng"}
                     </span>
                   </td>
 
@@ -258,7 +258,7 @@ export function UsersTable() {
                           : "status-ready",
                       )}
                     >
-                      {user.isDisabled ? "Disabled" : "Active"}
+                      {user.isDisabled ? "Vô hiệu" : "Hoạt động"}
                     </span>
                   </td>
 
@@ -270,11 +270,11 @@ export function UsersTable() {
                       className="px-3 py-1 text-xs"
                       aria-label={
                         user.isDisabled
-                          ? `Enable ${user.displayName}`
-                          : `Disable ${user.displayName}`
+                          ? `Kích hoạt ${user.displayName}`
+                          : `Vô hiệu hóa ${user.displayName}`
                       }
                     >
-                      {user.isDisabled ? "Enable" : "Disable"}
+                      {user.isDisabled ? "Kích hoạt" : "Vô hiệu"}
                     </BrutalButton>
                   </td>
                 </tr>
@@ -286,7 +286,7 @@ export function UsersTable() {
                   colSpan={6}
                   className="px-4 py-10 text-center text-sm text-brutal-muted"
                 >
-                  No users found.
+                  Không tìm thấy người dùng.
                 </td>
               </tr>
             )}
@@ -298,9 +298,9 @@ export function UsersTable() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-brutal-muted">
-            Page {page} of {totalPages}
+            Trang {page} / {totalPages}
             {data && (
-              <span> — {data.total} users total</span>
+              <span> — {data.total} người dùng</span>
             )}
           </p>
           <div className="flex gap-2">
@@ -308,7 +308,7 @@ export function UsersTable() {
               variant="ghost"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              aria-label="Previous page"
+              aria-label="Trang trước"
               className="px-2"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -317,7 +317,7 @@ export function UsersTable() {
               variant="ghost"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              aria-label="Next page"
+              aria-label="Trang sau"
               className="px-2"
             >
               <ChevronRight className="h-4 w-4" />

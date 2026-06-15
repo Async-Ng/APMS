@@ -46,7 +46,7 @@ export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
             className="!px-2 !py-1 h-8"
             onClick={() => changePage(-1)}
             disabled={pageNumber <= 1}
-            aria-label="Previous Page"
+            aria-label="Trang trước"
           >
             <ChevronLeft className="h-4 w-4" />
           </BrutalButton>
@@ -58,7 +58,7 @@ export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
             className="!px-2 !py-1 h-8"
             onClick={() => changePage(1)}
             disabled={!numPages || pageNumber >= numPages}
-            aria-label="Next Page"
+            aria-label="Trang sau"
           >
             <ChevronRight className="h-4 w-4" />
           </BrutalButton>
@@ -71,7 +71,7 @@ export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
             className="!px-2 !py-1 h-8"
             onClick={() => changeScale(-0.2)}
             disabled={scale <= 0.5}
-            aria-label="Zoom Out"
+            aria-label="Thu nhỏ"
           >
             <ZoomOut className="h-4 w-4" />
           </BrutalButton>
@@ -83,7 +83,7 @@ export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
             className="!px-2 !py-1 h-8"
             onClick={() => changeScale(0.2)}
             disabled={scale >= 3.0}
-            aria-label="Zoom In"
+            aria-label="Phóng to"
           >
             <ZoomIn className="h-4 w-4" />
           </BrutalButton>

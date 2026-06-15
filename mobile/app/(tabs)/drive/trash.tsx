@@ -4,12 +4,13 @@ import { useState } from "react";
 import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
 
 import { ActionSheet, type ActionItem } from "../../../components/app/ActionSheet";
+import { FolderItem } from "../../../components/app/FolderItem";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import { type DriveDocument, type DriveFolder, useTrash } from "../../../hooks/useDrive";
-import { useDeleteDocument, useRestoreDocument } from "../../../hooks/useDocuments";
-import { useDeleteFolder, useRestoreFolder } from "../../../hooks/useFolders";
+import { usePermanentDeleteDocument, useRestoreDocument } from "../../../hooks/useDocuments";
+import { usePermanentDeleteFolder, useRestoreFolder } from "../../../hooks/useFolders";
 
 type ActionTarget =
   | { kind: "folder"; item: DriveFolder }
@@ -20,9 +21,9 @@ export default function TrashScreen() {
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useTrash();
   const restoreFolder = useRestoreFolder();
-  const deleteFolder = useDeleteFolder();
+  const permanentDeleteFolder = usePermanentDeleteFolder();
   const restoreDocument = useRestoreDocument();
-  const deleteDocument = useDeleteDocument();
+  const permanentDeleteDocument = usePermanentDeleteDocument();
   const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
 
   const folders = data?.folders ?? [];
@@ -34,29 +35,29 @@ export default function TrashScreen() {
     if (target.kind === "folder") {
       return [
         {
-          label: "Restore",
+          label: "Khôi phục",
           icon: "refresh-outline",
           onPress: () => restoreFolder.mutate(target.item.id),
         },
         {
-          label: "Delete permanently",
+          label: "Xóa vĩnh viễn",
           icon: "trash-outline",
           destructive: true,
-          onPress: () => deleteFolder.mutate(target.item.id),
+          onPress: () => permanentDeleteFolder.mutate(target.item.id),
         },
       ];
     }
     return [
       {
-        label: "Restore",
+        label: "Khôi phục",
         icon: "refresh-outline",
         onPress: () => restoreDocument.mutate(target.item.id),
       },
       {
-        label: "Delete permanently",
+        label: "Xóa vĩnh viễn",
         icon: "trash-outline",
         destructive: true,
-        onPress: () => deleteDocument.mutate(target.item.id),
+        onPress: () => permanentDeleteDocument.mutate(target.item.id),
       },
     ];
   }
@@ -70,13 +71,13 @@ export default function TrashScreen() {
   const listData: ListItem[] = [
     ...(folders.length > 0
       ? [
-          { type: "header" as const, key: "hdr-f", label: "Folders", count: folders.length },
+          { type: "header" as const, key: "hdr-f", label: "Thư mục", count: folders.length },
           ...folders.map((f) => ({ type: "folder" as const, key: `f-${f.id}`, item: f })),
         ]
       : []),
     ...(documents.length > 0
       ? [
-          { type: "header" as const, key: "hdr-d", label: "Files", count: documents.length },
+          { type: "header" as const, key: "hdr-d", label: "Tệp", count: documents.length },
           ...documents.map((d) => ({ type: "document" as const, key: `d-${d.id}`, item: d })),
         ]
       : []),
@@ -112,13 +113,13 @@ export default function TrashScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Trash</Text>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Thùng rác</Text>
       </View>
 
       {!isEmpty && (
         <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#FEF3C7", borderBottomWidth: 2, borderBottomColor: colors.ink }}>
           <Text style={{ fontSize: 12, color: "#92400E", fontWeight: "600" }}>
-            Long-press any item to restore or permanently delete it.
+            Nhấn giữ mục để khôi phục hoặc xóa vĩnh viễn.
           </Text>
         </View>
       )}
@@ -185,7 +186,7 @@ export default function TrashScreen() {
                       <Text style={{ fontSize: 15, fontWeight: "700", color: colors.muted }} numberOfLines={1}>
                         {item.item.title}
                       </Text>
-                      <Text style={{ fontSize: 12, color: colors.muted }}>Deleted</Text>
+                      <Text style={{ fontSize: 12, color: colors.muted }}>Đã xóa</Text>
                     </View>
                     <Pressable
                       onPress={() => setActionTarget({ kind: "document", item: item.item })}
@@ -204,8 +205,8 @@ export default function TrashScreen() {
             return (
               <EmptyState
                 icon="trash-outline"
-                title="Trash is empty"
-                description="Deleted files and folders will appear here."
+                title="Thùng rác trống"
+                description="Tệp và thư mục đã xóa sẽ xuất hiện tại đây."
               />
             );
           }}
@@ -215,7 +216,7 @@ export default function TrashScreen() {
       <ActionSheet
         visible={actionTarget !== null}
         title={actionTarget?.kind === "folder" ? actionTarget.item.name : (actionTarget?.kind === "document" ? actionTarget.item.title : "")}
-        subtitle="In Trash"
+        subtitle="Trong Thùng rác"
         actions={buildActions(actionTarget)}
         onDismiss={() => setActionTarget(null)}
       />

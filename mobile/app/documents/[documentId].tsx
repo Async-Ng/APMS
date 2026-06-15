@@ -18,10 +18,10 @@ function formatBytes(bytes: number): string {
 }
 
 function getMimeLabel(mimeType: string): string {
-  if (mimeType.includes("pdf")) return "PDF Document";
-  if (mimeType.includes("word") || mimeType.includes("document")) return "Word Document";
+  if (mimeType.includes("pdf")) return "Tài liệu PDF";
+  if (mimeType.includes("word") || mimeType.includes("document")) return "Tài liệu Word";
   if (mimeType.includes("presentation")) return "PowerPoint";
-  return "Document";
+  return "Tài liệu";
 }
 
 function getMimeIcon(mimeType: string): { name: keyof typeof Ionicons.glyphMap; color: string } {
@@ -51,17 +51,17 @@ export default function DocumentDetailScreen() {
   const actions: ActionItem[] = doc
     ? [
         {
-          label: doc.isStarred ? "Unstar" : "Star",
+          label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
           icon: doc.isStarred ? "star" : "star-outline",
           onPress: () => toggleStar.mutate({ id: doc.id, star: !doc.isStarred }),
         },
         {
-          label: "Share",
+          label: "Chia sẻ",
           icon: "share-outline",
           onPress: () => setShowShare(true),
         },
         {
-          label: "Chat about this",
+          label: "Trò chuyện về tài liệu này",
           icon: "chatbubble-outline",
           onPress: () =>
             router.push({
@@ -70,13 +70,13 @@ export default function DocumentDetailScreen() {
             }),
         },
         {
-          label: "Open in browser",
+          label: "Mở trên trình duyệt",
           icon: "open-outline",
           disabled: !doc.downloadUrl,
           onPress: handleOpenExternal,
         },
         {
-          label: "Delete",
+          label: "Xóa",
           icon: "trash-outline",
           destructive: true,
           onPress: () => {
@@ -107,7 +107,7 @@ export default function DocumentDetailScreen() {
           >
             <Ionicons name="arrow-back" size={20} color={colors.ink} />
           </Pressable>
-          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink }}>Document</Text>
+          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink }}>Tài liệu</Text>
         </View>
         <View style={{ padding: 16, gap: 12 }}>
           <SkeletonCard height={120} />
@@ -148,7 +148,7 @@ export default function DocumentDetailScreen() {
             alignItems: "center",
             justifyContent: "center",
           })}
-          accessibilityLabel="Go back"
+          accessibilityLabel="Quay lại"
         >
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
@@ -167,7 +167,7 @@ export default function DocumentDetailScreen() {
             alignItems: "center",
             justifyContent: "center",
           })}
-          accessibilityLabel="More options"
+          accessibilityLabel="Tùy chọn khác"
         >
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.ink} />
         </Pressable>
@@ -207,7 +207,7 @@ export default function DocumentDetailScreen() {
             {doc.isStarred && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Ionicons name="star" size={14} color="#FCD34D" />
-                <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: "700" }}>Starred</Text>
+                <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: "700" }}>Đã gắn sao</Text>
               </View>
             )}
           </View>
@@ -216,11 +216,11 @@ export default function DocumentDetailScreen() {
         {/* Metadata */}
         <View style={{ ...brutalCardStyle, padding: 16, gap: 0 }}>
           {[
-            { label: "Filename", value: doc.originalFilename },
-            { label: "File size", value: formatBytes(doc.fileSizeBytes) },
-            { label: "Pages", value: doc.pageCount !== null ? String(doc.pageCount) : "—" },
-            { label: "Uploaded", value: new Date(doc.createdAt).toLocaleDateString() },
-            { label: "Last updated", value: new Date(doc.updatedAt).toLocaleDateString() },
+            { label: "Tên tệp", value: doc.originalFilename },
+            { label: "Dung lượng", value: formatBytes(doc.fileSizeBytes) },
+            { label: "Số trang", value: doc.pageCount !== null ? String(doc.pageCount) : "—" },
+            { label: "Tải lên", value: new Date(doc.createdAt).toLocaleDateString() },
+            { label: "Cập nhật lần cuối", value: new Date(doc.updatedAt).toLocaleDateString() },
           ].map((row, idx, arr) => (
             <View
               key={row.label}
@@ -244,7 +244,7 @@ export default function DocumentDetailScreen() {
         {/* Tags */}
         {doc.tags.length > 0 && (
           <View style={{ gap: 8 }}>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>TAGS</Text>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>THẺ</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {doc.tags.map((tag) => (
                 <View
@@ -291,12 +291,12 @@ export default function DocumentDetailScreen() {
             />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: "700", color: doc.status === "failed" ? colors.error : colors.fptBlue }}>
-                {doc.status === "failed" ? "Processing failed" : doc.status === "processing" ? "Processing…" : "Pending processing"}
+                {doc.status === "failed" ? "Xử lý thất bại" : doc.status === "processing" ? "Đang xử lý…" : "Chờ xử lý"}
               </Text>
               <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
                 {doc.status === "failed"
-                  ? "This document could not be processed. Try re-uploading."
-                  : "Document is being indexed for semantic search and AI chat."}
+                  ? "Không thể xử lý tài liệu này. Hãy thử tải lên lại."
+                  : "Tài liệu đang được lập chỉ mục cho tìm kiếm ngữ nghĩa và trò chuyện AI."}
               </Text>
             </View>
           </View>
@@ -315,10 +315,10 @@ export default function DocumentDetailScreen() {
                 ...pressedBrutalStyle(pressed),
               })}
               accessibilityRole="button"
-              accessibilityLabel="Open document"
+              accessibilityLabel="Mở tài liệu"
             >
               <Ionicons name="open-outline" size={18} color={colors.onBrand} />
-              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.onBrand }}>Open document</Text>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.onBrand }}>Mở tài liệu</Text>
             </Pressable>
           )}
           <Pressable
@@ -337,11 +337,11 @@ export default function DocumentDetailScreen() {
               ...pressedBrutalStyle(pressed && doc.status === "ready"),
             })}
             accessibilityRole="button"
-            accessibilityLabel="Chat about this document"
+            accessibilityLabel="Trò chuyện về tài liệu này"
           >
             <Ionicons name="chatbubble-outline" size={18} color={doc.status === "ready" ? colors.onBrand : colors.muted} />
             <Text style={{ fontSize: 15, fontWeight: "700", color: doc.status === "ready" ? colors.onBrand : colors.muted }}>
-              {doc.status === "ready" ? "Chat about this" : "Processing required to chat"}
+              {doc.status === "ready" ? "Trò chuyện về tài liệu này" : "Cần xử lý xong để trò chuyện"}
             </Text>
           </Pressable>
         </View>

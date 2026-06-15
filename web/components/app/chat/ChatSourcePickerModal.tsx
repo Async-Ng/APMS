@@ -105,7 +105,7 @@ function PickerDocumentTile({
         selected && "ring-2 ring-brutal-primary ring-offset-2",
         isReady && !selected && "brutal-card-hover",
       )}
-      title={!isReady ? "Tài liệu chưa index AI — chỉ chọn file Ready" : undefined}
+      title={!isReady ? "Tài liệu chưa index AI — chỉ chọn tệp Sẵn sàng" : undefined}
     >
       {selected && (
         <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-brutal-ink bg-brutal-primary text-white shadow-brutal-sm">
@@ -194,7 +194,7 @@ export function ChatSourcePickerModal({
     undefined,
   );
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { id: undefined, name: "My Drive" },
+    { id: undefined, name: "Drive của tôi" },
   ]);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +226,7 @@ export function ChatSourcePickerModal({
   function resetState() {
     setStep("browse");
     setBrowseFolderId(undefined);
-    setBreadcrumbs([{ id: undefined, name: "My Drive" }]);
+    setBreadcrumbs([{ id: undefined, name: "Drive của tôi" }]);
     setSelection(null);
     setError(null);
   }
@@ -412,7 +412,7 @@ export function ChatSourcePickerModal({
                         : "bg-brutal-surface hover:bg-brutal-bg",
                     )}
                   >
-                    Chọn folder này
+                    Chọn thư mục này
                   </button>
                 )}
                 <button

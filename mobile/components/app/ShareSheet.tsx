@@ -126,10 +126,10 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                 </View>
 
                 <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8 }}>
-                  Share "{resourceName}"
+                  Chia sẻ &ldquo;{resourceName}&rdquo;
                 </Text>
                 <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 16, marginTop: 2 }}>
-                  Search by name or email
+                  Tìm theo tên hoặc email
                 </Text>
 
                 <View
@@ -150,7 +150,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                   <TextInput
                     value={query}
                     onChangeText={setQuery}
-                    placeholder="Search users..."
+                    placeholder="Tìm người dùng..."
                     placeholderTextColor={colors.muted}
                     style={{ flex: 1, fontSize: 15, color: colors.ink }}
                     autoCapitalize="none"
@@ -230,9 +230,9 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                 )}
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                  <BrutalButton label="Cancel" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
+                  <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
                   <BrutalButton
-                    label={`Share (${selected.length})`}
+                    label={`Chia sẻ (${selected.length})`}
                     onPress={() => shareMutation.mutate()}
                     variant="secondary"
                     loading={shareMutation.isPending}

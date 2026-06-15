@@ -21,7 +21,7 @@ export default function AdminPage() {
   return (
     <>
       <Topbar
-        breadcrumbs={[{ label: "Admin Panel" }]}
+        breadcrumbs={[{ label: "Quản trị" }]}
         onMenuOpen={() => {}}
       />
 
@@ -33,10 +33,10 @@ export default function AdminPage() {
           </div>
           <div>
             <h1 className="font-heading text-2xl font-extrabold text-brutal-ink">
-              Admin Panel
+              Quản trị
             </h1>
             <p className="text-sm text-brutal-muted">
-              System statistics and user management
+              Thống kê hệ thống và quản lý người dùng
             </p>
           </div>
         </div>
@@ -47,7 +47,7 @@ export default function AdminPage() {
             id="stats-heading"
             className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
           >
-            System Overview
+            Tổng quan hệ thống
           </h2>
           <AdminStatsGrid />
         </section>
@@ -58,7 +58,7 @@ export default function AdminPage() {
             id="users-heading"
             className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
           >
-            User Management
+            Quản lý người dùng
           </h2>
           <UsersTable />
         </section>

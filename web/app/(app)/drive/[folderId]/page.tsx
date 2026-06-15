@@ -40,8 +40,8 @@ export default function FolderPage({ params }: PageProps) {
 
   // Build breadcrumb — in a real app you'd fetch the full path from the folder detail
   const breadcrumbs = [
-    { label: "My Drive", href: "/drive" },
-    { label: isLoading ? "…" : (data?.folders[0]?.name ?? "Folder") },
+    { label: "Drive của tôi", href: "/drive" },
+    { label: isLoading ? "…" : (data?.folders[0]?.name ?? "Thư mục") },
   ];
 
   return (
@@ -63,7 +63,7 @@ export default function FolderPage({ params }: PageProps) {
               className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
             >
               <FolderPlus className="h-4 w-4" aria-hidden="true" />
-              New Folder
+              Thư mục mới
             </BrutalButton>
           </>
         }
@@ -85,11 +85,11 @@ export default function FolderPage({ params }: PageProps) {
           </FileGrid>
         ) : isEmpty ? (
           <EmptyState
-            title="This folder is empty"
-            description="Upload files or create subfolders to fill this space."
+            title="Thư mục trống"
+            description="Tải lên tệp hoặc tạo thư mục con để bắt đầu."
             action={
               <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
-                Upload a file
+                Tải lên tệp
               </BrutalButton>
             }
           />
@@ -101,7 +101,7 @@ export default function FolderPage({ params }: PageProps) {
                   id={`folders-heading-${folderId}`}
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Folders
+                  Thư mục
                 </h2>
                 <FileGrid>
                   {data?.folders.map((folder) => (
@@ -129,7 +129,7 @@ export default function FolderPage({ params }: PageProps) {
                   id={`docs-heading-${folderId}`}
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Files
+                  Tệp
                 </h2>
                 <FileGrid>
                   {data?.documents.map((doc) => (
