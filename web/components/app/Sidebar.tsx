@@ -31,32 +31,32 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: "My Drive",
+    label: "Drive của tôi",
     href: "/drive",
     icon: <HardDrive className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "Starred",
+    label: "Đã gắn sao",
     href: "/starred",
     icon: <Star className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "Shared",
+    label: "Đã chia sẻ",
     href: "/shared",
     icon: <Share2 className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "AI Chat",
+    label: "Trò chuyện AI",
     href: "/chat",
     icon: <MessageSquare className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "Trash",
+    label: "Thùng rác",
     href: "/trash",
     icon: <Trash2 className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "Admin Panel",
+    label: "Quản trị",
     href: "/admin",
     icon: <ShieldCheck className="h-5 w-5 shrink-0" />,
     adminOnly: true,
@@ -112,7 +112,7 @@ export function Sidebar({
       {/* Sidebar panel */}
       <aside
         id="sidebar"
-        aria-label="Main navigation"
+        aria-label="Điều hướng chính"
         className={cn(
           "fixed left-0 top-0 flex h-full flex-col border-r-3 border-brutal-ink bg-brutal-surface transition-[width,transform] duration-200 ease-out",
           isCollapsed ? "w-16" : "w-60",
@@ -147,11 +147,11 @@ export function Sidebar({
             </Link>
           )}
 
-          <Tooltip content={isCollapsed ? "Expand" : "Collapse"} side="right">
+          <Tooltip content={isCollapsed ? "Mở rộng" : "Thu gọn"} side="right">
             <button
               onClick={onToggleCollapse}
               className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0 active:shadow-[0_0_0_#1A1A1A]"
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={isCollapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
             >
               {isCollapsed ? (
                 <Menu className="h-4 w-4" />
@@ -163,7 +163,7 @@ export function Sidebar({
         </div>
 
         {/* Nav items */}
-        <nav aria-label="Drive navigation" className="flex-1 overflow-y-auto py-3">
+        <nav aria-label="Điều hướng Drive" className="flex-1 overflow-y-auto py-3">
           <ul className="space-y-1 px-2">
             {visibleItems.map((item) => {
               const active = isActive(item.href);
@@ -238,11 +238,11 @@ export function Sidebar({
                 <p className="truncate text-xs text-brutal-muted">{user?.email}</p>
               </div>
 
-              <Tooltip content="Sign out" side="top">
+              <Tooltip content="Đăng xuất" side="top">
                 <button
                   onClick={() => void handleSignOut()}
                   className="focus-brutal flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:bg-brutal-danger hover:text-white active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A]"
-                  aria-label="Sign out"
+                  aria-label="Đăng xuất"
                 >
                   <LogOut className="h-4 w-4" />
                 </button>

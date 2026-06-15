@@ -3,10 +3,10 @@ import { cn } from "@/lib/cn";
 export type DocumentStatus = "pending" | "processing" | "ready" | "failed";
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
-  pending: "Pending",
-  processing: "Processing",
-  ready: "Ready",
-  failed: "Failed",
+  pending: "Chờ xử lý",
+  processing: "Đang xử lý",
+  ready: "Sẵn sàng",
+  failed: "Lỗi",
 };
 
 interface BadgeProps {

@@ -22,10 +22,10 @@ function formatRelativeTime(dateStr: string): string {
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
-  if (h < 24) return `${h}h ago`;
-  return `${d}d ago`;
+  if (m < 1) return "Vừa xong";
+  if (m < 60) return `${m} phút trước`;
+  if (h < 24) return `${h} giờ trước`;
+  return `${d} ngày trước`;
 }
 
 const CONTEXT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -64,7 +64,7 @@ export default function ChatSessionsScreen() {
 
   function handleNewChat() {
     createSession.mutate(
-      { contextType: "all", title: "New conversation" },
+      { contextType: "all", title: "Cuộc trò chuyện mới" },
       { onSuccess: (session) => router.push(`/(tabs)/chat/${session.id}`) },
     );
   }
@@ -85,8 +85,8 @@ export default function ChatSessionsScreen() {
         }}
       >
         <View>
-          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>AI Chat</Text>
-          <Text style={{ fontSize: 12, color: colors.muted }}>Ask questions about your documents</Text>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Trò chuyện AI</Text>
+          <Text style={{ fontSize: 12, color: colors.muted }}>Hỏi đáp về tài liệu của bạn</Text>
         </View>
         <Pressable
           onPress={handleNewChat}
@@ -101,10 +101,10 @@ export default function ChatSessionsScreen() {
             gap: 6,
             ...pressedBrutalStyle(pressed),
           })}
-          accessibilityLabel="New chat"
+          accessibilityLabel="Trò chuyện mới"
         >
           <Ionicons name="add" size={16} color={colors.onBrand} />
-          <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 13 }}>New chat</Text>
+          <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 13 }}>Trò chuyện mới</Text>
         </Pressable>
       </View>
 
@@ -124,9 +124,9 @@ export default function ChatSessionsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="chatbubble-outline"
-              title="No conversations yet"
-              description="Start a new chat and ask anything about your documents."
-              action={{ label: "Start chat", onPress: handleNewChat }}
+              title="Chưa có cuộc trò chuyện"
+              description="Bắt đầu trò chuyện mới và hỏi bất cứ điều gì về tài liệu của bạn."
+              action={{ label: "Bắt đầu trò chuyện", onPress: handleNewChat }}
             />
           }
           renderItem={({ item }) => (
@@ -188,7 +188,7 @@ export default function ChatSessionsScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 10, fontWeight: "700", color: colors.onBrand }}>
-                        {item.contextType === "all" ? "All docs" : item.contextType === "folder" ? "Folder" : "Document"}
+                        {item.contextType === "all" ? "Tất cả tài liệu" : item.contextType === "folder" ? "Thư mục" : "Tài liệu"}
                       </Text>
                     </View>
                     <Text style={{ fontSize: 11, color: colors.muted }}>{formatRelativeTime(item.updatedAt)}</Text>
@@ -204,10 +204,10 @@ export default function ChatSessionsScreen() {
       <ActionSheet
         visible={actionTarget !== null}
         title={actionTarget?.title ?? ""}
-        subtitle="Chat session"
+        subtitle="Phiên trò chuyện"
         actions={[
           {
-            label: "Delete conversation",
+            label: "Xóa cuộc trò chuyện",
             icon: "trash-outline",
             destructive: true,
             onPress: () => {

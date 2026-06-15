@@ -59,7 +59,7 @@ export function ChatContextBadge({ session, messages }: ChatContextBadgeProps) {
             <ContextTypeLabel type={contextType} />
           </p>
           <p className="truncate font-semibold text-brutal-ink">
-            {folderLabel ?? "Folder không còn tồn tại"}
+            {folderLabel ?? "Thư mục không còn tồn tại"}
           </p>
         </div>
       </Link>

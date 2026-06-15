@@ -48,8 +48,8 @@ export default function SearchScreen() {
           gap: 4,
         }}
       >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Search</Text>
-        <Text style={{ fontSize: 13, color: colors.muted }}>Semantic search across your documents</Text>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Tìm kiếm</Text>
+        <Text style={{ fontSize: 13, color: colors.muted }}>Tìm kiếm ngữ nghĩa trong tài liệu của bạn</Text>
       </View>
 
       {/* Search bar */}
@@ -77,7 +77,7 @@ export default function SearchScreen() {
             ref={inputRef}
             value={query}
             onChangeText={setQuery}
-            placeholder="Ask anything about your documents..."
+            placeholder="Hỏi bất cứ điều gì về tài liệu của bạn..."
             placeholderTextColor={colors.muted}
             style={{ flex: 1, fontSize: 15, color: colors.ink, paddingVertical: 12 }}
             returnKeyType="search"
@@ -119,12 +119,12 @@ export default function SearchScreen() {
             <Ionicons name="search" size={36} color={colors.onBrand} />
           </View>
           <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, textAlign: "center" }}>
-            Semantic Search
+            Tìm kiếm ngữ nghĩa
           </Text>
           <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", lineHeight: 20 }}>
-            Ask questions in natural language — APMS finds the most relevant passages in your documents.
+            Đặt câu hỏi bằng ngôn ngữ tự nhiên — APMS tìm các đoạn liên quan nhất trong tài liệu của bạn.
           </Text>
-          {["What is gradient descent?", "Key points of Chapter 3", "Explain memory management"].map((q) => (
+          {["Gradient descent là gì?", "Điểm chính Chương 3", "Giải thích quản lý bộ nhớ"].map((q) => (
             <Pressable
               key={q}
               onPress={() => setQuery(q)}
@@ -150,22 +150,22 @@ export default function SearchScreen() {
 
       {showShort && (
         <View style={{ alignItems: "center", paddingTop: 40 }}>
-          <Text style={{ color: colors.muted, fontSize: 14 }}>Type at least 3 characters to search</Text>
+          <Text style={{ color: colors.muted, fontSize: 14 }}>Nhập ít nhất 3 ký tự để tìm kiếm</Text>
         </View>
       )}
 
       {showEmpty && (
         <EmptyState
           icon="search-outline"
-          title="No results found"
-          description={`No relevant passages found for "${debouncedQuery}". Try different keywords.`}
+          title="Không tìm thấy kết quả"
+          description={`Không có đoạn nào phù hợp với "${debouncedQuery}". Hãy thử từ khóa khác.`}
           style={{ marginTop: 40 }}
         />
       )}
 
       {error && (
         <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 20 }}>
-          <Text style={{ color: colors.error, textAlign: "center" }}>Search failed. Check your connection and try again.</Text>
+          <Text style={{ color: colors.error, textAlign: "center" }}>Tìm kiếm thất bại. Kiểm tra kết nối và thử lại.</Text>
         </View>
       )}
 
@@ -192,7 +192,7 @@ export default function SearchScreen() {
                 transform: pressed ? [{ translateX: 4 }, { translateY: 4 }] : [],
               })}
               accessibilityRole="button"
-              accessibilityLabel={`Result ${index + 1}: ${item.documentTitle}`}
+              accessibilityLabel={`Kết quả ${index + 1}: ${item.documentTitle}`}
             >
               {/* Score badge */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -214,7 +214,7 @@ export default function SearchScreen() {
                     </Text>
                   </View>
                   <Text style={{ fontSize: 11, fontWeight: "700", color: colors.muted }}>
-                    {(item.score * 100).toFixed(0)}% match
+                    {(item.score * 100).toFixed(0)}% khớp
                   </Text>
                 </View>
                 {item.pageNumber !== null && (
@@ -245,7 +245,7 @@ export default function SearchScreen() {
 
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Ionicons name="open-outline" size={12} color={colors.fptBlue} />
-                <Text style={{ fontSize: 12, color: colors.fptBlue, fontWeight: "700" }}>View document</Text>
+                <Text style={{ fontSize: 12, color: colors.fptBlue, fontWeight: "700" }}>Xem tài liệu</Text>
               </View>
             </Pressable>
           )}

@@ -116,7 +116,7 @@ export function ChatWorkspace({
         onSessionCreated={onSessionCreated}
       />
 
-      <Topbar breadcrumbs={[{ label: "AI Chat" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Trò chuyện AI" }]} onMenuOpen={() => {}} />
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex gap-1 border-b-2 border-brutal-ink bg-brutal-surface p-2 lg:hidden">
@@ -180,7 +180,7 @@ export function ChatWorkspace({
                   Nhấn + để chọn nguồn tài liệu
                 </p>
                 <p className="text-sm text-brutal-muted">
-                  Chọn tài liệu hoặc folder từ My Drive, xem lại rồi bắt đầu trò chuyện.
+                  Chọn tài liệu hoặc thư mục từ Drive của tôi, xem lại rồi bắt đầu trò chuyện.
                 </p>
               </div>
             ) : isLoading ? (

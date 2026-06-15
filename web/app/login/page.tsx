@@ -32,21 +32,21 @@ function SignInPanel({
   onSignOut: () => void;
 }) {
   if (isAuthLoading) {
-    return <p className="text-center text-sm text-brutal-muted">Loading...</p>;
+    return <p className="text-center text-sm text-brutal-muted">Đang tải...</p>;
   }
 
   if (user) {
     return (
       <div className="space-y-4 text-center">
         <div className="space-y-2">
-          <h2 className="font-heading text-2xl font-extrabold">Welcome back</h2>
-          <p className="text-sm text-brutal-muted">You are signed in and ready to go.</p>
+          <h2 className="font-heading text-2xl font-extrabold">Chào mừng trở lại</h2>
+          <p className="text-sm text-brutal-muted">Bạn đã đăng nhập và sẵn sàng.</p>
         </div>
         <BrutalButton variant="primary" className="w-full" onClick={onContinue}>
-          Continue as <span className="font-bold">{user.displayName}</span>
+          Tiếp tục với <span className="font-bold">{user.displayName}</span>
         </BrutalButton>
         <BrutalButton variant="secondary" className="w-full" onClick={onSignOut}>
-          Sign out
+          Đăng xuất
         </BrutalButton>
       </div>
     );
@@ -55,11 +55,11 @@ function SignInPanel({
   return (
     <>
       <div className="space-y-2 text-center">
-        <h2 className="font-heading text-2xl font-extrabold">Welcome back</h2>
-        <p className="text-sm text-brutal-muted">Use your Google account to continue.</p>
+        <h2 className="font-heading text-2xl font-extrabold">Chào mừng trở lại</h2>
+        <p className="text-sm text-brutal-muted">Dùng tài khoản Google để tiếp tục.</p>
       </div>
       <GoogleSignInButton onClick={onGoogleSignIn} loading={isLoading} />
-      <p className="text-center text-xs text-brutal-muted">Secure sign-in via Amazon Cognito</p>
+      <p className="text-center text-xs text-brutal-muted">Đăng nhập bảo mật qua Amazon Cognito</p>
     </>
   );
 }
@@ -115,29 +115,29 @@ export default function LoginPage() {
           <div className="space-y-6 text-center lg:text-left">
             <span className="brutal-badge mx-auto lg:mx-0">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Academic Personal Management
+              Quản lý học tập cá nhân
             </span>
             <div className="space-y-4">
               <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Learn smarter with{" "}
-                <span className="text-brutal-primary">your documents</span>
+                Học thông minh hơn với{" "}
+                <span className="text-brutal-primary">tài liệu của bạn</span>
               </h1>
               <p className="mx-auto max-w-lg text-base text-brutal-muted lg:mx-0">
-                Sign in with Google to manage study materials and chat with an AI assistant
-                grounded in your own files.
+                Đăng nhập Google để quản lý tài liệu học tập và trò chuyện với trợ lý AI
+                dựa trên file của bạn.
               </p>
             </div>
             <ul className="mx-auto hidden max-w-md space-y-4 text-left lg:mx-0 lg:block">
               <li className="flex items-start gap-3 rounded-xl border-2 border-brutal-ink bg-brutal-secondary p-4 text-brutal-on-brand shadow-[3px_3px_0_0_#1A1A1A]">
                 <BookOpen className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium">
-                  Organize PDFs, DOCX, and slides in nested folders
+                  Sắp xếp PDF, DOCX và slide trong thư mục lồng nhau
                 </span>
               </li>
               <li className="flex items-start gap-3 rounded-xl border-2 border-brutal-ink bg-brutal-accent p-4 text-brutal-on-brand shadow-[3px_3px_0_0_#1A1A1A]">
                 <Sparkles className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium">
-                  Ask questions with cited answers from your materials
+                  Đặt câu hỏi và nhận câu trả lời có trích dẫn từ tài liệu
                 </span>
               </li>
             </ul>
@@ -162,10 +162,10 @@ export default function LoginPage() {
         <section id="catalog" className="scroll-mt-28 space-y-6">
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="font-heading text-3xl font-extrabold sm:text-4xl">
-              Materials catalog preview
+              Xem trước danh mục tài liệu
             </h2>
             <p className="text-brutal-muted">
-              A playful peek at how your courses and documents could look inside APMS.
+              Gợi ý cách khóa học và tài liệu có thể trông trong APMS.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -182,9 +182,9 @@ export default function LoginPage() {
         <section id="testimonials" className="scroll-mt-28 space-y-6">
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="font-heading text-3xl font-extrabold sm:text-4xl">
-              What students are saying
+              Học viên nói gì
             </h2>
-            <p className="text-brutal-muted">Real study wins from FPT University learners.</p>
+            <p className="text-brutal-muted">Trải nghiệm thực tế từ sinh viên FPT University.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {testimonials.map((item) => (
@@ -198,11 +198,11 @@ export default function LoginPage() {
             <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
               <div className="space-y-2">
                 <h2 className="font-heading text-3xl font-extrabold sm:text-4xl">
-                  Ready to start learning?
+                  Sẵn sàng bắt đầu học?
                 </h2>
                 <p className="text-sm opacity-95">
-                  Join APMS with your Google account and turn your documents into a personal
-                  study hub.
+                  Tham gia APMS bằng tài khoản Google và biến tài liệu thành trung tâm
+                  học tập cá nhân.
                 </p>
               </div>
               <GoogleSignInButton

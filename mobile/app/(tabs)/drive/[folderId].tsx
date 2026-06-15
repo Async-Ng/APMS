@@ -42,13 +42,13 @@ export default function FolderScreen() {
   const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
   const [shareTarget, setShareTarget] = useState<{ type: "folder" | "document"; id: string; name: string } | null>(null);
 
-  const folderName = folderQuery.data?.name ?? "Folder";
+  const folderName = folderQuery.data?.name ?? "Thư mục";
   const folders = data?.folders ?? [];
   const documents = data?.documents ?? [];
   const isEmpty = !isLoading && folders.length === 0 && documents.length === 0;
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { id: null, name: "Drive" },
+    { id: null, name: "Drive của tôi" },
     { id: folderId, name: folderName },
   ];
 
@@ -59,17 +59,17 @@ export default function FolderScreen() {
   function buildFolderActions(folder: DriveFolder): ActionItem[] {
     return [
       {
-        label: folder.isStarred ? "Unstar" : "Star",
+        label: folder.isStarred ? "Bỏ gắn sao" : "Gắn sao",
         icon: folder.isStarred ? "star" : "star-outline",
         onPress: () => toggleFolderStar.mutate({ id: folder.id, star: !folder.isStarred }),
       },
       {
-        label: "Share",
+        label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => setShareTarget({ type: "folder", id: folder.id, name: folder.name }),
       },
       {
-        label: "Delete",
+        label: "Xóa",
         icon: "trash-outline",
         destructive: true,
         onPress: () => deleteFolder.mutate(folder.id),
@@ -80,17 +80,17 @@ export default function FolderScreen() {
   function buildDocumentActions(doc: DriveDocument): ActionItem[] {
     return [
       {
-        label: doc.isStarred ? "Unstar" : "Star",
+        label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
         icon: doc.isStarred ? "star" : "star-outline",
         onPress: () => toggleDocumentStar.mutate({ id: doc.id, star: !doc.isStarred }),
       },
       {
-        label: "Share",
+        label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => setShareTarget({ type: "document", id: doc.id, name: doc.title }),
       },
       {
-        label: "Chat about this",
+        label: "Trò chuyện về tài liệu này",
         icon: "chatbubble-outline",
         onPress: () =>
           router.push({
@@ -99,7 +99,7 @@ export default function FolderScreen() {
           }),
       },
       {
-        label: "Delete",
+        label: "Xóa",
         icon: "trash-outline",
         destructive: true,
         onPress: () => deleteDocument.mutate(doc.id),
@@ -116,13 +116,13 @@ export default function FolderScreen() {
   const listData: ListItem[] = [
     ...(folders.length > 0
       ? [
-          { type: "header" as const, key: "hdr-folders", label: "Folders", count: folders.length },
+          { type: "header" as const, key: "hdr-folders", label: "Thư mục", count: folders.length },
           ...folders.map((f) => ({ type: "folder" as const, key: `f-${f.id}`, item: f })),
         ]
       : []),
     ...(documents.length > 0
       ? [
-          { type: "header" as const, key: "hdr-docs", label: "Files", count: documents.length },
+          { type: "header" as const, key: "hdr-docs", label: "Tệp", count: documents.length },
           ...documents.map((d) => ({ type: "document" as const, key: `d-${d.id}`, item: d })),
         ]
       : []),
@@ -154,7 +154,7 @@ export default function FolderScreen() {
               alignItems: "center",
               justifyContent: "center",
             })}
-            accessibilityLabel="Go back"
+            accessibilityLabel="Quay lại"
           >
             <Ionicons name="arrow-back" size={20} color={colors.ink} />
           </Pressable>
@@ -217,9 +217,9 @@ export default function FolderScreen() {
             return (
               <EmptyState
                 icon="folder-open-outline"
-                title="Folder is empty"
-                description="Upload files or create subfolders here."
-                action={{ label: "Upload file", onPress: () => setShowUpload(true) }}
+                title="Thư mục trống"
+                description="Tải lên tệp hoặc tạo thư mục con tại đây."
+                action={{ label: "Tải lên tệp", onPress: () => setShowUpload(true) }}
               />
             );
           }}
@@ -253,7 +253,7 @@ export default function FolderScreen() {
             })}
           >
             <Ionicons name="folder-open-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>New folder</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Thư mục mới</Text>
           </Pressable>
           <Pressable
             onPress={() => { setShowFab(false); setShowUpload(true); }}
@@ -276,7 +276,7 @@ export default function FolderScreen() {
             })}
           >
             <Ionicons name="cloud-upload-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Upload file</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Tải lên tệp</Text>
           </Pressable>
         </View>
       )}
@@ -294,7 +294,7 @@ export default function FolderScreen() {
           backgroundColor: showFab ? colors.ink : colors.fptOrange,
           ...pressedBrutalStyle(pressed),
         })}
-        accessibilityLabel="Add item"
+        accessibilityLabel="Thêm mục"
       >
         <Ionicons name={showFab ? "close" : "add"} size={28} color={colors.onBrand} />
       </Pressable>
@@ -311,7 +311,7 @@ export default function FolderScreen() {
       <ActionSheet
         visible={actionTarget !== null}
         title={actionTarget?.kind === "folder" ? actionTarget.item.name : (actionTarget?.kind === "document" ? actionTarget.item.title : "")}
-        subtitle={actionTarget?.kind === "folder" ? "Folder" : "Document"}
+        subtitle={actionTarget?.kind === "folder" ? "Thư mục" : "Tài liệu"}
         actions={
           actionTarget?.kind === "folder"
             ? buildFolderActions(actionTarget.item)

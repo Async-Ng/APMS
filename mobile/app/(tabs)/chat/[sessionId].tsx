@@ -19,9 +19,9 @@ import { colors } from "../../../constants/colors";
 import { type ChatMessage, useChatSession, useSendMessage } from "../../../hooks/useChat";
 
 const CONTEXT_LABELS: Record<string, string> = {
-  all: "All documents",
-  folder: "Folder",
-  document: "Document",
+  all: "Tất cả tài liệu",
+  folder: "Thư mục",
+  document: "Tài liệu",
 };
 
 export default function ChatSessionScreen() {
@@ -94,13 +94,13 @@ export default function ChatSessionScreen() {
             alignItems: "center",
             justifyContent: "center",
           })}
-          accessibilityLabel="Back to sessions"
+          accessibilityLabel="Quay lại danh sách"
         >
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 17, fontWeight: "800", color: colors.ink }} numberOfLines={1}>
-            {session?.title ?? "Chat"}
+            {session?.title ?? "Trò chuyện"}
           </Text>
           {session && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -157,10 +157,10 @@ export default function ChatSessionScreen() {
                   <Ionicons name="chatbubble-ellipses" size={28} color={colors.onBrand} />
                 </View>
                 <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink, textAlign: "center" }}>
-                  Start the conversation
+                  Bắt đầu cuộc trò chuyện
                 </Text>
                 <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center", marginTop: 6, lineHeight: 18, paddingHorizontal: 20 }}>
-                  Ask anything about your documents. Every answer is grounded in your materials.
+                  Hỏi bất cứ điều gì về tài liệu của bạn. Mọi câu trả lời đều dựa trên tài liệu của bạn.
                 </Text>
               </View>
             }
@@ -199,7 +199,7 @@ export default function ChatSessionScreen() {
             ref={inputRef}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask about your documents..."
+            placeholder="Hỏi về tài liệu của bạn..."
             placeholderTextColor={colors.muted}
             multiline
             maxLength={2000}
@@ -241,7 +241,7 @@ export default function ChatSessionScreen() {
               elevation: pressed || !input.trim() ? 0 : 3,
               transform: pressed && !!input.trim() ? [{ translateX: 3 }, { translateY: 3 }] : [],
             })}
-            accessibilityLabel="Send message"
+            accessibilityLabel="Gửi tin nhắn"
             accessibilityRole="button"
           >
             <Ionicons

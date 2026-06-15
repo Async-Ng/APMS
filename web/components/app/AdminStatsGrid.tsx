@@ -57,28 +57,28 @@ export function AdminStatsGrid() {
   const cards = [
     {
       id: "stat-total-users",
-      label: "Total Users",
+      label: "Tổng người dùng",
       value: isLoading ? "—" : data?.totalUsers ?? 0,
       icon: <Users className="h-6 w-6 text-brutal-secondary" />,
       bgColor: "#dbeafe",
     },
     {
       id: "stat-active-users",
-      label: "Active Users",
+      label: "Đang hoạt động",
       value: isLoading ? "—" : data?.activeUsers ?? 0,
       icon: <Users className="h-6 w-6 text-brutal-accent" />,
       bgColor: "#dcfce7",
     },
     {
       id: "stat-total-docs",
-      label: "Total Documents",
+      label: "Tổng tài liệu",
       value: isLoading ? "—" : data?.totalDocuments ?? 0,
       icon: <FileText className="h-6 w-6 text-brutal-primary" />,
       bgColor: "#fff7ed",
     },
     {
       id: "stat-storage",
-      label: "Total Storage",
+      label: "Tổng dung lượng",
       value: isLoading ? "—" : formatBytes(data?.totalStorageUsedBytes ?? 0),
       icon: <HardDrive className="h-6 w-6 text-brutal-muted" />,
       bgColor: "#f8fafc",
@@ -86,7 +86,7 @@ export function AdminStatsGrid() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" role="list" aria-label="System statistics">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" role="list" aria-label="Thống kê hệ thống">
       {cards.map((card) => (
         <StatCard key={card.id} {...card} />
       ))}

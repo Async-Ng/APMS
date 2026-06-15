@@ -42,7 +42,7 @@ export function Topbar({
       <button
         onClick={onMenuOpen}
         className="focus-brutal flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A] lg:hidden"
-        aria-label="Open navigation"
+        aria-label="Mở menu điều hướng"
         aria-expanded="false"
         aria-controls="sidebar"
       >
@@ -65,7 +65,7 @@ export function Topbar({
             className="brutal-btn brutal-btn-primary focus-brutal hidden sm:inline-flex"
           >
             <Upload className="h-4 w-4" aria-hidden="true" />
-            Upload
+            Tải lên
           </button>
         )}
 
@@ -74,7 +74,7 @@ export function Topbar({
           <button
             onClick={onUploadClick}
             className="focus-brutal flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-primary text-white shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A] sm:hidden"
-            aria-label="Upload file"
+            aria-label="Tải lên tệp"
           >
             <Upload className="h-4 w-4" />
           </button>
