@@ -128,7 +128,7 @@ export default function AdminUsersScreen() {
           <TextInput
             value={search}
             onChangeText={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Search by name or email..."
+            placeholder="Tìm theo tên hoặc email..."
             placeholderTextColor={colors.muted}
             style={{ flex: 1, fontSize: 14, color: colors.ink }}
             autoCapitalize="none"
@@ -147,7 +147,7 @@ export default function AdminUsersScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View style={{ alignItems: "center", paddingTop: 40 }}>
-              <Text style={{ color: colors.muted, fontSize: 14 }}>No users found</Text>
+              <Text style={{ color: colors.muted, fontSize: 14 }}>Không tìm thấy người dùng</Text>
             </View>
           ) : null
         }

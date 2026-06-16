@@ -25,10 +25,10 @@ const testimonials = [
 ];
 
 const navLinks = [
-  { label: "Features", key: "hero" as const },
-  { label: "Materials", key: "catalog" as const },
-  { label: "Progress", key: "progress" as const },
-  { label: "Reviews", key: "testimonials" as const },
+  { label: "Tính năng", key: "hero" as const },
+  { label: "Tài liệu", key: "catalog" as const },
+  { label: "Tiến độ", key: "progress" as const },
+  { label: "Đánh giá", key: "testimonials" as const },
 ];
 
 type SectionKey = (typeof navLinks)[number]["key"];
@@ -53,7 +53,7 @@ export default function LoginScreen() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       if (!message.toLowerCase().includes("canceled")) {
-        setAuthError("Sign-in failed. Please try again.");
+        setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     } finally {
       setSigningIn(false);
@@ -119,10 +119,10 @@ export default function LoginScreen() {
               ...pressedBrutalStyle(pressed),
             })}
           >
-            <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 14 }}>Sign in</Text>
+            <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 14 }}>Đăng nhập</Text>
           </Pressable>
         </View>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>FPT University · Study hub</Text>
+        <Text style={{ color: colors.muted, fontSize: 12 }}>Đại học FPT · Trung tâm học tập</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {navLinks.map((link) => (
             <Pressable
@@ -171,22 +171,22 @@ export default function LoginScreen() {
           }}
         >
           <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 12 }}>
-            Academic Personal Management
+            Quản lý học tập cá nhân
           </Text>
         </View>
         <Text style={{ fontSize: 32, fontWeight: "800", color: colors.ink, lineHeight: 38 }}>
-          Learn smarter with <Text style={{ color: colors.fptOrange }}>your documents</Text>
+          Học thông minh hơn với <Text style={{ color: colors.fptOrange }}>tài liệu của bạn</Text>
         </Text>
         <Text style={{ color: colors.muted, fontSize: 15, lineHeight: 22 }}>
-          Sign in with Google to manage study materials and chat with an AI assistant grounded in
-          your own files.
+          Đăng nhập bằng Google để quản lý tài liệu học tập và trò chuyện với trợ lý AI dựa trên
+          tệp của bạn.
         </Text>
       </View>
 
       <View style={{ ...brutalCardStyle, padding: 20, gap: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Welcome back</Text>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Chào mừng trở lại</Text>
         <Text style={{ color: colors.muted, fontSize: 14 }}>
-          Use your Google account to continue.
+          Dùng tài khoản Google để tiếp tục.
         </Text>
         {authError && (
           <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{authError}</Text>
@@ -201,11 +201,11 @@ export default function LoginScreen() {
           })}
         >
           <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            {signingIn ? "Opening browser..." : "Continue with Google"}
+            {signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
           </Text>
         </Pressable>
         <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
-          Secure sign-in via Amazon Cognito
+          Đăng nhập bảo mật qua Amazon Cognito
         </Text>
       </View>
 
@@ -216,7 +216,7 @@ export default function LoginScreen() {
         style={{ gap: 12 }}
       >
         <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          Materials catalog preview
+          Xem trước danh mục tài liệu
         </Text>
         {catalogItems.map((item) => (
           <View
@@ -258,9 +258,9 @@ export default function LoginScreen() {
         style={{ ...brutalCardStyle, padding: 20, gap: 12 }}
       >
         <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          Your study progress
+          Tiến độ học tập
         </Text>
-        <Text style={{ color: colors.muted }}>68% of materials indexed — demo preview</Text>
+        <Text style={{ color: colors.muted }}>68% tài liệu đã lập chỉ mục — bản xem trước</Text>
         <View
           style={{
             height: 14,
@@ -282,7 +282,7 @@ export default function LoginScreen() {
         style={{ gap: 12 }}
       >
         <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          What students are saying
+          Sinh viên nói gì
         </Text>
         {testimonials.map((item) => (
           <View key={item.name} style={{ ...brutalCardStyle, padding: 16, gap: 12 }}>
@@ -312,7 +312,7 @@ export default function LoginScreen() {
             textAlign: "center",
           }}
         >
-          Ready to start learning?
+          Sẵn sàng bắt đầu học?
         </Text>
         <Pressable
           onPress={() => void handleGoogleSignIn()}
@@ -325,7 +325,7 @@ export default function LoginScreen() {
           })}
         >
           <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            {signingIn ? "Opening browser..." : "Continue with Google"}
+            {signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
           </Text>
         </Pressable>
       </View>

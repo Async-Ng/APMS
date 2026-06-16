@@ -133,7 +133,7 @@ export function ActionSheet({ visible, title, subtitle, actions, onDismiss }: Ac
                     justifyContent: "center",
                   })}
                 >
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Cancel</Text>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Huỷ</Text>
                 </Pressable>
               </View>
             </Animated.View>

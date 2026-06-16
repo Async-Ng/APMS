@@ -21,6 +21,9 @@ export interface ChatSession {
   contextId: string | null;
   contextIds?: string[];
   contextLabel?: string | null;
+  contextDocuments?: Array<{ id: string; title: string }>;
+  isPinned: boolean;
+  pinnedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +51,11 @@ export interface CreateSessionBody {
 export interface SendMessageResult {
   userMessage: ChatMessage;
   assistantMessage: ChatMessage;
+}
+
+export interface UpdateSessionBody {
+  title?: string;
+  isPinned?: boolean;
 }
 
 export const chatKeys = {
@@ -114,10 +122,10 @@ export function useDeleteSession() {
 export function useUpdateSession(sessionId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (title: string) => {
+    mutationFn: async (body: UpdateSessionBody) => {
       const res = await api.patch<{ status: string; data: ChatSession }>(
         `/chat/sessions/${sessionId}`,
-        { title },
+        body,
       );
       return res.data.data;
     },
@@ -131,12 +139,48 @@ export function useUpdateSession(sessionId: string) {
           ...current,
           title: data.title,
           contextLabel: data.contextLabel,
+          contextDocuments: data.contextDocuments,
+          isPinned: data.isPinned,
+          pinnedAt: data.pinnedAt,
           updatedAt: data.updatedAt,
         });
       } else {
         void qc.invalidateQueries({ queryKey: chatKeys.session(sessionId) });
       }
     },
+  });
+}
+
+const MISSING_DOC_TITLE = "Tài liệu không còn tồn tại";
+
+/** Fetch document titles for chat context IDs (when session snapshot is incomplete). */
+export function useContextDocumentDetails(
+  documentIds: string[],
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["chat", "context-docs", documentIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        documentIds.map(async (id) => {
+          try {
+            const res = await api.get<{
+              status: string;
+              data: { id: string; title: string; originalFilename: string };
+            }>(`/documents/${id}`);
+            const d = res.data.data;
+            const title =
+              d.title?.trim() || d.originalFilename?.trim() || MISSING_DOC_TITLE;
+            return { id, title };
+          } catch {
+            return { id, title: MISSING_DOC_TITLE };
+          }
+        }),
+      );
+      return entries;
+    },
+    enabled: enabled && documentIds.length > 0,
+    staleTime: 60_000,
   });
 }
 

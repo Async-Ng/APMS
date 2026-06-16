@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import type { DriveContents, DriveDocument } from "@/lib/queries/drive";
+import { useAuthStore } from "@/stores/auth-store";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -107,6 +108,20 @@ export function useRestoreDocument() {
       api.post(`/documents/${documentId}/restore`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+    },
+  });
+}
+
+export function usePermanentDeleteDocument() {
+  const qc = useQueryClient();
+  const fetchMe = useAuthStore((state) => state.fetchMe);
+
+  return useMutation({
+    mutationFn: (documentId: string) =>
+      api.delete(`/documents/${documentId}/permanent`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+      void fetchMe();
     },
   });
 }

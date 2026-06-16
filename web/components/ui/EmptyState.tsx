@@ -11,8 +11,8 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-  title = "Nothing here yet",
-  description = "Upload files or create a folder to get started.",
+  title = "Chưa có gì ở đây",
+  description = "Tải lên tệp hoặc tạo thư mục để bắt đầu.",
   action,
   icon,
   className,

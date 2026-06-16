@@ -5,8 +5,10 @@ import { api } from "../lib/api-client";
 export interface ChatSession {
   id: string;
   title: string;
-  contextType: "all" | "folder" | "document";
+  contextType: "all" | "folder" | "document" | "documents";
   contextId: string | null;
+  isPinned: boolean;
+  pinnedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +80,36 @@ export function useDeleteChatSession() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+    },
+  });
+}
+
+export interface UpdateChatSessionBody {
+  title?: string;
+  isPinned?: boolean;
+}
+
+export function useUpdateChatSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      body,
+    }: {
+      sessionId: string;
+      body: UpdateChatSessionBody;
+    }) => {
+      const res = await api.patch<{ status: string; data: ChatSession }>(
+        `/chat/sessions/${sessionId}`,
+        body,
+      );
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+      queryClient.setQueryData<SessionWithMessages>(["chat", "session", data.id], (old) =>
+        old ? { ...old, ...data } : old,
+      );
     },
   });
 }

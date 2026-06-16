@@ -36,9 +36,21 @@ const chatSessionSchema = registry.register(
       contextLabel: z.string().nullable().openapi({
         description: "Resolved document title or folder name when contextType is not 'all'",
       }),
+      contextDocuments: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+          }),
+        )
+        .openapi({
+          description: "Resolved document list when contextType is document or documents",
+        }),
       isPinned: z.boolean().openapi({
         description: "Whether the session is pinned to the top of the list",
+        example: false,
       }),
+      pinnedAt: z.string().datetime().nullable().openapi({ example: null }),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })

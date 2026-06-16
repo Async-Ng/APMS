@@ -37,9 +37,9 @@ import {
 type TabId = "browse" | "received" | "outgoing";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "browse", label: "Browse" },
-  { id: "received", label: "Received" },
-  { id: "outgoing", label: "Shared by me" },
+  { id: "browse", label: "Duyệt" },
+  { id: "received", label: "Đã nhận" },
+  { id: "outgoing", label: "Tôi đã chia sẻ" },
 ];
 
 function ShareTabs({
@@ -53,7 +53,7 @@ function ShareTabs({
     <div
       className="mb-6 flex flex-wrap gap-2"
       role="tablist"
-      aria-label="Shared views"
+      aria-label="Chế độ xem chia sẻ"
     >
       {TABS.map((tab) => (
         <button
@@ -106,12 +106,12 @@ function ReceivedRow({ item }: { item: ShareWithMeItem }) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-bold text-brutal-ink">{label}</p>
         <p className="text-xs text-brutal-muted">
-          {isFolder ? "Folder" : "Document"} · Shared{" "}
+          {isFolder ? "Thư mục" : "Tài liệu"} · Chia sẻ{" "}
           {formatSharedAt(item.share.sharedAt)}
         </p>
       </div>
       <span className="brutal-badge shrink-0 text-xs">
-        {isFolder ? "Folder" : "File"}
+        {isFolder ? "Thư mục" : "Tệp"}
       </span>
     </Link>
   );
@@ -141,7 +141,7 @@ function OutgoingGroup({
             {label}
           </p>
           <span className="brutal-badge text-xs">
-            {isFolder ? "Folder" : "Document"}
+            {isFolder ? "Thư mục" : "Tài liệu"}
           </span>
         </div>
         {group.resource && (
@@ -150,13 +150,13 @@ function OutgoingGroup({
             className="!py-1 !text-xs"
             onClick={() => onManage(group)}
           >
-            Add people
+            Thêm người
           </BrutalButton>
         )}
       </div>
 
       {group.shares.length === 0 ? (
-        <p className="text-sm text-brutal-muted">No recipients.</p>
+        <p className="text-sm text-brutal-muted">Chưa có người nhận.</p>
       ) : (
         <ul className="space-y-2">
           {group.shares.map((share) => {
@@ -168,7 +168,7 @@ function OutgoingGroup({
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">
-                    {user?.displayName ?? "Unknown user"}
+                    {user?.displayName ?? "Người dùng không xác định"}
                   </p>
                   <p className="truncate text-xs text-brutal-muted">
                     {user?.email ?? share.sharedWithUserId}
@@ -180,7 +180,7 @@ function OutgoingGroup({
                   onClick={() => revoke(share.id)}
                   className="focus-brutal shrink-0 rounded-lg border-2 border-brutal-ink px-2 py-1 text-xs font-semibold text-brutal-danger hover:bg-red-50 disabled:opacity-50"
                 >
-                  Revoke
+                  Thu hồi
                 </button>
               </li>
             );
@@ -228,7 +228,7 @@ export default function SharedPage() {
 
   return (
     <>
-      <Topbar breadcrumbs={[{ label: "Shared" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Đã chia sẻ" }]} onMenuOpen={() => {}} />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
         <ShareTabs active={tab} onChange={setTab} />
@@ -256,8 +256,8 @@ export default function SharedPage() {
                     strokeWidth={1.5}
                   />
                 }
-                title="Nothing shared with you"
-                description="When someone shares a folder or file with you, it will appear here."
+                title="Chưa có mục được chia sẻ với bạn"
+                description="Khi ai đó chia sẻ thư mục hoặc tệp với bạn, chúng sẽ hiển thị tại đây."
               />
             ) : (
               <div className="space-y-6">
@@ -267,7 +267,7 @@ export default function SharedPage() {
                       id="shared-folders-heading"
                       className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                     >
-                      Shared Folders
+                      Thư mục đã chia sẻ
                     </h2>
                     <FileGrid>
                       {browse.data?.folders.map((item) => (
@@ -288,7 +288,7 @@ export default function SharedPage() {
                       id="shared-docs-heading"
                       className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                     >
-                      Shared Files
+                      Tệp đã chia sẻ
                     </h2>
                     <FileGrid>
                       {browse.data?.documents.map((item) => (
@@ -323,8 +323,8 @@ export default function SharedPage() {
                     strokeWidth={1.5}
                   />
                 }
-                title="No shares received"
-                description="Items shared with you will be listed here with dates."
+                title="Chưa nhận lượt chia sẻ nào"
+                description="Các mục được chia sẻ với bạn sẽ hiển thị tại đây kèm ngày chia sẻ."
               />
             ) : (
               <ul className="space-y-3">
@@ -354,8 +354,8 @@ export default function SharedPage() {
                     strokeWidth={1.5}
                   />
                 }
-                title="You haven't shared anything"
-                description="Share folders or files from My Drive using the Share action."
+                title="Bạn chưa chia sẻ gì"
+                description="Chia sẻ thư mục hoặc tệp từ Drive của tôi bằng thao tác Chia sẻ."
               />
             ) : (
               <div className="space-y-4">

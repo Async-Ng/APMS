@@ -36,7 +36,7 @@ export default function DrivePage() {
   return (
     <>
       <Topbar
-        breadcrumbs={[{ label: "My Drive" }]}
+        breadcrumbs={[{ label: "Drive của tôi" }]}
         onMenuOpen={() => {}} // hoisted to layout via context in real app; noop here
         onUploadClick={() => setUploadOpen(true)}
         actions={
@@ -49,7 +49,7 @@ export default function DrivePage() {
               className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
             >
               <FolderPlus className="h-4 w-4" aria-hidden="true" />
-              New Folder
+              Thư mục mới
             </BrutalButton>
           </>
         }
@@ -71,14 +71,14 @@ export default function DrivePage() {
           </FileGrid>
         ) : isEmpty ? (
           <EmptyState
-            title="Your Drive is empty"
-            description="Upload a PDF, DOCX, or PPTX file to get started, or create a folder to organise your materials."
+            title="Drive trống"
+            description="Tải lên tệp PDF, DOCX hoặc PPTX để bắt đầu, hoặc tạo thư mục để sắp xếp tài liệu."
             action={
               <BrutalButton
                 variant="primary"
                 onClick={() => setUploadOpen(true)}
               >
-                Upload your first file
+                Tải lên tệp đầu tiên
               </BrutalButton>
             }
           />
@@ -91,7 +91,7 @@ export default function DrivePage() {
                   id="folders-heading"
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Folders
+                  Thư mục
                 </h2>
                 <FileGrid>
                   {data?.folders.map((folder) => (
@@ -120,7 +120,7 @@ export default function DrivePage() {
                   id="docs-heading"
                   className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
                 >
-                  Files
+                  Tệp
                 </h2>
                 <FileGrid>
                   {data?.documents.map((doc) => (

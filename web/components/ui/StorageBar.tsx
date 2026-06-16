@@ -44,7 +44,7 @@ export function StorageBar({
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`Storage: ${formatBytes(usedBytes)} of ${formatBytes(quotaBytes)} used`}
+        aria-label={`Dung lượng: đã dùng ${formatBytes(usedBytes)} / ${formatBytes(quotaBytes)}`}
       >
         <div
           className={cn(
