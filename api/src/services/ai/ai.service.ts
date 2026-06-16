@@ -23,3 +23,11 @@ export async function chatWithContext(
 ): Promise<string> {
   return geminiProvider.chatWithContext(systemPrompt, messages);
 }
+
+export async function describeImage(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  return geminiProvider.describeImage(imageBase64, imageMimeType, prompt);
+}

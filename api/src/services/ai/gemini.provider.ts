@@ -18,6 +18,12 @@ const CHAT_FALLBACK_MODELS = [
   "gemini-3-flash",
 ];
 
+/**
+ * Models to try for image/vision description. gemini-2.5-flash is multimodal,
+ * so the chat fallback chain works for vision too.
+ */
+const VISION_FALLBACK_MODELS = CHAT_FALLBACK_MODELS;
+
 const FULLY_NORMALIZED_EMBEDDING_DIMS = 3072;
 
 function isQuotaError(error: unknown): boolean {
@@ -216,6 +222,76 @@ export async function chatWithContext(
 
   throw new Error(
     `All Gemini chat models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
+      `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+  );
+}
+
+async function tryDescribeWithModel(
+  ai: GoogleGenAI,
+  modelName: string,
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { inlineData: { mimeType: imageMimeType, data: imageBase64 } },
+          { text: prompt },
+        ],
+      },
+    ],
+    config: {
+      maxOutputTokens: 1024,
+      temperature: 0.1,
+    },
+  });
+
+  // An empty response is valid for vision (e.g. a blank/decorative image).
+  return response.text?.trim() ?? "";
+}
+
+/**
+ * Sends an image to a Gemini multimodal model and returns a text description / OCR
+ * of its contents. Reuses the chat quota-fallback chain.
+ */
+export async function describeImage(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  const env = loadEnv();
+  const ai = getVertexClient();
+
+  const primaryModel = env.GEMINI_VISION_MODEL;
+  const modelsToTry = [
+    primaryModel,
+    ...VISION_FALLBACK_MODELS.filter((model) => model !== primaryModel),
+  ];
+
+  let lastError: unknown;
+
+  for (const modelName of modelsToTry) {
+    try {
+      return await withGeminiRetry(
+        () => tryDescribeWithModel(ai, modelName, imageBase64, imageMimeType, prompt),
+        "vision",
+      );
+    } catch (error) {
+      if (isQuotaError(error)) {
+        console.warn(`[gemini] Vision model "${modelName}" quota exceeded, trying next fallback...`);
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(
+    `All Gemini vision models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
       `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
 }
