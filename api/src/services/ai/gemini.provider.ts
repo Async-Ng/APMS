@@ -132,6 +132,45 @@ async function tryChatWithModel(
   return text;
 }
 
+export async function embedBatch(
+  texts: string[],
+  inputType: EmbeddingInputType = "search_document",
+): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  const env = loadEnv();
+  const ai = getVertexClient();
+  const outputDimension = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
+
+  const result = await withGeminiRetry(
+    () =>
+      ai.models.embedContent({
+        model: env.GEMINI_EMBEDDING_MODEL,
+        contents: texts,
+        config: {
+          taskType: embeddingTaskType(inputType),
+          outputDimensionality: outputDimension,
+        },
+      }),
+    "embed",
+  );
+
+  const embeddings = result.embeddings;
+  if (!embeddings || embeddings.length !== texts.length) {
+    throw new Error(
+      `Batch embedding mismatch: expected ${texts.length}, got ${embeddings?.length ?? 0}`,
+    );
+  }
+
+  return embeddings.map((e) => {
+    const values = [...(e.values ?? [])];
+    if (values.length !== outputDimension) {
+      throw new Error(`Dimension mismatch: expected ${outputDimension}, got ${values.length}`);
+    }
+    return outputDimension < FULLY_NORMALIZED_EMBEDDING_DIMS ? normalizeVector(values) : values;
+  });
+}
+
 export async function chatWithContext(
   systemPrompt: string,
   messages: ChatTurn[],

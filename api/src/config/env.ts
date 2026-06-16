@@ -19,7 +19,7 @@ const envSchema = z
     GEMINI_CHAT_MODEL: z.string().default("gemini-2.5-flash"),
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
     GEMINI_EMBEDDING_OUTPUT_DIMENSION: z.coerce.number().int().positive().default(1024),
-    GEMINI_EMBED_DELAY_MS: z.coerce.number().int().min(0).default(200),
+    GEMINI_EMBED_DELAY_MS: z.coerce.number().int().min(0).default(0),
     GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     GEMINI_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
     MAX_UPLOAD_BYTES: z.coerce.number().default(52_428_800),

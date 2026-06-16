@@ -1,12 +1,14 @@
 import type { Types } from "mongoose";
 
-import { loadEnv } from "../config/env";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import * as aiService from "./ai/ai.service";
 import { chunkText } from "./chunking.service";
 import { extractText } from "./extraction.service";
 import * as s3Service from "./s3.service";
+
+const EMBED_BATCH_SIZE = 20;
+const EMBED_CONCURRENCY = 5;
 
 export async function processDocument(documentId: Types.ObjectId): Promise<void> {
   const document = await Document.findById(documentId);
@@ -38,28 +40,33 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
     const chunks = chunkText(text, pageCount);
 
     if (chunks.length > 0) {
-      // 4. Embed each chunk and save to DB
+      // 4. Embed chunks in concurrent batches and save to DB
       // Delete any existing chunks first (retry safety)
       await DocumentChunk.deleteMany({ documentId: document._id });
 
-      const env = loadEnv();
-      const embedDelayMs = env.GEMINI_EMBED_DELAY_MS;
+      const batches: (typeof chunks)[] = [];
+      for (let i = 0; i < chunks.length; i += EMBED_BATCH_SIZE) {
+        batches.push(chunks.slice(i, i + EMBED_BATCH_SIZE));
+      }
 
-      for (const chunk of chunks) {
-        const embedding = await aiService.embedText(chunk.content);
+      for (let i = 0; i < batches.length; i += EMBED_CONCURRENCY) {
+        const wave = batches.slice(i, i + EMBED_CONCURRENCY);
 
-        await DocumentChunk.create({
-          documentId: document._id,
-          ownerId: document.ownerId,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          pageNumber: chunk.pageNumber,
-          embedding,
-        });
+        const results = await Promise.all(
+          wave.map(async (batch) => {
+            const embeddings = await aiService.embedBatch(batch.map((c) => c.content));
+            return batch.map((chunk, j) => ({
+              documentId: document._id,
+              ownerId: document.ownerId,
+              chunkIndex: chunk.chunkIndex,
+              content: chunk.content,
+              pageNumber: chunk.pageNumber,
+              embedding: embeddings[j],
+            }));
+          }),
+        );
 
-        if (embedDelayMs > 0) {
-          await new Promise<void>((resolve) => setTimeout(resolve, embedDelayMs));
-        }
+        await DocumentChunk.insertMany(results.flat());
       }
 
       console.log(
