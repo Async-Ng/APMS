@@ -508,46 +508,15 @@ export async function sendMessage(
   try {
     assistantText = await aiService.chatWithContext(systemPrompt, historyMessages);
   } catch (error) {
-    const errName = error instanceof Error ? error.name : "";
     const msg = error instanceof Error ? error.message : String(error);
-    const usingGemini = aiService.getActiveProvider() === "gemini";
 
-    if (
-      usingGemini &&
-      (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded"))
-    ) {
+    if (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded")) {
       throw createAppError(ErrorCode.CHAT_QUOTA_GEMINI, 429, { technicalDetail: msg });
     }
-    if (usingGemini && (msg.includes("API key") || msg.includes("403"))) {
+    if (msg.includes("API key") || msg.includes("403")) {
       throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 503, { technicalDetail: msg });
     }
-    if (usingGemini && (msg.includes("404") || msg.includes("not found"))) {
-      throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
-    }
-
-    if (!usingGemini && msg.includes("use case details")) {
-      throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 503, { technicalDetail: msg });
-    }
-    if (
-      !usingGemini &&
-      (errName === "ThrottlingException" ||
-        msg.includes("Too many tokens") ||
-        msg.includes("ThrottlingException"))
-    ) {
-      throw createAppError(ErrorCode.CHAT_QUOTA_BEDROCK, 429, { technicalDetail: msg });
-    }
-    if (
-      !usingGemini &&
-      (errName === "AccessDeniedException" ||
-        msg.includes("not authorized") ||
-        msg.includes("AccessDenied"))
-    ) {
-      throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 503, { technicalDetail: msg });
-    }
-    if (
-      !usingGemini &&
-      (msg.includes("on-demand throughput isn't supported") || msg.includes("inference profile"))
-    ) {
+    if (msg.includes("404") || msg.includes("not found")) {
       throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
     }
     throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });

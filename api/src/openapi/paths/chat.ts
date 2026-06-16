@@ -215,7 +215,7 @@ export function registerChatPaths(): void {
     tags: ["Chat"],
     summary: "Send a message and get an AI response",
     description:
-      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Amazon Nova Micro via Bedrock Converse, returns answer with citations.",
+      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Gemini 2.5-flash via Vertex AI, returns answer with citations.",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,

@@ -1,13 +1,8 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as budgets from "aws-cdk-lib/aws-budgets";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
-import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as sns from "aws-cdk-lib/aws-sns";
-import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 
 function parseEnvList(value: string | undefined): string[] | undefined {
   if (!value?.trim()) {
@@ -182,8 +177,6 @@ export class InfrastructureStack extends cdk.Stack {
       userName: "apms-backend-service-user",
     });
 
-    // Thêm các chính sách (Policies) cụ thể cho IAM User này
-
     // Quyền hạn đối với S3 Bucket vừa tạo ở trên
     apiBackendUser.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -213,135 +206,8 @@ export class InfrastructureStack extends cdk.Stack {
       }),
     );
 
-    // Quyền gọi Amazon Bedrock — embedding (Cohere) + chat (Nova Micro)
-    const bedrockEmbeddingModelId =
-      process.env.BEDROCK_EMBEDDING_MODEL_ID ?? "global.cohere.embed-v4:0";
-    const bedrockChatModelId =
-      process.env.BEDROCK_MODEL_ID ?? "apac.amazon.nova-micro-v1:0";
-
-    apiBackendUser.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ["bedrock:InvokeModel"],
-        resources: [
-          // global.cohere.embed-v4:0 and other inference profiles
-          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/*`,
-          // In-region fallback: cohere.embed-v4:0
-          "arn:aws:bedrock:*::foundation-model/cohere.embed-v4:0",
-          // Rollback: cohere.embed-english-v3
-          `arn:aws:bedrock:${cdk.Aws.REGION}::foundation-model/cohere.embed-english-v3`,
-        ],
-      }),
-    );
-
-    apiBackendUser.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "bedrock:Converse",
-          "bedrock:ConverseStream",
-          "bedrock:InvokeModel",
-          "bedrock:InvokeModelWithResponseStream",
-        ],
-        resources: [
-          // Profile id contains ":" (e.g. apac.amazon.nova-micro-v1:0) — wildcard avoids IAM ARN parse issues
-          `arn:aws:bedrock:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-profile/*`,
-          "arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0",
-        ],
-      }),
-    );
-
     // =========================================================================
-    // 4. MONITORING & BUDGETS (Bedrock cost + invocation alerts)
-    // =========================================================================
-    const alertEmail = process.env.ALERT_EMAIL;
-    if (!alertEmail?.trim()) {
-      throw new Error(
-        "ALERT_EMAIL must be set in infrastructure/.env for budget/alarm notifications.",
-      );
-    }
-
-    const alertTopic = new sns.Topic(this, "APMSAlertTopic", {
-      displayName: "APMS Bedrock Alerts",
-    });
-
-    alertTopic.addSubscription(new subs.EmailSubscription(alertEmail.trim()));
-
-    const budgetLimitUsd = Number(process.env.BEDROCK_BUDGET_LIMIT_USD ?? "20");
-
-    new budgets.CfnBudget(this, "APMSBedrockBudget", {
-      budget: {
-        budgetName: "apms-bedrock-monthly",
-        budgetType: "COST",
-        timeUnit: "MONTHLY",
-        budgetLimit: { amount: budgetLimitUsd, unit: "USD" },
-        costFilters: {
-          Service: ["Amazon Bedrock"],
-        },
-      },
-      notificationsWithSubscribers: [
-        {
-          notification: {
-            notificationType: "ACTUAL",
-            comparisonOperator: "GREATER_THAN",
-            threshold: 80,
-            thresholdType: "PERCENTAGE",
-          },
-          subscribers: [{ subscriptionType: "SNS", address: alertTopic.topicArn }],
-        },
-        {
-          notification: {
-            notificationType: "ACTUAL",
-            comparisonOperator: "GREATER_THAN",
-            threshold: 100,
-            thresholdType: "PERCENTAGE",
-          },
-          subscribers: [{ subscriptionType: "SNS", address: alertTopic.topicArn }],
-        },
-        {
-          notification: {
-            notificationType: "FORECASTED",
-            comparisonOperator: "GREATER_THAN",
-            threshold: 100,
-            thresholdType: "PERCENTAGE",
-          },
-          subscribers: [{ subscriptionType: "SNS", address: alertTopic.topicArn }],
-        },
-      ],
-    });
-
-    const bedrockInvocationAlarm = (
-      id: string,
-      modelId: string,
-      threshold: number,
-    ): cloudwatch.Alarm => {
-      const alarm = new cloudwatch.Alarm(this, id, {
-        metric: new cloudwatch.Metric({
-          namespace: "AWS/Bedrock",
-          metricName: "Invocations",
-          dimensionsMap: { ModelId: modelId },
-          statistic: "Sum",
-          period: cdk.Duration.days(1),
-        }),
-        threshold,
-        evaluationPeriods: 1,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-        alarmDescription: `Bedrock daily invocations exceeded for ${modelId}`,
-      });
-      alarm.addAlarmAction(new cwActions.SnsAction(alertTopic));
-      return alarm;
-    };
-
-    bedrockInvocationAlarm(
-      "BedrockEmbedInvocationsAlarm",
-      bedrockEmbeddingModelId,
-      500,
-    );
-    bedrockInvocationAlarm("BedrockChatInvocationsAlarm", bedrockChatModelId, 200);
-
-    // =========================================================================
-    // 5. XUẤT THÔNG TIN ĐẦU RA (CLOUDFORMATION OUTPUTS)
+    // 4. XUẤT THÔNG TIN ĐẦU RA (CLOUDFORMATION OUTPUTS)
     // =========================================================================
     new cdk.CfnOutput(this, "S3BucketNameOutput", {
       value: documentBucket.bucketName,
@@ -390,27 +256,6 @@ export class InfrastructureStack extends cdk.Stack {
       value: adminGroup.groupName ?? "admin",
       description:
         "Cognito group for admins. In AWS Console: User Pool → Users → select user → Add user to group → admin. User must sign out and sign in again.",
-    });
-
-    new cdk.CfnOutput(this, "BedrockChatModelIdOutput", {
-      value: bedrockChatModelId,
-      description: "Bedrock chat model ID for api/.env (BEDROCK_MODEL_ID)",
-    });
-
-    new cdk.CfnOutput(this, "BedrockEmbeddingModelIdOutput", {
-      value: bedrockEmbeddingModelId,
-      description:
-        "Bedrock embedding model ID for api/.env (BEDROCK_EMBEDDING_MODEL_ID)",
-    });
-
-    new cdk.CfnOutput(this, "AlertTopicArnOutput", {
-      value: alertTopic.topicArn,
-      description: "SNS topic ARN for Bedrock budget and CloudWatch alarms",
-    });
-
-    new cdk.CfnOutput(this, "BedrockBudgetNameOutput", {
-      value: "apms-bedrock-monthly",
-      description: "AWS Budget name for Bedrock monthly cost alerts",
     });
   }
 }
