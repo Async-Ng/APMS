@@ -135,10 +135,10 @@ export default function ProfileScreen() {
   }
 
   async function handleSignOut() {
-    Alert.alert("Sign out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
+      { text: "Huỷ", style: "cancel" },
       {
-        text: "Sign out",
+        text: "Đăng xuất",
         style: "destructive",
         onPress: async () => {
           await signOut();
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
             backgroundColor: colors.surface,
           }}
         >
-          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Profile</Text>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Hồ sơ</Text>
         </View>
 
         {/* User card */}
@@ -237,15 +237,15 @@ export default function ProfileScreen() {
         {isAdmin && adminStatsQuery.data && (
           <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
             <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginBottom: 10 }}>
-              SYSTEM STATS
+              THỐNG KÊ HỆ THỐNG
             </Text>
             <View style={{ ...brutalCardStyle, padding: 16, gap: 0 }}>
               {[
-                { label: "Total users", value: String(adminStatsQuery.data.totalUsers), icon: "people-outline" as const },
-                { label: "Active users", value: String(adminStatsQuery.data.activeUsers), icon: "person-outline" as const },
-                { label: "Total documents", value: String(adminStatsQuery.data.totalDocuments), icon: "documents-outline" as const },
-                { label: "Total folders", value: String(adminStatsQuery.data.totalFolders), icon: "folder-outline" as const },
-                { label: "Storage used", value: formatBytes(adminStatsQuery.data.totalStorageUsedBytes), icon: "server-outline" as const },
+                { label: "Tổng người dùng", value: String(adminStatsQuery.data.totalUsers), icon: "people-outline" as const },
+                { label: "Người dùng hoạt động", value: String(adminStatsQuery.data.activeUsers), icon: "person-outline" as const },
+                { label: "Tổng tài liệu", value: String(adminStatsQuery.data.totalDocuments), icon: "documents-outline" as const },
+                { label: "Tổng thư mục", value: String(adminStatsQuery.data.totalFolders), icon: "folder-outline" as const },
+                { label: "Dung lượng đã dùng", value: formatBytes(adminStatsQuery.data.totalStorageUsedBytes), icon: "server-outline" as const },
               ].map((stat, idx, arr) => (
                 <View
                   key={stat.label}
@@ -275,15 +275,15 @@ export default function ProfileScreen() {
           <View style={{ ...brutalCardStyle, padding: 4, gap: 0 }}>
             <MenuItem
               icon="star-outline"
-              label="Starred"
-              subtitle="Quickly access starred items"
+              label="Đã gắn sao"
+              subtitle="Truy cập nhanh các mục đã gắn sao"
               onPress={() => router.push("/(tabs)/drive/starred")}
             />
             <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
             <MenuItem
               icon="trash-outline"
-              label="Trash"
-              subtitle="Restore or permanently delete"
+              label="Thùng rác"
+              subtitle="Khôi phục hoặc xóa vĩnh viễn"
               onPress={() => router.push("/(tabs)/drive/trash")}
             />
           </View>
@@ -291,12 +291,12 @@ export default function ProfileScreen() {
 
         {isAdmin && (
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginBottom: 4 }}>ADMIN</Text>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginBottom: 4 }}>QUẢN TRỊ</Text>
             <View style={{ ...brutalCardStyle, padding: 4 }}>
               <MenuItem
                 icon="shield-outline"
-                label="Manage Users"
-                subtitle="View and manage all accounts"
+                label="Quản lý người dùng"
+                subtitle="Xem và quản lý tất cả tài khoản"
                 onPress={() => router.push("/admin/users")}
                 badge="Admin"
               />
@@ -308,7 +308,7 @@ export default function ProfileScreen() {
           <View style={{ ...brutalCardStyle, padding: 4 }}>
             <MenuItem
               icon="log-out-outline"
-              label="Sign out"
+              label="Đăng xuất"
               onPress={handleSignOut}
               destructive
             />

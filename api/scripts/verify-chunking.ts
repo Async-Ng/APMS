@@ -155,12 +155,7 @@ async function main(): Promise<void> {
   const env = loadEnv();
   const { documentId, query } = parseArgs();
 
-  const expectedEmbedDims =
-    env.AI_PROVIDER === "gemini"
-      ? env.GEMINI_EMBEDDING_OUTPUT_DIMENSION
-      : env.AI_PROVIDER === "bedrock"
-        ? env.BEDROCK_EMBEDDING_OUTPUT_DIMENSION
-        : 384;
+  const expectedEmbedDims = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
 
   console.log("[verify-chunking] Connecting to MongoDB...");
   await mongoose.connect(env.MONGODB_URI);

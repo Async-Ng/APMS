@@ -48,7 +48,6 @@ function ChatLandingContent() {
     <div className="flex min-h-0 flex-1 flex-col">
       <ChatWorkspace
         isNewChat
-        autoOpenPicker
         onSessionCreated={(id) => router.push(`/chat/${id}`)}
       />
     </div>

@@ -45,8 +45,7 @@ function hasAdcSource(): boolean {
 }
 
 function needsGcpCredentials(): boolean {
-  const provider = process.env.AI_PROVIDER ?? "gemini";
-  return provider === "gemini" || provider === "auto";
+  return true;
 }
 
 /**

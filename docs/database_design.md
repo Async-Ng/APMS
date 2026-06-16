@@ -11,10 +11,10 @@
 | `users` | Có | `role`, `isDisabled`; sync Cognito group `admin` |
 | `folders` | Có | `/api/folders`, `/api/drive` |
 | `documents` | Có | `/api/documents`, upload presigned S3 |
-| `document_chunks` | Chưa | RAG pipeline |
+| `document_chunks` | **Có** | `/api/search` — Vector search RAG pipeline |
 | `shares` | **Có** | `/api/shares` (batch), `/api/drive/shared`, permission inheritance |
-| `chat_sessions` | Chưa | RAG chat |
-| `chat_messages` | Chưa | RAG chat |
+| `chat_sessions` | **Có** | `/api/chat/sessions` — RAG chat |
+| `chat_messages` | **Có** | `/api/chat/sessions/:id/messages` — RAG chat |
 
 Tham chiếu endpoint: [`api_reference.md`](./api_reference.md).
 
@@ -189,18 +189,22 @@ Bảng trung gian quản lý quyền chia sẻ. Hỗ trợ chia sẻ cả **fold
 
 ### 3.6 Collection: `chat_sessions`
 
-Phiên hội thoại giữa người dùng và AI Chatbot.
+Phiên hội thoại giữa người dùng và AI Chatbot. `contextType` xác định phạm vi tài liệu dùng làm ngữ cảnh RAG.
 
 | Field | Type | Ràng buộc | Mô tả |
 |---|---|---|---|
 | `_id` | `ObjectId` | PK | |
 | `userId` | `ObjectId` | required, ref: users | |
-| `title` | `String` | required | Tiêu đề phiên (tự tạo từ câu hỏi đầu tiên) |
-| `contextDocumentIds` | `ObjectId[]` | default: [] | Danh sách tài liệu làm ngữ cảnh RAG trong phiên này |
+| `title` | `String` | required, max 255 | Tiêu đề phiên |
+| `contextType` | `String (enum)` | required, default: `"all"` | `"all"` \| `"folder"` \| `"document"` \| `"documents"` |
+| `contextId` | `ObjectId or null` | default: null | ID folder/document khi `contextType` là `"folder"` hoặc `"document"` |
+| `contextIds` | `ObjectId[]` | default: [] | Danh sách document IDs khi `contextType` là `"documents"` (1–20) |
+| `isPinned` | `Boolean` | default: false | Ghim phiên lên đầu danh sách |
 | `createdAt` | `Date` | auto | |
 | `updatedAt` | `Date` | auto | |
 
-**Indexes:** `userId`
+**Indexes:**
+- Compound `(userId, isPinned)` — liệt kê sessions, pinned lên trước
 
 ---
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -10,6 +11,8 @@ export interface DriveFolder {
   color: string | null;
   parentId: string | null;
   isStarred: boolean;
+  deletedAt?: string | null;
+  permanentDeleteAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +27,8 @@ export interface DriveDocument {
   folderId: string | null;
   isStarred: boolean;
   tags: string[];
+  deletedAt?: string | null;
+  permanentDeleteAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -135,6 +140,20 @@ export function useRestoreFolder(parentId?: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void qc.invalidateQueries({ queryKey: driveKey(parentId) });
+    },
+  });
+}
+
+export function usePermanentDeleteFolder() {
+  const qc = useQueryClient();
+  const fetchMe = useAuthStore((state) => state.fetchMe);
+
+  return useMutation({
+    mutationFn: (folderId: string) =>
+      api.delete(`/folders/${folderId}/permanent`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+      void fetchMe();
     },
   });
 }

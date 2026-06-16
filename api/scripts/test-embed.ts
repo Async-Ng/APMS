@@ -1,5 +1,5 @@
 /**
- * Smoke test: embed one text via the configured AI provider (Vertex Gemini or Bedrock).
+ * Smoke test: embed one text via Vertex AI Gemini.
  * Usage: npx tsx --env-file=.env scripts/test-embed.ts [text]
  */
 import { loadEnv } from "../src/config/env";
@@ -9,24 +9,11 @@ async function main(): Promise<void> {
   const env = loadEnv();
   const text = process.argv.slice(2).join(" ").trim() || "APMS embedding smoke test";
 
-  if (env.AI_PROVIDER === "local") {
-    console.error("AI_PROVIDER=local uses in-process embeddings. Set AI_PROVIDER=gemini or bedrock.");
-    process.exit(1);
-  }
+  const expectedDims = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
 
-  const expectedDims =
-    env.AI_PROVIDER === "gemini"
-      ? env.GEMINI_EMBEDDING_OUTPUT_DIMENSION
-      : env.BEDROCK_EMBEDDING_OUTPUT_DIMENSION;
-
-  console.log(`[test-embed] AI_PROVIDER=${env.AI_PROVIDER}`);
-  if (env.AI_PROVIDER === "gemini") {
-    console.log(`[test-embed] Project: ${env.GOOGLE_CLOUD_PROJECT}`);
-    console.log(`[test-embed] Location: ${env.GOOGLE_CLOUD_LOCATION}`);
-    console.log(`[test-embed] Model: ${env.GEMINI_EMBEDDING_MODEL}`);
-  } else {
-    console.log(`[test-embed] Model: ${env.BEDROCK_EMBEDDING_MODEL_ID}`);
-  }
+  console.log(`[test-embed] Project: ${env.GOOGLE_CLOUD_PROJECT}`);
+  console.log(`[test-embed] Location: ${env.GOOGLE_CLOUD_LOCATION}`);
+  console.log(`[test-embed] Model: ${env.GEMINI_EMBEDDING_MODEL}`);
   console.log(`[test-embed] Output dimension: ${expectedDims}`);
   console.log(`[test-embed] Text: ${text.slice(0, 80)}${text.length > 80 ? "..." : ""}`);
 

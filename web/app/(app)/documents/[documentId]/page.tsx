@@ -160,7 +160,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
       return (
         <CustomOfficeViewer
           url={downloadUrl}
-          title="PowerPoint preview"
+          title="Xem trước PowerPoint"
         />
       );
     }
@@ -180,8 +180,8 @@ export default function DocumentDetailPage({ params }: PageProps) {
   }
 
   const breadcrumbs = [
-    { label: "My Drive", href: "/drive" },
-    { label: isLoading ? "…" : (doc?.title ?? "Document") },
+    { label: "Drive của tôi", href: "/drive" },
+    { label: isLoading ? "…" : (doc?.title ?? "Tài liệu") },
   ];
 
   return (
@@ -280,7 +280,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
                 </div>
                 {doc.tags.length > 0 && (
                   <div className="flex flex-col gap-1.5">
-                    <dt className="text-brutal-muted">Tags</dt>
+                    <dt className="text-brutal-muted">Thẻ</dt>
                     <dd className="flex flex-wrap gap-1.5">
                       {doc.tags.map((tag) => (
                         <span

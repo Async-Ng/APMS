@@ -35,7 +35,6 @@ export const ErrorCode = {
 
   // Chat
   CHAT_DAILY_LIMIT: "CHAT_DAILY_LIMIT",
-  CHAT_QUOTA_BEDROCK: "CHAT_QUOTA_BEDROCK",
   CHAT_QUOTA_GEMINI: "CHAT_QUOTA_GEMINI",
   CHAT_AI_UNAVAILABLE: "CHAT_AI_UNAVAILABLE",
   CHAT_SESSION_NOT_FOUND: "CHAT_SESSION_NOT_FOUND",
@@ -79,7 +78,6 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   SHARE_RESOURCE_NOT_FOUND: "Không tìm thấy tài liệu hoặc thư mục để chia sẻ.",
 
   CHAT_DAILY_LIMIT: "Đã hết lượt chat hôm nay. Vui lòng thử lại vào ngày mai.",
-  CHAT_QUOTA_BEDROCK: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",
   CHAT_QUOTA_GEMINI: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",
   CHAT_AI_UNAVAILABLE: "Không thể trả lời ngay lúc này. Vui lòng thử lại sau.",
   CHAT_SESSION_NOT_FOUND: "Không tìm thấy cuộc trò chuyện.",

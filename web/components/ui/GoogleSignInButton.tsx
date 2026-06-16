@@ -43,11 +43,11 @@ export function GoogleSignInButton({
       loading={loading}
       disabled={disabled}
       onClick={onClick}
-      aria-label="Continue with Google"
+      aria-label="Tiếp tục với Google"
       className={className}
     >
       {!loading ? <GoogleIcon /> : null}
-      Continue with Google
+      Tiếp tục với Google
     </BrutalButton>
   );
 }

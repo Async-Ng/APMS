@@ -71,7 +71,7 @@ Hệ thống cần tuân thủ nghiêm ngặt các ràng buộc Phi chức năng
 
 ### 3.1 Hiệu năng (Performance)
 - **Truy vấn Vector:** Phải hoàn thành dưới **500ms**.
-- **Thời gian phản hồi AI:** LLM Response time tối đa **3 giây** (Sử dụng Claude 3 Haiku là mô hình tối ưu về tốc độ).
+- **Thời gian phản hồi AI:** LLM Response time tối đa **3 giây** (Sử dụng **Gemini 2.5-flash** qua Vertex AI — `AI_PROVIDER=gemini` mặc định; hỗ trợ fallback sang AWS Bedrock).
 - **Chịu tải:** Phục vụ đồng thời ít nhất **1.000 người dùng (Concurrent Users)**.
 
 ### 3.2 Bảo mật (Security)
@@ -98,9 +98,10 @@ Backend Express (`api/`) hiện hỗ trợ:
 | Folders | `/api/folders` | Có (CRUD, star, soft delete, restore) |
 | Documents | `/api/documents` | Có (presigned S3 upload, metadata) |
 | Admin | `/api/admin` | Có (stats, user management) |
-| Shares | `/api/shares` | **Có** (batch share, revoke, with-me, by-me) |
-| Semantic search | — | Chưa |
-| RAG Chat | — | Chưa |
+| Shares | `/api/shares` | Có (batch share, revoke, with-me, by-me) |
+| Semantic search | `/api/search` | **Có** (Vector search Atlas, filter theo ownerId) |
+| RAG Chat | `/api/chat` | **Có** (sessions CRUD, messages, citations) |
+| Processing worker | — (background) | **Có** (poll 30s: `processing → ready`) |
 
 Chi tiết endpoint, body, response: [`api_reference.md`](./api_reference.md).
 

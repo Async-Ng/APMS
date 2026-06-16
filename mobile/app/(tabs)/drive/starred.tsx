@@ -34,12 +34,12 @@ export default function StarredScreen() {
     if (target.kind === "folder") {
       return [
         {
-          label: "Unstar",
+          label: "Bỏ gắn sao",
           icon: "star",
           onPress: () => toggleFolderStar.mutate({ id: target.item.id, star: false }),
         },
         {
-          label: "Open folder",
+          label: "Mở thư mục",
           icon: "folder-open-outline",
           onPress: () => router.push(`/(tabs)/drive/${target.item.id}`),
         },
@@ -47,12 +47,12 @@ export default function StarredScreen() {
     }
     return [
       {
-        label: "Unstar",
+        label: "Bỏ gắn sao",
         icon: "star",
         onPress: () => toggleDocumentStar.mutate({ id: target.item.id, star: false }),
       },
       {
-        label: "Open document",
+        label: "Mở tài liệu",
         icon: "document-outline",
         onPress: () => router.push(`/documents/${target.item.id}`),
       },
@@ -68,13 +68,13 @@ export default function StarredScreen() {
   const listData: ListItem[] = [
     ...(folders.length > 0
       ? [
-          { type: "header" as const, key: "hdr-f", label: "Folders", count: folders.length },
+          { type: "header" as const, key: "hdr-f", label: "Thư mục", count: folders.length },
           ...folders.map((f) => ({ type: "folder" as const, key: `f-${f.id}`, item: f })),
         ]
       : []),
     ...(documents.length > 0
       ? [
-          { type: "header" as const, key: "hdr-d", label: "Files", count: documents.length },
+          { type: "header" as const, key: "hdr-d", label: "Tệp", count: documents.length },
           ...documents.map((d) => ({ type: "document" as const, key: `d-${d.id}`, item: d })),
         ]
       : []),
@@ -110,7 +110,7 @@ export default function StarredScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Starred</Text>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Đã gắn sao</Text>
       </View>
 
       {isLoading ? (
@@ -161,8 +161,8 @@ export default function StarredScreen() {
             return (
               <EmptyState
                 icon="star-outline"
-                title="No starred items"
-                description="Star folders and files for quick access here."
+                title="Chưa có mục gắn sao"
+                description="Gắn sao thư mục và tệp để truy cập nhanh tại đây."
               />
             );
           }}

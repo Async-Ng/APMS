@@ -53,6 +53,18 @@ export function useDeleteFolder() {
   });
 }
 
+export function usePermanentDeleteFolder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/folders/${id}/permanent`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+  });
+}
+
 export function useRestoreFolder() {
   const queryClient = useQueryClient();
   return useMutation({

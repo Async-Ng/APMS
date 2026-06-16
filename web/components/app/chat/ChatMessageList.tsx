@@ -115,7 +115,7 @@ export function ChatMessageList({
                         <span className="truncate">
                           {citation.documentTitle}
                           {citation.pageNumber != null &&
-                            ` · p.${citation.pageNumber}`}
+                            ` · tr.${citation.pageNumber}`}
                         </span>
                         <span className="opacity-70">[{idx + 1}]</span>
                       </button>

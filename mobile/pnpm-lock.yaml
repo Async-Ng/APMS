@@ -11,6 +11,9 @@ importers:
       '@aws-amplify/react-native':
         specifier: ^1.3.3
         version: 1.3.3(react-native-get-random-values@2.0.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
+      '@aws-amplify/rtn-web-browser':
+        specifier: ^1.4.0
+        version: 1.4.0
       '@expo/vector-icons':
         specifier: ^15.0.3
         version: 15.1.1(expo-font@14.0.11(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -193,6 +196,9 @@ packages:
     peerDependenciesMeta:
       '@aws-amplify/rtn-passkeys':
         optional: true
+
+  '@aws-amplify/rtn-web-browser@1.4.0':
+    resolution: {integrity: sha512-M0Ghl2J7cVl0mAG9pgQa38FC5zCg4hvK5g7OBud8cbPbkGKi5xng9lkI0OiwoA81ZYS5Sx4OvtYqmyL8eQe5OQ==}
 
   '@aws-amplify/storage@6.15.0':
     resolution: {integrity: sha512-xMHR9mJilg55PEKYXSuvTMeKxNShC4Tosmu+DCCrYRnf0IjoN5yapcxCVt3xyOryvoQEKTIu1VHlOwYWdm+qkQ==}
@@ -4970,6 +4976,8 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
       react-native-get-random-values: 2.0.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
       react-native-url-polyfill: 3.0.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
+
+  '@aws-amplify/rtn-web-browser@1.4.0': {}
 
   '@aws-amplify/storage@6.15.0(@aws-amplify/core@6.16.3)':
     dependencies:

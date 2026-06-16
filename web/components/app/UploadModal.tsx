@@ -135,13 +135,13 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
             id="upload-modal-title"
             className="font-heading text-xl font-extrabold"
           >
-            Upload File
+            Tải lên tệp
           </h2>
           <button
             onClick={handleClose}
             disabled={step === "uploading"}
             className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg disabled:opacity-50"
-            aria-label="Close upload modal"
+            aria-label="Đóng hộp thoại tải lên"
           >
             <X className="h-4 w-4" />
           </button>
@@ -166,7 +166,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                     : "border-brutal-ink bg-brutal-bg hover:bg-brutal-surface"
                 }`}
                 role="button"
-                aria-label="Click to select file or drag and drop"
+                aria-label="Nhấn để chọn tệp hoặc kéo thả"
                 tabIndex={0}
                 onKeyDown={(e) =>
                   e.key === "Enter" && inputRef.current?.click()
@@ -187,13 +187,13 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 ) : (
                   <div>
                     <p className="font-semibold text-brutal-ink">
-                      Drag & drop or{" "}
+                      Kéo thả hoặc{" "}
                       <span className="text-brutal-primary underline">
-                        browse
+                        chọn tệp
                       </span>
                     </p>
                     <p className="mt-1 text-xs text-brutal-muted">
-                      PDF, DOCX, PPTX — max 50 MB
+                      PDF, DOCX, PPTX — tối đa 50 MB
                     </p>
                   </div>
                 )}
@@ -220,7 +220,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 onClick={() => void startUpload()}
               >
                 <Upload className="h-4 w-4" />
-                Upload
+                Tải lên
               </BrutalButton>
             </div>
           )}
@@ -232,7 +232,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 <Loader2 className="h-10 w-10 animate-spin text-brutal-primary" aria-hidden="true" />
               </div>
               <div>
-                <p className="font-heading text-lg font-extrabold">Uploading…</p>
+                <p className="font-heading text-lg font-extrabold">Đang tải lên…</p>
                 <p className="text-sm text-brutal-muted">{selectedFile?.name}</p>
               </div>
               {/* Progress bar */}
@@ -242,7 +242,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 aria-valuenow={progress}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={`Upload progress: ${progress}%`}
+                aria-label={`Tiến độ tải lên: ${progress}%`}
               >
                 <div
                   className="h-full rounded-full bg-brutal-accent transition-[width] duration-300"
@@ -266,10 +266,10 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
               </div>
               <div>
                 <p className="font-heading text-lg font-extrabold">
-                  Upload complete!
+                  Tải lên thành công!
                 </p>
                 <p className="text-sm text-brutal-muted">
-                  Your file is being processed and will be ready shortly.
+                  Tệp đang được xử lý và sẽ sẵn sàng trong giây lát.
                 </p>
               </div>
               <BrutalButton
@@ -277,7 +277,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
                 className="w-full"
                 onClick={handleClose}
               >
-                Done
+                Xong
               </BrutalButton>
             </div>
           )}

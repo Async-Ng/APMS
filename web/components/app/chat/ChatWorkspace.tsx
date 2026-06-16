@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
@@ -13,6 +13,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatSessionList } from "./ChatSessionList";
+import { ChatSessionPinButton } from "./ChatSessionPinButton";
 import { ChatSourcePickerModal } from "./ChatSourcePickerModal";
 import { CitationPanel } from "./CitationPanel";
 
@@ -25,14 +26,12 @@ function citationKey(c: ChatCitation): string {
 interface ChatWorkspaceProps {
   sessionId?: string;
   isNewChat?: boolean;
-  autoOpenPicker?: boolean;
   onSessionCreated: (id: string) => void;
 }
 
 export function ChatWorkspace({
   sessionId,
   isNewChat = false,
-  autoOpenPicker = false,
   onSessionCreated,
 }: ChatWorkspaceProps) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
@@ -50,12 +49,6 @@ export function ChatWorkspace({
     isNewChat ? undefined : sessionId,
   );
   const sendMessage = useSendMessage(sessionId ?? "");
-
-  useEffect(() => {
-    if (autoOpenPicker && isNewChat) {
-      setPickerOpen(true);
-    }
-  }, [autoOpenPicker, isNewChat]);
 
   const handleSelectCitation = useCallback(
     (message: ChatMessage, citation: ChatCitation) => {
@@ -116,7 +109,7 @@ export function ChatWorkspace({
         onSessionCreated={onSessionCreated}
       />
 
-      <Topbar breadcrumbs={[{ label: "AI Chat" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Trò chuyện AI" }]} onMenuOpen={() => {}} />
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex gap-1 border-b-2 border-brutal-ink bg-brutal-surface p-2 lg:hidden">
@@ -160,8 +153,8 @@ export function ChatWorkspace({
               <>
                 <ChatContextBadge session={session} messages={session.messages} />
                 <p className="text-xs text-brutal-muted">
-                  Phạm vi nguồn cố định khi tạo phiên. Tạo cuộc trò chuyện mới để
-                  đổi.
+                  Phạm vi nguồn cố định khi tạo phiên. Nhấn thẻ nguồn để xem
+                  tài liệu đã chọn.
                 </p>
               </>
             ) : null}
@@ -180,7 +173,7 @@ export function ChatWorkspace({
                   Nhấn + để chọn nguồn tài liệu
                 </p>
                 <p className="text-sm text-brutal-muted">
-                  Chọn tài liệu hoặc folder từ My Drive, xem lại rồi bắt đầu trò chuyện.
+                  Chọn tài liệu hoặc thư mục từ Drive của tôi, xem lại rồi bắt đầu trò chuyện.
                 </p>
               </div>
             ) : isLoading ? (
@@ -193,10 +186,17 @@ export function ChatWorkspace({
               </div>
             ) : (
               <>
-                <div className="shrink-0 border-b-2 border-brutal-ink px-4 py-2">
-                  <h1 className="truncate font-heading text-lg font-extrabold">
+                <div className="flex shrink-0 items-center gap-2 border-b-2 border-brutal-ink px-4 py-2">
+                  <h1 className="min-w-0 flex-1 truncate font-heading text-lg font-extrabold">
                     {session.title}
                   </h1>
+                  <ChatSessionPinButton
+                    sessionId={session.id}
+                    isPinned={session.isPinned}
+                    title={session.title}
+                    className="!h-8 !w-8"
+                    iconClassName="!h-4 !w-4"
+                  />
                 </div>
                 <ChatMessageList
                   messages={session.messages}

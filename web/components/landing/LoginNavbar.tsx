@@ -7,10 +7,10 @@ import { BrutalCard } from "@/components/ui/BrutalCard";
 import { scrollToSection } from "@/lib/scroll-to-section";
 
 const navLinks = [
-  { label: "Features", sectionId: "hero" },
-  { label: "Materials", sectionId: "catalog" },
-  { label: "Progress", sectionId: "progress" },
-  { label: "Reviews", sectionId: "testimonials" },
+  { label: "Tính năng", sectionId: "hero" },
+  { label: "Tài liệu", sectionId: "catalog" },
+  { label: "Tiến độ", sectionId: "progress" },
+  { label: "Đánh giá", sectionId: "testimonials" },
 ] as const;
 
 function FptStripe() {
@@ -48,7 +48,7 @@ interface LoginNavbarProps {
 }
 
 export function LoginNavbar({ user, isAuthLoading, onSignOut }: LoginNavbarProps) {
-  const firstName = user?.displayName.split(" ")[0] ?? "there";
+  const firstName = user?.displayName.split(" ")[0] ?? "bạn";
 
   return (
     <BrutalCard className="!p-4 sm:!p-5" hover>
@@ -74,14 +74,14 @@ export function LoginNavbar({ user, isAuthLoading, onSignOut }: LoginNavbarProps
             ) : user ? (
               <>
                 <span className="hidden rounded-lg border-2 border-brutal-ink bg-brutal-secondary px-3 py-1.5 text-sm font-bold text-brutal-on-brand shadow-[2px_2px_0_0_#1A1A1A] sm:inline">
-                  Hi, {firstName}
+                  Xin chào, {firstName}
                 </span>
                 <BrutalButton
                   variant="ghost"
                   className="!w-auto !min-h-10 px-3 py-2 text-sm"
                   onClick={onSignOut}
                 >
-                  Sign out
+                  Đăng xuất
                 </BrutalButton>
               </>
             ) : (
@@ -90,7 +90,7 @@ export function LoginNavbar({ user, isAuthLoading, onSignOut }: LoginNavbarProps
                 className="!w-auto !min-h-10 px-4 py-2 text-sm"
                 onClick={() => scrollToSection("hero")}
               >
-                Sign in
+                Đăng nhập
               </BrutalButton>
             )}
           </div>

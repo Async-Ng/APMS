@@ -46,6 +46,18 @@ export function useDeleteDocument() {
   });
 }
 
+export function usePermanentDeleteDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/documents/${id}/permanent`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+  });
+}
+
 export function useRestoreDocument() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -36,9 +36,21 @@ const chatSessionSchema = registry.register(
       contextLabel: z.string().nullable().openapi({
         description: "Resolved document title or folder name when contextType is not 'all'",
       }),
+      contextDocuments: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+          }),
+        )
+        .openapi({
+          description: "Resolved document list when contextType is document or documents",
+        }),
       isPinned: z.boolean().openapi({
         description: "Whether the session is pinned to the top of the list",
+        example: false,
       }),
+      pinnedAt: z.string().datetime().nullable().openapi({ example: null }),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })
@@ -215,7 +227,7 @@ export function registerChatPaths(): void {
     tags: ["Chat"],
     summary: "Send a message and get an AI response",
     description:
-      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Amazon Nova Micro via Bedrock Converse, returns answer with citations.",
+      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Gemini 2.5-flash via Vertex AI, returns answer with citations.",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,

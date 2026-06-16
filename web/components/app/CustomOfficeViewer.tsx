@@ -9,7 +9,7 @@ interface CustomOfficeViewerProps {
  * Embeds Microsoft Office Online viewer for PPTX (and other Office formats).
  * Requires a publicly reachable file URL (S3 presigned GET works).
  */
-export function CustomOfficeViewer({ url, title = "Presentation preview" }: CustomOfficeViewerProps) {
+export function CustomOfficeViewer({ url, title = "Xem trước bài trình bày" }: CustomOfficeViewerProps) {
   const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
 
   return (

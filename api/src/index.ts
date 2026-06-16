@@ -5,7 +5,6 @@ import { initCognitoVerifier } from "./config/cognito";
 import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
 import { initGcpCredentials } from "./config/gcp-credentials";
-import { initLocalEmbedding } from "./services/ai/ai.service";
 import { startDocumentWorker } from "./workers/document.worker";
 
 initGcpCredentials();
@@ -16,11 +15,6 @@ async function bootstrap(): Promise<void> {
   await connectDatabase(env);
 
   startDocumentWorker();
-
-  // Preload local embedding model to avoid cold-load on first request
-  if (env.AI_PROVIDER === "local") {
-    await initLocalEmbedding();
-  }
 
   const app = createApp();
 

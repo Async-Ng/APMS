@@ -37,7 +37,7 @@ export function FolderModal({
   visible,
   initialName = "",
   initialColor,
-  title = "New Folder",
+  title = "Thư mục mới",
   onConfirm,
   onDismiss,
   loading = false,
@@ -96,12 +96,12 @@ export function FolderModal({
               </Text>
 
               <Text style={{ fontSize: 13, fontWeight: "700", color: colors.muted, marginBottom: 8 }}>
-                FOLDER NAME
+                TÊN THƯ MỤC
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. CS101 Notes"
+                placeholder="vd. Ghi chú CS101"
                 placeholderTextColor={colors.muted}
                 autoFocus
                 returnKeyType="done"
@@ -121,7 +121,7 @@ export function FolderModal({
               />
 
               <Text style={{ fontSize: 13, fontWeight: "700", color: colors.muted, marginBottom: 10 }}>
-                COLOR
+                MÀU
               </Text>
               <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
                 {ACCENT_COLORS.map((c) => (
@@ -150,13 +150,13 @@ export function FolderModal({
 
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <BrutalButton
-                  label="Cancel"
+                  label="Huỷ"
                   onPress={onDismiss}
                   variant="ghost"
                   style={{ flex: 1 }}
                 />
                 <BrutalButton
-                  label={title === "New Folder" ? "Create" : "Save"}
+                  label={title === "Thư mục mới" ? "Tạo" : "Lưu"}
                   onPress={handleConfirm}
                   variant="primary"
                   loading={loading}
