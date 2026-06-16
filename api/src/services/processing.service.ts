@@ -37,7 +37,7 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
     }
 
     // 3. Chunk text
-    const chunks = chunkText(text, pageCount);
+    const chunks = await chunkText(text, pageCount);
 
     if (chunks.length > 0) {
       // 4. Embed chunks in concurrent batches and save to DB
