@@ -10,9 +10,24 @@ export async function embedText(
   return geminiProvider.embedText(text, inputType);
 }
 
+export async function embedBatch(
+  texts: string[],
+  inputType: EmbeddingInputType = "search_document",
+): Promise<number[][]> {
+  return geminiProvider.embedBatch(texts, inputType);
+}
+
 export async function chatWithContext(
   systemPrompt: string,
   messages: ChatTurn[],
 ): Promise<string> {
   return geminiProvider.chatWithContext(systemPrompt, messages);
+}
+
+export async function describeImage(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  return geminiProvider.describeImage(imageBase64, imageMimeType, prompt);
 }

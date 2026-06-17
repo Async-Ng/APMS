@@ -18,7 +18,7 @@ function sleep(ms: number): Promise<void> {
 
 export async function withGeminiRetry<T>(
   operation: () => Promise<T>,
-  label: "embed" | "chat",
+  label: "embed" | "chat" | "vision",
 ): Promise<T> {
   const env = loadEnv();
   const maxRetries = env.GEMINI_MAX_RETRIES;
