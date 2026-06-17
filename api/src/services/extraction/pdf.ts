@@ -18,6 +18,36 @@ g.DOMMatrix ??= DOMMatrix;
 g.Path2D ??= Path2D;
 g.ImageData ??= ImageData;
 
+// pdfjs's built-in NodeCanvasFactory requires the native `canvas` package, which this
+// project doesn't install (it uses @napi-rs/canvas instead). Without this override,
+// any inline image XObject makes pdfjs create its own canvas internally and crash with
+// "Cannot read properties of undefined (reading 'createCanvas')".
+class NapiCanvasFactory {
+  create(width: number, height: number) {
+    if (width <= 0 || height <= 0) {
+      throw new Error("Invalid canvas size");
+    }
+    const canvas = createCanvas(width, height);
+    return { canvas, context: canvas.getContext("2d") };
+  }
+  reset(canvasAndContext: { canvas: any }, width: number, height: number) {
+    if (!canvasAndContext.canvas) {
+      throw new Error("Canvas is not specified");
+    }
+    canvasAndContext.canvas.width = width;
+    canvasAndContext.canvas.height = height;
+  }
+  destroy(canvasAndContext: { canvas: any; context: any }) {
+    if (!canvasAndContext.canvas) {
+      throw new Error("Canvas is not specified");
+    }
+    canvasAndContext.canvas.width = 0;
+    canvasAndContext.canvas.height = 0;
+    canvasAndContext.canvas = null;
+    canvasAndContext.context = null;
+  }
+}
+
 const RENDER_SCALE = 2.0; // 2x upscale for legible OCR; lower to reduce cost.
 
 let pdfjsPromise: Promise<any> | null = null;
@@ -69,6 +99,7 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
     disableFontFace: true,
     useSystemFonts: false,
     standardFontDataUrl: standardFontDataUrl(),
+    CanvasFactory: NapiCanvasFactory,
   }).promise;
 
   const pageCount: number = doc.numPages;
