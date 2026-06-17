@@ -1,9 +1,19 @@
+import { runConcurrent } from "../utils/concurrency";
 import * as aiService from "./ai/ai.service";
 
-const SIMILARITY_THRESHOLD = 0.72;
+const SEMANTIC_BREAK_PERCENTILE = 25; // cắt ở 25% gap ít giống nhất của tài liệu
+const MAX_BREAK_SIMILARITY = 0.9; // guard: không cắt khi câu vẫn rất giống (tài liệu liền mạch)
 const MAX_CHUNK_CHARS = 3000;
 const MIN_SENTENCES_PER_CHUNK = 2;
 const SENTENCE_EMBED_BATCH = 50;
+const SENTENCE_EMBED_CONCURRENCY = 4;
+
+const DOT = "\x00DOT\x00";
+// Viết tắt kết thúc bằng dấu chấm — không coi là ranh giới câu (tiếng Việt + Anh học thuật).
+const ABBREV = [
+  "TS", "ThS", "GS", "PGS", "BS", "KS", "TP", "Tp", "ĐH", "CĐ", "Nxb", "NXB",
+  "tr", "vd", "VD", "Mr", "Mrs", "Ms", "Dr", "Prof", "etc", "No", "Fig", "Vol", "St",
+];
 
 export interface TextChunk {
   content: string;
@@ -11,19 +21,32 @@ export interface TextChunk {
   pageNumber: number | null;
 }
 
+/** Thay dấu chấm KHÔNG phải ranh giới câu bằng sentinel để regex split không cắt nhầm. */
+function protectDots(s: string): string {
+  let out = s.replace(/(\d)\.(\d)/g, `$1${DOT}$2`); // số thập phân 3.14
+  out = out.replace(/(^|\s)(\d{1,2})\.\s/g, `$1$2${DOT} `); // list đánh số "1. ", "2. "
+  out = out.replace(/\bv\.v\.?/gi, `v${DOT}v${DOT}`); // v.v.
+  for (const a of ABBREV) {
+    out = out.replace(new RegExp(`\\b${a}\\.`, "g"), `${a}${DOT}`);
+  }
+  return out;
+}
+
 function splitIntoSentences(text: string): string[] {
   const PARA = "\x00PARA\x00";
-  const normalised = text
-    .replace(/\r\n/g, "\n")
-    .replace(/\n{2,}/g, PARA)
-    .replace(/\n/g, " ")
-    .replace(/[ \t]+/g, " ")
-    .trim();
+  const normalised = protectDots(
+    text
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{2,}/g, PARA)
+      .replace(/\n/g, " ")
+      .replace(/[ \t]+/g, " ")
+      .trim(),
+  );
 
   const result: string[] = [];
   for (const para of normalised.split(PARA)) {
     for (const part of para.split(/(?<=[.?!])\s+/)) {
-      const s = part.trim();
+      const s = part.replace(new RegExp(DOT, "g"), ".").trim();
       if (s.length > 0) result.push(s);
     }
   }
@@ -31,15 +54,14 @@ function splitIntoSentences(text: string): string[] {
 }
 
 async function embedSentencesInBatches(sentences: string[]): Promise<number[][]> {
-  const all: number[][] = [];
+  const batches: string[][] = [];
   for (let i = 0; i < sentences.length; i += SENTENCE_EMBED_BATCH) {
-    const embeddings = await aiService.embedBatch(
-      sentences.slice(i, i + SENTENCE_EMBED_BATCH),
-      "search_document",
-    );
-    all.push(...embeddings);
+    batches.push(sentences.slice(i, i + SENTENCE_EMBED_BATCH));
   }
-  return all;
+  const results = await runConcurrent(batches, SENTENCE_EMBED_CONCURRENCY, (b) =>
+    aiService.embedBatch(b, "similarity"),
+  );
+  return results.flat();
 }
 
 function dotProduct(a: number[], b: number[]): number {
@@ -48,12 +70,26 @@ function dotProduct(a: number[], b: number[]): number {
   return sum;
 }
 
+function percentile(sortedAsc: number[], p: number): number {
+  if (sortedAsc.length === 0) return 0;
+  const idx = Math.min(sortedAsc.length - 1, Math.floor((p / 100) * (sortedAsc.length - 1)));
+  return sortedAsc[idx]!;
+}
+
 function findSemanticBreaks(embeddings: number[][]): Set<number> {
+  const sims: number[] = [];
+  for (let i = 1; i < embeddings.length; i++) {
+    sims.push(dotProduct(embeddings[i - 1]!, embeddings[i]!));
+  }
+
+  const sorted = [...sims].sort((a, b) => a - b);
+  // Ngưỡng tự co theo phân bố của chính tài liệu, nhưng không vượt MAX_BREAK_SIMILARITY
+  // → tài liệu liền mạch (sim đều cao) gần như không bị cắt; tài liệu đa chủ đề cắt đúng chỗ tụt.
+  const threshold = Math.min(percentile(sorted, SEMANTIC_BREAK_PERCENTILE), MAX_BREAK_SIMILARITY);
+
   const breaks = new Set<number>([0]);
   for (let i = 1; i < embeddings.length; i++) {
-    if (dotProduct(embeddings[i - 1]!, embeddings[i]!) < SIMILARITY_THRESHOLD) {
-      breaks.add(i);
-    }
+    if (sims[i - 1]! < threshold) breaks.add(i);
   }
   return breaks;
 }

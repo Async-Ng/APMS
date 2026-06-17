@@ -51,7 +51,14 @@ function getVertexClient(): GoogleGenAI {
 }
 
 function embeddingTaskType(inputType: EmbeddingInputType): string {
-  return inputType === "search_query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT";
+  switch (inputType) {
+    case "search_query":
+      return "RETRIEVAL_QUERY";
+    case "similarity":
+      return "SEMANTIC_SIMILARITY";
+    default:
+      return "RETRIEVAL_DOCUMENT";
+  }
 }
 
 function extractEmbeddingValues(result: {

@@ -1,4 +1,4 @@
-export type EmbeddingInputType = "search_document" | "search_query";
+export type EmbeddingInputType = "search_document" | "search_query" | "similarity";
 
 export interface ChatTurn {
   role: "user" | "assistant";
