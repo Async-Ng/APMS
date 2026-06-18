@@ -38,6 +38,7 @@ const envSchema = z
     S3_PRESIGN_EXPIRES_SECONDS: z.coerce.number().default(900),
     CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(0).default(50),
     TRASH_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+    DOCUMENT_WORKER_POLL_MS: z.coerce.number().int().min(1000).default(5_000),
   });
 
 export type Env = z.infer<typeof envSchema>;

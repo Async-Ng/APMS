@@ -154,6 +154,7 @@ Restart API — worker re-embed documents ở `processing`.
 | `GEMINI_EMBED_DELAY_MS` | Delay giữa chunk embed (mặc định `200`) |
 | `EMBED_CONCURRENCY` | Số batch embed chạy song song khi xử lý tài liệu (mặc định `5`) |
 | `SENTENCE_EMBED_CONCURRENCY` | Số batch embed câu chạy song song cho semantic chunking (mặc định `4`) |
+| `DOCUMENT_WORKER_POLL_MS` | Worker poll tài liệu `processing`/`failed` (mặc định `5000`). `completeUpload` còn kích hoạt xử lý ngay, không chờ poll. |
 
 **Cảnh báo credit GCP (Budget 90%)**
 
