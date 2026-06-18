@@ -137,6 +137,13 @@ async function tryChatWithModel(
     },
   });
 
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason === "RECITATION" || finishReason === "SAFETY" || finishReason === "OTHER") {
+    throw new Error(
+      `Gemini model ${modelName} stopped generation early (finishReason=${finishReason})`,
+    );
+  }
+
   const text = response.text?.trim() ?? "";
   if (!text) {
     throw new Error(`Gemini model ${modelName} returned empty assistant message`);

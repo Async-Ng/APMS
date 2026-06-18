@@ -3,6 +3,8 @@ import { Schema, model, type HydratedDocument, type InferSchemaType } from "mong
 export const DOCUMENT_STATUSES = ["pending", "processing", "ready", "failed"] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
+export const MAX_PROCESSING_ATTEMPTS = 5;
+
 const documentSchema = new Schema(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -19,6 +21,8 @@ const documentSchema = new Schema(
       default: "pending",
     },
     pageCount: { type: Number },
+    processingAttempts: { type: Number, default: 0 },
+    lastError: { type: String, default: null },
     tags: { type: [String], default: [] },
     isStarred: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },

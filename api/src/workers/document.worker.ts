@@ -1,11 +1,16 @@
-import { Document } from "../models/document.model";
+import { Document, MAX_PROCESSING_ATTEMPTS } from "../models/document.model";
 import { processDocument } from "../services/processing.service";
 
 const POLL_INTERVAL_MS = 30_000;
 let running = false;
 
 async function runOnce(): Promise<void> {
-  const pending = await Document.find({ status: { $in: ["processing", "failed"] } })
+  const pending = await Document.find({
+    $or: [
+      { status: "processing" },
+      { status: "failed", processingAttempts: { $lt: MAX_PROCESSING_ATTEMPTS } },
+    ],
+  })
     .select("_id")
     .lean();
 

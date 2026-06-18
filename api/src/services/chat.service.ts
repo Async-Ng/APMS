@@ -16,7 +16,7 @@ import {
   getSharedDocumentIds,
 } from "./share.service";
 
-const CONTEXT_CHUNKS = 3;    // top-3 chunks ≈ 40% fewer input tokens vs top-5
+const CONTEXT_CHUNKS = 6;    // top-6 chunks — broader coverage for whole-document questions
 const HISTORY_MESSAGES = 6;  // 3 recent turns ≈ 40% fewer history tokens vs 10
 
 async function assertChatDailyLimit(userId: Types.ObjectId): Promise<void> {
@@ -570,7 +570,11 @@ export async function sendMessage(
 
   const systemPrompt =
     contextText.length > 0
-      ? `You are a helpful AI assistant. Answer the user's question using ONLY the following document excerpts as context. If the answer is not in the context, say you don't know.\n\nContext:\n${contextText}`
+      ? `You are a helpful AI assistant answering questions about the user's documents. The context below contains excerpts retrieved from a larger document — they may be incomplete on their own, but often contain enough to answer or partially answer the question when read together.
+
+Use the excerpts to answer as helpfully and specifically as you can. If multiple excerpts are relevant, synthesize across them. If only partial information is available, give the best answer you can from what's there and briefly note what's uncertain or missing — only say you don't know if the excerpts are truly unrelated to the question. Paraphrase and explain in your own words rather than quoting long passages verbatim.
+
+Context:\n${contextText}`
       : "You are a helpful AI assistant. No relevant document context was found for this question. Answer to the best of your ability or let the user know you need more documents.";
 
   let assistantText: string;
@@ -579,6 +583,13 @@ export async function sendMessage(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
 
+    if (
+      msg.includes("finishReason=RECITATION") ||
+      msg.includes("finishReason=SAFETY") ||
+      msg.includes("finishReason=OTHER")
+    ) {
+      throw createAppError(ErrorCode.CHAT_ANSWER_BLOCKED, 422, { technicalDetail: msg });
+    }
     if (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded")) {
       throw createAppError(ErrorCode.CHAT_QUOTA_GEMINI, 429, { technicalDetail: msg });
     }

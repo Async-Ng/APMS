@@ -39,6 +39,7 @@ export const ErrorCode = {
   CHAT_AI_UNAVAILABLE: "CHAT_AI_UNAVAILABLE",
   CHAT_SESSION_NOT_FOUND: "CHAT_SESSION_NOT_FOUND",
   CHAT_ACCESS_DENIED: "CHAT_ACCESS_DENIED",
+  CHAT_ANSWER_BLOCKED: "CHAT_ANSWER_BLOCKED",
 
   // Admin
   USER_NOT_FOUND: "USER_NOT_FOUND",
@@ -82,6 +83,7 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   CHAT_AI_UNAVAILABLE: "Không thể trả lời ngay lúc này. Vui lòng thử lại sau.",
   CHAT_SESSION_NOT_FOUND: "Không tìm thấy cuộc trò chuyện.",
   CHAT_ACCESS_DENIED: "Bạn không có quyền truy cập nội dung này.",
+  CHAT_ANSWER_BLOCKED: "Câu trả lời bị dừng giữa chừng do trùng nội dung bản quyền. Vui lòng thử diễn đạt lại câu hỏi.",
 
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",

@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
 
+import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatThinkingIndicator } from "./ChatThinkingIndicator";
 
 interface ChatMessageListProps {
@@ -88,9 +89,13 @@ export function ChatMessageList({
                 }
               }}
             >
-              <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed">
-                {message.content}
-              </p>
+              {isUser ? (
+                <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed">
+                  {message.content}
+                </p>
+              ) : (
+                <ChatMessageContent content={message.content} />
+              )}
 
               {!isUser && message.citations.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5 border-t border-brutal-ink/20 pt-2">

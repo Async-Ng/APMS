@@ -20,6 +20,7 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
   try {
     if (document.status === "failed") {
       document.status = "processing";
+      document.processingAttempts += 1;
       await document.save();
     }
 
@@ -80,10 +81,12 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
 
     // 5. Mark ready
     document.status = "ready";
+    document.lastError = null;
     await document.save();
   } catch (error) {
     console.error(`[processing] Failed for document ${documentId.toString()}:`, error);
     document.status = "failed";
+    document.lastError = error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
     await document.save();
   }
 }
