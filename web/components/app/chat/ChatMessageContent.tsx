@@ -4,7 +4,8 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/cn";
 import type { ChatCitation } from "@/lib/queries/chat";
 
-const CITATION_REF_RE = /\[(\d+)\]/g;
+// Matches `[1]`, `[Source 1]`, `[source1]`, `[SOURCE  12]`, etc.
+const CITATION_REF_RE = /\[(?:source\s*)?(\d+)\]/gi;
 
 function splitCitationSegments(content: string): Array<{ type: "text"; value: string } | { type: "ref"; index: number }> {
   const segments: Array<{ type: "text"; value: string } | { type: "ref"; index: number }> = [];
@@ -117,7 +118,8 @@ export function ChatMessageContent({
           );
         }
 
-        const citation = citationBySource.get(segment.index);
+        const citation =
+          citationBySource.get(segment.index) ?? citations[segment.index - 1];
         const label = `[${segment.index}]`;
 
         if (!citation || !onCitationClick) {
@@ -137,7 +139,7 @@ export function ChatMessageContent({
               onCitationClick(citation);
             }}
             className={cn(
-              "focus-brutal mx-0.5 inline-flex items-center rounded border border-brutal-ink px-1 py-0 text-xs font-bold",
+              "focus-brutal mx-0.5 inline-flex cursor-pointer items-center rounded border border-brutal-ink px-1 py-0 text-xs font-bold",
               "bg-brutal-accent/40 text-brutal-ink hover:bg-brutal-primary hover:text-white",
             )}
             title={citation.documentTitle}
