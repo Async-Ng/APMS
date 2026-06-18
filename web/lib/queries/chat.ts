@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
+import { parseFetchErrorBody } from "@/lib/errors";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -354,7 +355,7 @@ async function streamChatMessage(
 
   if (!response.ok) {
     const errBody = await response.text();
-    throw new Error(errBody || `Stream request failed (${response.status})`);
+    throw new Error(parseFetchErrorBody(response.status, errBody));
   }
 
   const reader = response.body?.getReader();
