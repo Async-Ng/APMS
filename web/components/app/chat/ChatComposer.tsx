@@ -4,12 +4,23 @@ import { Send } from "lucide-react";
 import { useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { cn } from "@/lib/cn";
+import {
+  CHAT_PRESET_CONTENT,
+  CHAT_PRESET_LABELS,
+  type ChatMode,
+  type SendMessageInput,
+} from "@/lib/queries/chat";
 
 interface ChatComposerProps {
-  onSend: (content: string) => void;
+  onSend: (input: SendMessageInput) => void;
   disabled?: boolean;
   isPending?: boolean;
 }
+
+const PRESET_MODES = ["summary", "faq", "study_guide"] as const satisfies ReadonlyArray<
+  Exclude<ChatMode, "chat">
+>;
 
 export function ChatComposer({
   onSend,
@@ -22,8 +33,13 @@ export function ChatComposer({
     e.preventDefault();
     const trimmed = content.trim();
     if (!trimmed || disabled || isPending) return;
-    onSend(trimmed);
+    onSend({ content: trimmed, mode: "chat" });
     setContent("");
+  }
+
+  function handlePreset(mode: Exclude<ChatMode, "chat">) {
+    if (disabled || isPending) return;
+    onSend({ content: CHAT_PRESET_CONTENT[mode], mode });
   }
 
   return (
@@ -31,6 +47,23 @@ export function ChatComposer({
       onSubmit={handleSubmit}
       className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3 sm:p-4"
     >
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {PRESET_MODES.map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            disabled={disabled || isPending}
+            onClick={() => handlePreset(mode)}
+            className={cn(
+              "focus-brutal rounded-full border-2 border-brutal-ink px-2.5 py-0.5 text-xs font-bold transition-colors",
+              "bg-brutal-bg text-brutal-ink hover:bg-brutal-accent/40 disabled:opacity-50",
+            )}
+          >
+            {CHAT_PRESET_LABELS[mode]}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-end gap-2">
         <textarea
           value={content}

@@ -24,6 +24,13 @@ export async function chatWithContext(
   return geminiProvider.chatWithContext(systemPrompt, messages);
 }
 
+export async function* chatWithContextStream(
+  systemPrompt: string,
+  messages: ChatTurn[],
+): AsyncGenerator<string> {
+  yield* geminiProvider.chatWithContextStream(systemPrompt, messages);
+}
+
 export async function describeImage(
   imageBase64: string,
   imageMimeType: string,

@@ -3,7 +3,7 @@ import type { Types } from "mongoose";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import * as aiService from "./ai/ai.service";
-import { chunkText } from "./chunking.service";
+import { chunkSegments } from "./chunking.service";
 import { extractText } from "./extraction.service";
 import * as s3Service from "./s3.service";
 
@@ -30,15 +30,17 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
     const buffer = await s3Service.getObjectBuffer(document.s3Key);
 
     // 2. Extract text
-    const { text, pageCount } = await extractText(buffer, document.mimeType);
+    const { pageCount, segments } = await extractText(buffer, document.mimeType);
 
     // Update pageCount if we got one
     if (pageCount !== null) {
       document.pageCount = pageCount;
     }
 
-    // 3. Chunk text
-    const chunks = await chunkText(text, pageCount);
+    // 3. Chunk text (page-aware segments)
+    const chunks = await chunkSegments(
+      segments.length > 0 ? segments : [{ text: "", pageNumber: null }],
+    );
 
     if (chunks.length > 0) {
       // 4. Embed chunks in concurrent batches and save to DB

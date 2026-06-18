@@ -1,7 +1,35 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const components: Components = {
+import { cn } from "@/lib/cn";
+import type { ChatCitation } from "@/lib/queries/chat";
+
+const CITATION_REF_RE = /\[(\d+)\]/g;
+
+function splitCitationSegments(content: string): Array<{ type: "text"; value: string } | { type: "ref"; index: number }> {
+  const segments: Array<{ type: "text"; value: string } | { type: "ref"; index: number }> = [];
+  let lastIndex = 0;
+
+  for (const match of content.matchAll(CITATION_REF_RE)) {
+    const start = match.index ?? 0;
+    if (start > lastIndex) {
+      segments.push({ type: "text", value: content.slice(lastIndex, start) });
+    }
+    const index = Number.parseInt(match[1] ?? "", 10);
+    if (Number.isFinite(index)) {
+      segments.push({ type: "ref", index });
+    }
+    lastIndex = start + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    segments.push({ type: "text", value: content.slice(lastIndex) });
+  }
+
+  return segments;
+}
+
+const markdownComponents: Components = {
   p: ({ children }) => <p className="mb-2 leading-relaxed last:mb-0">{children}</p>,
   strong: ({ children }) => <strong className="font-extrabold">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
@@ -23,7 +51,7 @@ const components: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="underline text-brutal-secondary"
+      className="text-brutal-secondary underline"
     >
       {children}
     </a>
@@ -46,14 +74,81 @@ const components: Components = {
 
 interface ChatMessageContentProps {
   content: string;
+  citations?: ChatCitation[];
+  onCitationClick?: (citation: ChatCitation) => void;
+  isStreaming?: boolean;
 }
 
-export function ChatMessageContent({ content }: ChatMessageContentProps) {
+export function ChatMessageContent({
+  content,
+  citations = [],
+  onCitationClick,
+  isStreaming = false,
+}: ChatMessageContentProps) {
+  const citationBySource = new Map(
+    citations.map((c) => [c.sourceIndex ?? 0, c]),
+  );
+
+  const segments = splitCitationSegments(content);
+
+  if (segments.length === 0) {
+    return (
+      <div className="text-sm font-medium leading-relaxed">
+        {isStreaming && (
+          <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-brutal-primary align-text-bottom" />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="text-sm font-medium leading-relaxed">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {content}
-      </ReactMarkdown>
+      {segments.map((segment, idx) => {
+        if (segment.type === "text") {
+          if (!segment.value) return null;
+          return (
+            <ReactMarkdown
+              key={`text-${idx}`}
+              remarkPlugins={[remarkGfm]}
+              components={markdownComponents}
+            >
+              {segment.value}
+            </ReactMarkdown>
+          );
+        }
+
+        const citation = citationBySource.get(segment.index);
+        const label = `[${segment.index}]`;
+
+        if (!citation || !onCitationClick) {
+          return (
+            <span key={`ref-${idx}`} className="font-bold text-brutal-secondary">
+              {label}
+            </span>
+          );
+        }
+
+        return (
+          <button
+            key={`ref-${idx}`}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCitationClick(citation);
+            }}
+            className={cn(
+              "focus-brutal mx-0.5 inline-flex items-center rounded border border-brutal-ink px-1 py-0 text-xs font-bold",
+              "bg-brutal-accent/40 text-brutal-ink hover:bg-brutal-primary hover:text-white",
+            )}
+            title={citation.documentTitle}
+          >
+            {label}
+          </button>
+        );
+      })}
+      {isStreaming && (
+        <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-brutal-primary align-text-bottom" />
+      )}
     </div>
   );
 }

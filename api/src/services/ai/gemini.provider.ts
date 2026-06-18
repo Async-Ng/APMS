@@ -6,6 +6,12 @@ import { withGeminiRetry } from "./gemini-retry";
 import type { ChatTurn, EmbeddingInputType } from "./types";
 import { CHAT_MAX_OUTPUT_TOKENS } from "./types";
 
+const CHAT_GENERATION_CONFIG = {
+  maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+  temperature: 0.3,
+  thinkingConfig: { thinkingBudget: 0 },
+} as const;
+
 /**
  * Ordered list of chat models to try when the primary model hits a 429 quota error.
  * The primary model from GEMINI_CHAT_MODEL env var is always tried first.
@@ -121,6 +127,18 @@ function toGenAiContents(messages: ChatTurn[]): Content[] {
   }));
 }
 
+function logMaxTokensWarning(
+  modelName: string,
+  finishReason: string | undefined,
+  usageMetadata: unknown,
+): void {
+  if (finishReason !== "MAX_TOKENS") return;
+
+  console.warn(
+    `[gemini] Model ${modelName} hit MAX_TOKENS output limit. usageMetadata=${JSON.stringify(usageMetadata ?? {})}`,
+  );
+}
+
 async function tryChatWithModel(
   ai: GoogleGenAI,
   modelName: string,
@@ -132,12 +150,13 @@ async function tryChatWithModel(
     contents: toGenAiContents(messages),
     config: {
       systemInstruction: systemPrompt,
-      maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
-      temperature: 0.3,
+      ...CHAT_GENERATION_CONFIG,
     },
   });
 
   const finishReason = response.candidates?.[0]?.finishReason;
+  logMaxTokensWarning(modelName, finishReason, response.usageMetadata);
+
   if (finishReason === "RECITATION" || finishReason === "SAFETY" || finishReason === "OTHER") {
     throw new Error(
       `Gemini model ${modelName} stopped generation early (finishReason=${finishReason})`,
@@ -150,6 +169,44 @@ async function tryChatWithModel(
   }
 
   return text;
+}
+
+async function* tryChatStreamWithModel(
+  ai: GoogleGenAI,
+  modelName: string,
+  systemPrompt: string,
+  messages: ChatTurn[],
+): AsyncGenerator<string> {
+  const stream = await ai.models.generateContentStream({
+    model: modelName,
+    contents: toGenAiContents(messages),
+    config: {
+      systemInstruction: systemPrompt,
+      ...CHAT_GENERATION_CONFIG,
+    },
+  });
+
+  let finishReason: string | undefined;
+  let usageMetadata: unknown;
+
+  for await (const chunk of stream) {
+    finishReason = chunk.candidates?.[0]?.finishReason ?? finishReason;
+    if (chunk.usageMetadata) {
+      usageMetadata = chunk.usageMetadata;
+    }
+    const text = chunk.text;
+    if (text) {
+      yield text;
+    }
+  }
+
+  logMaxTokensWarning(modelName, finishReason, usageMetadata);
+
+  if (finishReason === "RECITATION" || finishReason === "SAFETY" || finishReason === "OTHER") {
+    throw new Error(
+      `Gemini model ${modelName} stopped generation early (finishReason=${finishReason})`,
+    );
+  }
 }
 
 export async function embedBatch(
@@ -224,6 +281,62 @@ export async function chatWithContext(
         );
       }
       return text;
+    } catch (error) {
+      if (isQuotaError(error)) {
+        console.warn(`[gemini] Model "${modelName}" quota exceeded, trying next fallback...`);
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(
+    `All Gemini chat models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
+      `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+  );
+}
+
+export async function* chatWithContextStream(
+  systemPrompt: string,
+  messages: ChatTurn[],
+): AsyncGenerator<string> {
+  const env = loadEnv();
+  const ai = getVertexClient();
+
+  if (messages.length === 0) {
+    throw new Error("chatWithContextStream requires at least one message");
+  }
+
+  const last = messages.at(-1);
+  if (!last || last.role !== "user") {
+    throw new Error("Last chat message must be from user");
+  }
+
+  const primaryModel = env.GEMINI_CHAT_MODEL;
+  const modelsToTry = [
+    primaryModel,
+    ...CHAT_FALLBACK_MODELS.filter((model) => model !== primaryModel),
+  ];
+
+  let lastError: unknown;
+
+  for (const modelName of modelsToTry) {
+    try {
+      let yielded = false;
+      for await (const delta of tryChatStreamWithModel(ai, modelName, systemPrompt, messages)) {
+        yielded = true;
+        yield delta;
+      }
+      if (!yielded) {
+        throw new Error(`Gemini model ${modelName} returned empty assistant message`);
+      }
+      if (modelName !== primaryModel) {
+        console.warn(
+          `[gemini] Primary model "${primaryModel}" quota exceeded. Used fallback "${modelName}" for stream.`,
+        );
+      }
+      return;
     } catch (error) {
       if (isQuotaError(error)) {
         console.warn(`[gemini] Model "${modelName}" quota exceeded, trying next fallback...`);

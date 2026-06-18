@@ -2,6 +2,7 @@ import { Schema, model, type HydratedDocument, type InferSchemaType } from "mong
 
 const citationSchema = new Schema(
   {
+    sourceIndex: { type: Number, required: true },
     documentId: { type: Schema.Types.ObjectId, ref: "Document", required: true },
     documentTitle: { type: String, required: true },
     pageNumber: { type: Number, default: null },
@@ -37,6 +38,7 @@ export function toChatMessageResponse(message: ChatMessageDocument) {
     role: message.role,
     content: message.content,
     citations: message.citations.map((c) => ({
+      sourceIndex: c.sourceIndex,
       documentId: c.documentId.toString(),
       documentTitle: c.documentTitle,
       pageNumber: c.pageNumber ?? null,

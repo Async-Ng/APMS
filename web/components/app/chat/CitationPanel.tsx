@@ -53,7 +53,7 @@ export function CitationPanel({
                     )}
                   >
                     <span className="font-bold text-brutal-ink">
-                      [{idx + 1}] {citation.documentTitle}
+                      [{citation.sourceIndex ?? idx + 1}] {citation.documentTitle}
                     </span>
                     {citation.pageNumber != null && (
                       <span className="ml-1 text-xs text-brutal-muted">

@@ -11,14 +11,16 @@ import "dotenv/config";
 import mongoose from "mongoose";
 
 import { loadEnv } from "../src/config/env";
+import {
+  CHUNKING_MAX_CHARS,
+  CHUNKING_OVERLAP_CHARS,
+} from "../src/services/chunking.service";
 import { DocumentChunk } from "../src/models/document-chunk.model";
 import { Document } from "../src/models/document.model";
 import { User } from "../src/models/user.model";
 import * as searchService from "../src/services/search.service";
 
-// Must match chunking.service.ts
-const EXPECTED_CHUNK_SIZE = 1500;
-const EXPECTED_OVERLAP = 150;
+const PDF_MIME = "application/pdf";
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
@@ -63,7 +65,12 @@ function longestSharedSuffixPrefix(a: string, b: string, maxLen = 200): number {
 }
 
 async function verifyDocument(
-  doc: { _id: mongoose.Types.ObjectId; title: string; mimeType: string; status: string },
+  doc: {
+    _id: mongoose.Types.ObjectId;
+    title: string;
+    mimeType: string;
+    status: string;
+  },
   expectedEmbedDims: number,
 ): Promise<Issue[]> {
   const issues: Issue[] = [];
@@ -82,7 +89,7 @@ async function verifyDocument(
 
   if (chunks.length === 0) {
     if (doc.mimeType === PPTX_MIME) {
-      return issues; // known: PPTX not extracted yet
+      return issues;
     }
     fail("no chunks (extract may have failed or document is empty)");
     return issues;
@@ -99,8 +106,12 @@ async function verifyDocument(
     const len = c.content.length;
     if (len === 0) {
       fail(`${label}: empty content`);
-    } else if (i < chunks.length - 1 && len > EXPECTED_CHUNK_SIZE) {
-      fail(`${label}: length ${len} exceeds max ${EXPECTED_CHUNK_SIZE}`);
+    } else if (len > CHUNKING_MAX_CHARS + CHUNKING_OVERLAP_CHARS + 120) {
+      fail(`${label}: length ${len} exceeds max ~${CHUNKING_MAX_CHARS} (+ overlap/section prefix)`);
+    }
+
+    if (doc.mimeType === PDF_MIME && c.pageNumber == null) {
+      fail(`${label}: PDF chunk missing pageNumber`);
     }
 
     const dims = c.embedding?.length ?? 0;
@@ -110,11 +121,23 @@ async function verifyDocument(
 
     if (i > 0) {
       const prev = chunks[i - 1]!;
-      const shared = longestSharedSuffixPrefix(prev.content, c.content);
-      if (shared < Math.min(20, EXPECTED_OVERLAP / 3)) {
-        fail(
-          `${label}: low overlap with previous chunk (${shared} chars shared; expected ~${EXPECTED_OVERLAP})`,
-        );
+      if (prev.pageNumber != null && c.pageNumber != null && prev.pageNumber !== c.pageNumber) {
+        const shared = longestSharedSuffixPrefix(prev.content, c.content);
+        if (shared > 50) {
+          fail(
+            `${label}: cross-page overlap ${shared} chars with previous chunk (page ${prev.pageNumber} → ${c.pageNumber})`,
+          );
+        }
+      }
+
+      if (prev.pageNumber === c.pageNumber) {
+        const shared = longestSharedSuffixPrefix(prev.content, c.content);
+        const minOverlap = Math.min(20, CHUNKING_OVERLAP_CHARS / 3);
+        if (shared < minOverlap && prev.content.length > 100 && c.content.length > 100) {
+          fail(
+            `${label}: low same-page overlap (${shared} chars; expected ~${CHUNKING_OVERLAP_CHARS})`,
+          );
+        }
       }
     }
   }
@@ -144,7 +167,7 @@ async function runRetrievalSmokeTest(query: string): Promise<void> {
   for (const [i, r] of results.entries()) {
     console.log(`  [${i + 1}] score=${r.score.toFixed(4)} | ${r.documentTitle}`);
     if (r.pageNumber != null) {
-      console.log(`      page ~${r.pageNumber}`);
+      console.log(`      page ${r.pageNumber}`);
     }
     console.log(`      ${r.excerpt.slice(0, 160).replace(/\s+/g, " ")}...`);
   }
@@ -177,7 +200,9 @@ async function main(): Promise<void> {
   }
 
   console.log(`[verify-chunking] Checking ${documents.length} document(s)`);
-  console.log(`[verify-chunking] Expected: chunkSize<=${EXPECTED_CHUNK_SIZE}, overlap~${EXPECTED_OVERLAP}, embedDims=${expectedEmbedDims}\n`);
+  console.log(
+    `[verify-chunking] Expected: chunkSize<=${CHUNKING_MAX_CHARS}, overlap~${CHUNKING_OVERLAP_CHARS}, embedDims=${expectedEmbedDims}\n`,
+  );
 
   const allIssues: Issue[] = [];
   const summary: Array<{ title: string; chunks: number; issues: number }> = [];
@@ -207,6 +232,7 @@ async function main(): Promise<void> {
     await runRetrievalSmokeTest(query);
   } else if (allIssues.length === 0 && totalChunks > 0) {
     console.log("\nTip: add --query \"your topic\" to test vector retrieval.");
+    console.log("Tip: run reprocess-documents.ts after upgrading chunking.");
   }
 
   if (allIssues.length > 0) {

@@ -6,7 +6,7 @@ import { Topbar } from "@/components/app/Topbar";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
 import { getUserErrorMessage } from "@/lib/errors";
-import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
+import type { ChatCitation, ChatMessage, SendMessageInput } from "@/lib/queries/chat";
 import { useChatSession, useSendMessage } from "@/lib/queries/chat";
 
 import { ChatComposer } from "./ChatComposer";
@@ -72,10 +72,10 @@ export function ChatWorkspace({
   }, []);
 
   const handleSend = useCallback(
-    (content: string) => {
+    (input: SendMessageInput) => {
       if (!sessionId) return;
       setSendError(null);
-      sendMessage.mutate(content, {
+      sendMessage.mutate(input, {
         onSuccess: (data) => {
           setActiveMessage(data.assistantMessage);
           if (data.assistantMessage.citations.length > 0) {
@@ -92,6 +92,13 @@ export function ChatWorkspace({
     },
     [sessionId, sendMessage],
   );
+
+  const streamingMessageId =
+    sendMessage.isPending && session
+      ? (session.messages.findLast((m) => m.id.startsWith("streaming-"))?.id ?? null)
+      : null;
+
+  const showThinking = sendMessage.isPending && !streamingMessageId;
 
   const tabClass = (tab: MobileTab) =>
     cn(
@@ -200,7 +207,8 @@ export function ChatWorkspace({
                 </div>
                 <ChatMessageList
                   messages={session.messages}
-                  isThinking={sendMessage.isPending}
+                  isThinking={showThinking}
+                  streamingMessageId={streamingMessageId}
                   selectedCitationKey={selectedCitationKey}
                   activeMessageId={activeMessage?.id}
                   onSelectCitation={handleSelectCitation}

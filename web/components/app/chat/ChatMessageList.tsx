@@ -12,6 +12,7 @@ import { ChatThinkingIndicator } from "./ChatThinkingIndicator";
 interface ChatMessageListProps {
   messages: ChatMessage[];
   isThinking?: boolean;
+  streamingMessageId?: string | null;
   selectedCitationKey?: string | null;
   activeMessageId?: string | null;
   onSelectCitation: (message: ChatMessage, citation: ChatCitation) => void;
@@ -25,6 +26,7 @@ function citationKey(c: ChatCitation): string {
 export function ChatMessageList({
   messages,
   isThinking = false,
+  streamingMessageId = null,
   selectedCitationKey,
   activeMessageId,
   onSelectCitation,
@@ -94,7 +96,12 @@ export function ChatMessageList({
                   {message.content}
                 </p>
               ) : (
-                <ChatMessageContent content={message.content} />
+                <ChatMessageContent
+                  content={message.content}
+                  citations={message.citations}
+                  isStreaming={message.id === streamingMessageId}
+                  onCitationClick={(citation) => onSelectCitation(message, citation)}
+                />
               )}
 
               {!isUser && message.citations.length > 0 && (
@@ -122,7 +129,7 @@ export function ChatMessageList({
                           {citation.pageNumber != null &&
                             ` · tr.${citation.pageNumber}`}
                         </span>
-                        <span className="opacity-70">[{idx + 1}]</span>
+                        <span className="opacity-70">[{citation.sourceIndex ?? idx + 1}]</span>
                       </button>
                     );
                   })}
