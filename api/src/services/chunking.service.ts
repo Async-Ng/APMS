@@ -1,5 +1,6 @@
 import type { TextSegment } from "./extraction/types";
 import { runConcurrent } from "../utils/concurrency";
+import { loadEnv } from "../config/env";
 import * as aiService from "./ai/ai.service";
 
 export const CHUNKING_MAX_CHARS = 1500;
@@ -12,7 +13,6 @@ const MAX_BREAK_SIMILARITY = 0.9;
 const SIMILARITY_DROP_DELTA = 0.05;
 const MIN_UNITS_PER_CHUNK = 3;
 const SENTENCE_EMBED_BATCH = 50;
-const SENTENCE_EMBED_CONCURRENCY = 4;
 const WINDOW_RADIUS = 2;
 
 const DOT = "\x00DOT\x00";
@@ -112,11 +112,12 @@ function findHardBreaks(units: string[]): Set<number> {
 }
 
 async function embedUnitsInBatches(units: string[]): Promise<number[][]> {
+  const env = loadEnv();
   const batches: string[][] = [];
   for (let i = 0; i < units.length; i += SENTENCE_EMBED_BATCH) {
     batches.push(units.slice(i, i + SENTENCE_EMBED_BATCH));
   }
-  const results = await runConcurrent(batches, SENTENCE_EMBED_CONCURRENCY, (b) =>
+  const results = await runConcurrent(batches, env.SENTENCE_EMBED_CONCURRENCY, (b) =>
     aiService.embedBatch(b, "similarity"),
   );
   return results.flat();

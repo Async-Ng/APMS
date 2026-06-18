@@ -2,15 +2,17 @@ import type { Types } from "mongoose";
 
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
+import { loadEnv } from "../config/env";
 import * as aiService from "./ai/ai.service";
 import { chunkSegments } from "./chunking.service";
 import { extractText } from "./extraction.service";
 import * as s3Service from "./s3.service";
 
 const EMBED_BATCH_SIZE = 20;
-const EMBED_CONCURRENCY = 5;
 
 export async function processDocument(documentId: Types.ObjectId): Promise<void> {
+  const env = loadEnv();
+  const embedConcurrency = env.EMBED_CONCURRENCY;
   const document = await Document.findById(documentId);
 
   if (!document || !["processing", "failed"].includes(document.status)) {
@@ -52,8 +54,8 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
         batches.push(chunks.slice(i, i + EMBED_BATCH_SIZE));
       }
 
-      for (let i = 0; i < batches.length; i += EMBED_CONCURRENCY) {
-        const wave = batches.slice(i, i + EMBED_CONCURRENCY);
+      for (let i = 0; i < batches.length; i += embedConcurrency) {
+        const wave = batches.slice(i, i + embedConcurrency);
 
         const results = await Promise.all(
           wave.map(async (batch) => {

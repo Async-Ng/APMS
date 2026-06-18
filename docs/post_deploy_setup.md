@@ -152,6 +152,8 @@ Restart API — worker re-embed documents ở `processing`.
 | `GOOGLE_APPLICATION_CREDENTIALS_JSON` | Toàn bộ JSON service account — **Render / PaaS** |
 | `GEMINI_EMBEDDING_MODEL` | Mặc định `gemini-embedding-001` (1024 dims) |
 | `GEMINI_EMBED_DELAY_MS` | Delay giữa chunk embed (mặc định `200`) |
+| `EMBED_CONCURRENCY` | Số batch embed chạy song song khi xử lý tài liệu (mặc định `5`) |
+| `SENTENCE_EMBED_CONCURRENCY` | Số batch embed câu chạy song song cho semantic chunking (mặc định `4`) |
 
 **Cảnh báo credit GCP (Budget 90%)**
 

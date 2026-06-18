@@ -31,6 +31,7 @@ const CHAT_FALLBACK_MODELS = [
 const VISION_FALLBACK_MODELS = CHAT_FALLBACK_MODELS;
 
 const FULLY_NORMALIZED_EMBEDDING_DIMS = 3072;
+let nextEmbedAtMs = 0;
 
 function isQuotaError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
@@ -54,6 +55,20 @@ function getVertexClient(): GoogleGenAI {
     project: env.GOOGLE_CLOUD_PROJECT,
     location: env.GOOGLE_CLOUD_LOCATION,
   });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForEmbedThrottle(delayMs: number): Promise<void> {
+  if (delayMs <= 0) return;
+  const now = Date.now();
+  const waitMs = Math.max(0, nextEmbedAtMs - now);
+  nextEmbedAtMs = Math.max(now, nextEmbedAtMs) + delayMs;
+  if (waitMs > 0) {
+    await sleep(waitMs);
+  }
 }
 
 function embeddingTaskType(inputType: EmbeddingInputType): string {
@@ -93,15 +108,17 @@ export async function embedText(
   const outputDimension = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
 
   const result = await withGeminiRetry(
-    () =>
-      ai.models.embedContent({
+    async () => {
+      await waitForEmbedThrottle(env.GEMINI_EMBED_DELAY_MS);
+      return ai.models.embedContent({
         model: env.GEMINI_EMBEDDING_MODEL,
         contents: text,
         config: {
           taskType: embeddingTaskType(inputType),
           outputDimensionality: outputDimension,
         },
-      }),
+      });
+    },
     "embed",
   );
 
@@ -220,15 +237,17 @@ export async function embedBatch(
   const outputDimension = env.GEMINI_EMBEDDING_OUTPUT_DIMENSION;
 
   const result = await withGeminiRetry(
-    () =>
-      ai.models.embedContent({
+    async () => {
+      await waitForEmbedThrottle(env.GEMINI_EMBED_DELAY_MS);
+      return ai.models.embedContent({
         model: env.GEMINI_EMBEDDING_MODEL,
         contents: texts,
         config: {
           taskType: embeddingTaskType(inputType),
           outputDimensionality: outputDimension,
         },
-      }),
+      });
+    },
     "embed",
   );
 

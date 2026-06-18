@@ -21,6 +21,8 @@ const envSchema = z
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
     GEMINI_EMBEDDING_OUTPUT_DIMENSION: z.coerce.number().int().positive().default(1024),
     GEMINI_EMBED_DELAY_MS: z.coerce.number().int().min(0).default(0),
+    EMBED_CONCURRENCY: z.coerce.number().int().positive().default(5),
+    SENTENCE_EMBED_CONCURRENCY: z.coerce.number().int().positive().default(4),
     GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     GEMINI_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
     // Image/vision processing during document extraction.
