@@ -31,7 +31,12 @@ const CHAT_FALLBACK_MODELS = [
 const VISION_FALLBACK_MODELS = CHAT_FALLBACK_MODELS;
 
 const FULLY_NORMALIZED_EMBEDDING_DIMS = 3072;
+const TOKEN_WINDOW_MS = 60_000;
+const CHARS_PER_TOKEN_ESTIMATE = 4;
+
 let nextEmbedAtMs = 0;
+let tokenWindowStartMs = 0;
+let tokensUsedInWindow = 0;
 
 function isQuotaError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
@@ -61,13 +66,46 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForEmbedThrottle(delayMs: number): Promise<void> {
-  if (delayMs <= 0) return;
-  const now = Date.now();
-  const waitMs = Math.max(0, nextEmbedAtMs - now);
-  nextEmbedAtMs = Math.max(now, nextEmbedAtMs) + delayMs;
-  if (waitMs > 0) {
-    await sleep(waitMs);
+function estimateTokens(texts: string[]): number {
+  const totalChars = texts.reduce((sum, t) => sum + t.length, 0);
+  return Math.ceil(totalChars / CHARS_PER_TOKEN_ESTIMATE);
+}
+
+/**
+ * Process-wide gate shared by every embed call (embedText/embedBatch, regardless of
+ * caller — document worker concurrency, batch concurrency, chunking concurrency all
+ * funnel through here). Paces calls and self-throttles against an estimated
+ * tokens-per-minute budget so concurrent documents/users queue instead of bursting
+ * past the Vertex AI per-minute embedding quota.
+ */
+async function acquireEmbedSlot(estimatedTokens: number): Promise<void> {
+  const env = loadEnv();
+  const minIntervalMs = env.GEMINI_EMBED_MIN_INTERVAL_MS;
+  const tokensPerMinute = env.GEMINI_EMBED_TOKENS_PER_MINUTE;
+
+  if (minIntervalMs > 0) {
+    const now = Date.now();
+    const waitMs = Math.max(0, nextEmbedAtMs - now);
+    nextEmbedAtMs = Math.max(now, nextEmbedAtMs) + minIntervalMs;
+    if (waitMs > 0) {
+      await sleep(waitMs);
+    }
+  }
+
+  for (;;) {
+    const now = Date.now();
+    if (now - tokenWindowStartMs >= TOKEN_WINDOW_MS) {
+      tokenWindowStartMs = now;
+      tokensUsedInWindow = 0;
+    }
+
+    if (tokensUsedInWindow === 0 || tokensUsedInWindow + estimatedTokens <= tokensPerMinute) {
+      tokensUsedInWindow += estimatedTokens;
+      return;
+    }
+
+    const waitMs = TOKEN_WINDOW_MS - (now - tokenWindowStartMs);
+    await sleep(Math.max(0, waitMs));
   }
 }
 
@@ -109,7 +147,7 @@ export async function embedText(
 
   const result = await withGeminiRetry(
     async () => {
-      await waitForEmbedThrottle(env.GEMINI_EMBED_DELAY_MS);
+      await acquireEmbedSlot(estimateTokens([text]));
       return ai.models.embedContent({
         model: env.GEMINI_EMBEDDING_MODEL,
         contents: text,
@@ -238,7 +276,7 @@ export async function embedBatch(
 
   const result = await withGeminiRetry(
     async () => {
-      await waitForEmbedThrottle(env.GEMINI_EMBED_DELAY_MS);
+      await acquireEmbedSlot(estimateTokens(texts));
       return ai.models.embedContent({
         model: env.GEMINI_EMBEDDING_MODEL,
         contents: texts,

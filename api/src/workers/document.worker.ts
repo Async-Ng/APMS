@@ -1,6 +1,7 @@
 import { loadEnv } from "../config/env";
 import { Document, MAX_PROCESSING_ATTEMPTS } from "../models/document.model";
 import { processDocument } from "../services/processing.service";
+import { runConcurrent } from "../utils/concurrency";
 
 let running = false;
 
@@ -8,7 +9,11 @@ async function runOnce(): Promise<void> {
   const pending = await Document.find({
     $or: [
       { status: "processing" },
-      { status: "failed", processingAttempts: { $lt: MAX_PROCESSING_ATTEMPTS } },
+      {
+        status: "failed",
+        processingAttempts: { $lt: MAX_PROCESSING_ATTEMPTS },
+        $or: [{ nextRetryAt: null }, { nextRetryAt: { $lte: new Date() } }],
+      },
     ],
   })
     .select("_id")
@@ -18,9 +23,8 @@ async function runOnce(): Promise<void> {
 
   console.log(`[worker] Found ${pending.length} document(s) to process`);
 
-  for (const doc of pending) {
-    await processDocument(doc._id);
-  }
+  const concurrency = loadEnv().DOCUMENT_WORKER_CONCURRENCY;
+  await runConcurrent(pending, concurrency, (doc) => processDocument(doc._id));
 }
 
 async function loop(pollIntervalMs: number): Promise<void> {

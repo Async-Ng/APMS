@@ -1,8 +1,10 @@
 import { S3Client } from "@aws-sdk/client-s3";
+import { SESClient } from "@aws-sdk/client-ses";
 
 import { loadEnv } from "./env";
 
 let s3Client: S3Client | null = null;
+let sesClient: SESClient | null = null;
 
 export function getS3Client(): S3Client {
   if (!s3Client) {
@@ -17,6 +19,21 @@ export function getS3Client(): S3Client {
   }
 
   return s3Client;
+}
+
+export function getSesClient(): SESClient {
+  if (!sesClient) {
+    const env = loadEnv();
+    sesClient = new SESClient({
+      region: env.AWS_REGION,
+      credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+
+  return sesClient;
 }
 
 export function getEnv() {

@@ -204,6 +204,39 @@ export function useContextDocumentDetails(
   });
 }
 
+interface ContextDocumentStatus {
+  id: string;
+  status: "pending" | "processing" | "ready" | "failed";
+  chunkCount: number;
+}
+
+/** Poll processing status for chat context documents, so the UI can show a "still processing" banner. */
+export function useChatContextStatus(documentIds: string[]) {
+  return useQuery({
+    queryKey: ["chat", "context-status", documentIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        documentIds.map(async (id) => {
+          try {
+            const res = await api.get<{
+              status: string;
+              data: { id: string; status: ContextDocumentStatus["status"]; chunkCount?: number };
+            }>(`/documents/${id}`);
+            const d = res.data.data;
+            return { id, status: d.status, chunkCount: d.chunkCount ?? 0 };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return entries.filter((e): e is ContextDocumentStatus => e !== null);
+    },
+    enabled: documentIds.length > 0,
+    refetchInterval: (query) =>
+      query.state.data?.some((d) => d.status === "processing") ? 7_000 : false,
+  });
+}
+
 export function useSendMessage(sessionId: string) {
   const qc = useQueryClient();
   return useMutation({

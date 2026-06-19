@@ -14,17 +14,22 @@ const envSchema = z
     AWS_ACCESS_KEY_ID: z.string().min(1),
     AWS_SECRET_ACCESS_KEY: z.string().min(1),
     S3_BUCKET_NAME: z.string().min(1),
+    SES_FROM_EMAIL: z.string().email(),
+    APP_URL: z.string().url(),
     GOOGLE_CLOUD_PROJECT: z.string().min(1),
     GOOGLE_CLOUD_LOCATION: z.string().default("asia-southeast1"),
     GEMINI_CHAT_MODEL: z.string().default("gemini-2.5-flash"),
     GEMINI_VISION_MODEL: z.string().default("gemini-2.5-flash"),
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
     GEMINI_EMBEDDING_OUTPUT_DIMENSION: z.coerce.number().int().positive().default(1024),
-    GEMINI_EMBED_DELAY_MS: z.coerce.number().int().min(0).default(0),
+    GEMINI_EMBED_MIN_INTERVAL_MS: z.coerce.number().int().min(0).default(100),
+    GEMINI_EMBED_TOKENS_PER_MINUTE: z.coerce.number().int().positive().default(200_000),
     EMBED_CONCURRENCY: z.coerce.number().int().positive().default(5),
     SENTENCE_EMBED_CONCURRENCY: z.coerce.number().int().positive().default(4),
     GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     GEMINI_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
+    GEMINI_QUOTA_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
+    GEMINI_QUOTA_RETRY_BASE_MS: z.coerce.number().int().min(100).default(15_000),
     // Image/vision processing during document extraction.
     // NOTE: do NOT use z.coerce.boolean() — it treats any non-empty string (incl. "false") as true.
     DOC_VISION_ENABLED: z
@@ -39,6 +44,7 @@ const envSchema = z
     CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(0).default(50),
     TRASH_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
     DOCUMENT_WORKER_POLL_MS: z.coerce.number().int().min(1000).default(5_000),
+    DOCUMENT_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(3),
   });
 
 export type Env = z.infer<typeof envSchema>;

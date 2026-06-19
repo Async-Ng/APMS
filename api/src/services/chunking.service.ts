@@ -283,13 +283,18 @@ async function chunkSegmentText(
 }
 
 export async function chunkSegments(segments: TextSegment[]): Promise<TextChunk[]> {
+  const env = loadEnv();
+  const nonEmptySegments = segments.filter((s) => s.text.trim());
+
+  const perSegmentChunks = await runConcurrent(
+    nonEmptySegments,
+    env.SENTENCE_EMBED_CONCURRENCY,
+    (segment) => chunkSegmentText(segment.text, segment.pageNumber),
+  );
+
   const allChunks: TextChunk[] = [];
   let chunkIndex = 0;
-
-  for (const segment of segments) {
-    if (!segment.text.trim()) continue;
-
-    const segmentChunks = await chunkSegmentText(segment.text, segment.pageNumber);
+  for (const segmentChunks of perSegmentChunks) {
     for (const chunk of segmentChunks) {
       allChunks.push({ ...chunk, chunkIndex: chunkIndex++ });
     }

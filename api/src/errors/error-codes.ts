@@ -32,6 +32,9 @@ export const ErrorCode = {
   SHARE_FORBIDDEN: "SHARE_FORBIDDEN",
   SHARE_NO_RECIPIENTS: "SHARE_NO_RECIPIENTS",
   SHARE_RESOURCE_NOT_FOUND: "SHARE_RESOURCE_NOT_FOUND",
+  SHARE_INVITE_NOT_FOUND: "SHARE_INVITE_NOT_FOUND",
+  SHARE_INVITE_EXPIRED: "SHARE_INVITE_EXPIRED",
+  SHARE_INVITE_EMAIL_MISMATCH: "SHARE_INVITE_EMAIL_MISMATCH",
 
   // Chat
   CHAT_DAILY_LIMIT: "CHAT_DAILY_LIMIT",
@@ -77,6 +80,9 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   SHARE_FORBIDDEN: "Bạn không có quyền thu hồi lượt chia sẻ này.",
   SHARE_NO_RECIPIENTS: "Không tìm thấy người nhận hợp lệ để chia sẻ.",
   SHARE_RESOURCE_NOT_FOUND: "Không tìm thấy tài liệu hoặc thư mục để chia sẻ.",
+  SHARE_INVITE_NOT_FOUND: "Lời mời không tồn tại hoặc đã bị thu hồi.",
+  SHARE_INVITE_EXPIRED: "Lời mời đã hết hạn.",
+  SHARE_INVITE_EMAIL_MISMATCH: "Email tài khoản của bạn không khớp với lời mời này.",
 
   CHAT_DAILY_LIMIT: "Đã hết lượt chat hôm nay. Vui lòng thử lại vào ngày mai.",
   CHAT_QUOTA_GEMINI: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",

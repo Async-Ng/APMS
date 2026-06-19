@@ -24,6 +24,7 @@ export interface DriveDocument {
   mimeType: string;
   fileSizeBytes: number;
   status: "pending" | "processing" | "ready" | "failed";
+  chunkCount?: number;
   folderId: string | null;
   isStarred: boolean;
   tags: string[];

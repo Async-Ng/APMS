@@ -4,9 +4,18 @@ import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import { loadEnv } from "../config/env";
 import * as aiService from "./ai/ai.service";
+import { isGeminiThrottleError } from "./ai/gemini-retry";
 import { chunkSegments } from "./chunking.service";
 import { extractText } from "./extraction.service";
 import * as s3Service from "./s3.service";
+
+const QUOTA_RETRY_BACKOFF_MS = [5 * 60_000, 10 * 60_000, 20 * 60_000, 30 * 60_000];
+
+function nextQuotaRetryAt(processingAttempts: number): Date {
+  const backoffMs =
+    QUOTA_RETRY_BACKOFF_MS[Math.min(processingAttempts, QUOTA_RETRY_BACKOFF_MS.length - 1)];
+  return new Date(Date.now() + backoffMs!);
+}
 
 const EMBED_BATCH_SIZE = 20;
 const processingInFlight = new Set<string>();
@@ -32,6 +41,9 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
         document.processingAttempts += 1;
         await document.save();
       }
+
+      document.chunkCount = 0;
+      await document.save();
 
       console.log(`[processing] Starting document ${documentId.toString()}`);
 
@@ -78,7 +90,11 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
             }),
           );
 
-          await DocumentChunk.insertMany(results.flat());
+          const inserted = results.flat();
+          await DocumentChunk.insertMany(inserted);
+
+          document.chunkCount += inserted.length;
+          await document.save();
         }
 
         console.log(
@@ -93,12 +109,18 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
       // 5. Mark ready
       document.status = "ready";
       document.lastError = null;
+      document.nextRetryAt = null;
       await document.save();
     } catch (error) {
       console.error(`[processing] Failed for document ${documentId.toString()}:`, error);
       document.status = "failed";
       document.lastError =
         error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
+      // Quota errors need to wait out the per-minute window — schedule a later retry
+      // instead of letting the worker re-hit the same exhausted quota on the next poll.
+      document.nextRetryAt = isGeminiThrottleError(error)
+        ? nextQuotaRetryAt(document.processingAttempts)
+        : null;
       await document.save();
     }
   } finally {

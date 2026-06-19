@@ -24,6 +24,11 @@ import { useDriveContents } from "@/lib/queries/drive";
 
 type PickerStep = "browse" | "review";
 
+/** A document can be chatted with once it's ready, or while still processing if it already has chunks indexed. */
+function canChatWithDocument(doc: DriveDocument): boolean {
+  return doc.status === "ready" || (doc.status === "processing" && (doc.chunkCount ?? 0) > 0);
+}
+
 type Selection =
   | { kind: "all" }
   | { kind: "folder"; folder: DriveFolder }
@@ -93,19 +98,26 @@ function PickerDocumentTile({
   onToggle: () => void;
 }) {
   const isReady = doc.status === "ready";
+  const canChat = canChatWithDocument(doc);
 
   return (
     <button
       type="button"
-      disabled={!isReady}
+      disabled={!canChat}
       onClick={onToggle}
       className={cn(
         "brutal-card focus-brutal relative flex flex-col gap-2 p-3 text-left transition-all",
-        !isReady && "cursor-not-allowed opacity-50",
+        !canChat && "cursor-not-allowed opacity-50",
         selected && "ring-2 ring-brutal-primary ring-offset-2",
-        isReady && !selected && "brutal-card-hover",
+        canChat && !selected && "brutal-card-hover",
       )}
-      title={!isReady ? "Tài liệu chưa index AI — chỉ chọn tệp Sẵn sàng" : undefined}
+      title={
+        !canChat
+          ? "Tài liệu chưa index AI — chỉ chọn tệp Sẵn sàng hoặc đang xử lý đã có nội dung"
+          : !isReady
+            ? "Tài liệu đang xử lý — câu trả lời có thể chưa đầy đủ"
+            : undefined
+      }
     >
       {selected && (
         <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-brutal-ink bg-brutal-primary text-white shadow-brutal-sm">
@@ -253,11 +265,9 @@ export function ChatSourcePickerModal({
   }
 
   function selectAllDocuments() {
-    const ready = (driveContents?.documents ?? []).filter(
-      (d) => d.status === "ready",
-    );
-    if (ready.length === 0) return;
-    setSelection({ kind: "documents", documents: ready });
+    const chattable = (driveContents?.documents ?? []).filter(canChatWithDocument);
+    if (chattable.length === 0) return;
+    setSelection({ kind: "documents", documents: chattable });
   }
 
   function clearSelection() {
@@ -265,7 +275,7 @@ export function ChatSourcePickerModal({
   }
 
   function toggleDocument(doc: DriveDocument) {
-    if (doc.status !== "ready") return;
+    if (!canChatWithDocument(doc)) return;
     setSelection((prev) => {
       if (prev?.kind === "documents") {
         const exists = prev.documents.some((d) => d.id === doc.id);
