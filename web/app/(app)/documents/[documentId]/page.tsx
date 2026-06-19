@@ -206,9 +206,9 @@ export default function DocumentDetailPage({ params }: PageProps) {
         )}
 
         {doc && (
-          <div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-start">
             {/* ── Left: viewer ─────────────────────────────── */}
-            <div className="flex flex-1 flex-col gap-3">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
               {/* Back + title row */}
               <div className="flex items-center gap-3">
                 <Link

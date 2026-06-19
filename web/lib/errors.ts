@@ -85,6 +85,10 @@ const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";
 const NETWORK_MESSAGE =
   "Không thể kết nối máy chủ. Kiểm tra kết nối mạng và thử lại.";
 
+/** Shown when the deployed API lacks POST .../messages/stream (Express 404 HTML). */
+export const CHAT_STREAM_NOT_AVAILABLE_MESSAGE =
+  "Tính năng chat AI (streaming) chưa được bật trên máy chủ. Vui lòng liên hệ team backend để deploy API mới nhất.";
+
 const HTTP_FALLBACK: Record<number, string> = {
   401: ERROR_MESSAGES.AUTH_UNAUTHORIZED,
   403: ERROR_MESSAGES.FORBIDDEN,
@@ -111,6 +115,67 @@ function extractApiBody(err: unknown): ApiErrorBody | null {
   return data as ApiErrorBody;
 }
 
+function isHtmlOrExpressErrorBody(body: string): boolean {
+  const trimmed = body.trim();
+  return (
+    trimmed.startsWith("<!DOCTYPE") ||
+    trimmed.startsWith("<html") ||
+    /Cannot (GET|POST|PUT|PATCH|DELETE) /i.test(trimmed)
+  );
+}
+
+function sanitizePlainErrorMessage(message: string): string {
+  if (!isHtmlOrExpressErrorBody(message)) {
+    return message;
+  }
+  if (
+    /messages\/stream/i.test(message) ||
+    /Cannot POST/i.test(message)
+  ) {
+    return CHAT_STREAM_NOT_AVAILABLE_MESSAGE;
+  }
+  return DEFAULT_MESSAGE;
+}
+
+/** Map fetch response body + status to a user-facing Vietnamese message. */
+export function parseFetchErrorBody(status: number, body: string): string {
+  const trimmed = body.trim();
+
+  if (trimmed) {
+    try {
+      const json = JSON.parse(trimmed) as {
+        code?: string;
+        message?: string;
+      };
+      if (json.code && isErrorCode(json.code)) {
+        return ERROR_MESSAGES[json.code];
+      }
+      if (typeof json.message === "string" && json.message.length > 0) {
+        return json.message;
+      }
+    } catch {
+      // not JSON — fall through
+    }
+  }
+
+  if (
+    status === 404 &&
+    (isHtmlOrExpressErrorBody(trimmed) || /messages\/stream/i.test(trimmed))
+  ) {
+    return CHAT_STREAM_NOT_AVAILABLE_MESSAGE;
+  }
+
+  if (isHtmlOrExpressErrorBody(trimmed)) {
+    return HTTP_FALLBACK[status] ?? DEFAULT_MESSAGE;
+  }
+
+  if (trimmed.length > 0 && trimmed.length < 500) {
+    return trimmed;
+  }
+
+  return HTTP_FALLBACK[status] ?? DEFAULT_MESSAGE;
+}
+
 /** Resolve a user-friendly Vietnamese message from an API or network error. */
 export function getUserErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
@@ -135,7 +200,7 @@ export function getUserErrorMessage(err: unknown): string {
   }
 
   if (err instanceof Error && err.message.length > 0) {
-    return err.message;
+    return sanitizePlainErrorMessage(err.message);
   }
 
   return DEFAULT_MESSAGE;
