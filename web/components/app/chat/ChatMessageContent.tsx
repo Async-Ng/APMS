@@ -1,34 +1,12 @@
+import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { cn } from "@/lib/cn";
 import type { ChatCitation } from "@/lib/queries/chat";
+import { remarkCitations } from "./remark-citations";
 
-// Matches `[1]`, `[Source 1]`, `[source1]`, `[SOURCE  12]`, etc.
-const CITATION_REF_RE = /\[(?:source\s*)?(\d+)\]/gi;
-
-function splitCitationSegments(content: string): Array<{ type: "text"; value: string } | { type: "ref"; index: number }> {
-  const segments: Array<{ type: "text"; value: string } | { type: "ref"; index: number }> = [];
-  let lastIndex = 0;
-
-  for (const match of content.matchAll(CITATION_REF_RE)) {
-    const start = match.index ?? 0;
-    if (start > lastIndex) {
-      segments.push({ type: "text", value: content.slice(lastIndex, start) });
-    }
-    const index = Number.parseInt(match[1] ?? "", 10);
-    if (Number.isFinite(index)) {
-      segments.push({ type: "ref", index });
-    }
-    lastIndex = start + match[0].length;
-  }
-
-  if (lastIndex < content.length) {
-    segments.push({ type: "text", value: content.slice(lastIndex) });
-  }
-
-  return segments;
-}
+const remarkPlugins = [remarkGfm, remarkCitations];
 
 const markdownComponents: Components = {
   p: ({ children }) => <p className="mb-2 leading-relaxed last:mb-0">{children}</p>,
@@ -86,13 +64,45 @@ export function ChatMessageContent({
   onCitationClick,
   isStreaming = false,
 }: ChatMessageContentProps) {
-  const citationBySource = new Map(
-    citations.map((c) => [c.sourceIndex ?? 0, c]),
-  );
+  const components = useMemo(() => {
+    const citationBySource = new Map(
+      citations.map((c) => [c.sourceIndex ?? 0, c]),
+    );
 
-  const segments = splitCitationSegments(content);
+    const CitationRef = (props: { index?: number | string }) => {
+      const refIndex = Number(props.index);
+      const citation = citationBySource.get(refIndex) ?? citations[refIndex - 1];
+      const label = `[${refIndex}]`;
 
-  if (segments.length === 0) {
+      if (!citation || !onCitationClick) {
+        return <span className="font-bold text-brutal-secondary">{label}</span>;
+      }
+
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCitationClick(citation);
+          }}
+          className={cn(
+            "focus-brutal mx-0.5 inline-flex cursor-pointer items-center rounded border border-brutal-ink px-1 py-0 text-xs font-bold",
+            "bg-brutal-accent/40 text-brutal-ink hover:bg-brutal-primary hover:text-white",
+          )}
+          title={citation.documentTitle}
+        >
+          {label}
+        </button>
+      );
+    };
+
+    return {
+      ...markdownComponents,
+      "citation-ref": CitationRef,
+    };
+  }, [citations, onCitationClick]);
+
+  if (!content) {
     return (
       <div className="text-sm font-medium leading-relaxed">
         {isStreaming && (
@@ -104,50 +114,9 @@ export function ChatMessageContent({
 
   return (
     <div className="text-sm font-medium leading-relaxed">
-      {segments.map((segment, idx) => {
-        if (segment.type === "text") {
-          if (!segment.value) return null;
-          return (
-            <ReactMarkdown
-              key={`text-${idx}`}
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {segment.value}
-            </ReactMarkdown>
-          );
-        }
-
-        const citation =
-          citationBySource.get(segment.index) ?? citations[segment.index - 1];
-        const label = `[${segment.index}]`;
-
-        if (!citation || !onCitationClick) {
-          return (
-            <span key={`ref-${idx}`} className="font-bold text-brutal-secondary">
-              {label}
-            </span>
-          );
-        }
-
-        return (
-          <button
-            key={`ref-${idx}`}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCitationClick(citation);
-            }}
-            className={cn(
-              "focus-brutal mx-0.5 inline-flex cursor-pointer items-center rounded border border-brutal-ink px-1 py-0 text-xs font-bold",
-              "bg-brutal-accent/40 text-brutal-ink hover:bg-brutal-primary hover:text-white",
-            )}
-            title={citation.documentTitle}
-          >
-            {label}
-          </button>
-        );
-      })}
+      <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+        {content}
+      </ReactMarkdown>
       {isStreaming && (
         <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-brutal-primary align-text-bottom" />
       )}
