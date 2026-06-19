@@ -32,6 +32,9 @@ export const ErrorCode = {
   SHARE_FORBIDDEN: "SHARE_FORBIDDEN",
   SHARE_NO_RECIPIENTS: "SHARE_NO_RECIPIENTS",
   SHARE_RESOURCE_NOT_FOUND: "SHARE_RESOURCE_NOT_FOUND",
+  SHARE_INVITE_NOT_FOUND: "SHARE_INVITE_NOT_FOUND",
+  SHARE_INVITE_EXPIRED: "SHARE_INVITE_EXPIRED",
+  SHARE_INVITE_EMAIL_MISMATCH: "SHARE_INVITE_EMAIL_MISMATCH",
 
   // Chat
   CHAT_DAILY_LIMIT: "CHAT_DAILY_LIMIT",
@@ -39,6 +42,7 @@ export const ErrorCode = {
   CHAT_AI_UNAVAILABLE: "CHAT_AI_UNAVAILABLE",
   CHAT_SESSION_NOT_FOUND: "CHAT_SESSION_NOT_FOUND",
   CHAT_ACCESS_DENIED: "CHAT_ACCESS_DENIED",
+  CHAT_ANSWER_BLOCKED: "CHAT_ANSWER_BLOCKED",
 
   // Admin
   USER_NOT_FOUND: "USER_NOT_FOUND",
@@ -76,12 +80,16 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   SHARE_FORBIDDEN: "Bạn không có quyền thu hồi lượt chia sẻ này.",
   SHARE_NO_RECIPIENTS: "Không tìm thấy người nhận hợp lệ để chia sẻ.",
   SHARE_RESOURCE_NOT_FOUND: "Không tìm thấy tài liệu hoặc thư mục để chia sẻ.",
+  SHARE_INVITE_NOT_FOUND: "Lời mời không tồn tại hoặc đã bị thu hồi.",
+  SHARE_INVITE_EXPIRED: "Lời mời đã hết hạn.",
+  SHARE_INVITE_EMAIL_MISMATCH: "Email tài khoản của bạn không khớp với lời mời này.",
 
   CHAT_DAILY_LIMIT: "Đã hết lượt chat hôm nay. Vui lòng thử lại vào ngày mai.",
   CHAT_QUOTA_GEMINI: "Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau vài phút.",
   CHAT_AI_UNAVAILABLE: "Không thể trả lời ngay lúc này. Vui lòng thử lại sau.",
   CHAT_SESSION_NOT_FOUND: "Không tìm thấy cuộc trò chuyện.",
   CHAT_ACCESS_DENIED: "Bạn không có quyền truy cập nội dung này.",
+  CHAT_ANSWER_BLOCKED: "Câu trả lời bị dừng giữa chừng do trùng nội dung bản quyền. Vui lòng thử diễn đạt lại câu hỏi.",
 
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",

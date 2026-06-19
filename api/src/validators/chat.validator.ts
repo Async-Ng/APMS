@@ -40,6 +40,17 @@ export const updateSessionSchema = z
     message: "At least one of title or isPinned is required",
   });
 
-export const sendMessageSchema = z.object({
-  content: z.string().trim().min(1).max(10_000),
-});
+export const sendMessageSchema = z
+  .object({
+    content: z.string().trim().max(10_000).default(""),
+    mode: z.enum(["chat", "summary", "faq", "study_guide"]).default("chat"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mode === "chat" && data.content.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "content is required when mode is chat",
+        path: ["content"],
+      });
+    }
+  });

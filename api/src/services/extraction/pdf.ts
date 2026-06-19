@@ -5,6 +5,7 @@ import { createCanvas, DOMMatrix, Path2D, ImageData } from "@napi-rs/canvas";
 
 import { loadEnv } from "../../config/env";
 import type { ExtractionResult } from "../extraction.service";
+import type { TextSegment } from "../extraction/types";
 import { describeImages, pageVisionBlock } from "./vision-ocr";
 
 // pdfjs-dist is ESM-only; this project is CommonJS + ts-node, which rewrites a plain
@@ -135,12 +136,15 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
   const descByPage = new Map<number, string>();
   visionPages.forEach((vp, i) => descByPage.set(vp.pageNumber, descriptions[i] ?? ""));
 
-  const text = pageTexts
-    .map((t, i) => {
-      const p = i + 1;
-      return `${t}${pageVisionBlock(p, descByPage.get(p) ?? "")}`;
-    })
-    .join("\n\n");
+  const segments: TextSegment[] = pageTexts.map((t, i) => {
+    const p = i + 1;
+    return {
+      text: `${t}${pageVisionBlock(p, descByPage.get(p) ?? "")}`,
+      pageNumber: p,
+    };
+  });
 
-  return { text, pageCount };
+  const text = segments.map((s) => s.text).join("\n\n");
+
+  return { text, pageCount, segments };
 }

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { unauthorizedError } from "../errors/unauthorized";
 import * as chatService from "../services/chat.service";
+import type { ChatMode } from "../services/ai/chat-prompts";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
@@ -47,6 +48,17 @@ export const sendMessage = catchAsync(async (req: Request, res: Response): Promi
     requireUser(req),
     getRouteParam(req, "id"),
     req.body.content as string,
+    (req.body.mode as ChatMode | undefined) ?? "chat",
   );
   sendSuccess(res, data, 201);
+});
+
+export const sendMessageStream = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  await chatService.sendMessageStream(
+    requireUser(req),
+    getRouteParam(req, "id"),
+    req.body.content as string,
+    (req.body.mode as ChatMode | undefined) ?? "chat",
+    res,
+  );
 });

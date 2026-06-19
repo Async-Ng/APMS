@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 
+import { getEnv } from "../config/aws";
 import { createAppError, ErrorCode } from "../errors/error-codes";
 import {
   Document as ApmsDocument,
@@ -8,31 +9,45 @@ import {
 } from "../models/document.model";
 import { Folder, toFolderResponse, type FolderDocument } from "../models/folder.model";
 import { Share, toShareResponse, type ShareDocument } from "../models/share.model";
+import {
+  generateInviteToken,
+  ShareInvite,
+} from "../models/shareInvite.model";
 import { User } from "../models/user.model";
 import type { UserDocument } from "../models/user.model";
+import { sendShareInviteEmail, sendShareNotificationEmail } from "./mailer.service";
 import { parseObjectId } from "../utils/objectId";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** Verify resource exists and belongs to the owner */
+/** Verify resource exists and belongs to the owner; returns its display name */
 async function assertResourceOwner(
   resourceType: "folder" | "document",
   resourceId: Types.ObjectId,
   ownerId: Types.ObjectId,
-): Promise<void> {
+): Promise<string> {
   if (resourceType === "folder") {
     const folder = await Folder.findOne({ _id: resourceId, ownerId, deletedAt: null });
     if (!folder) {
       throw createAppError(ErrorCode.SHARE_RESOURCE_NOT_FOUND, 404);
     }
+    return folder.name;
   } else {
     const doc = await ApmsDocument.findOne({ _id: resourceId, ownerId, deletedAt: null });
     if (!doc) {
       throw createAppError(ErrorCode.SHARE_RESOURCE_NOT_FOUND, 404);
     }
+    return doc.originalFilename;
   }
+}
+
+function buildResourceLink(resourceType: "folder" | "document", resourceId: Types.ObjectId): string {
+  const env = getEnv();
+  return resourceType === "folder"
+    ? `${env.APP_URL}/drive/${resourceId.toString()}`
+    : `${env.APP_URL}/documents/${resourceId.toString()}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,38 +65,106 @@ export async function createShares(
     resourceType: "folder" | "document";
     resourceId: string;
     sharedWithUserIds: string[];
+    emails?: string[];
   },
 ): Promise<CreateSharesResult> {
   const ownerId = owner._id;
   const resourceId = parseObjectId(input.resourceId, "resourceId");
+  const ownerEmail = owner.email.toLowerCase();
 
   // 1. Verify resource exists and belongs to owner
-  await assertResourceOwner(input.resourceType, resourceId, ownerId);
+  const resourceName = await assertResourceOwner(input.resourceType, resourceId, ownerId);
 
-  // 2. Filter out self-share
-  const recipientIds = input.sharedWithUserIds
+  // 2. Direct user-id recipients (excluding self)
+  const idRecipients = input.sharedWithUserIds
     .map((id) => parseObjectId(id, "sharedWithUserIds"))
     .filter((id) => !id.equals(ownerId));
 
-  if (recipientIds.length === 0) {
-    return { created: [], skipped: input.sharedWithUserIds.length };
+  // 3. Email recipients: split into already-registered users vs unregistered emails
+  const normalizedEmails = [
+    ...new Set(
+      (input.emails ?? [])
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email !== ownerEmail),
+    ),
+  ];
+
+  let emailMatchedUserIds: Types.ObjectId[] = [];
+  let unregisteredEmails: string[] = normalizedEmails;
+
+  if (normalizedEmails.length > 0) {
+    const matchedUsers = await User.find({
+      email: { $in: normalizedEmails },
+      isDisabled: false,
+    }).select("_id email");
+
+    const matchedEmailSet = new Set(matchedUsers.map((u) => u.email));
+    emailMatchedUserIds = matchedUsers.map((u) => u._id as Types.ObjectId);
+    unregisteredEmails = normalizedEmails.filter((email) => !matchedEmailSet.has(email));
   }
 
-  // 3. Verify all recipients exist and are active
+  const totalRequested = input.sharedWithUserIds.length + normalizedEmails.length;
+
+  // 4. Create invites + send invite emails for unregistered emails (skip already-pending ones)
+  let inviteCount = 0;
+  if (unregisteredEmails.length > 0) {
+    const existingInvites = await ShareInvite.find({
+      resourceType: input.resourceType,
+      resourceId,
+      email: { $in: unregisteredEmails },
+      status: "pending",
+    }).select("email");
+    const alreadyInvited = new Set(existingInvites.map((i) => i.email));
+    const newInviteEmails = unregisteredEmails.filter((email) => !alreadyInvited.has(email));
+
+    inviteCount = unregisteredEmails.length;
+    const env = getEnv();
+
+    await Promise.all(
+      newInviteEmails.map(async (email) => {
+        const token = generateInviteToken();
+        await ShareInvite.create({
+          resourceType: input.resourceType,
+          resourceId,
+          ownerId,
+          email,
+          token,
+        });
+        await sendShareInviteEmail({
+          to: email,
+          sharerName: owner.displayName,
+          resourceName,
+          resourceType: input.resourceType,
+          inviteLink: `${env.APP_URL}/invite/${token}`,
+        });
+      }),
+    );
+  }
+
+  // 5. Dedup all user-id recipients (explicit ids + email matches)
+  const recipientIdMap = new Map<string, Types.ObjectId>();
+  for (const id of [...idRecipients, ...emailMatchedUserIds]) {
+    recipientIdMap.set(id.toString(), id);
+  }
+  const recipientIds = [...recipientIdMap.values()];
+
+  if (recipientIds.length === 0) {
+    return { created: [], skipped: totalRequested - inviteCount };
+  }
+
+  // 6. Verify all recipients exist and are active
   const existingUsers = await User.find({
     _id: { $in: recipientIds },
     isDisabled: false,
-  }).select("_id");
+  }).select("_id email displayName");
 
   const validRecipientIds = existingUsers.map((u) => u._id as Types.ObjectId);
 
-  const invalidCount = recipientIds.length - validRecipientIds.length;
-
-  if (validRecipientIds.length === 0) {
+  if (validRecipientIds.length === 0 && inviteCount === 0) {
     throw createAppError(ErrorCode.SHARE_NO_RECIPIENTS, 400);
   }
 
-  // 4. Build share documents
+  // 7. Build share documents
   const shareDocs = validRecipientIds.map((sharedWithUserId) => ({
     resourceType: input.resourceType,
     resourceId,
@@ -90,9 +173,8 @@ export async function createShares(
     permission: "read" as const,
   }));
 
-  // 5. insertMany with ordered:false — MongoDB skips duplicate-key errors silently
+  // 8. insertMany with ordered:false — MongoDB skips duplicate-key errors silently
   let insertedDocs: ShareDocument[] = [];
-  let duplicateCount = 0;
 
   try {
     const result = await Share.insertMany(shareDocs, { ordered: false });
@@ -107,19 +189,36 @@ export async function createShares(
     ) {
       const bulkErr = err as unknown as { insertedDocs: ShareDocument[]; result: { nInserted: number } };
       insertedDocs = bulkErr.insertedDocs ?? [];
-      duplicateCount = shareDocs.length - (bulkErr.result?.nInserted ?? insertedDocs.length);
     } else {
       throw err;
     }
   }
 
-  const totalSkipped = (input.sharedWithUserIds.length - recipientIds.length) // self-share
-    + invalidCount                                                              // not found / disabled
-    + duplicateCount;                                                           // already shared
+  // 9. Best-effort share notification emails for newly created shares
+  if (insertedDocs.length > 0) {
+    const usersById = new Map(existingUsers.map((u) => [(u._id as Types.ObjectId).toString(), u]));
+    const link = buildResourceLink(input.resourceType, resourceId);
+
+    void Promise.all(
+      insertedDocs.map((share) => {
+        const recipient = usersById.get((share.sharedWithUserId as Types.ObjectId).toString());
+        if (!recipient) return Promise.resolve();
+        return sendShareNotificationEmail({
+          to: recipient.email,
+          sharerName: owner.displayName,
+          resourceName,
+          resourceType: input.resourceType,
+          link,
+        });
+      }),
+    );
+  }
+
+  const totalSkipped = totalRequested - insertedDocs.length - inviteCount;
 
   return {
     created: insertedDocs.map(toShareResponse),
-    skipped: totalSkipped,
+    skipped: Math.max(totalSkipped, 0),
   };
 }
 

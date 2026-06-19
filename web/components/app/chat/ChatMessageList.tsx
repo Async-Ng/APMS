@@ -6,11 +6,13 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
 
+import { ChatMessageContent } from "./ChatMessageContent";
 import { ChatThinkingIndicator } from "./ChatThinkingIndicator";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
   isThinking?: boolean;
+  streamingMessageId?: string | null;
   selectedCitationKey?: string | null;
   activeMessageId?: string | null;
   onSelectCitation: (message: ChatMessage, citation: ChatCitation) => void;
@@ -24,6 +26,7 @@ function citationKey(c: ChatCitation): string {
 export function ChatMessageList({
   messages,
   isThinking = false,
+  streamingMessageId = null,
   selectedCitationKey,
   activeMessageId,
   onSelectCitation,
@@ -88,9 +91,18 @@ export function ChatMessageList({
                 }
               }}
             >
-              <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed">
-                {message.content}
-              </p>
+              {isUser ? (
+                <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed">
+                  {message.content}
+                </p>
+              ) : (
+                <ChatMessageContent
+                  content={message.content}
+                  citations={message.citations}
+                  isStreaming={message.id === streamingMessageId}
+                  onCitationClick={(citation) => onSelectCitation(message, citation)}
+                />
+              )}
 
               {!isUser && message.citations.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5 border-t border-brutal-ink/20 pt-2">
@@ -117,7 +129,7 @@ export function ChatMessageList({
                           {citation.pageNumber != null &&
                             ` · tr.${citation.pageNumber}`}
                         </span>
-                        <span className="opacity-70">[{idx + 1}]</span>
+                        <span className="opacity-70">[{citation.sourceIndex ?? idx + 1}]</span>
                       </button>
                     );
                   })}

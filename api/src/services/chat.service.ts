@@ -1,23 +1,39 @@
+import type { Response } from "express";
 import type { Types } from "mongoose";
 import type { UserDocument } from "../models/user.model";
 
 import { loadEnv } from "../config/env";
 import { createAppError, ErrorCode } from "../errors/error-codes";
-import { ChatMessage, toChatMessageResponse } from "../models/chat-message.model";
-import { ChatSession, toChatSessionResponse } from "../models/chat-session.model";
+import { ChatMessage, toChatMessageResponse, type ChatMessageDocument } from "../models/chat-message.model";
+import { ChatSession, toChatSessionResponse, type ChatSessionDocument } from "../models/chat-session.model";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import { Folder } from "../models/folder.model";
 import { parseObjectId } from "../utils/objectId";
 import * as aiService from "./ai/ai.service";
+import { buildCitationsFromResponse, type RetrievedChunk } from "./ai/citation-utils";
+import {
+  buildChatSystemPrompt,
+  type ChatMode,
+  PRESET_DEFAULT_CONTENT,
+} from "./ai/chat-prompts";
+import type { ChatTurn } from "./ai/types";
+import {
+  CONTEXT_CHUNKS,
+  CONTEXT_CHUNK_MAX_CHARS,
+  HISTORY_MESSAGES,
+  MIN_CHUNK_SCORE,
+  NEIGHBOR_WINDOW,
+  RETRIEVE_CHUNKS,
+  VECTOR_SEARCH_CANDIDATES,
+} from "./ai/types";
+import { rewriteQueryWithHistory } from "./ai/query-rewrite";
+import { rerankChunks } from "./ai/rerank";
 import {
   checkShareAccess,
   getDocumentIdsInFolderTree,
   getSharedDocumentIds,
 } from "./share.service";
-
-const CONTEXT_CHUNKS = 3;    // top-3 chunks ≈ 40% fewer input tokens vs top-5
-const HISTORY_MESSAGES = 6;  // 3 recent turns ≈ 40% fewer history tokens vs 10
 
 async function assertChatDailyLimit(userId: Types.ObjectId): Promise<void> {
   const limit = loadEnv().CHAT_DAILY_LIMIT_PER_USER;
@@ -448,6 +464,7 @@ export async function getSession(user: UserDocument, sessionId: string) {
       role: m.role,
       content: m.content,
       citations: m.citations.map((c) => ({
+        sourceIndex: c.sourceIndex ?? 1,
         documentId: c.documentId.toString(),
         documentTitle: c.documentTitle,
         pageNumber: c.pageNumber ?? null,
@@ -491,27 +508,150 @@ export async function deleteSession(user: UserDocument, sessionId: string) {
   await session.deleteOne();
 }
 
-export async function sendMessage(
+/**
+ * Drop duplicate chunks from the same document+page, keeping the first occurrence.
+ * Input order is preserved so an upstream relevance ranking (rerank) is respected.
+ */
+function dedupeChunksByPage(chunks: RetrievedChunk[]): RetrievedChunk[] {
+  const seen = new Set<string>();
+  const result: RetrievedChunk[] = [];
+
+  for (const chunk of chunks) {
+    const key = `${chunk.documentId.toString()}:${chunk.pageNumber ?? "n"}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(chunk);
+  }
+
+  return result;
+}
+
+/**
+ * Widen each retrieved chunk with its adjacent chunks (chunkIndex ± NEIGHBOR_WINDOW)
+ * from the same document so the model sees surrounding context instead of an
+ * isolated snippet. The citation excerpt still points to the original matched chunk.
+ */
+async function expandChunksWithNeighbors(
+  chunks: RetrievedChunk[],
+): Promise<RetrievedChunk[]> {
+  if (NEIGHBOR_WINDOW <= 0) return chunks;
+
+  return Promise.all(
+    chunks.map(async (chunk) => {
+      if (chunk.chunkIndex === undefined) return chunk;
+
+      const neighbors = await DocumentChunk.find({
+        documentId: chunk.documentId,
+        chunkIndex: {
+          $gte: chunk.chunkIndex - NEIGHBOR_WINDOW,
+          $lte: chunk.chunkIndex + NEIGHBOR_WINDOW,
+        },
+      })
+        .sort({ chunkIndex: 1 })
+        .select("content chunkIndex")
+        .lean();
+
+      if (neighbors.length <= 1) return chunk;
+
+      const mergedContent = neighbors.map((n) => n.content).join("\n");
+      return {
+        ...chunk,
+        content: mergedContent,
+        citationExcerpt: chunk.content,
+      };
+    }),
+  );
+}
+
+function buildContextText(
+  chunks: RetrievedChunk[],
+  titleMap: Map<string, string>,
+): string {
+  // Allow merged neighbor content (chunkIndex ± NEIGHBOR_WINDOW) to fit without truncation.
+  const maxChars = CONTEXT_CHUNK_MAX_CHARS * (2 * NEIGHBOR_WINDOW + 1);
+  const parts = chunks.map((chunk, i) => {
+    const title = titleMap.get(chunk.documentId.toString()) ?? "Unknown";
+    const pageSuffix = chunk.pageNumber ? `, page ${chunk.pageNumber}` : "";
+    const body =
+      chunk.content.length > maxChars
+        ? `${chunk.content.slice(0, maxChars)}…`
+        : chunk.content;
+    return `[Source ${i + 1}: ${title}${pageSuffix}]\n${body}`;
+  });
+
+  return parts.join("\n\n---\n\n");
+}
+
+function mapChatError(error: unknown): never {
+  const msg = error instanceof Error ? error.message : String(error);
+
+  if (
+    msg.includes("finishReason=RECITATION") ||
+    msg.includes("finishReason=SAFETY") ||
+    msg.includes("finishReason=OTHER")
+  ) {
+    throw createAppError(ErrorCode.CHAT_ANSWER_BLOCKED, 422, { technicalDetail: msg });
+  }
+  if (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded")) {
+    throw createAppError(ErrorCode.CHAT_QUOTA_GEMINI, 429, { technicalDetail: msg });
+  }
+  if (msg.includes("API key") || msg.includes("403")) {
+    throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 503, { technicalDetail: msg });
+  }
+  if (msg.includes("404") || msg.includes("not found")) {
+    throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
+  }
+  throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
+}
+
+interface PreparedChatContext {
+  session: ChatSessionDocument;
+  userMessage: ChatMessageDocument;
+  chunkResults: RetrievedChunk[];
+  titleMap: Map<string, string>;
+  systemPrompt: string;
+  historyMessages: ChatTurn[];
+}
+
+async function prepareChatContext(
   user: UserDocument,
-  sessionId: string,
+  sessionId: Types.ObjectId,
   content: string,
-) {
-  const id = parseObjectId(sessionId);
-  const session = await findSession(id, user._id);
+  mode: ChatMode,
+): Promise<PreparedChatContext> {
+  const session = await findSession(sessionId, user._id);
 
   await assertChatDailyLimit(user._id);
 
-  // Save user message
   const userMessage = await ChatMessage.create({
     sessionId: session._id,
     role: "user",
     content,
   });
 
-  // Embed the user query
-  const queryVector = await aiService.embedText(content, "search_query");
+  // Conversation history (prior turns only). Fetched before retrieval so we can
+  // rewrite follow-up questions into standalone queries.
+  const history = await ChatMessage.find({ sessionId: session._id, _id: { $ne: userMessage._id } })
+    .sort({ createdAt: -1 })
+    .limit(HISTORY_MESSAGES)
+    .lean();
+  history.reverse();
 
-  // Build vector search filter based on session scope
+  const priorTurns: ChatTurn[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
+
+  // Rewrite follow-up questions into a self-contained query for better retrieval.
+  // Only meaningful in free-form chat mode; presets (summary/faq/...) don't depend
+  // on prior turns. Falls back to the original content on any failure.
+  const retrievalQuery =
+    mode === "chat"
+      ? await rewriteQueryWithHistory(content, priorTurns)
+      : content;
+
+  const queryVector = await aiService.embedText(retrievalQuery, "search_query");
+
   const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
   const contextIds = (session.contextIds ?? []) as Types.ObjectId[];
   const vectorSearchFilter = await buildVectorSearchFilter(
@@ -521,16 +661,15 @@ export async function sendMessage(
     contextIds,
   );
 
-  // Retrieve relevant chunks via Atlas Vector Search
-  const chunkResults = await DocumentChunk.aggregate([
+  const rawChunks = await DocumentChunk.aggregate([
     {
       $vectorSearch: {
         index: "embedding_vector_index",
         path: "embedding",
         queryVector,
         filter: vectorSearchFilter,
-        numCandidates: CONTEXT_CHUNKS * 10,
-        limit: CONTEXT_CHUNKS,
+        numCandidates: VECTOR_SEARCH_CANDIDATES,
+        limit: RETRIEVE_CHUNKS,
       },
     },
     {
@@ -538,82 +677,177 @@ export async function sendMessage(
         documentId: 1,
         content: 1,
         pageNumber: 1,
+        chunkIndex: 1,
         score: { $meta: "vectorSearchScore" },
       },
     },
   ]);
 
-  // Gather document titles for citations
+  const scoredChunks: RetrievedChunk[] = rawChunks.map((c) => {
+    const chunk: RetrievedChunk = {
+      documentId: c.documentId as Types.ObjectId,
+      content: c.content as string,
+      pageNumber: (c.pageNumber as number | null) ?? null,
+      score: c.score as number,
+    };
+    if (typeof c.chunkIndex === "number") {
+      chunk.chunkIndex = c.chunkIndex;
+    }
+    return chunk;
+  });
+
+  const aboveThreshold = scoredChunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
+  const chunksForContext =
+    aboveThreshold.length > 0 ? aboveThreshold : scoredChunks;
+
+  // Rerank the wider candidate set down to the top CONTEXT_CHUNKS by relevance
+  // (falls back to vector-score order on failure), then dedupe near-duplicate pages.
+  const reranked = await rerankChunks(retrievalQuery, chunksForContext, CONTEXT_CHUNKS);
+  const deduped = dedupeChunksByPage(reranked).slice(0, CONTEXT_CHUNKS);
+
+  // Widen each chunk with adjacent chunks for fuller context.
+  const chunkResults = await expandChunksWithNeighbors(deduped);
+
   const docIds = [...new Set(chunkResults.map((c) => c.documentId.toString()))];
   const docs = await Document.find({ _id: { $in: docIds } }).select("_id title").lean();
   const titleMap = new Map(docs.map((d) => [d._id.toString(), d.title]));
 
-  // Build context string
-  const contextParts = chunkResults.map(
-    (c, i) =>
-      `[Source ${i + 1}: ${titleMap.get(c.documentId.toString()) ?? "Unknown"}${c.pageNumber ? `, page ${c.pageNumber}` : ""}]\n${c.content}`,
-  );
-  const contextText = contextParts.join("\n\n---\n\n");
+  const contextText = buildContextText(chunkResults, titleMap);
+  const systemPrompt = buildChatSystemPrompt(contextText, mode, content);
 
-  // Fetch last N messages for conversation history (excluding the one just saved)
-  const history = await ChatMessage.find({ sessionId: session._id, _id: { $ne: userMessage._id } })
-    .sort({ createdAt: -1 })
-    .limit(HISTORY_MESSAGES)
-    .lean();
-  history.reverse();
-
-  const historyMessages = history.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
+  const historyMessages: ChatTurn[] = [...priorTurns];
   historyMessages.push({ role: "user", content });
 
-  const systemPrompt =
-    contextText.length > 0
-      ? `You are a helpful AI assistant. Answer the user's question using ONLY the following document excerpts as context. If the answer is not in the context, say you don't know.\n\nContext:\n${contextText}`
-      : "You are a helpful AI assistant. No relevant document context was found for this question. Answer to the best of your ability or let the user know you need more documents.";
+  return {
+    session,
+    userMessage,
+    chunkResults,
+    titleMap,
+    systemPrompt,
+    historyMessages,
+  };
+}
+
+function writeSse(res: Response, event: string, data: unknown): void {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+export async function sendMessage(
+  user: UserDocument,
+  sessionId: string,
+  content: string,
+  mode: ChatMode = "chat",
+) {
+  const id = parseObjectId(sessionId);
+  const messageContent =
+    mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
+
+  const prepared = await prepareChatContext(user, id, messageContent, mode);
 
   let assistantText: string;
   try {
-    assistantText = await aiService.chatWithContext(systemPrompt, historyMessages);
+    assistantText = await aiService.chatWithContext(
+      prepared.systemPrompt,
+      prepared.historyMessages,
+    );
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-
-    if (msg.includes("429") || msg.includes("quota") || msg.includes("Quota exceeded")) {
-      throw createAppError(ErrorCode.CHAT_QUOTA_GEMINI, 429, { technicalDetail: msg });
-    }
-    if (msg.includes("API key") || msg.includes("403")) {
-      throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 503, { technicalDetail: msg });
-    }
-    if (msg.includes("404") || msg.includes("not found")) {
-      throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
-    }
-    throw createAppError(ErrorCode.CHAT_AI_UNAVAILABLE, 500, { technicalDetail: msg });
+    mapChatError(error);
   }
 
-  // Build citations from retrieved chunks
-  const citations = chunkResults
-    .filter((c) => titleMap.has(c.documentId.toString()))
-    .map((c) => ({
-      documentId: c.documentId,
-      documentTitle: titleMap.get(c.documentId.toString()) ?? "",
-      pageNumber: c.pageNumber ?? null,
-      excerpt: (c.content as string).slice(0, 300),
-    }));
+  const builtCitations = buildCitationsFromResponse(
+    assistantText,
+    prepared.chunkResults,
+    prepared.titleMap,
+  );
 
-  // Save assistant message
   const assistantMessage = await ChatMessage.create({
-    sessionId: session._id,
+    sessionId: prepared.session._id,
     role: "assistant",
     content: assistantText,
-    citations,
+    citations: builtCitations,
   });
 
-  // Update session updatedAt
-  await ChatSession.findByIdAndUpdate(session._id, { updatedAt: new Date() });
+  await ChatSession.findByIdAndUpdate(prepared.session._id, { updatedAt: new Date() });
 
   return {
-    userMessage: toChatMessageResponse(userMessage),
+    userMessage: toChatMessageResponse(prepared.userMessage),
     assistantMessage: toChatMessageResponse(assistantMessage),
   };
+}
+
+export async function sendMessageStream(
+  user: UserDocument,
+  sessionId: string,
+  content: string,
+  mode: ChatMode,
+  res: Response,
+): Promise<void> {
+  const id = parseObjectId(sessionId);
+  const messageContent =
+    mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  let prepared: PreparedChatContext;
+
+  try {
+    prepared = await prepareChatContext(user, id, messageContent, mode);
+    writeSse(res, "user_message", toChatMessageResponse(prepared.userMessage));
+  } catch (error) {
+    writeSse(res, "error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    res.end();
+    return;
+  }
+
+  let assistantText = "";
+
+  try {
+    for await (const delta of aiService.chatWithContextStream(
+      prepared.systemPrompt,
+      prepared.historyMessages,
+    )) {
+      assistantText += delta;
+      writeSse(res, "chunk", { text: delta });
+    }
+  } catch (error) {
+    writeSse(res, "error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    res.end();
+    return;
+  }
+
+  const builtCitations = buildCitationsFromResponse(
+    assistantText.trim(),
+    prepared.chunkResults,
+    prepared.titleMap,
+  );
+
+  try {
+    const assistantMessage = await ChatMessage.create({
+      sessionId: prepared.session._id,
+      role: "assistant",
+      content: assistantText.trim(),
+      citations: builtCitations,
+    });
+
+    await ChatSession.findByIdAndUpdate(prepared.session._id, { updatedAt: new Date() });
+
+    writeSse(res, "done", {
+      userMessage: toChatMessageResponse(prepared.userMessage),
+      assistantMessage: toChatMessageResponse(assistantMessage),
+    });
+  } catch (error) {
+    writeSse(res, "error", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  res.end();
 }

@@ -11,6 +11,7 @@ import {
 } from "./helpers";
 
 const citationSchema = z.object({
+  sourceIndex: z.number().int().positive().openapi({ example: 1 }),
   documentId: z.string().openapi({ example: "507f1f77bcf86cd799439011" }),
   documentTitle: z.string().openapi({ example: "Kiến trúc Microservice" }),
   pageNumber: z.number().nullable().openapi({ example: 3 }),

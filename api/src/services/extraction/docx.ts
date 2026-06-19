@@ -2,6 +2,7 @@ import mammoth from "mammoth";
 
 import { loadEnv } from "../../config/env";
 import type { ExtractionResult } from "../extraction.service";
+import type { TextSegment } from "../extraction/types";
 import { describeImages, imageDescriptionsBlock, type ImageInput } from "./vision-ocr";
 
 export async function extractDocxWithVision(buffer: Buffer): Promise<ExtractionResult> {
@@ -11,7 +12,8 @@ export async function extractDocxWithVision(buffer: Buffer): Promise<ExtractionR
   const body = textResult.value;
 
   if (!env.DOC_VISION_ENABLED) {
-    return { text: body, pageCount: null };
+    const segments: TextSegment[] = [{ text: body, pageNumber: null }];
+    return { text: body, pageCount: null, segments };
   }
 
   // Collect embedded images via a separate convertToHtml pass. The convertImage hook
@@ -32,5 +34,6 @@ export async function extractDocxWithVision(buffer: Buffer): Promise<ExtractionR
 
   const descriptions = await describeImages(images);
   const text = `${body}${imageDescriptionsBlock(descriptions)}`;
-  return { text, pageCount: null };
+  const segments: TextSegment[] = [{ text, pageNumber: null }];
+  return { text, pageCount: null, segments };
 }

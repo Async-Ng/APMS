@@ -97,6 +97,7 @@ export interface CreateSharesBody {
   resourceType: "folder" | "document";
   resourceId: string;
   sharedWithUserIds: string[];
+  emails?: string[];
 }
 
 export interface CreateSharesResult {
@@ -107,6 +108,18 @@ export interface CreateSharesResult {
 export interface UserSearchParams {
   email?: string;
   displayName?: string;
+}
+
+export interface InvitePreview {
+  resourceType: "folder" | "document";
+  resourceName: string;
+  sharerName: string;
+  email: string;
+}
+
+export interface AcceptInviteResult {
+  resourceType: "folder" | "document";
+  resourceId: string;
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -228,6 +241,31 @@ export function useRevokeShare() {
   return useMutation({
     mutationFn: (shareId: string) => api.delete(`/shares/${shareId}`),
     onSuccess: () => invalidateShareQueries(qc),
+  });
+}
+
+export function useInvitePreview(token: string) {
+  return useQuery({
+    queryKey: ["invites", token] as const,
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: InvitePreview }>(
+        `/invites/${token}`,
+      );
+      return res.data.data;
+    },
+    enabled: !!token,
+    retry: false,
+  });
+}
+
+export function useAcceptInvite() {
+  return useMutation({
+    mutationFn: async (token: string) => {
+      const res = await api.post<{ status: string; data: AcceptInviteResult }>(
+        `/invites/${token}/accept`,
+      );
+      return res.data.data;
+    },
   });
 }
 

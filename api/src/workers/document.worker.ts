@@ -1,11 +1,21 @@
-import { Document } from "../models/document.model";
+import { loadEnv } from "../config/env";
+import { Document, MAX_PROCESSING_ATTEMPTS } from "../models/document.model";
 import { processDocument } from "../services/processing.service";
+import { runConcurrent } from "../utils/concurrency";
 
-const POLL_INTERVAL_MS = 30_000;
 let running = false;
 
 async function runOnce(): Promise<void> {
-  const pending = await Document.find({ status: { $in: ["processing", "failed"] } })
+  const pending = await Document.find({
+    $or: [
+      { status: "processing" },
+      {
+        status: "failed",
+        processingAttempts: { $lt: MAX_PROCESSING_ATTEMPTS },
+        $or: [{ nextRetryAt: null }, { nextRetryAt: { $lte: new Date() } }],
+      },
+    ],
+  })
     .select("_id")
     .lean();
 
@@ -13,12 +23,11 @@ async function runOnce(): Promise<void> {
 
   console.log(`[worker] Found ${pending.length} document(s) to process`);
 
-  for (const doc of pending) {
-    await processDocument(doc._id);
-  }
+  const concurrency = loadEnv().DOCUMENT_WORKER_CONCURRENCY;
+  await runConcurrent(pending, concurrency, (doc) => processDocument(doc._id));
 }
 
-async function loop(): Promise<void> {
+async function loop(pollIntervalMs: number): Promise<void> {
   while (running) {
     try {
       await runOnce();
@@ -26,15 +35,21 @@ async function loop(): Promise<void> {
       console.error("[worker] Unexpected error in poll loop:", error);
     }
 
-    await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
   }
 }
 
 export function startDocumentWorker(): void {
   if (running) return;
   running = true;
-  console.log(`[worker] Document processing worker started (interval: ${POLL_INTERVAL_MS}ms)`);
-  void loop();
+
+  const pollIntervalMs = loadEnv().DOCUMENT_WORKER_POLL_MS;
+  console.log(`[worker] Document processing worker started (interval: ${pollIntervalMs}ms)`);
+
+  void runOnce().catch((error) => {
+    console.error("[worker] Unexpected error on initial run:", error);
+  });
+  void loop(pollIntervalMs);
 }
 
 export function stopDocumentWorker(): void {

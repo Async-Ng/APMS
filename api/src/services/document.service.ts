@@ -11,6 +11,7 @@ import {
 import { Folder } from "../models/folder.model";
 import { User, type UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
+import { processDocument } from "./processing.service";
 import * as s3Service from "./s3.service";
 import { findReadableDocument } from "./share.service";
 
@@ -168,6 +169,13 @@ export async function completeUpload(user: UserDocument, documentId: string) {
 
   document.status = "processing";
   await document.save();
+
+  void processDocument(document._id).catch((err) => {
+    console.error(
+      `[processing] Immediate enqueue failed for ${document._id.toString()}:`,
+      err,
+    );
+  });
 
   return toDocumentResponse(document);
 }

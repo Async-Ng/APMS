@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, UserPlus, X } from "lucide-react";
+import { Mail, Search, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
@@ -14,6 +14,8 @@ import {
   type ShareUser,
 } from "@/lib/queries/shares";
 import { useAuthStore } from "@/stores/auth-store";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface ShareModalProps {
   resourceType: "folder" | "document";
@@ -53,6 +55,7 @@ export function ShareModal({
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<ShareUser[]>([]);
+  const [pendingEmails, setPendingEmails] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -104,6 +107,21 @@ export function ShareModal({
   const filteredResults =
     searchResults?.filter((u) => !existingUserIds.has(u.id)) ?? [];
 
+  const existingEmails = new Set([
+    ...existingRecipients.map((s) => s.sharedWithUser?.email ?? ""),
+    ...selectedUsers.map((u) => u.email),
+    ...pendingEmails,
+    currentUser?.email ?? "",
+  ]);
+
+  const trimmedQuery = debouncedQuery.trim().toLowerCase();
+  const isEmailQuery = EMAIL_REGEX.test(trimmedQuery);
+  const showInviteSuggestion =
+    isEmailQuery &&
+    !isSearching &&
+    filteredResults.length === 0 &&
+    !existingEmails.has(trimmedQuery);
+
   function addUser(user: ShareUser) {
     setSelectedUsers((prev) =>
       prev.some((u) => u.id === user.id) ? prev : [...prev, user],
@@ -115,6 +133,17 @@ export function ShareModal({
 
   function removeSelected(userId: string) {
     setSelectedUsers((prev) => prev.filter((u) => u.id !== userId));
+  }
+
+  function addPendingEmail(email: string) {
+    setPendingEmails((prev) => (prev.includes(email) ? prev : [...prev, email]));
+    setQuery("");
+    setDebouncedQuery("");
+    setError(null);
+  }
+
+  function removePendingEmail(email: string) {
+    setPendingEmails((prev) => prev.filter((e) => e !== email));
   }
 
   async function handleRevoke(shareId: string) {
@@ -129,7 +158,7 @@ export function ShareModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (selectedUsers.length === 0) return;
+    if (selectedUsers.length === 0 && pendingEmails.length === 0) return;
 
     setError(null);
     setSuccess(null);
@@ -139,19 +168,24 @@ export function ShareModal({
         resourceType,
         resourceId,
         sharedWithUserIds: selectedUsers.map((u) => u.id),
+        emails: pendingEmails,
       });
 
       const createdCount = result.created.length;
+      const inviteCount = pendingEmails.length;
       const skippedNote =
         result.skipped > 0 ? ` (${result.skipped} đã bỏ qua)` : "";
+      const inviteNote =
+        inviteCount > 0 ? ` Đã gửi lời mời tới ${inviteCount} email.` : "";
 
-      if (createdCount === 0) {
+      if (createdCount === 0 && inviteCount === 0) {
         setError("Không có lượt chia sẻ mới. Người nhận có thể đã có quyền truy cập.");
       } else {
         setSuccess(
-          `Đã chia sẻ với ${createdCount} người${skippedNote}.`,
+          `Đã chia sẻ với ${createdCount} người${skippedNote}.${inviteNote}`,
         );
         setSelectedUsers([]);
+        setPendingEmails([]);
       }
     } catch (err) {
       setError(getUserErrorMessage(err));
@@ -276,10 +310,30 @@ export function ShareModal({
               <div className="max-h-40 overflow-y-auto rounded-xl border-2 border-brutal-ink bg-brutal-surface">
                 {isSearching ? (
                   <p className="px-3 py-2 text-sm text-brutal-muted">Đang tìm…</p>
-                ) : filteredResults.length === 0 ? (
+                ) : filteredResults.length === 0 && !showInviteSuggestion ? (
                   <p className="px-3 py-2 text-sm text-brutal-muted">
                     Không tìm thấy người dùng.
                   </p>
+                ) : showInviteSuggestion ? (
+                  <button
+                    type="button"
+                    onClick={() => addPendingEmail(trimmedQuery)}
+                    className="focus-brutal flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-brutal-bg"
+                  >
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-brutal-ink bg-brutal-bg text-brutal-muted"
+                      aria-hidden="true"
+                    >
+                      <Mail className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{trimmedQuery}</p>
+                      <p className="truncate text-xs text-brutal-muted">
+                        Chưa có tài khoản — mời qua email
+                      </p>
+                    </div>
+                    <UserPlus className="ml-auto h-4 w-4 shrink-0 text-brutal-primary" />
+                  </button>
                 ) : (
                   <ul>
                     {filteredResults.map((user) => (
@@ -308,7 +362,7 @@ export function ShareModal({
             )}
 
             {/* Selected chips */}
-            {selectedUsers.length > 0 && (
+            {(selectedUsers.length > 0 || pendingEmails.length > 0) && (
               <div className="flex flex-wrap gap-2">
                 {selectedUsers.map((user) => (
                   <span
@@ -321,6 +375,24 @@ export function ShareModal({
                       onClick={() => removeSelected(user.id)}
                       className="focus-brutal rounded-full p-0.5 hover:bg-brutal-bg"
                       aria-label={`Xóa ${user.displayName}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {pendingEmails.map((email) => (
+                  <span
+                    key={email}
+                    className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-brutal-ink bg-brutal-bg px-2 py-1 text-xs font-semibold"
+                    title="Sẽ gửi lời mời qua email"
+                  >
+                    <Mail className="h-3 w-3 text-brutal-muted" aria-hidden="true" />
+                    {email}
+                    <button
+                      type="button"
+                      onClick={() => removePendingEmail(email)}
+                      className="focus-brutal rounded-full p-0.5 hover:bg-brutal-surface"
+                      aria-label={`Xóa ${email}`}
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -353,7 +425,10 @@ export function ShareModal({
                 type="submit"
                 variant="primary"
                 className="flex-1"
-                disabled={isPending || selectedUsers.length === 0}
+                disabled={
+                  isPending ||
+                  (selectedUsers.length === 0 && pendingEmails.length === 0)
+                }
               >
                 {isPending ? "Đang chia sẻ…" : "Chia sẻ"}
               </BrutalButton>

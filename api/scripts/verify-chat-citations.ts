@@ -14,7 +14,7 @@ function assertCitationShape(
   c: Record<string, unknown>,
   label: string,
 ): void {
-  const required = ["documentId", "documentTitle", "pageNumber", "excerpt"] as const;
+  const required = ["sourceIndex", "documentId", "documentTitle", "pageNumber", "excerpt"] as const;
   for (const key of required) {
     if (!(key in c)) throw new Error(`${label}: missing field "${key}"`);
   }

@@ -6,8 +6,8 @@ import { Topbar } from "@/components/app/Topbar";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
 import { getUserErrorMessage } from "@/lib/errors";
-import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
-import { useChatSession, useSendMessage } from "@/lib/queries/chat";
+import type { ChatCitation, ChatMessage, SendMessageInput } from "@/lib/queries/chat";
+import { useChatContextStatus, useChatSession, useSendMessage } from "@/lib/queries/chat";
 
 import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
@@ -50,6 +50,16 @@ export function ChatWorkspace({
   );
   const sendMessage = useSendMessage(sessionId ?? "");
 
+  const contextDocumentIds =
+    session?.contextType === "document" && session.contextId
+      ? [session.contextId]
+      : session?.contextType === "documents"
+        ? session.contextIds ?? []
+        : [];
+  const { data: contextStatuses } = useChatContextStatus(contextDocumentIds);
+  const isContextProcessing =
+    contextStatuses?.some((d) => d.status === "processing") ?? false;
+
   const handleSelectCitation = useCallback(
     (message: ChatMessage, citation: ChatCitation) => {
       setActiveMessage(message);
@@ -72,10 +82,10 @@ export function ChatWorkspace({
   }, []);
 
   const handleSend = useCallback(
-    (content: string) => {
+    (input: SendMessageInput) => {
       if (!sessionId) return;
       setSendError(null);
-      sendMessage.mutate(content, {
+      sendMessage.mutate(input, {
         onSuccess: (data) => {
           setActiveMessage(data.assistantMessage);
           if (data.assistantMessage.citations.length > 0) {
@@ -92,6 +102,13 @@ export function ChatWorkspace({
     },
     [sessionId, sendMessage],
   );
+
+  const streamingMessageId =
+    sendMessage.isPending && session
+      ? (session.messages.findLast((m) => m.id.startsWith("streaming-"))?.id ?? null)
+      : null;
+
+  const showThinking = sendMessage.isPending && !streamingMessageId;
 
   const tabClass = (tab: MobileTab) =>
     cn(
@@ -198,9 +215,15 @@ export function ChatWorkspace({
                     iconClassName="!h-4 !w-4"
                   />
                 </div>
+                {isContextProcessing && (
+                  <div className="shrink-0 border-b-2 border-brutal-ink bg-brutal-accent/10 px-4 py-2 text-xs font-semibold text-brutal-ink">
+                    Tài liệu đang được xử lý — câu trả lời có thể chưa đầy đủ cho đến khi xử lý xong.
+                  </div>
+                )}
                 <ChatMessageList
                   messages={session.messages}
-                  isThinking={sendMessage.isPending}
+                  isThinking={showThinking}
+                  streamingMessageId={streamingMessageId}
                   selectedCitationKey={selectedCitationKey}
                   activeMessageId={activeMessage?.id}
                   onSelectCitation={handleSelectCitation}

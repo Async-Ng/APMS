@@ -6,6 +6,7 @@ import {
   getSession,
   listSessions,
   sendMessage,
+  sendMessageStream,
   updateSession,
 } from "../controllers/chat.controller";
 import { authenticate } from "../middleware/authenticate";
@@ -36,6 +37,11 @@ chatRouter.post(
   "/sessions/:id/messages",
   validate({ params: objectIdParamSchema, body: sendMessageSchema }),
   sendMessage,
+);
+chatRouter.post(
+  "/sessions/:id/messages/stream",
+  validate({ params: objectIdParamSchema, body: sendMessageSchema }),
+  sendMessageStream,
 );
 
 export { chatRouter };

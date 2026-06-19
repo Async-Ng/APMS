@@ -9,11 +9,14 @@ import { useEffect, useRef, useState } from "react";
 
 import "@/lib/amplify";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { clearPendingInviteToken, getPendingInviteToken } from "@/lib/inviteStorage";
+import { useAcceptInvite } from "@/lib/queries/shares";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const fetchMe = useAuthStore((state) => state.fetchMe);
+  const { mutateAsync: acceptInvite } = useAcceptInvite();
   const [error, setError] = useState<string | null>(null);
   const finishedRef = useRef(false);
 
@@ -33,6 +36,23 @@ export default function AuthCallbackPage() {
 
         finishedRef.current = true;
         await fetchMe();
+
+        const inviteToken = getPendingInviteToken();
+        if (inviteToken) {
+          clearPendingInviteToken();
+          try {
+            const result = await acceptInvite(inviteToken);
+            const path =
+              result.resourceType === "folder"
+                ? `/drive/${result.resourceId}`
+                : `/documents/${result.resourceId}`;
+            router.replace(path);
+            return;
+          } catch {
+            // Invite couldn't be accepted (expired/invalid) — fall back to drive
+          }
+        }
+
         router.replace("/drive");
       } catch (err) {
         setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
@@ -59,7 +79,7 @@ export default function AuthCallbackPage() {
       window.clearTimeout(retryTimer);
       unsubscribe();
     };
-  }, [fetchMe, router]);
+  }, [fetchMe, acceptInvite, router]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-brutal-bg px-4">
