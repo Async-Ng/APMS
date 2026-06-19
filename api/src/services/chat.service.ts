@@ -23,8 +23,12 @@ import {
   CONTEXT_CHUNK_MAX_CHARS,
   HISTORY_MESSAGES,
   MIN_CHUNK_SCORE,
+  NEIGHBOR_WINDOW,
+  RETRIEVE_CHUNKS,
   VECTOR_SEARCH_CANDIDATES,
 } from "./ai/types";
+import { rewriteQueryWithHistory } from "./ai/query-rewrite";
+import { rerankChunks } from "./ai/rerank";
 import {
   checkShareAccess,
   getDocumentIdsInFolderTree,
@@ -504,30 +508,73 @@ export async function deleteSession(user: UserDocument, sessionId: string) {
   await session.deleteOne();
 }
 
+/**
+ * Drop duplicate chunks from the same document+page, keeping the first occurrence.
+ * Input order is preserved so an upstream relevance ranking (rerank) is respected.
+ */
 function dedupeChunksByPage(chunks: RetrievedChunk[]): RetrievedChunk[] {
-  const bestByKey = new Map<string, RetrievedChunk>();
+  const seen = new Set<string>();
+  const result: RetrievedChunk[] = [];
 
   for (const chunk of chunks) {
     const key = `${chunk.documentId.toString()}:${chunk.pageNumber ?? "n"}`;
-    const existing = bestByKey.get(key);
-    if (!existing || chunk.score > existing.score) {
-      bestByKey.set(key, chunk);
-    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(chunk);
   }
 
-  return [...bestByKey.values()].sort((a, b) => b.score - a.score);
+  return result;
+}
+
+/**
+ * Widen each retrieved chunk with its adjacent chunks (chunkIndex ± NEIGHBOR_WINDOW)
+ * from the same document so the model sees surrounding context instead of an
+ * isolated snippet. The citation excerpt still points to the original matched chunk.
+ */
+async function expandChunksWithNeighbors(
+  chunks: RetrievedChunk[],
+): Promise<RetrievedChunk[]> {
+  if (NEIGHBOR_WINDOW <= 0) return chunks;
+
+  return Promise.all(
+    chunks.map(async (chunk) => {
+      if (chunk.chunkIndex === undefined) return chunk;
+
+      const neighbors = await DocumentChunk.find({
+        documentId: chunk.documentId,
+        chunkIndex: {
+          $gte: chunk.chunkIndex - NEIGHBOR_WINDOW,
+          $lte: chunk.chunkIndex + NEIGHBOR_WINDOW,
+        },
+      })
+        .sort({ chunkIndex: 1 })
+        .select("content chunkIndex")
+        .lean();
+
+      if (neighbors.length <= 1) return chunk;
+
+      const mergedContent = neighbors.map((n) => n.content).join("\n");
+      return {
+        ...chunk,
+        content: mergedContent,
+        citationExcerpt: chunk.content,
+      };
+    }),
+  );
 }
 
 function buildContextText(
   chunks: RetrievedChunk[],
   titleMap: Map<string, string>,
 ): string {
+  // Allow merged neighbor content (chunkIndex ± NEIGHBOR_WINDOW) to fit without truncation.
+  const maxChars = CONTEXT_CHUNK_MAX_CHARS * (2 * NEIGHBOR_WINDOW + 1);
   const parts = chunks.map((chunk, i) => {
     const title = titleMap.get(chunk.documentId.toString()) ?? "Unknown";
     const pageSuffix = chunk.pageNumber ? `, page ${chunk.pageNumber}` : "";
     const body =
-      chunk.content.length > CONTEXT_CHUNK_MAX_CHARS
-        ? `${chunk.content.slice(0, CONTEXT_CHUNK_MAX_CHARS)}…`
+      chunk.content.length > maxChars
+        ? `${chunk.content.slice(0, maxChars)}…`
         : chunk.content;
     return `[Source ${i + 1}: ${title}${pageSuffix}]\n${body}`;
   });
@@ -582,7 +629,28 @@ async function prepareChatContext(
     content,
   });
 
-  const queryVector = await aiService.embedText(content, "search_query");
+  // Conversation history (prior turns only). Fetched before retrieval so we can
+  // rewrite follow-up questions into standalone queries.
+  const history = await ChatMessage.find({ sessionId: session._id, _id: { $ne: userMessage._id } })
+    .sort({ createdAt: -1 })
+    .limit(HISTORY_MESSAGES)
+    .lean();
+  history.reverse();
+
+  const priorTurns: ChatTurn[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
+
+  // Rewrite follow-up questions into a self-contained query for better retrieval.
+  // Only meaningful in free-form chat mode; presets (summary/faq/...) don't depend
+  // on prior turns. Falls back to the original content on any failure.
+  const retrievalQuery =
+    mode === "chat"
+      ? await rewriteQueryWithHistory(content, priorTurns)
+      : content;
+
+  const queryVector = await aiService.embedText(retrievalQuery, "search_query");
 
   const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
   const contextIds = (session.contextIds ?? []) as Types.ObjectId[];
@@ -601,7 +669,7 @@ async function prepareChatContext(
         queryVector,
         filter: vectorSearchFilter,
         numCandidates: VECTOR_SEARCH_CANDIDATES,
-        limit: CONTEXT_CHUNKS,
+        limit: RETRIEVE_CHUNKS,
       },
     },
     {
@@ -609,23 +677,36 @@ async function prepareChatContext(
         documentId: 1,
         content: 1,
         pageNumber: 1,
+        chunkIndex: 1,
         score: { $meta: "vectorSearchScore" },
       },
     },
   ]);
 
-  const scoredChunks = rawChunks.map((c) => ({
-    documentId: c.documentId as Types.ObjectId,
-    content: c.content as string,
-    pageNumber: (c.pageNumber as number | null) ?? null,
-    score: c.score as number,
-  }));
+  const scoredChunks: RetrievedChunk[] = rawChunks.map((c) => {
+    const chunk: RetrievedChunk = {
+      documentId: c.documentId as Types.ObjectId,
+      content: c.content as string,
+      pageNumber: (c.pageNumber as number | null) ?? null,
+      score: c.score as number,
+    };
+    if (typeof c.chunkIndex === "number") {
+      chunk.chunkIndex = c.chunkIndex;
+    }
+    return chunk;
+  });
 
   const aboveThreshold = scoredChunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
   const chunksForContext =
     aboveThreshold.length > 0 ? aboveThreshold : scoredChunks;
 
-  const chunkResults = dedupeChunksByPage(chunksForContext).slice(0, CONTEXT_CHUNKS);
+  // Rerank the wider candidate set down to the top CONTEXT_CHUNKS by relevance
+  // (falls back to vector-score order on failure), then dedupe near-duplicate pages.
+  const reranked = await rerankChunks(retrievalQuery, chunksForContext, CONTEXT_CHUNKS);
+  const deduped = dedupeChunksByPage(reranked).slice(0, CONTEXT_CHUNKS);
+
+  // Widen each chunk with adjacent chunks for fuller context.
+  const chunkResults = await expandChunksWithNeighbors(deduped);
 
   const docIds = [...new Set(chunkResults.map((c) => c.documentId.toString()))];
   const docs = await Document.find({ _id: { $in: docIds } }).select("_id title").lean();
@@ -634,16 +715,7 @@ async function prepareChatContext(
   const contextText = buildContextText(chunkResults, titleMap);
   const systemPrompt = buildChatSystemPrompt(contextText, mode, content);
 
-  const history = await ChatMessage.find({ sessionId: session._id, _id: { $ne: userMessage._id } })
-    .sort({ createdAt: -1 })
-    .limit(HISTORY_MESSAGES)
-    .lean();
-  history.reverse();
-
-  const historyMessages: ChatTurn[] = history.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
+  const historyMessages: ChatTurn[] = [...priorTurns];
   historyMessages.push({ role: "user", content });
 
   return {

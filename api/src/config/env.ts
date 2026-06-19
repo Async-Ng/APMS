@@ -20,6 +20,10 @@ const envSchema = z
     GOOGLE_CLOUD_LOCATION: z.string().default("asia-southeast1"),
     GEMINI_CHAT_MODEL: z.string().default("gemini-2.5-flash"),
     GEMINI_VISION_MODEL: z.string().default("gemini-2.5-flash"),
+    // Lightweight model used for query rewriting and chunk reranking (cheap + fast).
+    GEMINI_RERANK_MODEL: z.string().default("gemini-2.5-flash-lite"),
+    // Thinking budget for the chat model. 0 disables reasoning; -1 = dynamic; >0 = fixed token budget.
+    GEMINI_CHAT_THINKING_BUDGET: z.coerce.number().int().min(-1).default(2048),
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
     GEMINI_EMBEDDING_OUTPUT_DIMENSION: z.coerce.number().int().positive().default(1024),
     GEMINI_EMBED_MIN_INTERVAL_MS: z.coerce.number().int().min(0).default(100),

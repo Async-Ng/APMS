@@ -6,11 +6,16 @@ import { withGeminiRetry } from "./gemini-retry";
 import type { ChatTurn, EmbeddingInputType } from "./types";
 import { CHAT_MAX_OUTPUT_TOKENS } from "./types";
 
-const CHAT_GENERATION_CONFIG = {
-  maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
-  temperature: 0.3,
-  thinkingConfig: { thinkingBudget: 0 },
-} as const;
+function chatGenerationConfig() {
+  return {
+    maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+    temperature: 0.3,
+    // Reasoning improves answer accuracy/depth. Budget is configurable: 0 disables,
+    // -1 = dynamic, >0 = fixed token budget. The model's thinking is NOT streamed to
+    // the user — chunk.text only contains the final answer.
+    thinkingConfig: { thinkingBudget: loadEnv().GEMINI_CHAT_THINKING_BUDGET },
+  };
+}
 
 /**
  * Ordered list of chat models to try when the primary model hits a 429 quota error.
@@ -205,7 +210,7 @@ async function tryChatWithModel(
     contents: toGenAiContents(messages),
     config: {
       systemInstruction: systemPrompt,
-      ...CHAT_GENERATION_CONFIG,
+      ...chatGenerationConfig(),
     },
   });
 
@@ -237,7 +242,7 @@ async function* tryChatStreamWithModel(
     contents: toGenAiContents(messages),
     config: {
       systemInstruction: systemPrompt,
-      ...CHAT_GENERATION_CONFIG,
+      ...chatGenerationConfig(),
     },
   });
 
@@ -352,6 +357,36 @@ export async function chatWithContext(
     `All Gemini chat models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
       `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
+}
+
+/**
+ * Single-shot, low-latency generation using the lightweight rerank model
+ * (GEMINI_RERANK_MODEL). Used for query rewriting and chunk reranking — fast,
+ * cheap, no reasoning. Set `json` to constrain output to valid JSON.
+ */
+export async function generateLite(
+  prompt: string,
+  options: { json?: boolean; maxOutputTokens?: number } = {},
+): Promise<string> {
+  const env = loadEnv();
+  const ai = getVertexClient();
+
+  const response = await withGeminiRetry(
+    () =>
+      ai.models.generateContent({
+        model: env.GEMINI_RERANK_MODEL,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          temperature: 0,
+          maxOutputTokens: options.maxOutputTokens ?? 512,
+          thinkingConfig: { thinkingBudget: 0 },
+          ...(options.json ? { responseMimeType: "application/json" } : {}),
+        },
+      }),
+    "chat",
+  );
+
+  return response.text?.trim() ?? "";
 }
 
 export async function* chatWithContextStream(

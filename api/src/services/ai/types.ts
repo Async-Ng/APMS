@@ -11,8 +11,13 @@ export const EMBEDDING_DIMENSIONS = 384;
 export const CHAT_MAX_OUTPUT_TOKENS = 4096;
 
 /** RAG retrieval tuning */
-export const CONTEXT_CHUNKS = 10;
-export const VECTOR_SEARCH_CANDIDATES = 100;
+/** How many chunks to pull from vector search before reranking. */
+export const RETRIEVE_CHUNKS = 24;
+/** How many chunks (after reranking) to inject into the prompt as context. */
+export const CONTEXT_CHUNKS = 8;
+export const VECTOR_SEARCH_CANDIDATES = 150;
 export const MIN_CHUNK_SCORE = 0.65;
 export const CONTEXT_CHUNK_MAX_CHARS = 1500;
 export const HISTORY_MESSAGES = 6;
+/** Number of adjacent chunks (by chunkIndex) to merge around each retrieved chunk. */
+export const NEIGHBOR_WINDOW = 1;

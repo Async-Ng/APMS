@@ -5,6 +5,13 @@ export interface RetrievedChunk {
   content: string;
   pageNumber: number | null;
   score: number;
+  /** Position of the chunk within its document; used for neighbor expansion. */
+  chunkIndex?: number;
+  /**
+   * Excerpt of the original matched chunk (before neighbor expansion). When set,
+   * citations use this rather than the expanded `content`.
+   */
+  citationExcerpt?: string;
 }
 
 export interface BuiltCitation {
@@ -63,7 +70,7 @@ export function buildCitationsFromResponse(
       documentId: chunk.documentId,
       documentTitle: titleMap.get(docIdStr) ?? "",
       pageNumber: chunk.pageNumber ?? null,
-      excerpt: chunk.content.slice(0, excerptLength),
+      excerpt: (chunk.citationExcerpt ?? chunk.content).slice(0, excerptLength),
     });
   }
 
