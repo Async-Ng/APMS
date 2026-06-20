@@ -8,7 +8,13 @@ import { requireAdmin } from "../middleware/requireAdmin";
 import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
-import { listUsersQuerySchema, updateAdminUserSchema } from "../validators/admin.validator";
+import {
+  bulkAccessEmailsSchema,
+  listAccessEmailsQuerySchema,
+  listUsersQuerySchema,
+  updateAccessEmailSchema,
+  updateAdminUserSchema,
+} from "../validators/admin.validator";
 import {
   createCurriculumCourseSchema,
   createMajorSchema,
@@ -34,6 +40,27 @@ adminRouter.patch(
   "/users/:id",
   validate({ params: objectIdParamSchema, body: updateAdminUserSchema }),
   adminController.updateUser,
+);
+
+adminRouter.get(
+  "/access-emails",
+  validate({ query: listAccessEmailsQuerySchema }),
+  adminController.listAccessEmails,
+);
+adminRouter.post(
+  "/access-emails/bulk",
+  validate({ body: bulkAccessEmailsSchema }),
+  adminController.bulkCreateAccessEmails,
+);
+adminRouter.patch(
+  "/access-emails/:id",
+  validate({ params: objectIdParamSchema, body: updateAccessEmailSchema }),
+  adminController.updateAccessEmail,
+);
+adminRouter.delete(
+  "/access-emails/:id",
+  validate({ params: objectIdParamSchema }),
+  adminController.deactivateAccessEmail,
 );
 
 adminRouter.get("/majors", academicController.listAdminMajors);

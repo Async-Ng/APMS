@@ -1,11 +1,18 @@
 import type { AuthUser } from "../middleware/authenticate";
 import { User, type UserDocument, type UserRole } from "../models/user.model";
-import { loadEnv } from "../config/env";
 import { createAppError, ErrorCode } from "../errors/error-codes";
+import { isEmailAllowed } from "./access-email.service";
 
 export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument> {
-  const emailDomain = authUser.email.trim().toLowerCase().split("@").at(-1);
-  if (!emailDomain || !loadEnv().ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
+  let hasAccess: boolean;
+  try {
+    hasAccess = await isEmailAllowed(authUser.email);
+  } catch (error) {
+    throw createAppError(ErrorCode.AUTH_ACCESS_CHECK_FAILED, 503, {
+      technicalDetail: error instanceof Error ? error.message : String(error),
+    });
+  }
+  if (!hasAccess) {
     throw createAppError(ErrorCode.AUTH_EMAIL_DOMAIN, 403);
   }
   const role: UserRole = authUser.isAdmin ? "admin" : "user";
