@@ -274,3 +274,23 @@ Gemini Chat (gemini-2.5-flash, tự động fallback khi quota hết):
      ▼
 [answer + citations]
 ```
+
+---
+
+## 6. Academic catalog and internal publication (v1.2)
+
+- `majors`: unique `code`, `name`, `description`, `isActive`, timestamps.
+- `subjects`: unique `code`, `name`, `description`, `isActive`, timestamps.
+- `curriculum_courses`: `majorId`, `semesterNumber` (1-9), `subjectId`, `isActive`; unique compound index on all three identity fields.
+- `users` adds `majorId`, `currentSemester`, and `currentSubjectIds`. Selected subjects must be active curriculum entries for the chosen major and semester.
+- `documents` adds `curriculumCourseId` and `visibility` (`personal` or `internal`). Existing records migrate to `personal`; new academic uploads are `internal`.
+- Internal library queries use the compound curriculum relation for major, semester, and subject filters. File binaries remain private in S3 and are downloaded through short-lived presigned URLs.
+
+Run the idempotent data migration after deployment:
+
+```bash
+cd api
+pnpm migrate:academic
+```
+
+The migration only initializes missing fields and does not delete records or move S3 objects.

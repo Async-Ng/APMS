@@ -1,4 +1,7 @@
-import { DOCUMENT_STATUSES } from "../../models/document.model";
+import {
+  DOCUMENT_STATUSES,
+  DOCUMENT_VISIBILITIES,
+} from "../../models/document.model";
 import { registry, z } from "../setup";
 import { successEnvelope } from "./common";
 
@@ -9,6 +12,8 @@ export const documentSchema = registry.register(
       id: z.string(),
       ownerId: z.string(),
       folderId: z.string().nullable(),
+      curriculumCourseId: z.string().nullable(),
+      visibility: z.enum(DOCUMENT_VISIBILITIES),
       title: z.string(),
       originalFilename: z.string(),
       mimeType: z.string(),

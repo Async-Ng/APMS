@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "setup:atlas": "ts-node --files scripts/setup-atlas.ts",
     "purge:trash": "ts-node --files scripts/purge-trash.ts",
+    "migrate:academic": "ts-node --files scripts/migrate-academic-library.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {

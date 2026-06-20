@@ -1,4 +1,5 @@
 import { registerAdminPaths } from "./admin";
+import { registerAcademicPaths } from "./academic";
 import { registerAuthPaths } from "./auth";
 import { registerChatPaths } from "./chat";
 import { registerDocumentsPaths } from "./documents";
@@ -17,8 +18,8 @@ export function registerAllPaths(): void {
   registerFoldersPaths();
   registerDocumentsPaths();
   registerAdminPaths();
+  registerAcademicPaths();
   registerSharesPaths();
   registerSearchPaths();
   registerChatPaths();
 }
-
