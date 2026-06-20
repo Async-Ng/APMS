@@ -14,6 +14,7 @@ import { parseObjectId } from "../utils/objectId";
 import { processDocument } from "./processing.service";
 import * as s3Service from "./s3.service";
 import { findReadableDocument } from "./share.service";
+import { assertUserCanUseCurriculumCourse } from "./academic.service";
 
 async function findActiveDocument(
   documentId: Types.ObjectId,
@@ -85,6 +86,7 @@ export async function createUploadIntent(
     originalFilename: string;
     mimeType: string;
     fileSizeBytes: number;
+    curriculumCourseId: string;
     folderId?: string | null;
     title?: string;
   },
@@ -97,6 +99,10 @@ export async function createUploadIntent(
 
   const folderId = input.folderId ? parseObjectId(input.folderId, "folderId") : null;
   await assertFolderValid(folderId, user._id);
+  const curriculumCourse = await assertUserCanUseCurriculumCourse(
+    user,
+    input.curriculumCourseId,
+  );
 
   const s3Key = s3Service.buildS3Key(user._id.toString(), input.originalFilename);
   const title = input.title ?? input.originalFilename;
@@ -104,6 +110,8 @@ export async function createUploadIntent(
   const document = await Document.create({
     ownerId: user._id,
     folderId,
+    curriculumCourseId: curriculumCourse._id,
+    visibility: "internal",
     title,
     originalFilename: input.originalFilename,
     mimeType: input.mimeType,
@@ -198,7 +206,12 @@ export async function getDocument(
 export async function updateDocument(
   user: UserDocument,
   documentId: string,
-  input: { title?: string; tags?: string[]; folderId?: string | null },
+  input: {
+    title?: string;
+    tags?: string[];
+    folderId?: string | null;
+    curriculumCourseId?: string | null;
+  },
 ) {
   const document = await findActiveDocument(parseObjectId(documentId), user._id);
 
@@ -214,6 +227,20 @@ export async function updateDocument(
 
   if (input.tags !== undefined) {
     document.tags = input.tags;
+  }
+
+  if (input.curriculumCourseId !== undefined) {
+    if (input.curriculumCourseId === null) {
+      document.curriculumCourseId = null;
+      document.visibility = "personal";
+    } else {
+      const curriculumCourse = await assertUserCanUseCurriculumCourse(
+        user,
+        input.curriculumCourseId,
+      );
+      document.curriculumCourseId = curriculumCourse._id;
+      document.visibility = "internal";
+    }
   }
 
   await document.save();
