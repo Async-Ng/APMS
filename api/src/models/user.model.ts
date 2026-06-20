@@ -13,6 +13,12 @@ const userSchema = new Schema(
     avatarUrl: { type: String },
     role: { type: String, enum: USER_ROLES, default: "user", index: true },
     isDisabled: { type: Boolean, default: false, index: true },
+    majorId: { type: Schema.Types.ObjectId, ref: "Major", default: null, index: true },
+    currentSemester: { type: Number, min: 1, max: 9, default: null },
+    currentSubjectIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Subject" }],
+      default: [],
+    },
     storageUsedBytes: { type: Number, default: 0 },
     storageQuotaBytes: { type: Number, default: STORAGE_QUOTA_BYTES },
   },

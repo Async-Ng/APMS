@@ -5,6 +5,7 @@ export const ErrorCode = {
   AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
   AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
   AUTH_DISABLED: "AUTH_DISABLED",
+  AUTH_EMAIL_DOMAIN: "AUTH_EMAIL_DOMAIN",
 
   // Generic
   VALIDATION_ERROR: "VALIDATION_ERROR",
@@ -48,11 +49,24 @@ export const ErrorCode = {
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
   QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
+  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
+  ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
+  ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
+  AUTH_EMAIL_DOMAIN: "Your email domain is not allowed to use this internal system.",
+  MAJOR_NOT_FOUND: "Major not found.",
+  SUBJECT_NOT_FOUND: "Subject not found.",
+  CURRICULUM_NOT_FOUND: "Curriculum course not found.",
+  CURRICULUM_NOT_ENROLLED: "The subject is not in your current major, semester, or selected courses.",
+  ACADEMIC_PROFILE_REQUIRED: "Complete your academic profile before uploading documents.",
+  ACADEMIC_CONFLICT: "The academic record cannot be changed because it is currently in use.",
   AUTH_UNAUTHORIZED: "Bạn cần đăng nhập để tiếp tục.",
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
