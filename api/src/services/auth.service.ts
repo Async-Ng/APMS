@@ -1,7 +1,13 @@
 import type { AuthUser } from "../middleware/authenticate";
 import { User, type UserDocument, type UserRole } from "../models/user.model";
+import { loadEnv } from "../config/env";
+import { createAppError, ErrorCode } from "../errors/error-codes";
 
 export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument> {
+  const emailDomain = authUser.email.trim().toLowerCase().split("@").at(-1);
+  if (!emailDomain || !loadEnv().ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
+    throw createAppError(ErrorCode.AUTH_EMAIL_DOMAIN, 403);
+  }
   const role: UserRole = authUser.isAdmin ? "admin" : "user";
 
   const update: Record<string, string> = {
@@ -39,6 +45,9 @@ export function toUserResponse(user: UserDocument) {
     avatarUrl: user.avatarUrl ?? null,
     role: user.role,
     isDisabled: user.isDisabled,
+    majorId: user.majorId ? user.majorId.toString() : null,
+    currentSemester: user.currentSemester ?? null,
+    currentSubjectIds: user.currentSubjectIds.map((id) => id.toString()),
     storageUsedBytes: user.storageUsedBytes,
     storageQuotaBytes: user.storageQuotaBytes,
     createdAt: user.createdAt,
