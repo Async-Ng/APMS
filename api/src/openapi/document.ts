@@ -36,6 +36,8 @@ export function generateOpenApiDocument() {
       { name: "Folders", description: "Folder management" },
       { name: "Documents", description: "Documents and S3 upload" },
       { name: "Admin", description: "Admin-only operations (Cognito group admin)" },
+      { name: "Academic Catalog", description: "Majors, subjects and semester curriculum" },
+      { name: "Internal Library", description: "FPT-wide academic document library" },
       { name: "Shares", description: "Share folders and documents with other users" },
     ],
   });

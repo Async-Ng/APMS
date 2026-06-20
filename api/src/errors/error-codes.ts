@@ -5,6 +5,8 @@ export const ErrorCode = {
   AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
   AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
   AUTH_DISABLED: "AUTH_DISABLED",
+  AUTH_EMAIL_DOMAIN: "AUTH_EMAIL_DOMAIN",
+  AUTH_ACCESS_CHECK_FAILED: "AUTH_ACCESS_CHECK_FAILED",
 
   // Generic
   VALIDATION_ERROR: "VALIDATION_ERROR",
@@ -48,11 +50,29 @@ export const ErrorCode = {
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
   QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
+  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
+  ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
+  ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
+  ACCESS_EMAIL_NOT_FOUND: "ACCESS_EMAIL_NOT_FOUND",
+  CANNOT_REVOKE_SELF_ACCESS: "CANNOT_REVOKE_SELF_ACCESS",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
+  AUTH_EMAIL_DOMAIN: "Your email address has not been granted access to this internal system.",
+  AUTH_ACCESS_CHECK_FAILED: "Unable to verify email access. Please try again later.",
+  MAJOR_NOT_FOUND: "Major not found.",
+  SUBJECT_NOT_FOUND: "Subject not found.",
+  CURRICULUM_NOT_FOUND: "Curriculum course not found.",
+  CURRICULUM_NOT_ENROLLED: "The subject is not in your current major, semester, or selected courses.",
+  ACADEMIC_PROFILE_REQUIRED: "Complete your academic profile before uploading documents.",
+  ACADEMIC_CONFLICT: "The academic record cannot be changed because it is currently in use.",
+  ACCESS_EMAIL_NOT_FOUND: "Access email not found.",
+  CANNOT_REVOKE_SELF_ACCESS: "You cannot revoke the email access required by your own account.",
   AUTH_UNAUTHORIZED: "Bạn cần đăng nhập để tiếp tục.",
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",

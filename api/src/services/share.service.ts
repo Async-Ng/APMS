@@ -558,6 +558,10 @@ export async function findReadableDocument(
     return doc;
   }
 
+  if (doc.visibility === "internal" && doc.curriculumCourseId) {
+    return doc;
+  }
+
   if (await checkShareAccess(userId, "document", documentId)) {
     return doc;
   }

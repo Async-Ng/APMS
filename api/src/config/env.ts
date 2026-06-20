@@ -10,6 +10,20 @@ const envSchema = z
     COGNITO_USER_POOL_ID: z.string().min(1),
     COGNITO_CLIENT_ID: z.string().min(1),
     COGNITO_REGION: z.string().min(1).optional(),
+    ALLOWED_EMAIL_DOMAINS: z
+      .string()
+      .default("fpt.edu.vn,fe.edu.vn")
+      .transform((value, ctx) => {
+        const domains = value
+          .split(",")
+          .map((domain) => domain.trim().toLowerCase().replace(/^@/, ""))
+          .filter(Boolean);
+        if (domains.length === 0) {
+          ctx.addIssue({ code: "custom", message: "At least one email domain is required" });
+          return z.NEVER;
+        }
+        return [...new Set(domains)];
+      }),
     AWS_REGION: z.string().min(1),
     AWS_ACCESS_KEY_ID: z.string().min(1),
     AWS_SECRET_ACCESS_KEY: z.string().min(1),

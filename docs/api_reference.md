@@ -2,6 +2,41 @@
 
 **Phiên bản:** 1.0  
 **Base URL (dev):** `http://localhost:4000/api`  
+
+## 14. Academic catalog and internal library
+
+All endpoints require a Cognito bearer token. Access is granted when the email domain is listed in `ALLOWED_EMAIL_DOMAINS` or the exact email has an active admin-managed exception. Admin endpoints additionally require the Cognito `admin` group.
+
+### Email access exceptions
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/admin/access-emails` | Paginated list with `search` and `status=active|inactive|all` |
+| `POST` | `/api/admin/access-emails/bulk` | Create, reactivate, skip, or reject up to 500 email entries independently |
+| `PATCH` | `/api/admin/access-emails/:id` | Update note or active status |
+| `DELETE` | `/api/admin/access-emails/:id` | Soft-disable access while retaining audit history |
+
+Bulk body: `{ "entries": [{ "email": "student@gmail.com", "note": "SE student" }] }`. Email matching is lowercase and exact. Revocation takes effect on the user's next API request because access is checked before every user synchronization. Removing an account's only access path does not delete its user record or files. An admin whose own address depends on an explicit exception cannot revoke that exception.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET/POST` | `/api/admin/majors` | List or create majors |
+| `PATCH/DELETE` | `/api/admin/majors/:id` | Update or archive a major |
+| `GET/POST` | `/api/admin/subjects` | List or create reusable subjects |
+| `PATCH/DELETE` | `/api/admin/subjects/:id` | Update or archive a subject |
+| `GET/POST` | `/api/admin/curriculum-courses` | List or create major-semester-subject mappings |
+| `PATCH/DELETE` | `/api/admin/curriculum-courses/:id` | Update or archive a mapping |
+| `GET` | `/api/catalog/majors` | List active majors |
+| `GET` | `/api/catalog/majors/:majorId/curriculum` | List active curriculum, optionally by `semesterNumber` |
+| `GET/PATCH` | `/api/users/me/academic-profile` | Read or select the current major, semester, and subjects |
+| `GET` | `/api/library/documents` | Paginated internal library with academic filters |
+| `GET` | `/api/library/documents/:id?download=true` | Internal metadata and optional presigned download URL |
+
+`semesterNumber` is 1-9 and `(majorId, semesterNumber, subjectId)` is unique. A profile update accepts `{ majorId, currentSemester, currentSubjectIds }`; every subject must be active and mapped to that major and semester. Changing or archiving selected catalog data returns `409 ACADEMIC_CONFLICT`.
+
+`POST /api/documents/upload-intents` requires an enrolled `curriculumCourseId` and publishes the completed upload as `internal`. `PATCH /api/documents/:id` accepts a valid mapping to publish an old document or `null` to make it personal. Library responses never expose `s3Key`. Internal documents may be explicitly selected for chat, while search/chat `all` remains limited to owned and directly shared documents.
+
+---
 **Xác thực:** Cognito **ID token** (JWT) trong header `Authorization: Bearer <token>`
 
 ### Swagger UI (chỉ development)

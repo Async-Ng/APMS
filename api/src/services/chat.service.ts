@@ -294,6 +294,14 @@ async function assertContextAccess(
   } else {
     const owned = await Document.findOne({ _id: contextId, ownerId: user._id, deletedAt: null });
     if (owned) return;
+    const internal = await Document.exists({
+      _id: contextId,
+      visibility: "internal",
+      curriculumCourseId: { $ne: null },
+      status: { $ne: "pending" },
+      deletedAt: null,
+    });
+    if (internal) return;
     const hasShare = await checkShareAccess(user._id, "document", contextId);
     if (!hasShare) throw createAppError(ErrorCode.CHAT_ACCESS_DENIED, 404);
   }

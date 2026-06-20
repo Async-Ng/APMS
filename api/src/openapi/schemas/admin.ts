@@ -37,3 +37,51 @@ export const userListDataSchema = z.object({
 });
 
 export const userListSuccessResponseSchema = successEnvelope(userListDataSchema, "UserList");
+
+export const accessEmailSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  note: z.string(),
+  isActive: z.boolean(),
+  createdBy: z.string(),
+  updatedBy: z.string(),
+  deactivatedBy: z.string().nullable(),
+  deactivatedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export const accessEmailSuccessResponseSchema = successEnvelope(
+  accessEmailSchema,
+  "AccessEmail",
+);
+
+export const accessEmailListSuccessResponseSchema = successEnvelope(
+  z.object({
+    entries: z.array(accessEmailSchema),
+    pagination: paginationSchema,
+  }),
+  "AccessEmailList",
+);
+
+export const bulkAccessEmailSuccessResponseSchema = successEnvelope(
+  z.object({
+    summary: z.object({
+      total: z.number().int(),
+      created: z.number().int(),
+      reactivated: z.number().int(),
+      alreadyActive: z.number().int(),
+      invalid: z.number().int(),
+    }),
+    results: z.array(
+      z.object({
+        index: z.number().int(),
+        email: z.string(),
+        status: z.enum(["created", "reactivated", "already_active", "invalid"]),
+        id: z.string().optional(),
+        message: z.string().optional(),
+      }),
+    ),
+  }),
+  "BulkAccessEmailResult",
+);

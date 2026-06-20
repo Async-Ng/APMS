@@ -2,6 +2,8 @@ import { Schema, model, type HydratedDocument, type InferSchemaType } from "mong
 
 export const DOCUMENT_STATUSES = ["pending", "processing", "ready", "failed"] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+export const DOCUMENT_VISIBILITIES = ["personal", "internal"] as const;
+export type DocumentVisibility = (typeof DOCUMENT_VISIBILITIES)[number];
 
 export const MAX_PROCESSING_ATTEMPTS = 5;
 
@@ -9,6 +11,18 @@ const documentSchema = new Schema(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     folderId: { type: Schema.Types.ObjectId, ref: "Folder", default: null },
+    curriculumCourseId: {
+      type: Schema.Types.ObjectId,
+      ref: "CurriculumCourse",
+      default: null,
+      index: true,
+    },
+    visibility: {
+      type: String,
+      enum: DOCUMENT_VISIBILITIES,
+      default: "personal",
+      index: true,
+    },
     title: { type: String, required: true, trim: true, maxlength: 255 },
     originalFilename: { type: String, required: true },
     mimeType: { type: String, required: true },
@@ -36,6 +50,7 @@ documentSchema.index({ ownerId: 1, folderId: 1 });
 documentSchema.index({ ownerId: 1, deletedAt: 1 });
 documentSchema.index({ ownerId: 1, isStarred: 1 });
 documentSchema.index({ status: 1 });
+documentSchema.index({ visibility: 1, curriculumCourseId: 1, deletedAt: 1 });
 
 export type DocumentDocument = HydratedDocument<InferSchemaType<typeof documentSchema>>;
 
@@ -46,6 +61,10 @@ export function toDocumentResponse(document: DocumentDocument, extras?: { downlo
     id: document._id.toString(),
     ownerId: document.ownerId.toString(),
     folderId: document.folderId ? document.folderId.toString() : null,
+    curriculumCourseId: document.curriculumCourseId
+      ? document.curriculumCourseId.toString()
+      : null,
+    visibility: document.visibility,
     title: document.title,
     originalFilename: document.originalFilename,
     mimeType: document.mimeType,
