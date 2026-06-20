@@ -5,7 +5,18 @@
 
 ## 14. Academic catalog and internal library
 
-All endpoints require a Cognito bearer token whose email domain is listed in the comma-separated `ALLOWED_EMAIL_DOMAINS`. Admin endpoints additionally require the Cognito `admin` group.
+All endpoints require a Cognito bearer token. Access is granted when the email domain is listed in `ALLOWED_EMAIL_DOMAINS` or the exact email has an active admin-managed exception. Admin endpoints additionally require the Cognito `admin` group.
+
+### Email access exceptions
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/admin/access-emails` | Paginated list with `search` and `status=active|inactive|all` |
+| `POST` | `/api/admin/access-emails/bulk` | Create, reactivate, skip, or reject up to 500 email entries independently |
+| `PATCH` | `/api/admin/access-emails/:id` | Update note or active status |
+| `DELETE` | `/api/admin/access-emails/:id` | Soft-disable access while retaining audit history |
+
+Bulk body: `{ "entries": [{ "email": "student@gmail.com", "note": "SE student" }] }`. Email matching is lowercase and exact. Revocation takes effect on the user's next API request because access is checked before every user synchronization. Removing an account's only access path does not delete its user record or files. An admin whose own address depends on an explicit exception cannot revoke that exception.
 
 | Method | Endpoint | Purpose |
 |---|---|---|

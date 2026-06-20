@@ -294,3 +294,14 @@ pnpm migrate:academic
 ```
 
 The migration only initializes missing fields and does not delete records or move S3 objects.
+
+## 7. Email access exceptions
+
+`access_emails` stores exact personal-email exceptions to the domain allowlist:
+
+- `email`: normalized lowercase unique key.
+- `note`: optional administrative context.
+- `isActive`: controls access without deleting audit history.
+- `createdBy`, `updatedBy`, `deactivatedBy`, `deactivatedAt`, and timestamps: administrative audit metadata.
+
+Authentication succeeds when the email belongs to an `ALLOWED_EMAIL_DOMAINS` domain or an active `access_emails` record. Database lookup failures deny access rather than bypassing the check.
