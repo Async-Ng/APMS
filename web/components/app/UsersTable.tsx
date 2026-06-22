@@ -21,8 +21,6 @@ import { cn } from "@/lib/cn";
 
 const PAGE_LIMIT = 10;
 
-type StatusFilter = "all" | "active" | "disabled";
-
 function formatBytes(bytes: number): string {
   if (bytes >= 1_073_741_824)
     return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
@@ -83,17 +81,10 @@ function QuotaCell({
   );
 }
 
-const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
-  { id: "all", label: "Tất cả" },
-  { id: "active", label: "Hoạt động" },
-  { id: "disabled", label: "Vô hiệu" },
-];
-
 export function UsersTable() {
   const currentUser = useAuthStore((s) => s.user);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [confirmDisable, setConfirmDisable] = useState<AdminUser | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -160,12 +151,7 @@ export function UsersTable() {
     );
   };
 
-  const filteredUsers =
-    data?.users.filter((u) => {
-      if (statusFilter === "active") return !u.isDisabled;
-      if (statusFilter === "disabled") return u.isDisabled;
-      return true;
-    }) ?? [];
+  const users = data?.users ?? [];
 
   const pagination = data?.pagination ?? {
     page: 1,
@@ -184,31 +170,12 @@ export function UsersTable() {
         />
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <AdminSearchBar
-          value={search}
-          onChange={handleSearch}
-          placeholder="Tìm theo email hoặc tên…"
-          id="admin-user-search"
-        />
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc trạng thái">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setStatusFilter(f.id)}
-              className={cn(
-                "focus-brutal rounded-lg border-2 border-brutal-ink px-3 py-1.5 text-xs font-bold",
-                statusFilter === f.id
-                  ? "bg-brutal-primary text-brutal-on-brand"
-                  : "bg-brutal-surface hover:bg-brutal-bg",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AdminSearchBar
+        value={search}
+        onChange={handleSearch}
+        placeholder="Tìm theo email hoặc tên…"
+        id="admin-user-search"
+      />
 
       <AdminTableShell ariaLabel="Bảng quản lý người dùng">
         <thead>
@@ -246,7 +213,7 @@ export function UsersTable() {
 
           {!isLoading &&
             !isError &&
-            filteredUsers.map((user) => {
+            users.map((user) => {
               const isSelf = currentUser?.id === user.id;
               return (
                 <tr
@@ -345,7 +312,7 @@ export function UsersTable() {
               );
             })}
 
-          {!isLoading && !isError && filteredUsers.length === 0 && (
+          {!isLoading && !isError && users.length === 0 && (
             <tr>
               <td colSpan={6} className="px-4 py-10 text-center text-sm text-brutal-muted">
                 Không tìm thấy người dùng.

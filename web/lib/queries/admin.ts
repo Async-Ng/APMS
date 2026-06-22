@@ -121,8 +121,9 @@ export function useUpdateAdminUser() {
       );
       return res.data.data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, { userId }) => {
       void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "users", userId] });
       void qc.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });

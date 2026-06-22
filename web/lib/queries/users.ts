@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
+import type { AcademicProfile } from "@/lib/queries/catalog";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function useUpdateDisplayName() {
@@ -40,7 +41,7 @@ export function useUpdateAcademicProfile() {
       currentSemester: number;
       currentSubjectIds: string[];
     }) => {
-      const res = await api.patch<{ status: string; data: unknown }>(
+      const res = await api.patch<{ status: string; data: AcademicProfile }>(
         "/users/me/academic-profile",
         input,
       );

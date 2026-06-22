@@ -1,9 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import { X } from "lucide-react";
 
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useAdminUser } from "@/lib/queries/admin";
+import { useAdminMajors, useAdminSubjects } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -30,6 +32,26 @@ interface UserDetailModalProps {
 
 export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
   const { data: user, isLoading, isError } = useAdminUser(userId);
+  const { data: majors } = useAdminMajors();
+  const { data: subjects } = useAdminSubjects();
+
+  const majorLabel = useMemo(() => {
+    if (!user?.majorId) return null;
+    const major = majors?.find((m) => m.id === user.majorId);
+    return major ? `${major.code} — ${major.name}` : user.majorId;
+  }, [user?.majorId, majors]);
+
+  const currentSubjects = useMemo(() => {
+    if (!user?.currentSubjectIds.length) return [];
+    const byId = new Map(subjects?.map((s) => [s.id, s]) ?? []);
+    return user.currentSubjectIds.map((id) => {
+      const subject = byId.get(id);
+      return {
+        id,
+        label: subject ? `${subject.code} — ${subject.name}` : id,
+      };
+    });
+  }, [user, subjects]);
 
   if (!userId) return null;
 
@@ -131,16 +153,28 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
                   </span>
                 </dd>
               </div>
-              {user.majorId && (
+              {majorLabel && (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-brutal-muted">Ngành (ID)</dt>
-                  <dd className="font-mono text-xs">{user.majorId}</dd>
+                  <dt className="text-brutal-muted">Ngành</dt>
+                  <dd className="text-right font-semibold">{majorLabel}</dd>
                 </div>
               )}
               {user.currentSemester && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-brutal-muted">Học kỳ hiện tại</dt>
                   <dd className="font-semibold">{user.currentSemester}</dd>
+                </div>
+              )}
+              {currentSubjects.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <dt className="text-brutal-muted">Môn đang học</dt>
+                  <dd>
+                    <ul className="space-y-0.5 text-right font-semibold">
+                      {currentSubjects.map(({ id, label }) => (
+                        <li key={id}>{label}</li>
+                      ))}
+                    </ul>
+                  </dd>
                 </div>
               )}
               <div className="flex justify-between gap-4">
