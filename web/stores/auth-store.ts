@@ -22,6 +22,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   fetchMe: () => Promise<void>;
+  setUser: (user: AppUser) => void;
   clearUser: () => void;
 }
 
@@ -43,5 +44,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     }
   },
+  setUser: (user) => set({ user, error: null }),
   clearUser: () => set({ user: null, error: null }),
 }));

@@ -1,6 +1,7 @@
 "use client";
 
 import { LayoutGrid, List } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AdminPagination } from "@/components/app/admin/AdminPagination";
@@ -12,6 +13,8 @@ import {
 import { InternalDocumentGrid } from "@/components/app/forum/InternalDocumentGrid";
 import { InternalDocumentList } from "@/components/app/forum/InternalDocumentList";
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { ErrorCode, getUserErrorCode } from "@/lib/errors";
 import { useLibraryDocuments } from "@/lib/queries/library";
 
 const PAGE_LIMIT = 20;
@@ -32,12 +35,17 @@ export function LibraryBrowsePanel({
   onPageChange,
 }: LibraryBrowsePanelProps) {
   const [view, setView] = useState<ViewMode>("list");
+  const router = useRouter();
 
-  const { data, isLoading, isError, refetch } = useLibraryDocuments({
+  const { data, isLoading, isError, error, refetch } = useLibraryDocuments({
     page,
     limit: PAGE_LIMIT,
     ...filtersToQueryParams(filters),
   });
+
+  const errorCode = getUserErrorCode(error);
+  const needsAcademicProfile =
+    isError && errorCode === ErrorCode.ACADEMIC_PROFILE_REQUIRED;
 
   const pagination = data?.pagination ?? {
     page: 1,
@@ -56,6 +64,14 @@ export function LibraryBrowsePanel({
         }}
         defaultSort="title"
       />
+
+      {needsAcademicProfile && (
+        <ErrorAlert
+          message="Hoàn thành hồ sơ học thuật để xem Thư viện tài liệu nội bộ."
+          actionLabel="Cập nhật hồ sơ"
+          onAction={() => router.push("/profile")}
+        />
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <BrutalButton

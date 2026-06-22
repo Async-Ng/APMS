@@ -138,6 +138,12 @@ function extractApiBody(err: unknown): ApiErrorBody | null {
   return data as ApiErrorBody;
 }
 
+/** Extract API error `code` (if any) for conditional UI. */
+export function getUserErrorCode(err: unknown): string | null {
+  const body = extractApiBody(err);
+  return typeof body?.code === "string" && body.code.length > 0 ? body.code : null;
+}
+
 function isHtmlOrExpressErrorBody(body: string): boolean {
   const trimmed = body.trim();
   return (

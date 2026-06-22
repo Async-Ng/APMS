@@ -220,20 +220,29 @@ export function Sidebar({
             isCollapsed && "justify-center",
           )}
         >
-          {user?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.avatarUrl}
-              alt={user.displayName}
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-xl border-2 border-brutal-ink object-cover shadow-brutal-sm"
-            />
-          ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white shadow-brutal-sm">
-              {user?.displayName?.charAt(0).toUpperCase() ?? "?"}
-            </div>
-          )}
+          <Tooltip content="Hồ sơ của tôi" side="top">
+            <Link
+              href="/profile"
+              className={cn(
+                "focus-brutal flex items-center gap-3 rounded-xl",
+                isCollapsed ? "p-1" : "p-1.5",
+              )}
+              aria-label="Mở hồ sơ"
+            >
+              {user?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt={user.displayName}
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 shrink-0 rounded-xl border-2 border-brutal-ink object-cover shadow-brutal-sm"
+                />
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white shadow-brutal-sm">
+                  {user?.displayName?.charAt(0).toUpperCase() ?? "?"}
+                </div>
+              )}
 
           {!isCollapsed && (
             <>
@@ -243,7 +252,13 @@ export function Sidebar({
                 </p>
                 <p className="truncate text-xs text-brutal-muted">{user?.email}</p>
               </div>
+            </>
+          )}
+            </Link>
+          </Tooltip>
 
+          {!isCollapsed && (
+            <>
               <Tooltip content="Đăng xuất" side="top">
                 <button
                   onClick={() => void handleSignOut()}
