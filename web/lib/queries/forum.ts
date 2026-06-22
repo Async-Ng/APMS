@@ -2,20 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import type {
-  InternalDocument,
-  InternalDocumentsResponse,
-  InternalListParams,
+  ForumDocument,
+  ForumDocumentsResponse,
+  ForumListParams,
 } from "@/lib/queries/internal-documents";
 
 export type {
-  InternalDocument,
-  InternalDocumentsResponse,
-  InternalListParams,
+  ForumDocument,
+  ForumDocumentsResponse,
+  ForumListParams,
+  ForumMatchType,
   InternalSource,
 } from "@/lib/queries/internal-documents";
 
 export function useForumDocuments(
-  params: InternalListParams & { enabled?: boolean },
+  params: ForumListParams & { enabled?: boolean },
 ) {
   const { enabled = true, ...queryParams } = params;
   return useQuery({
@@ -23,7 +24,7 @@ export function useForumDocuments(
     queryFn: async () => {
       const res = await api.get<{
         status: string;
-        data: InternalDocumentsResponse;
+        data: ForumDocumentsResponse;
       }>("/forum/documents", { params: queryParams });
       return res.data.data;
     },
@@ -40,7 +41,7 @@ export function useForumDocument(
   return useQuery({
     queryKey: ["forum", "documents", documentId, { download }],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: InternalDocument }>(
+      const res = await api.get<{ status: string; data: ForumDocument }>(
         `/forum/documents/${documentId}`,
         { params: download ? { download: "true" } : undefined },
       );

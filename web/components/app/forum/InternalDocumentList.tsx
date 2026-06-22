@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import Link from "next/link";
 
 import { internalDocumentHref } from "@/components/app/forum/InternalDocumentCard";
+import { MatchTypeBadge, isForumDocument } from "@/components/app/forum/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
@@ -29,6 +30,7 @@ interface InternalDocumentListProps {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  emptyDescription?: string;
 }
 
 export function InternalDocumentList({
@@ -37,6 +39,7 @@ export function InternalDocumentList({
   isLoading,
   isError,
   onRetry,
+  emptyDescription = "Thử nới bộ lọc hoặc quay lại sau.",
 }: InternalDocumentListProps) {
   if (isLoading) {
     return (
@@ -70,7 +73,7 @@ export function InternalDocumentList({
       <EmptyState
         icon={<FileText className="h-10 w-10" />}
         title="Không có tài liệu"
-        description="Thử nới bộ lọc hoặc quay lại sau."
+        description={emptyDescription}
       />
     );
   }
@@ -86,6 +89,11 @@ export function InternalDocumentList({
             <th scope="col" className="hidden px-4 py-3 font-heading font-bold md:table-cell">
               Ngành / Môn
             </th>
+            {source === "forum" && (
+              <th scope="col" className="hidden px-4 py-3 font-heading font-bold lg:table-cell">
+                Khớp
+              </th>
+            )}
             <th scope="col" className="hidden px-4 py-3 font-heading font-bold sm:table-cell">
               Người đăng
             </th>
@@ -129,6 +137,15 @@ export function InternalDocumentList({
                     "—"
                   )}
                 </td>
+                {source === "forum" && (
+                  <td className="hidden px-4 py-3 lg:table-cell">
+                    {isForumDocument(doc) ? (
+                      <MatchTypeBadge matchType={doc.matchType} />
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                )}
                 <td className="hidden px-4 py-3 sm:table-cell">
                   {doc.owner?.displayName ?? "—"}
                 </td>

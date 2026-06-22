@@ -11,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, use, useEffect, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
+import { MatchTypeBadge, isForumDocument } from "@/components/app/forum/MatchTypeBadge";
 import { CustomDocxViewer } from "@/components/app/CustomDocxViewer";
 import { CustomOfficeViewer } from "@/components/app/CustomOfficeViewer";
 import { CustomPdfViewer } from "@/components/app/CustomPdfViewer";
@@ -289,6 +290,14 @@ function InternalDocumentDetailContent({
                   <dt className="text-brutal-muted">Ngày đăng</dt>
                   <dd className="text-right font-medium">{formatDate(doc.createdAt)}</dd>
                 </div>
+                {source === "forum" && isForumDocument(doc) && (
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-brutal-muted">Mức khớp</dt>
+                    <dd>
+                      <MatchTypeBadge matchType={doc.matchType} />
+                    </dd>
+                  </div>
+                )}
                 {course && (
                   <div className="flex flex-col gap-1.5">
                     <dt className="text-brutal-muted">Học thuật</dt>

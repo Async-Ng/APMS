@@ -32,6 +32,7 @@ interface ForumFiltersBarProps {
   filters: ForumFilterState;
   onChange: (filters: ForumFilterState) => void;
   defaultSort?: InternalDocumentSort;
+  mode: "forum" | "library";
 }
 
 const SORT_OPTIONS: { value: InternalDocumentSort; label: string }[] = [
@@ -44,7 +45,9 @@ export function ForumFiltersBar({
   filters,
   onChange,
   defaultSort = "newest",
+  mode,
 }: ForumFiltersBarProps) {
+  const isLibrary = mode === "library";
   const [localSearch, setLocalSearch] = useState(filters.search);
   const { data: majors } = useCatalogMajors();
   const { data: profile } = useAcademicProfile();
@@ -101,15 +104,21 @@ export function ForumFiltersBar({
     setLocalSearch("");
   }
 
-  const hasActiveFilters =
-    filters.search ||
-    filters.majorId ||
-    filters.semesterNumber ||
-    filters.subjectId ||
-    filters.sort !== defaultSort;
+  const hasActiveFilters = isLibrary
+    ? filters.search ||
+      filters.majorId ||
+      filters.semesterNumber ||
+      filters.subjectId ||
+      filters.sort !== defaultSort
+    : filters.search || filters.sort !== defaultSort;
 
   return (
     <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
+      {!isLibrary && (
+        <p className="text-xs text-brutal-muted">
+          Diễn đàn hiển thị tài liệu theo hồ sơ học thuật của bạn.
+        </p>
+      )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="relative min-w-0 flex-1">
           <Search
@@ -126,6 +135,8 @@ export function ForumFiltersBar({
           />
         </div>
 
+        {isLibrary && (
+          <>
         <label className="text-xs font-bold text-brutal-muted">
           Ngành
           <select
@@ -183,6 +194,8 @@ export function ForumFiltersBar({
             ))}
           </select>
         </label>
+          </>
+        )}
 
         <label className="text-xs font-bold text-brutal-muted">
           Sắp xếp
@@ -203,19 +216,21 @@ export function ForumFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <BrutalButton
-          variant="secondary"
-          className="px-3 py-1.5 text-xs"
-          onClick={applyMyProfile}
-          disabled={!profile?.isComplete}
-          title={
-            profile?.isComplete
-              ? undefined
-              : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
-          }
-        >
-          Theo hồ sơ của tôi
-        </BrutalButton>
+        {isLibrary && (
+          <BrutalButton
+            variant="secondary"
+            className="px-3 py-1.5 text-xs"
+            onClick={applyMyProfile}
+            disabled={!profile?.isComplete}
+            title={
+              profile?.isComplete
+                ? undefined
+                : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
+            }
+          >
+            Theo hồ sơ của tôi
+          </BrutalButton>
+        )}
         {hasActiveFilters && (
           <button
             type="button"
@@ -228,7 +243,7 @@ export function ForumFiltersBar({
             Xóa bộ lọc
           </button>
         )}
-        {profile && !profile.isComplete && (
+        {isLibrary && profile && !profile.isComplete && (
           <p className="text-xs text-brutal-muted">
             Cập nhật hồ sơ học thuật để lọc nhanh theo ngành và học kỳ của bạn.
           </p>
@@ -238,7 +253,14 @@ export function ForumFiltersBar({
   );
 }
 
-export function filtersToQueryParams(filters: ForumFilterState) {
+export function forumFiltersToQueryParams(filters: ForumFilterState) {
+  return {
+    search: filters.search || undefined,
+    sort: filters.sort,
+  };
+}
+
+export function libraryFiltersToQueryParams(filters: ForumFilterState) {
   return {
     search: filters.search || undefined,
     majorId: filters.majorId || undefined,
@@ -249,3 +271,6 @@ export function filtersToQueryParams(filters: ForumFilterState) {
     sort: filters.sort,
   };
 }
+
+/** @deprecated Use libraryFiltersToQueryParams or forumFiltersToQueryParams */
+export const filtersToQueryParams = libraryFiltersToQueryParams;

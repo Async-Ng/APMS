@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { AdminPagination } from "@/components/app/admin/AdminPagination";
 import {
-  filtersToQueryParams,
+  forumFiltersToQueryParams,
   ForumFiltersBar,
   type ForumFilterState,
 } from "@/components/app/forum/ForumFiltersBar";
@@ -40,7 +40,7 @@ export function ForumFeedPanel({
   const { data, isLoading, isError, error, refetch } = useForumDocuments({
     page,
     limit: PAGE_LIMIT,
-    ...filtersToQueryParams(filters),
+    ...forumFiltersToQueryParams(filters),
   });
 
   const errorCode = getUserErrorCode(error);
@@ -57,6 +57,7 @@ export function ForumFeedPanel({
   return (
     <div className="space-y-4">
       <ForumFiltersBar
+        mode="forum"
         filters={filters}
         onChange={(next) => {
           onFiltersChange(next);
@@ -100,6 +101,7 @@ export function ForumFeedPanel({
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
+          emptyDescription="Chưa có tài liệu phù hợp với hồ sơ học thuật của bạn."
         />
       ) : (
         <InternalDocumentList
@@ -108,6 +110,7 @@ export function ForumFeedPanel({
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
+          emptyDescription="Chưa có tài liệu phù hợp với hồ sơ học thuật của bạn."
         />
       )}
 

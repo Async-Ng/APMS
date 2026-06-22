@@ -15,6 +15,7 @@ interface InternalDocumentGridProps {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  emptyDescription?: string;
 }
 
 export function InternalDocumentGrid({
@@ -24,6 +25,7 @@ export function InternalDocumentGrid({
   isLoading,
   isError,
   onRetry,
+  emptyDescription = "Thử nới bộ lọc hoặc quay lại sau khi có tài liệu mới được chia sẻ.",
 }: InternalDocumentGridProps) {
   if (isLoading) {
     return <SkeletonGrid count={6} />;
@@ -51,7 +53,7 @@ export function InternalDocumentGrid({
       <EmptyState
         icon={<FileText className="h-10 w-10" />}
         title="Không có tài liệu"
-        description="Thử nới bộ lọc hoặc quay lại sau khi có tài liệu mới được chia sẻ."
+        description={emptyDescription}
       />
     );
   }

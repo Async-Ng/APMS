@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { AdminPagination } from "@/components/app/admin/AdminPagination";
 import {
-  filtersToQueryParams,
+  libraryFiltersToQueryParams,
   ForumFiltersBar,
   type ForumFilterState,
 } from "@/components/app/forum/ForumFiltersBar";
@@ -40,7 +40,7 @@ export function LibraryBrowsePanel({
   const { data, isLoading, isError, error, refetch } = useLibraryDocuments({
     page,
     limit: PAGE_LIMIT,
-    ...filtersToQueryParams(filters),
+    ...libraryFiltersToQueryParams(filters),
   });
 
   const errorCode = getUserErrorCode(error);
@@ -57,6 +57,7 @@ export function LibraryBrowsePanel({
   return (
     <div className="space-y-4">
       <ForumFiltersBar
+        mode="library"
         filters={filters}
         onChange={(next) => {
           onFiltersChange(next);

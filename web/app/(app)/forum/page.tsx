@@ -17,7 +17,7 @@ import { Topbar } from "@/components/app/Topbar";
 import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
 import { useForumDocuments } from "@/lib/queries/forum";
 import { useLibraryDocuments } from "@/lib/queries/library";
-import { filtersToQueryParams } from "@/components/app/forum/ForumFiltersBar";
+import { forumFiltersToQueryParams, libraryFiltersToQueryParams } from "@/components/app/forum/ForumFiltersBar";
 
 function parseTab(value: string | null): ForumLibraryTabId {
   return value === "library" ? "library" : "forum";
@@ -69,10 +69,12 @@ function ForumPageContent() {
       const params = new URLSearchParams();
       if (nextTab === "library") params.set("tab", "library");
       if (nextFilters.search) params.set("q", nextFilters.search);
-      if (nextFilters.majorId) params.set("majorId", nextFilters.majorId);
-      if (nextFilters.semesterNumber)
-        params.set("semester", nextFilters.semesterNumber);
-      if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
+      if (nextTab === "library") {
+        if (nextFilters.majorId) params.set("majorId", nextFilters.majorId);
+        if (nextFilters.semesterNumber)
+          params.set("semester", nextFilters.semesterNumber);
+        if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
+      }
       if (nextFilters.sort !== (nextTab === "library" ? "title" : "newest")) {
         params.set("sort", nextFilters.sort);
       }
@@ -88,6 +90,9 @@ function ForumPageContent() {
     const nextFilters = {
       ...activeFilters,
       sort: nextTab === "library" ? "title" : "newest",
+      ...(nextTab === "forum"
+        ? { majorId: "", semesterNumber: "", subjectId: "" }
+        : {}),
     } as ForumFilterState;
     syncUrl(nextTab, nextFilters, 1);
   };
@@ -104,13 +109,13 @@ function ForumPageContent() {
   const forumQuery = useForumDocuments({
     page,
     limit: 20,
-    ...filtersToQueryParams(activeFilters),
+    ...forumFiltersToQueryParams(activeFilters),
     enabled: tab === "forum",
   });
   const libraryQuery = useLibraryDocuments({
     page,
     limit: 20,
-    ...filtersToQueryParams(activeFilters),
+    ...libraryFiltersToQueryParams(activeFilters),
     enabled: tab === "library",
   });
 

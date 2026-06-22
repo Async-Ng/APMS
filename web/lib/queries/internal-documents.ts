@@ -42,7 +42,7 @@ export interface InternalDocument {
   status: InternalDocumentStatus;
   pageCount: number | null;
   tags: string[];
-  visibility: "internal";
+  visibility: "personal" | "internal";
   curriculumCourse: InternalCurriculumRef | null;
   owner: InternalOwnerRef | null;
   createdAt: string;
@@ -50,8 +50,19 @@ export interface InternalDocument {
   downloadUrl?: string;
 }
 
+export type ForumMatchType = "exact_course" | "same_subject_other_semester";
+
+export interface ForumDocument extends InternalDocument {
+  matchType: ForumMatchType;
+}
+
 export interface InternalDocumentsResponse {
   documents: InternalDocument[];
+  pagination: Pagination;
+}
+
+export interface ForumDocumentsResponse {
+  documents: ForumDocument[];
   pagination: Pagination;
 }
 
@@ -62,6 +73,13 @@ export interface InternalListParams {
   majorId?: string;
   semesterNumber?: number;
   subjectId?: string;
+  sort?: InternalDocumentSort;
+}
+
+export interface ForumListParams {
+  page: number;
+  limit: number;
+  search?: string;
   sort?: InternalDocumentSort;
 }
 

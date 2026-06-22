@@ -3,6 +3,7 @@
 import { FileText, Presentation } from "lucide-react";
 import Link from "next/link";
 
+import { MatchTypeBadge, isForumDocument } from "@/components/app/forum/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
 import type { InternalDocument, InternalSource } from "@/lib/queries/internal-documents";
@@ -77,7 +78,10 @@ export function InternalDocumentCard({
       </div>
 
       {course && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {source === "forum" && isForumDocument(doc) && (
+            <MatchTypeBadge matchType={doc.matchType} />
+          )}
           {course.major && (
             <span className="rounded-md border border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-bold">
               {course.major.code}
