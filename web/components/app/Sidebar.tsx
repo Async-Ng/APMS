@@ -3,6 +3,7 @@
 import { signOut } from "aws-amplify/auth";
 import {
   HardDrive,
+  Globe,
   LogOut,
   Menu,
   MessageSquare,
@@ -44,6 +45,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Đã chia sẻ",
     href: "/shared",
     icon: <Share2 className="h-5 w-5 shrink-0" />,
+  },
+  {
+    label: "Tài liệu nội bộ",
+    href: "/forum",
+    icon: <Globe className="h-5 w-5 shrink-0" />,
   },
   {
     label: "Trò chuyện AI",

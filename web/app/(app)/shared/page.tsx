@@ -1,8 +1,11 @@
 "use client";
 
 import {
+  ExternalLink,
   FileText,
   Folder,
+  LayoutGrid,
+  List,
   Share2,
   Users,
 } from "lucide-react";
@@ -34,24 +37,42 @@ import {
   type ShareWithMeItem,
 } from "@/lib/queries/shares";
 
-type TabId = "browse" | "received" | "outgoing";
+type TabId = "incoming" | "outgoing";
+type IncomingView = "grid" | "list";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "browse", label: "Duyệt" },
-  { id: "received", label: "Đã nhận" },
-  { id: "outgoing", label: "Tôi đã chia sẻ" },
+const TABS: { id: TabId; label: string; description: string }[] = [
+  {
+    id: "incoming",
+    label: "Chia sẻ với tôi",
+    description: "Mở thư mục và tệp mà người khác đã chia sẻ với bạn.",
+  },
+  {
+    id: "outgoing",
+    label: "Tôi đã chia sẻ",
+    description:
+      "Xem ai đang có quyền truy cập và thu hồi hoặc thêm người nhận.",
+  },
 ];
 
 function ShareTabs({
   active,
+  incomingCount,
+  outgoingCount,
   onChange,
 }: {
   active: TabId;
+  incomingCount: number;
+  outgoingCount: number;
   onChange: (tab: TabId) => void;
 }) {
+  const counts: Record<TabId, number> = {
+    incoming: incomingCount,
+    outgoing: outgoingCount,
+  };
+
   return (
     <div
-      className="mb-6 flex flex-wrap gap-2"
+      className="mb-4 flex flex-wrap gap-2"
       role="tablist"
       aria-label="Chế độ xem chia sẻ"
     >
@@ -63,15 +84,72 @@ function ShareTabs({
           aria-selected={active === tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
-            "focus-brutal rounded-xl border-2 border-brutal-ink px-4 py-2 text-sm font-bold transition-all",
+            "focus-brutal inline-flex items-center gap-2 rounded-xl border-2 border-brutal-ink px-4 py-2 text-sm font-bold transition-all",
             active === tab.id
               ? "bg-brutal-primary text-white shadow-brutal"
               : "bg-brutal-surface shadow-brutal-sm hover:-translate-y-0.5 hover:shadow-brutal",
           )}
         >
           {tab.label}
+          {counts[tab.id] > 0 && (
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
+                active === tab.id
+                  ? "bg-white/20 text-white"
+                  : "bg-brutal-bg text-brutal-muted",
+              )}
+            >
+              {counts[tab.id]}
+            </span>
+          )}
         </button>
       ))}
+    </div>
+  );
+}
+
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: IncomingView;
+  onChange: (view: IncomingView) => void;
+}) {
+  return (
+    <div
+      className="inline-flex rounded-xl border-2 border-brutal-ink bg-brutal-surface p-1 shadow-brutal-sm"
+      role="group"
+      aria-label="Cách hiển thị"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("grid")}
+        aria-pressed={view === "grid"}
+        className={cn(
+          "focus-brutal inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+          view === "grid"
+            ? "bg-brutal-primary text-white shadow-brutal-sm"
+            : "text-brutal-muted hover:text-brutal-ink",
+        )}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+        Lưới
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("list")}
+        aria-pressed={view === "list"}
+        className={cn(
+          "focus-brutal inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+          view === "list"
+            ? "bg-brutal-primary text-white shadow-brutal-sm"
+            : "text-brutal-muted hover:text-brutal-ink",
+        )}
+      >
+        <List className="h-3.5 w-3.5" aria-hidden="true" />
+        Danh sách
+      </button>
     </div>
   );
 }
@@ -127,32 +205,64 @@ function OutgoingGroup({
   const { mutate: revoke, isPending } = useRevokeShare();
   const label = getResourceLabel(group);
   const isFolder = group.resourceType === "folder";
+  const isDeleted = !group.resource;
+  const resourceHref =
+    !isDeleted && group.resource
+      ? isFolder
+        ? `/drive/${group.resourceId}`
+        : `/documents/${group.resourceId}`
+      : null;
 
   return (
     <BrutalCard className="space-y-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {isFolder ? (
             <Folder className="h-5 w-5 shrink-0 text-brutal-primary" />
           ) : (
             <FileText className="h-5 w-5 shrink-0 text-brutal-secondary" />
           )}
-          <p className="truncate font-heading font-extrabold text-brutal-ink">
-            {label}
-          </p>
-          <span className="brutal-badge text-xs">
+          {resourceHref ? (
+            <Link
+              href={resourceHref}
+              className="focus-brutal truncate font-heading font-extrabold text-brutal-ink underline-offset-2 hover:underline"
+            >
+              {label}
+            </Link>
+          ) : (
+            <p className="truncate font-heading font-extrabold text-brutal-muted">
+              {label}
+            </p>
+          )}
+          <span className="brutal-badge shrink-0 text-xs">
             {isFolder ? "Thư mục" : "Tài liệu"}
           </span>
+          {isDeleted && (
+            <span className="brutal-badge shrink-0 border-brutal-danger bg-red-50 text-xs text-brutal-danger">
+              Mục đã xóa
+            </span>
+          )}
         </div>
-        {group.resource && (
-          <BrutalButton
-            variant="ghost"
-            className="!py-1 !text-xs"
-            onClick={() => onManage(group)}
-          >
-            Thêm người
-          </BrutalButton>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {resourceHref && (
+            <Link
+              href={resourceHref}
+              className="focus-brutal inline-flex items-center gap-1 rounded-lg border-2 border-brutal-ink px-2 py-1 text-xs font-semibold transition-colors hover:bg-brutal-bg"
+            >
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              Mở
+            </Link>
+          )}
+          {!isDeleted && (
+            <BrutalButton
+              variant="ghost"
+              className="!py-1 !text-xs"
+              onClick={() => onManage(group)}
+            >
+              Thêm người
+            </BrutalButton>
+          )}
+        </div>
       </div>
 
       {group.shares.length === 0 ? (
@@ -172,6 +282,8 @@ function OutgoingGroup({
                   </p>
                   <p className="truncate text-xs text-brutal-muted">
                     {user?.email ?? share.sharedWithUserId}
+                    {" · "}
+                    Chia sẻ {formatSharedAt(share.sharedAt)}
                   </p>
                 </div>
                 <button
@@ -192,7 +304,8 @@ function OutgoingGroup({
 }
 
 export default function SharedPage() {
-  const [tab, setTab] = useState<TabId>("browse");
+  const [tab, setTab] = useState<TabId>("incoming");
+  const [incomingView, setIncomingView] = useState<IncomingView>("grid");
   const [manageTarget, setManageTarget] = useState<{
     resourceType: "folder" | "document";
     resourceId: string;
@@ -203,19 +316,23 @@ export default function SharedPage() {
   const received = useSharesWithMe();
   const outgoing = useSharesByMe();
 
-  const activeQuery =
-    tab === "browse" ? browse : tab === "received" ? received : outgoing;
+  const incomingCount =
+    (browse.data?.folders.length ?? 0) + (browse.data?.documents.length ?? 0);
+  const outgoingCount = outgoing.data?.length ?? 0;
 
-  const browseEmpty =
+  const activeTabMeta = TABS.find((t) => t.id === tab)!;
+
+  const incomingEmpty =
     !browse.isLoading &&
-    browse.data?.folders.length === 0 &&
-    browse.data?.documents.length === 0;
-
-  const receivedEmpty =
-    !received.isLoading && (received.data?.length ?? 0) === 0;
+    !received.isLoading &&
+    incomingCount === 0 &&
+    (received.data?.length ?? 0) === 0;
 
   const outgoingEmpty =
     !outgoing.isLoading && (outgoing.data?.length ?? 0) === 0;
+
+  const incomingError = browse.isError || received.isError;
+  const outgoingError = outgoing.isError;
 
   function openManage(group: ShareByMeGroup) {
     if (!group.resource) return;
@@ -231,24 +348,131 @@ export default function SharedPage() {
       <Topbar breadcrumbs={[{ label: "Đã chia sẻ" }]} onMenuOpen={() => {}} />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
-        <ShareTabs active={tab} onChange={setTab} />
+        <div className="mb-6 flex items-start gap-3">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-accent/30 shadow-brutal-sm"
+            aria-hidden="true"
+          >
+            <Share2 className="h-5 w-5 text-brutal-primary" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="font-heading text-xl font-extrabold text-brutal-ink">
+              Đã chia sẻ
+            </h1>
+            <p className="mt-0.5 text-sm text-brutal-muted">
+              Xem nội dung được chia sẻ với bạn hoặc quản lý quyền truy cập bạn
+              đã cấp cho người khác.
+            </p>
+          </div>
+        </div>
 
-        {activeQuery.isError && (
+        <ShareTabs
+          active={tab}
+          incomingCount={incomingCount}
+          outgoingCount={outgoingCount}
+          onChange={setTab}
+        />
+
+        <p className="mb-4 text-sm text-brutal-muted">
+          {activeTabMeta.description}
+        </p>
+
+        {tab === "incoming" && incomingError && (
           <ErrorAlert
             className="mb-4"
-            message="Không tải được mục đã chia sẻ. Vui lòng thử lại."
+            message="Không tải được mục được chia sẻ với bạn. Vui lòng thử lại."
             actionLabel="Tải lại"
             onAction={() => window.location.reload()}
           />
         )}
 
-        {tab === "browse" && (
+        {tab === "outgoing" && outgoingError && (
+          <ErrorAlert
+            className="mb-4"
+            message="Không tải được danh sách bạn đã chia sẻ. Vui lòng thử lại."
+            actionLabel="Tải lại"
+            onAction={() => window.location.reload()}
+          />
+        )}
+
+        {tab === "incoming" && (
           <>
-            {browse.isLoading ? (
-              <FileGrid>
-                <SkeletonGrid count={6} />
-              </FileGrid>
-            ) : browseEmpty ? (
+            {!incomingEmpty && (
+              <div className="mb-4 flex justify-end">
+                <ViewToggle view={incomingView} onChange={setIncomingView} />
+              </div>
+            )}
+
+            {incomingView === "grid" ? (
+              browse.isLoading ? (
+                <FileGrid>
+                  <SkeletonGrid count={6} />
+                </FileGrid>
+              ) : incomingEmpty ? (
+                <EmptyState
+                  icon={
+                    <Users
+                      className="h-12 w-12 text-brutal-primary"
+                      strokeWidth={1.5}
+                    />
+                  }
+                  title="Chưa có mục được chia sẻ với bạn"
+                  description="Khi ai đó chia sẻ thư mục hoặc tệp với bạn, chúng sẽ hiển thị tại đây."
+                />
+              ) : (
+                <div className="space-y-6">
+                  {(browse.data?.folders.length ?? 0) > 0 && (
+                    <section aria-labelledby="shared-folders-heading">
+                      <h2
+                        id="shared-folders-heading"
+                        className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                      >
+                        Thư mục đã chia sẻ
+                      </h2>
+                      <FileGrid>
+                        {browse.data?.folders.map((item) => (
+                          <FolderCard
+                            key={item.id}
+                            folder={toDriveFolder(item)}
+                            variant="shared"
+                            sharedAt={item.share.sharedAt}
+                            onRename={() => {}}
+                          />
+                        ))}
+                      </FileGrid>
+                    </section>
+                  )}
+
+                  {(browse.data?.documents.length ?? 0) > 0 && (
+                    <section aria-labelledby="shared-docs-heading">
+                      <h2
+                        id="shared-docs-heading"
+                        className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                      >
+                        Tệp đã chia sẻ
+                      </h2>
+                      <FileGrid>
+                        {browse.data?.documents.map((item) => (
+                          <DocumentCard
+                            key={item.id}
+                            document={toDriveDocument(item)}
+                            variant="shared"
+                            sharedAt={item.share.sharedAt}
+                            onRename={() => {}}
+                          />
+                        ))}
+                      </FileGrid>
+                    </section>
+                  )}
+                </div>
+              )
+            ) : received.isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton h-20 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : incomingEmpty ? (
               <EmptyState
                 icon={
                   <Users
@@ -258,73 +482,6 @@ export default function SharedPage() {
                 }
                 title="Chưa có mục được chia sẻ với bạn"
                 description="Khi ai đó chia sẻ thư mục hoặc tệp với bạn, chúng sẽ hiển thị tại đây."
-              />
-            ) : (
-              <div className="space-y-6">
-                {(browse.data?.folders.length ?? 0) > 0 && (
-                  <section aria-labelledby="shared-folders-heading">
-                    <h2
-                      id="shared-folders-heading"
-                      className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-                    >
-                      Thư mục đã chia sẻ
-                    </h2>
-                    <FileGrid>
-                      {browse.data?.folders.map((item) => (
-                        <FolderCard
-                          key={item.id}
-                          folder={toDriveFolder(item)}
-                          variant="shared"
-                          onRename={() => {}}
-                        />
-                      ))}
-                    </FileGrid>
-                  </section>
-                )}
-
-                {(browse.data?.documents.length ?? 0) > 0 && (
-                  <section aria-labelledby="shared-docs-heading">
-                    <h2
-                      id="shared-docs-heading"
-                      className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-                    >
-                      Tệp đã chia sẻ
-                    </h2>
-                    <FileGrid>
-                      {browse.data?.documents.map((item) => (
-                        <DocumentCard
-                          key={item.id}
-                          document={toDriveDocument(item)}
-                          variant="shared"
-                          onRename={() => {}}
-                        />
-                      ))}
-                    </FileGrid>
-                  </section>
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {tab === "received" && (
-          <>
-            {received.isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="skeleton h-20 w-full rounded-xl" />
-                ))}
-              </div>
-            ) : receivedEmpty ? (
-              <EmptyState
-                icon={
-                  <Share2
-                    className="h-12 w-12 text-brutal-secondary"
-                    strokeWidth={1.5}
-                  />
-                }
-                title="Chưa nhận lượt chia sẻ nào"
-                description="Các mục được chia sẻ với bạn sẽ hiển thị tại đây kèm ngày chia sẻ."
               />
             ) : (
               <ul className="space-y-3">

@@ -5,6 +5,7 @@ export const ErrorCode = {
   AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
   AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
   AUTH_DISABLED: "AUTH_DISABLED",
+  AUTH_EMAIL_DOMAIN: "AUTH_EMAIL_DOMAIN",
   VALIDATION_ERROR: "VALIDATION_ERROR",
   NOT_FOUND: "NOT_FOUND",
   FORBIDDEN: "FORBIDDEN",
@@ -38,6 +39,14 @@ export const ErrorCode = {
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
   QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
+  ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
+  ACCESS_EMAIL_NOT_FOUND: "ACCESS_EMAIL_NOT_FOUND",
+  CANNOT_REVOKE_SELF_ACCESS: "CANNOT_REVOKE_SELF_ACCESS",
+  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
+  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -46,6 +55,8 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   AUTH_UNAUTHORIZED: "Bạn cần đăng nhập để tiếp tục.",
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
+  AUTH_EMAIL_DOMAIN:
+    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ.",
   VALIDATION_ERROR: "Dữ liệu không hợp lệ. Vui lòng kiểm tra và thử lại.",
   NOT_FOUND: "Không tìm thấy nội dung yêu cầu.",
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",
@@ -79,11 +90,27 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",
   QUOTA_TOO_LOW: "Dung lượng mới không thể nhỏ hơn dung lượng đang sử dụng.",
+  ACADEMIC_CONFLICT:
+    "Không thể thay đổi vì bản ghi đang được sinh viên hoặc tài liệu sử dụng.",
+  ACCESS_EMAIL_NOT_FOUND: "Không tìm thấy email truy cập.",
+  CANNOT_REVOKE_SELF_ACCESS:
+    "Bạn không thể thu hồi quyền truy cập của chính email mình.",
+  MAJOR_NOT_FOUND: "Không tìm thấy ngành học.",
+  SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
+  CURRICULUM_NOT_FOUND: "Không tìm thấy mapping chương trình đào tạo.",
+  ACADEMIC_PROFILE_REQUIRED:
+    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
+  CURRICULUM_NOT_ENROLLED:
+    "Môn học không thuộc ngành, học kỳ hoặc danh sách môn đã chọn của bạn.",
 };
 
 const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";
 const NETWORK_MESSAGE =
   "Không thể kết nối máy chủ. Kiểm tra kết nối mạng và thử lại.";
+
+/** Shown when the deployed API lacks POST .../messages/stream (Express 404 HTML). */
+export const CHAT_STREAM_NOT_AVAILABLE_MESSAGE =
+  "Tính năng chat AI (streaming) chưa được bật trên máy chủ. Vui lòng liên hệ team backend để deploy API mới nhất.";
 
 const HTTP_FALLBACK: Record<number, string> = {
   401: ERROR_MESSAGES.AUTH_UNAUTHORIZED,
@@ -111,6 +138,67 @@ function extractApiBody(err: unknown): ApiErrorBody | null {
   return data as ApiErrorBody;
 }
 
+function isHtmlOrExpressErrorBody(body: string): boolean {
+  const trimmed = body.trim();
+  return (
+    trimmed.startsWith("<!DOCTYPE") ||
+    trimmed.startsWith("<html") ||
+    /Cannot (GET|POST|PUT|PATCH|DELETE) /i.test(trimmed)
+  );
+}
+
+function sanitizePlainErrorMessage(message: string): string {
+  if (!isHtmlOrExpressErrorBody(message)) {
+    return message;
+  }
+  if (
+    /messages\/stream/i.test(message) ||
+    /Cannot POST/i.test(message)
+  ) {
+    return CHAT_STREAM_NOT_AVAILABLE_MESSAGE;
+  }
+  return DEFAULT_MESSAGE;
+}
+
+/** Map fetch response body + status to a user-facing Vietnamese message. */
+export function parseFetchErrorBody(status: number, body: string): string {
+  const trimmed = body.trim();
+
+  if (trimmed) {
+    try {
+      const json = JSON.parse(trimmed) as {
+        code?: string;
+        message?: string;
+      };
+      if (json.code && isErrorCode(json.code)) {
+        return ERROR_MESSAGES[json.code];
+      }
+      if (typeof json.message === "string" && json.message.length > 0) {
+        return json.message;
+      }
+    } catch {
+      // not JSON — fall through
+    }
+  }
+
+  if (
+    status === 404 &&
+    (isHtmlOrExpressErrorBody(trimmed) || /messages\/stream/i.test(trimmed))
+  ) {
+    return CHAT_STREAM_NOT_AVAILABLE_MESSAGE;
+  }
+
+  if (isHtmlOrExpressErrorBody(trimmed)) {
+    return HTTP_FALLBACK[status] ?? DEFAULT_MESSAGE;
+  }
+
+  if (trimmed.length > 0 && trimmed.length < 500) {
+    return trimmed;
+  }
+
+  return HTTP_FALLBACK[status] ?? DEFAULT_MESSAGE;
+}
+
 /** Resolve a user-friendly Vietnamese message from an API or network error. */
 export function getUserErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
@@ -135,7 +223,7 @@ export function getUserErrorMessage(err: unknown): string {
   }
 
   if (err instanceof Error && err.message.length > 0) {
-    return err.message;
+    return sanitizePlainErrorMessage(err.message);
   }
 
   return DEFAULT_MESSAGE;

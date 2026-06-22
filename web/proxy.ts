@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // Public paths that don't require authentication
 const PUBLIC_PATHS = ["/login", "/auth"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths and Next.js internals
@@ -21,11 +21,6 @@ export function middleware(request: NextRequest) {
   if (!isPublic && !hasCognitoToken) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
-  }
-
-  // If authenticated user hits root or login, redirect to /drive
-  if ((pathname === "/" || pathname === "/login") && hasCognitoToken) {
-    return NextResponse.redirect(new URL("/drive", request.url));
   }
 
   return NextResponse.next();
