@@ -31,10 +31,13 @@ Bulk body: `{ "entries": [{ "email": "student@gmail.com", "note": "SE student" }
 | `GET/PATCH` | `/api/users/me/academic-profile` | Read or select the current major, semester, and subjects |
 | `GET` | `/api/library/documents` | Paginated internal library with academic filters |
 | `GET` | `/api/library/documents/:id?download=true` | Internal metadata and optional presigned download URL |
+| `GET` | `/api/forum/documents` | Internal forum feed scoped to the current academic profile |
+| `GET` | `/api/forum/documents/:id?download=true` | Forum document detail, match type, and optional presigned download URL |
 
 `semesterNumber` is 1-9 and `(majorId, semesterNumber, subjectId)` is unique. A profile update accepts `{ majorId, currentSemester, currentSubjectIds }`; every subject must be active and mapped to that major and semester. Changing or archiving selected catalog data returns `409 ACADEMIC_CONFLICT`.
 
 `POST /api/documents/upload-intents` requires an enrolled `curriculumCourseId` and publishes the completed upload as `internal`. `PATCH /api/documents/:id` accepts a valid mapping to publish an old document or `null` to make it personal. Library responses never expose `s3Key`. Internal documents may be explicitly selected for chat, while search/chat `all` remains limited to owned and directly shared documents.
+`/api/forum/documents` is the internal feed view for the current academic profile. It ranks exact curriculum-course matches first, then same-subject documents from other semesters in the same major.
 
 ---
 **Xác thực:** Cognito **ID token** (JWT) trong header `Authorization: Bearer <token>`
