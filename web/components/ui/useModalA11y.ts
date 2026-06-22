@@ -3,6 +3,8 @@ import { useEffect, useRef, type RefObject } from "react";
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+const FIELD_SELECTOR = "textarea, input, select";
+
 interface UseModalA11yOptions {
   /** When true, Escape and backdrop close are blocked */
   preventClose?: boolean;
@@ -15,11 +17,28 @@ export function useModalA11y(
   options?: UseModalA11yOptions,
 ) {
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const preventCloseRef = useRef(options?.preventClose ?? false);
 
+  onCloseRef.current = onClose;
+  preventCloseRef.current = options?.preventClose ?? false;
+
+  // Save trigger focus on open; restore only when modal closes
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      return;
+    }
+
+    const toRestore = previousFocusRef.current;
+    if (toRestore?.isConnected) {
+      toRestore.focus();
+    }
+  }, [open]);
+
+  // Trap + Esc — runs once per open, not on parent re-renders
   useEffect(() => {
     if (!open) return;
-
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
 
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -30,14 +49,35 @@ export function useModalA11y(
       ).filter((el) => !el.hasAttribute("disabled"));
     }
 
+    function getInitialFocusTarget(): HTMLElement | undefined {
+      const marked = dialog!.querySelector<HTMLElement>("[data-initial-focus]");
+      if (marked) {
+        if (
+          marked.matches(FIELD_SELECTOR) &&
+          !marked.hasAttribute("disabled")
+        ) {
+          return marked;
+        }
+        const nested = marked.querySelector<HTMLElement>(FIELD_SELECTOR);
+        if (nested && !nested.hasAttribute("disabled")) return nested;
+      }
+
+      const fields = dialog!.querySelectorAll<HTMLElement>(FIELD_SELECTOR);
+      for (const el of fields) {
+        if (!el.hasAttribute("disabled")) return el;
+      }
+
+      return getFocusables()[0];
+    }
+
     const raf = requestAnimationFrame(() => {
-      getFocusables()[0]?.focus();
+      getInitialFocusTarget()?.focus();
     });
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !options?.preventClose) {
+      if (e.key === "Escape" && !preventCloseRef.current) {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -63,7 +103,6 @@ export function useModalA11y(
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("keydown", handleKeyDown);
-      previousFocusRef.current?.focus();
     };
-  }, [open, onClose, dialogRef, options?.preventClose]);
+  }, [open, dialogRef]);
 }

@@ -52,7 +52,7 @@ export function AdminTableSkeleton({
 export function AdminStatusBadge({
   active,
   activeLabel = "Hoạt động",
-  inactiveLabel = "Đã lưu trữ",
+  inactiveLabel = "Đã xóa",
 }: {
   active: boolean;
   activeLabel?: string;

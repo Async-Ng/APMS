@@ -218,7 +218,7 @@ export function MajorsPanel() {
                         className="px-3 py-1 text-xs"
                         onClick={() => setArchiveTarget(major)}
                       >
-                        Lưu trữ
+                        Xóa
                       </BrutalButton>
                     ) : (
                       <BrutalButton
@@ -263,10 +263,13 @@ export function MajorsPanel() {
           <input
             value={form.code}
             onChange={(e) => {
-              setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }));
+              setForm((f) => ({ ...f, code: e.target.value }));
               setFieldErrors((fe) => ({ ...fe, code: "" }));
             }}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm uppercase"
+            onBlur={() => {
+              setForm((f) => ({ ...f, code: f.code.trim().toUpperCase() }));
+            }}
+            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
             placeholder="SE"
             maxLength={30}
             aria-invalid={!!fieldErrors.code}
@@ -307,13 +310,13 @@ export function MajorsPanel() {
 
       <ConfirmDialog
         open={!!archiveTarget}
-        title="Lưu trữ ngành học?"
+        title="Xóa ngành học?"
         description={
           archiveTarget
-            ? `Ngành "${archiveTarget.name}" sẽ không hiển thị trong danh mục công khai. Không thể lưu trữ nếu sinh viên đang chọn ngành này.`
+            ? `Ngành "${archiveTarget.name}" sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên đang chọn ngành này. Có thể kích hoạt lại sau.`
             : ""
         }
-        confirmLabel="Lưu trữ"
+        confirmLabel="Xóa"
         tone="danger"
         isPending={isArchiving}
         onConfirm={confirmArchive}

@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useRef, type ReactNode } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useModalA11y } from "@/components/ui/useModalA11y";
@@ -30,7 +30,8 @@ export function AdminFormModal({
   maxWidth = "md",
 }: AdminFormModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  useModalA11y(open, onClose, dialogRef);
+  const handleClose = useCallback(() => onClose(), [onClose]);
+  useModalA11y(open, handleClose, dialogRef);
 
   if (!open) return null;
 
@@ -44,7 +45,7 @@ export function AdminFormModal({
         backdropFilter: "blur(2px)",
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -63,14 +64,16 @@ export function AdminFormModal({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="focus-brutal flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg"
             aria-label="Đóng"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="space-y-4">{children}</div>
+        <div className="space-y-4" data-initial-focus>
+          {children}
+        </div>
         {footer && <div className="mt-5 flex gap-2">{footer}</div>}
       </BrutalCard>
     </div>

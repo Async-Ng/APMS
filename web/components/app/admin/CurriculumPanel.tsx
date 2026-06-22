@@ -229,7 +229,7 @@ export function CurriculumPanel() {
               onChange={(e) => setIncludeInactive(e.target.checked)}
               className="h-4 w-4 rounded border-2 border-brutal-ink"
             />
-            Hiện đã lưu trữ
+            Hiện đã xóa
           </label>
         </div>
         <BrutalButton
@@ -321,7 +321,7 @@ export function CurriculumPanel() {
                         className="px-3 py-1 text-xs"
                         onClick={() => setArchiveTarget(course)}
                       >
-                        Lưu trữ
+                        Xóa
                       </BrutalButton>
                     ) : (
                       <BrutalButton
@@ -432,9 +432,9 @@ export function CurriculumPanel() {
 
       <ConfirmDialog
         open={!!archiveTarget}
-        title="Lưu trữ mapping CTĐT?"
-        description="Mapping này sẽ không hiển thị trong danh mục công khai. Không thể lưu trữ nếu sinh viên hoặc tài liệu đang tham chiếu."
-        confirmLabel="Lưu trữ"
+        title="Xóa mapping CTĐT?"
+        description="Mapping này sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên hoặc tài liệu đang tham chiếu. Có thể kích hoạt lại sau."
+        confirmLabel="Xóa"
         tone="danger"
         isPending={isArchiving}
         onConfirm={confirmArchive}
