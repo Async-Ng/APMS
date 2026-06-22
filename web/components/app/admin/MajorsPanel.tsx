@@ -1,7 +1,7 @@
 "use client";
 
 import { GraduationCap, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/app/admin/AdminTableShell";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
@@ -21,6 +20,10 @@ import {
   useUpdateMajor,
   type Major,
 } from "@/lib/queries/admin-academic";
+import {
+  formatZodFieldErrors,
+  majorFormSchema,
+} from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
 interface MajorFormState {
@@ -31,6 +34,11 @@ interface MajorFormState {
 
 const EMPTY_FORM: MajorFormState = { code: "", name: "", description: "" };
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs font-medium text-brutal-danger">{message}</p>;
+}
+
 export function MajorsPanel() {
   const { data: majors, isLoading, isError } = useAdminMajors();
   const { mutate: createMajor, isPending: isCreating } = useCreateMajor();
@@ -40,12 +48,25 @@ export function MajorsPanel() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Major | null>(null);
   const [form, setForm] = useState<MajorFormState>(EMPTY_FORM);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [archiveTarget, setArchiveTarget] = useState<Major | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingMajorId, setPendingMajorId] = useState<string | null>(null);
+
+  const isFormValid = useMemo(
+    () =>
+      majorFormSchema.safeParse({
+        code: form.code,
+        name: form.name,
+        description: form.description.trim() || undefined,
+      }).success,
+    [form],
+  );
 
   function openCreate() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setFieldErrors({});
     setError(null);
     setFormOpen(true);
   }
@@ -57,17 +78,27 @@ export function MajorsPanel() {
       name: major.name,
       description: major.description,
     });
+    setFieldErrors({});
     setError(null);
     setFormOpen(true);
   }
 
   function handleSubmit() {
-    if (!form.code.trim() || !form.name.trim()) return;
+    const parsed = majorFormSchema.safeParse({
+      code: form.code,
+      name: form.name,
+      description: form.description.trim() || undefined,
+    });
+    if (!parsed.success) {
+      setFieldErrors(formatZodFieldErrors(parsed.error));
+      return;
+    }
+    setFieldErrors({});
     setError(null);
     const body = {
-      code: form.code.trim(),
-      name: form.name.trim(),
-      description: form.description.trim() || undefined,
+      code: parsed.data.code.toUpperCase(),
+      name: parsed.data.name,
+      description: parsed.data.description,
     };
 
     if (editing) {
@@ -88,9 +119,13 @@ export function MajorsPanel() {
 
   function handleReactivate(major: Major) {
     setError(null);
+    setPendingMajorId(major.id);
     updateMajor(
       { id: major.id, body: { isActive: true } },
-      { onError: (err) => setError(getUserErrorMessage(err)) },
+      {
+        onSettled: () => setPendingMajorId(null),
+        onError: (err) => setError(getUserErrorMessage(err)),
+      },
     );
   }
 
@@ -138,6 +173,17 @@ export function MajorsPanel() {
               </td>
             </tr>
           )}
+          {!isLoading && !isError && majors?.length === 0 && (
+            <tr>
+              <td colSpan={5} className="px-4 py-10 text-center">
+                <GraduationCap className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
+                <p className="text-sm font-semibold text-brutal-ink">Chưa có ngành học</p>
+                <p className="mt-1 text-xs text-brutal-muted">
+                  Thêm ngành đầu tiên để bắt đầu xây dựng chương trình đào tạo.
+                </p>
+              </td>
+            </tr>
+          )}
           {!isLoading &&
             !isError &&
             majors?.map((major) => (
@@ -162,6 +208,7 @@ export function MajorsPanel() {
                       variant="ghost"
                       className="px-2 py-1 text-xs"
                       onClick={() => openEdit(major)}
+                      aria-label={`Sửa ngành ${major.name}`}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </BrutalButton>
@@ -178,7 +225,7 @@ export function MajorsPanel() {
                         variant="secondary"
                         className="px-3 py-1 text-xs"
                         onClick={() => handleReactivate(major)}
-                        disabled={isUpdating}
+                        disabled={pendingMajorId === major.id}
                       >
                         Kích hoạt
                       </BrutalButton>
@@ -189,19 +236,6 @@ export function MajorsPanel() {
             ))}
         </tbody>
       </AdminTableShell>
-
-      {!isLoading && !isError && majors?.length === 0 && (
-        <EmptyState
-          icon={<GraduationCap className="h-10 w-10" />}
-          title="Chưa có ngành học"
-          description="Thêm ngành đầu tiên để bắt đầu xây dựng chương trình đào tạo."
-          action={
-            <BrutalButton variant="primary" onClick={openCreate}>
-              Thêm ngành
-            </BrutalButton>
-          }
-        />
-      )}
 
       <AdminFormModal
         open={formOpen}
@@ -217,6 +251,7 @@ export function MajorsPanel() {
               className="flex-1"
               onClick={handleSubmit}
               loading={isCreating || isUpdating}
+              disabled={!isFormValid}
             >
               {editing ? "Lưu" : "Tạo"}
             </BrutalButton>
@@ -227,31 +262,46 @@ export function MajorsPanel() {
           Mã ngành
           <input
             value={form.code}
-            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }));
+              setFieldErrors((fe) => ({ ...fe, code: "" }));
+            }}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm uppercase"
             placeholder="SE"
             maxLength={30}
+            aria-invalid={!!fieldErrors.code}
           />
+          <FieldError message={fieldErrors.code} />
         </label>
         <label className="block text-sm font-bold">
           Tên ngành
           <input
             value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, name: e.target.value }));
+              setFieldErrors((fe) => ({ ...fe, name: "" }));
+            }}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
             placeholder="Kỹ thuật phần mềm"
             maxLength={150}
+            aria-invalid={!!fieldErrors.name}
           />
+          <FieldError message={fieldErrors.name} />
         </label>
         <label className="block text-sm font-bold">
           Mô tả (tuỳ chọn)
           <textarea
             value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, description: e.target.value }));
+              setFieldErrors((fe) => ({ ...fe, description: "" }));
+            }}
             rows={2}
             maxLength={1000}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
+            aria-invalid={!!fieldErrors.description}
           />
+          <FieldError message={fieldErrors.description} />
         </label>
       </AdminFormModal>
 

@@ -47,40 +47,79 @@ export default function AdminPage() {
 
         <AdminTabs active={activeTab} onChange={setActiveTab} badges={badges} />
 
-        {activeTab === "overview" && <AdminOverviewPanel />}
-        {activeTab === "users" && (
-          <section aria-labelledby="users-heading">
-            <h2
-              id="users-heading"
-              className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-            >
-              Quản lý người dùng
-            </h2>
-            <UsersTable />
-          </section>
-        )}
-        {activeTab === "access-emails" && (
-          <section aria-labelledby="access-heading">
-            <h2
-              id="access-heading"
-              className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-            >
-              Email truy cập ngoại lệ
-            </h2>
-            <AccessEmailsPanel />
-          </section>
-        )}
-        {activeTab === "academic" && (
-          <section aria-labelledby="academic-heading">
-            <h2
-              id="academic-heading"
-              className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-            >
-              Danh mục học thuật
-            </h2>
-            <AcademicAdminPanel />
-          </section>
-        )}
+        <section
+          id="panel-overview"
+          role="tabpanel"
+          aria-labelledby="tab-overview"
+          tabIndex={0}
+          hidden={activeTab !== "overview"}
+          className="outline-none"
+        >
+          {activeTab === "overview" && <AdminOverviewPanel />}
+        </section>
+
+        <section
+          id="panel-users"
+          role="tabpanel"
+          aria-labelledby="tab-users"
+          tabIndex={0}
+          hidden={activeTab !== "users"}
+          className="outline-none"
+        >
+          {activeTab === "users" && (
+            <>
+              <h2
+                id="users-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Quản lý người dùng
+              </h2>
+              <UsersTable />
+            </>
+          )}
+        </section>
+
+        <section
+          id="panel-access-emails"
+          role="tabpanel"
+          aria-labelledby="tab-access-emails"
+          tabIndex={0}
+          hidden={activeTab !== "access-emails"}
+          className="outline-none"
+        >
+          {activeTab === "access-emails" && (
+            <>
+              <h2
+                id="access-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Email truy cập ngoại lệ
+              </h2>
+              <AccessEmailsPanel />
+            </>
+          )}
+        </section>
+
+        <section
+          id="panel-academic"
+          role="tabpanel"
+          aria-labelledby="tab-academic"
+          tabIndex={0}
+          hidden={activeTab !== "academic"}
+          className="outline-none"
+        >
+          {activeTab === "academic" && (
+            <>
+              <h2
+                id="academic-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Danh mục học thuật
+              </h2>
+              <AcademicAdminPanel />
+            </>
+          )}
+        </section>
       </main>
     </>
   );

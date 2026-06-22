@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 
@@ -37,6 +38,18 @@ export interface EnrichedCurriculumCourse extends CurriculumCourse {
   subject: Subject | null;
 }
 
+function invalidateAcademicCatalog(qc: QueryClient) {
+  void qc.invalidateQueries({ queryKey: ["catalog", "majors"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "curriculum"] });
+  void qc.invalidateQueries({ queryKey: ["users", "me", "academic-profile"] });
+  void qc.invalidateQueries({ queryKey: ["library", "documents"] });
+  void qc.invalidateQueries({ queryKey: ["forum", "documents"] });
+}
+
+function invalidateAdminAcademic(qc: QueryClient) {
+  invalidateAcademicCatalog(qc);
+}
+
 export function useAdminMajors() {
   return useQuery({
     queryKey: ["admin", "majors"],
@@ -66,6 +79,7 @@ export function useCreateMajor() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -94,6 +108,7 @@ export function useUpdateMajor() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -110,6 +125,7 @@ export function useArchiveMajor() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -143,6 +159,7 @@ export function useCreateSubject() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -171,6 +188,7 @@ export function useUpdateSubject() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -187,6 +205,7 @@ export function useArchiveSubject() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -230,6 +249,7 @@ export function useCreateCurriculum() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -257,6 +277,7 @@ export function useUpdateCurriculum() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }
@@ -272,6 +293,7 @@ export function useArchiveCurriculum() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      invalidateAdminAcademic(qc);
     },
   });
 }

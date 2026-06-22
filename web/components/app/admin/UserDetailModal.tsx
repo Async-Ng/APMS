@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { X } from "lucide-react";
 
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 import { useAdminUser } from "@/lib/queries/admin";
 import { useAdminMajors, useAdminSubjects } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
@@ -31,6 +32,9 @@ interface UserDetailModalProps {
 }
 
 export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalA11y(!!userId, onClose, dialogRef);
+
   const { data: user, isLoading, isError } = useAdminUser(userId);
   const { data: majors } = useAdminMajors();
   const { data: subjects } = useAdminSubjects();
@@ -39,7 +43,7 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
     if (!user?.majorId) return null;
     const major = majors?.find((m) => m.id === user.majorId);
     return major ? `${major.code} — ${major.name}` : user.majorId;
-  }, [user?.majorId, majors]);
+  }, [user, majors]);
 
   const currentSubjects = useMemo(() => {
     if (!user?.currentSubjectIds.length) return [];
@@ -62,10 +66,11 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",
-        backgroundColor: "rgba(26,26,26,0.5)",
+        backgroundColor: "var(--brutal-overlay)",
         backdropFilter: "blur(2px)",
       }}
       onClick={(e) => {
@@ -146,7 +151,7 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
                   <span
                     className={cn(
                       "rounded-full border px-2 py-0.5 text-xs font-semibold",
-                      user.isDisabled ? "border-brutal-danger bg-red-50 text-brutal-danger" : "status-ready",
+                      user.isDisabled ? "border-brutal-danger bg-brutal-danger/10 text-brutal-danger" : "status-ready",
                     )}
                   >
                     {user.isDisabled ? "Vô hiệu" : "Hoạt động"}

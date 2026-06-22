@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -11,6 +11,7 @@ import {
   type BulkAccessEmailResult,
   type BulkAccessEmailStatus,
 } from "@/lib/queries/admin-access-emails";
+import { accessEmailSchema } from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
 const STATUS_LABELS: Record<BulkAccessEmailStatus, string> = {
@@ -35,6 +36,14 @@ function parseBulkLines(text: string): Array<{ email: string; note?: string }> {
     });
 }
 
+function formatResultLabel(
+  status: BulkAccessEmailStatus,
+  message?: string,
+): string {
+  if (status === "invalid" && message) return message;
+  return STATUS_LABELS[status];
+}
+
 interface BulkAccessEmailModalProps {
   open: boolean;
   onClose: () => void;
@@ -44,21 +53,41 @@ export function BulkAccessEmailModal({ open, onClose }: BulkAccessEmailModalProp
   const [text, setText] = useState("");
   const [result, setResult] = useState<BulkAccessEmailResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [clientInvalidCount, setClientInvalidCount] = useState(0);
 
   const { mutate: bulkCreate, isPending } = useBulkCreateAccessEmails();
 
   const entries = parseBulkLines(text);
   const lineCount = entries.length;
 
+  const hasClientInvalidEmails = useMemo(() => {
+    if (lineCount === 0) return false;
+    return entries.some((e) => !accessEmailSchema.safeParse(e.email).success);
+  }, [entries, lineCount]);
+
   function handleClose() {
     setText("");
     setResult(null);
     setError(null);
+    setClientInvalidCount(0);
     onClose();
   }
 
   function handleSubmit() {
     if (lineCount === 0 || lineCount > 500) return;
+
+    const invalid = entries.filter(
+      (e) => !accessEmailSchema.safeParse(e.email).success,
+    ).length;
+    if (invalid > 0) {
+      setClientInvalidCount(invalid);
+      setError(
+        `${invalid} email không hợp lệ. Kiểm tra định dạng trước khi gửi.`,
+      );
+      return;
+    }
+
+    setClientInvalidCount(0);
     setError(null);
     bulkCreate(entries, {
       onSuccess: (data) => setResult(data),
@@ -87,7 +116,9 @@ export function BulkAccessEmailModal({ open, onClose }: BulkAccessEmailModalProp
               className="flex-1"
               onClick={handleSubmit}
               loading={isPending}
-              disabled={lineCount === 0 || lineCount > 500}
+              disabled={
+                lineCount === 0 || lineCount > 500 || hasClientInvalidEmails
+              }
             >
               Thêm {lineCount > 0 ? `(${lineCount})` : ""}
             </BrutalButton>
@@ -105,20 +136,31 @@ export function BulkAccessEmailModal({ open, onClose }: BulkAccessEmailModalProp
           </p>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setClientInvalidCount(0);
+              setError(null);
+            }}
             rows={8}
             placeholder={"student@gmail.com\nstudent2@gmail.com, SE K18"}
             className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm outline-none"
             aria-label="Danh sách email"
+            aria-invalid={hasClientInvalidEmails}
           />
           <p
             className={cn(
               "text-xs font-semibold tabular-nums",
-              lineCount > 500 ? "text-brutal-danger" : "text-brutal-muted",
+              lineCount > 500 || hasClientInvalidEmails
+                ? "text-brutal-danger"
+                : "text-brutal-muted",
             )}
           >
             {lineCount} dòng
             {lineCount > 500 && " — vượt giới hạn 500"}
+            {hasClientInvalidEmails &&
+              clientInvalidCount === 0 &&
+              " — có email không hợp lệ"}
+            {clientInvalidCount > 0 && ` — ${clientInvalidCount} email lỗi định dạng`}
           </p>
         </>
       ) : (
@@ -140,14 +182,16 @@ export function BulkAccessEmailModal({ open, onClose }: BulkAccessEmailModalProp
                 <span className="min-w-0 truncate font-medium">{r.email}</span>
                 <span
                   className={cn(
-                    "shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold",
+                    "shrink-0 max-w-[50%] truncate rounded-full border px-2 py-0.5 text-xs font-bold",
                     r.status === "created" && "status-ready",
                     r.status === "reactivated" && "bg-brutal-accent/20",
                     r.status === "already_active" && "bg-brutal-bg text-brutal-muted",
-                    r.status === "invalid" && "border-brutal-danger bg-red-50 text-brutal-danger",
+                    r.status === "invalid" &&
+                      "border-brutal-danger bg-brutal-danger/10 text-brutal-danger",
                   )}
+                  title={r.message}
                 >
-                  {STATUS_LABELS[r.status]}
+                  {formatResultLabel(r.status, r.message)}
                 </span>
               </div>
             ))}

@@ -53,6 +53,7 @@ export function AccessEmailsPanel() {
   const [editNote, setEditNote] = useState("");
   const [revokeEntry, setRevokeEntry] = useState<AccessEmail | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [pendingEmailId, setPendingEmailId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAccessEmails({
     page,
@@ -89,9 +90,13 @@ export function AccessEmailsPanel() {
 
   function reactivate(entry: AccessEmail) {
     setMutationError(null);
+    setPendingEmailId(entry.id);
     updateEmail(
       { id: entry.id, body: { isActive: true } },
-      { onError: (err) => setMutationError(getUserErrorMessage(err)) },
+      {
+        onSettled: () => setPendingEmailId(null),
+        onError: (err) => setMutationError(getUserErrorMessage(err)),
+      },
     );
   }
 
@@ -244,7 +249,7 @@ export function AccessEmailsPanel() {
                           variant="secondary"
                           className="px-3 py-1 text-xs"
                           onClick={() => reactivate(entry)}
-                          disabled={isUpdating}
+                          disabled={pendingEmailId === entry.id}
                         >
                           Kích hoạt
                         </BrutalButton>

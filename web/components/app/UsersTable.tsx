@@ -41,19 +41,33 @@ function QuotaCell({
   const [value, setValue] = useState(
     String(Math.round(user.storageQuotaBytes / 1_048_576)),
   );
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  const minMb = Math.ceil(user.storageUsedBytes / 1_048_576);
 
   function commit() {
     const mb = parseInt(value, 10);
-    if (!isNaN(mb) && mb > 0) {
-      onUpdate(user.id, mb * 1_048_576);
+    if (isNaN(mb) || mb <= 0) {
+      setInlineError("Nhập số MB hợp lệ");
+      return;
     }
+    if (mb < minMb) {
+      setInlineError(`Hạn mức phải ≥ ${minMb} MB đã dùng`);
+      return;
+    }
+    setInlineError(null);
+    onUpdate(user.id, mb * 1_048_576);
     setEditing(false);
   }
 
   if (!editing) {
     return (
       <button
-        onClick={() => setEditing(true)}
+        onClick={() => {
+          setValue(String(Math.round(user.storageQuotaBytes / 1_048_576)));
+          setInlineError(null);
+          setEditing(true);
+        }}
         disabled={isSaving}
         className="focus-brutal rounded px-2 py-1 text-sm tabular-nums underline-offset-2 hover:underline disabled:opacity-50"
         title="Nhấn để sửa hạn mức"
@@ -64,19 +78,28 @@ function QuotaCell({
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => e.key === "Enter" && commit()}
-        className="focus-brutal w-20 rounded border-2 border-brutal-ink px-2 py-1 text-sm tabular-nums"
-        aria-label="Hạn mức lưu trữ (MB)"
-        autoFocus
-        min="1"
-      />
-      <span className="text-xs text-brutal-muted">MB</span>
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setInlineError(null);
+          }}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === "Enter" && commit()}
+          className="focus-brutal w-20 rounded border-2 border-brutal-ink px-2 py-1 text-sm tabular-nums"
+          aria-label="Hạn mức lưu trữ (MB)"
+          aria-invalid={!!inlineError}
+          autoFocus
+          min={minMb}
+        />
+        <span className="text-xs text-brutal-muted">MB</span>
+      </div>
+      {inlineError && (
+        <p className="text-xs font-medium text-brutal-danger">{inlineError}</p>
+      )}
     </div>
   );
 }
@@ -89,6 +112,7 @@ export function UsersTable() {
   const [confirmDisable, setConfirmDisable] = useState<AdminUser | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [savingQuotaId, setSavingQuotaId] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAdminUsers({
     page,
@@ -97,6 +121,8 @@ export function UsersTable() {
   });
 
   const { mutate: updateUser, isPending } = useUpdateAdminUser();
+
+  const isRowPending = (userId: string) => pendingUserId === userId;
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
@@ -125,9 +151,13 @@ export function UsersTable() {
     (user: AdminUser) => {
       if (user.isDisabled) {
         setMutationError(null);
+        setPendingUserId(user.id);
         updateUser(
           { userId: user.id, body: { isDisabled: false } },
-          { onError: (err) => setMutationError(getUserErrorMessage(err)) },
+          {
+            onSettled: () => setPendingUserId(null),
+            onError: (err) => setMutationError(getUserErrorMessage(err)),
+          },
         );
         return;
       }
@@ -139,10 +169,12 @@ export function UsersTable() {
   const confirmDisableUser = () => {
     if (!confirmDisable) return;
     setMutationError(null);
+    setPendingUserId(confirmDisable.id);
     updateUser(
       { userId: confirmDisable.id, body: { isDisabled: true } },
       {
         onSuccess: () => setConfirmDisable(null),
+        onSettled: () => setPendingUserId(null),
         onError: (err) => {
           setMutationError(getUserErrorMessage(err));
           setConfirmDisable(null);
@@ -279,7 +311,7 @@ export function UsersTable() {
                       className={cn(
                         "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
                         user.isDisabled
-                          ? "border-brutal-danger bg-red-50 text-brutal-danger"
+                          ? "border-brutal-danger bg-brutal-danger/10 text-brutal-danger"
                           : "status-ready",
                       )}
                     >
@@ -300,8 +332,13 @@ export function UsersTable() {
                         <BrutalButton
                           variant={user.isDisabled ? "secondary" : "ghost"}
                           onClick={() => handleToggleDisable(user)}
-                          disabled={isPending}
+                          disabled={isRowPending(user.id)}
                           className="px-3 py-1 text-xs"
+                          aria-label={
+                            user.isDisabled
+                              ? `Kích hoạt ${user.displayName}`
+                              : `Vô hiệu ${user.displayName}`
+                          }
                         >
                           {user.isDisabled ? "Kích hoạt" : "Vô hiệu"}
                         </BrutalButton>

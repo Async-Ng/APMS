@@ -1,8 +1,11 @@
 "use client";
 
+import { useTabArrowNav } from "@/components/ui/useTabArrowNav";
 import { cn } from "@/lib/cn";
 
 export type AdminTabId = "overview" | "users" | "access-emails" | "academic";
+
+const TAB_IDS: AdminTabId[] = ["overview", "users", "access-emails", "academic"];
 
 const TABS: {
   id: AdminTabId;
@@ -40,6 +43,8 @@ export function AdminTabs({
   onChange: (tab: AdminTabId) => void;
   badges?: Partial<Record<AdminTabId, number>>;
 }) {
+  const handleKeyDown = useTabArrowNav(TAB_IDS, onChange);
+
   return (
     <div
       className="sticky top-0 z-10 -mx-4 mb-6 border-b-2 border-brutal-ink/10 bg-brutal-bg/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6"
@@ -53,10 +58,14 @@ export function AdminTabs({
           return (
             <button
               key={tab.id}
+              id={`tab-${tab.id}`}
               type="button"
               role="tab"
               aria-selected={isActive}
+              aria-controls={`panel-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(tab.id)}
+              onKeyDown={(e) => handleKeyDown(e, tab.id)}
               className={cn(
                 "focus-brutal inline-flex items-center gap-2 rounded-xl border-2 border-brutal-ink px-4 py-2 text-sm font-bold transition-all",
                 isActive

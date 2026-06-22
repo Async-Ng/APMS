@@ -1,9 +1,10 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 
 interface AdminFormModalProps {
   open: boolean;
@@ -28,23 +29,18 @@ export function AdminFormModal({
   footer,
   maxWidth = "md",
 }: AdminFormModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, dialogRef);
 
   if (!open) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",
-        backgroundColor: "rgba(26,26,26,0.5)",
+        backgroundColor: "var(--brutal-overlay)",
         backdropFilter: "blur(2px)",
       }}
       onClick={(e) => {

@@ -30,6 +30,18 @@ interface StatCardProps {
   id: string;
 }
 
+function StatCardSkeleton() {
+  return (
+    <div className="brutal-card flex flex-col gap-3 p-5 bg-brutal-surface">
+      <div className="skeleton h-12 w-12 rounded-xl" />
+      <div className="space-y-2">
+        <div className="skeleton h-3 w-24" />
+        <div className="skeleton h-8 w-16" />
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, subtitle, icon, bgClass, id }: StatCardProps) {
   return (
     <div id={id} className={cn("brutal-card flex flex-col gap-3 p-5", bgClass)}>
@@ -74,6 +86,22 @@ export function AdminStatsGrid() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   const avgStorage =
     data && data.totalUsers > 0
       ? formatBytes(Math.round(data.totalStorageUsedBytes / data.totalUsers))
@@ -83,28 +111,28 @@ export function AdminStatsGrid() {
     {
       id: "stat-total-users",
       label: "Tổng người dùng",
-      value: isLoading ? "—" : (data?.totalUsers ?? 0),
+      value: data?.totalUsers ?? 0,
       icon: <Users className="h-6 w-6 text-brutal-secondary" />,
       bgClass: "bg-brutal-secondary/15",
     },
     {
       id: "stat-active-users",
       label: "Đang hoạt động",
-      value: isLoading ? "—" : (data?.activeUsers ?? 0),
+      value: data?.activeUsers ?? 0,
       icon: <Users className="h-6 w-6 text-brutal-accent" />,
       bgClass: "bg-brutal-accent/15",
     },
     {
       id: "stat-disabled-users",
       label: "Đã vô hiệu",
-      value: isLoading ? "—" : (data?.disabledUsers ?? 0),
+      value: data?.disabledUsers ?? 0,
       icon: <UserX className="h-6 w-6 text-brutal-danger" />,
-      bgClass: "bg-red-50",
+      bgClass: "bg-brutal-danger/10",
     },
     {
       id: "stat-total-folders",
       label: "Tổng thư mục",
-      value: isLoading ? "—" : (data?.totalFolders ?? 0),
+      value: data?.totalFolders ?? 0,
       icon: <Folder className="h-6 w-6 text-brutal-primary" />,
       bgClass: "bg-brutal-primary/10",
     },
@@ -136,7 +164,7 @@ export function AdminStatsGrid() {
                 Tổng tài liệu
               </p>
               <p className="font-heading text-2xl font-extrabold tabular-nums">
-                {isLoading ? "—" : (data?.totalDocuments ?? 0)}
+                {data?.totalDocuments ?? 0}
               </p>
             </div>
           </div>
@@ -147,13 +175,13 @@ export function AdminStatsGrid() {
                 className={cn(
                   "rounded-lg border-2 border-brutal-ink px-2.5 py-1 text-xs font-bold tabular-nums",
                   key === "ready" && "status-ready",
-                  key === "failed" && "border-brutal-danger bg-red-50 text-brutal-danger",
+                  key === "failed" &&
+                    "border-brutal-danger bg-brutal-danger/10 text-brutal-danger",
                   key === "processing" && "bg-brutal-accent/20",
                   key === "pending" && "bg-brutal-bg",
                 )}
               >
-                {DOC_STATUS_LABELS[key]}:{" "}
-                {isLoading ? "—" : (docStatus[key] ?? 0)}
+                {DOC_STATUS_LABELS[key]}: {docStatus[key] ?? 0}
               </span>
             ))}
           </div>
@@ -162,7 +190,7 @@ export function AdminStatsGrid() {
         <StatCard
           id="stat-storage"
           label="Tổng dung lượng"
-          value={isLoading ? "—" : formatBytes(data?.totalStorageUsedBytes ?? 0)}
+          value={formatBytes(data?.totalStorageUsedBytes ?? 0)}
           subtitle={
             avgStorage ? `Trung bình ${avgStorage}/người dùng` : undefined
           }
@@ -171,7 +199,7 @@ export function AdminStatsGrid() {
         />
       </div>
 
-      {isFetching && !isLoading && (
+      {isFetching && (
         <p className="text-xs text-brutal-muted">Đang cập nhật…</p>
       )}
     </div>
