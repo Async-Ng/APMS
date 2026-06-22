@@ -23,11 +23,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If authenticated user hits root or login, redirect to /drive
-  if ((pathname === "/" || pathname === "/login") && hasCognitoToken) {
-    return NextResponse.redirect(new URL("/drive", request.url));
-  }
-
   return NextResponse.next();
 }
 

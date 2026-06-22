@@ -5,6 +5,7 @@ export const ErrorCode = {
   AUTH_UNAUTHORIZED: "AUTH_UNAUTHORIZED",
   AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
   AUTH_DISABLED: "AUTH_DISABLED",
+  AUTH_EMAIL_DOMAIN: "AUTH_EMAIL_DOMAIN",
   VALIDATION_ERROR: "VALIDATION_ERROR",
   NOT_FOUND: "NOT_FOUND",
   FORBIDDEN: "FORBIDDEN",
@@ -46,6 +47,8 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   AUTH_UNAUTHORIZED: "Bạn cần đăng nhập để tiếp tục.",
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
+  AUTH_EMAIL_DOMAIN:
+    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ.",
   VALIDATION_ERROR: "Dữ liệu không hợp lệ. Vui lòng kiểm tra và thử lại.",
   NOT_FOUND: "Không tìm thấy nội dung yêu cầu.",
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",
