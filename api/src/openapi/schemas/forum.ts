@@ -1,6 +1,7 @@
 import { registry, z } from "../setup";
 import { DOCUMENT_STATUSES, DOCUMENT_VISIBILITIES } from "../../models/document.model";
 import { successEnvelope } from "./common";
+import { FORUM_MATCH_TYPES } from "../../services/forum.service";
 
 const forumMajorSchema = z
   .object({
@@ -40,6 +41,7 @@ export const forumDocumentSchema = registry.register(
       pageCount: z.number().nullable(),
       tags: z.array(z.string()),
       visibility: z.enum(DOCUMENT_VISIBILITIES),
+      matchType: z.enum(FORUM_MATCH_TYPES),
       curriculumCourse: forumCurriculumSchema,
       owner: z
         .object({

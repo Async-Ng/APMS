@@ -7,7 +7,7 @@ import { requireActiveUser } from "../middleware/requireActiveUser";
 import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
-import { listLibraryDocumentsQuerySchema } from "../validators/academic.validator";
+import { forumDocumentsQuerySchema } from "../validators/forum.validator";
 
 const downloadQuerySchema = z.object({
   download: z.enum(["true"]).optional(),
@@ -19,7 +19,7 @@ forumRouter.use(authenticate, resolveUser, requireActiveUser);
 
 forumRouter.get(
   "/documents",
-  validate({ query: listLibraryDocumentsQuerySchema }),
+  validate({ query: forumDocumentsQuerySchema }),
   forumController.listDocuments,
 );
 forumRouter.get(

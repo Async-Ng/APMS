@@ -1,4 +1,3 @@
-import { listLibraryDocumentsQuerySchema } from "../../validators/academic.validator";
 import { objectIdParamSchema } from "../../validators/common.validator";
 import { registry, z } from "../setup";
 import {
@@ -6,6 +5,7 @@ import {
   forumDocumentsSuccessResponseSchema,
 } from "../schemas/forum";
 import { bearerSecurity, error401, error403, error404, jsonResponse } from "./helpers";
+import { forumDocumentsQuerySchema } from "../../validators/forum.validator";
 
 const downloadQuerySchema = z.object({
   download: z.enum(["true"]).optional().openapi({
@@ -20,10 +20,10 @@ export function registerForumPaths(): void {
     tags: ["Forum", "Internal Library"],
     summary: "List internal forum feed documents",
     description:
-      "Browsable feed of internal documents published by APMS users. Supports the same academic filters as the internal library.",
+      "Browsable feed of internal documents scoped to the current user's academic profile. Exact curriculum matches are ranked before same-subject documents from other semesters.",
     security: [...bearerSecurity],
     request: {
-      query: listLibraryDocumentsQuerySchema,
+      query: forumDocumentsQuerySchema,
     },
     responses: {
       200: jsonResponse(forumDocumentsSuccessResponseSchema, "Forum feed"),

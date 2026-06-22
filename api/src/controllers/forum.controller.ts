@@ -6,7 +6,7 @@ import * as forumService from "../services/forum.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
-import { listLibraryDocumentsQuerySchema } from "../validators/academic.validator";
+import { forumDocumentsQuerySchema } from "../validators/forum.validator";
 
 function requireUser(req: Request) {
   if (!req.currentUser) {
@@ -16,8 +16,17 @@ function requireUser(req: Request) {
 }
 
 export const listDocuments = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  const query = req.validatedQuery as z.infer<typeof listLibraryDocumentsQuerySchema>;
-  sendSuccess(res, await forumService.listForumDocuments(query));
+  const query = req.validatedQuery as z.infer<typeof forumDocumentsQuerySchema>;
+  sendSuccess(
+    res,
+    await forumService.listForumDocuments({
+      user: requireUser(req),
+      page: query.page,
+      limit: query.limit,
+      search: query.search,
+      sort: query.sort,
+    }),
+  );
 });
 
 export const getDocument = catchAsync(async (req: Request, res: Response): Promise<void> => {

@@ -21,7 +21,7 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function serializeLibraryDocuments(documents: DocumentDocument[]) {
+export async function serializeLibraryDocuments(documents: DocumentDocument[]) {
   const courseIds = documents
     .map((document) => document.curriculumCourseId?.toString())
     .filter((id): id is string => Boolean(id));
