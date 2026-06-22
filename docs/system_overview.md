@@ -99,6 +99,7 @@ Backend Express (`api/`) hiện hỗ trợ:
 | Documents | `/api/documents` | Có (presigned S3 upload, metadata) |
 | Admin | `/api/admin` | Có (stats, user management) |
 | Shares | `/api/shares` | Có (batch share, revoke, with-me, by-me) |
+| Forum feed | `/api/forum` | Có (browse published internal documents) |
 | Semantic search | `/api/search` | **Có** (Vector search Atlas, filter theo ownerId) |
 | RAG Chat | `/api/chat` | **Có** (sessions CRUD, messages, citations) |
 | Processing worker | — (background) | **Có** (poll 30s: `processing → ready`) |

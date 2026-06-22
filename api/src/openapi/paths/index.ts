@@ -5,6 +5,7 @@ import { registerChatPaths } from "./chat";
 import { registerDocumentsPaths } from "./documents";
 import { registerDrivePaths } from "./drive";
 import { registerFoldersPaths } from "./folders";
+import { registerForumPaths } from "./forum";
 import { registerHealthPaths } from "./health";
 import { registerSearchPaths } from "./search";
 import { registerSharesPaths } from "./shares";
@@ -16,6 +17,7 @@ export function registerAllPaths(): void {
   registerUsersPaths();
   registerDrivePaths();
   registerFoldersPaths();
+  registerForumPaths();
   registerDocumentsPaths();
   registerAdminPaths();
   registerAcademicPaths();
