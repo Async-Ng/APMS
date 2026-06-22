@@ -39,6 +39,14 @@ export const ErrorCode = {
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
   QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
+  ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
+  ACCESS_EMAIL_NOT_FOUND: "ACCESS_EMAIL_NOT_FOUND",
+  CANNOT_REVOKE_SELF_ACCESS: "CANNOT_REVOKE_SELF_ACCESS",
+  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
+  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -82,6 +90,18 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",
   QUOTA_TOO_LOW: "Dung lượng mới không thể nhỏ hơn dung lượng đang sử dụng.",
+  ACADEMIC_CONFLICT:
+    "Không thể thay đổi vì bản ghi đang được sinh viên hoặc tài liệu sử dụng.",
+  ACCESS_EMAIL_NOT_FOUND: "Không tìm thấy email truy cập.",
+  CANNOT_REVOKE_SELF_ACCESS:
+    "Bạn không thể thu hồi quyền truy cập của chính email mình.",
+  MAJOR_NOT_FOUND: "Không tìm thấy ngành học.",
+  SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
+  CURRICULUM_NOT_FOUND: "Không tìm thấy mapping chương trình đào tạo.",
+  ACADEMIC_PROFILE_REQUIRED:
+    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
+  CURRICULUM_NOT_ENROLLED:
+    "Môn học không thuộc ngành, học kỳ hoặc danh sách môn đã chọn của bạn.",
 };
 
 const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";

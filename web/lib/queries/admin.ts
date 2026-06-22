@@ -2,7 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 
-/* ── Types ─────────────────────────────────────────────────── */
+/* ── Shared types ─────────────────────────────────────────── */
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: Pagination;
+}
 
 export interface AdminStats {
   totalUsers: number;
@@ -11,7 +23,12 @@ export interface AdminStats {
   totalStorageUsedBytes: number;
   totalDocuments: number;
   totalFolders: number;
-  documentsByStatus: Record<string, number>;
+  documentsByStatus: {
+    pending?: number;
+    processing?: number;
+    ready?: number;
+    failed?: number;
+  };
 }
 
 export interface AdminUser {
@@ -21,17 +38,18 @@ export interface AdminUser {
   avatarUrl: string | null;
   role: "user" | "admin";
   isDisabled: boolean;
+  majorId: string | null;
+  currentSemester: number | null;
+  currentSubjectIds: string[];
   storageUsedBytes: number;
   storageQuotaBytes: number;
   createdAt: string;
   updatedAt: string;
 }
 
-interface AdminUsersResponse {
+interface AdminUsersApiResponse {
   users: AdminUser[];
-  total: number;
-  page: number;
-  limit: number;
+  pagination: Pagination;
 }
 
 /* ── Admin queries ──────────────────────────────────────────── */
@@ -56,17 +74,18 @@ export function useAdminUsers(params: {
   return useQuery({
     queryKey: ["admin", "users", params],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: AdminUsersResponse }>(
-        "/admin/users",
-        { params },
-      );
-      return res.data.data;
+      const res = await api.get<{
+        status: string;
+        data: AdminUsersApiResponse;
+      }>("/admin/users", { params });
+      const { users, pagination } = res.data.data;
+      return { users, pagination };
     },
-    placeholderData: (prev) => prev, // keep previous page visible while loading
+    placeholderData: (prev) => prev,
   });
 }
 
-export function useAdminUser(userId: string) {
+export function useAdminUser(userId: string | null) {
   return useQuery({
     queryKey: ["admin", "users", userId],
     queryFn: async () => {
@@ -75,6 +94,7 @@ export function useAdminUser(userId: string) {
       );
       return res.data.data;
     },
+    enabled: !!userId,
   });
 }
 
@@ -88,15 +108,22 @@ interface UpdateAdminUserBody {
 export function useUpdateAdminUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       userId,
       body,
     }: {
       userId: string;
       body: UpdateAdminUserBody;
-    }) => api.patch(`/admin/users/${userId}`, body),
+    }) => {
+      const res = await api.patch<{ status: string; data: AdminUser }>(
+        `/admin/users/${userId}`,
+        body,
+      );
+      return res.data.data;
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }
