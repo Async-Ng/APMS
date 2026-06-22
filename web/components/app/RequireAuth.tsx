@@ -1,6 +1,5 @@
 "use client";
 
-import { signOut } from "aws-amplify/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -25,17 +24,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
     }
 
     redirectingRef.current = true;
-
-    async function redirectToLogin() {
-      try {
-        await signOut();
-      } catch {
-        // Session may already be invalid
-      }
-      router.replace("/login");
-    }
-
-    void redirectToLogin();
+    router.replace("/login");
   }, [isLoading, user, router]);
 
   if (isLoading || !user) {

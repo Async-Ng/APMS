@@ -37,9 +37,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Main content — offset by sidebar width on desktop */}
         <div
           className={cn(
-            "flex min-w-0 flex-1 flex-col transition-[margin-left] duration-200",
-            "lg:ml-60",
-            isCollapsed && "lg:ml-16",
+            "flex w-full min-w-0 flex-1 flex-col overflow-x-hidden transition-[margin-left] duration-200",
+            isCollapsed
+              ? "lg:ml-[var(--sidebar-collapsed-width)]"
+              : "lg:ml-[var(--sidebar-width)]",
           )}
         >
           {children}

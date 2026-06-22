@@ -7,11 +7,11 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  PanelLeftClose,
   Share2,
   ShieldCheck,
   Star,
   Trash2,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -69,6 +69,14 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+function formatDisplayName(user: { displayName: string; email: string }): string {
+  if (user.displayName.trim() && user.displayName !== user.email) {
+    return user.displayName;
+  }
+  const localPart = user.email.split("@")[0];
+  return localPart || "Tài khoản";
+}
+
 interface SidebarProps {
   isOpen: boolean;
   isCollapsed: boolean;
@@ -120,8 +128,10 @@ export function Sidebar({
         id="sidebar"
         aria-label="Điều hướng chính"
         className={cn(
-          "fixed left-0 top-0 flex h-full flex-col border-r-3 border-brutal-ink bg-brutal-surface transition-[width,transform] duration-200 ease-out",
-          isCollapsed ? "w-16" : "w-60",
+          "fixed left-0 top-0 flex h-dvh flex-col overflow-x-hidden border-r-3 border-brutal-ink bg-brutal-surface transition-[width,transform] duration-200 ease-out",
+          isCollapsed
+            ? "w-[var(--sidebar-collapsed-width)]"
+            : "w-[var(--sidebar-width)]",
           // Mobile: slide in/out
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
@@ -162,7 +172,7 @@ export function Sidebar({
               {isCollapsed ? (
                 <Menu className="h-4 w-4" />
               ) : (
-                <X className="h-4 w-4" />
+                <PanelLeftClose className="h-4 w-4" />
               )}
             </button>
           </Tooltip>
@@ -216,49 +226,63 @@ export function Sidebar({
         {/* User section */}
         <div
           className={cn(
-            "flex items-center gap-3 border-t-3 border-brutal-ink p-3",
-            isCollapsed && "justify-center",
+            "mt-auto w-full min-w-0 border-t-3 border-brutal-ink p-3",
+            isCollapsed && "flex justify-center",
           )}
         >
-          <Tooltip content="Hồ sơ của tôi" side="top">
-            <Link
-              href="/profile"
-              className={cn(
-                "focus-brutal flex items-center gap-3 rounded-xl",
-                isCollapsed ? "p-1" : "p-1.5",
-              )}
-              aria-label="Mở hồ sơ"
-            >
-              {user?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.avatarUrl}
-                  alt={user.displayName}
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0 rounded-xl border-2 border-brutal-ink object-cover shadow-brutal-sm"
-                />
-              ) : (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white shadow-brutal-sm">
-                  {user?.displayName?.charAt(0).toUpperCase() ?? "?"}
+          {isCollapsed ? (
+            <Tooltip content="Hồ sơ của tôi" side="right">
+              <Link
+                href="/profile"
+                className="focus-brutal flex rounded-xl p-1"
+                aria-label="Mở hồ sơ"
+              >
+                {user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatarUrl}
+                    alt={user ? formatDisplayName(user) : "Hồ sơ"}
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 shrink-0 rounded-xl border-2 border-brutal-ink object-cover shadow-brutal-sm"
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white shadow-brutal-sm">
+                    {user ? formatDisplayName(user).charAt(0).toUpperCase() : "?"}
+                  </div>
+                )}
+              </Link>
+            </Tooltip>
+          ) : (
+            <div className="flex w-full min-w-0 items-center gap-2">
+              <Link
+                href="/profile"
+                className="focus-brutal flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-brutal-bg"
+                aria-label="Mở hồ sơ"
+                title="Hồ sơ của tôi"
+              >
+                {user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatarUrl}
+                    alt={user ? formatDisplayName(user) : "Hồ sơ"}
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 shrink-0 rounded-xl border-2 border-brutal-ink object-cover shadow-brutal-sm"
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white shadow-brutal-sm">
+                    {user ? formatDisplayName(user).charAt(0).toUpperCase() : "?"}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-brutal-ink">
+                    {user ? formatDisplayName(user) : "—"}
+                  </p>
+                  <p className="truncate text-xs text-brutal-muted">{user?.email ?? "—"}</p>
                 </div>
-              )}
+              </Link>
 
-          {!isCollapsed && (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-brutal-ink">
-                  {user?.displayName ?? "—"}
-                </p>
-                <p className="truncate text-xs text-brutal-muted">{user?.email}</p>
-              </div>
-            </>
-          )}
-            </Link>
-          </Tooltip>
-
-          {!isCollapsed && (
-            <>
               <Tooltip content="Đăng xuất" side="top">
                 <button
                   onClick={() => void handleSignOut()}
@@ -268,7 +292,7 @@ export function Sidebar({
                   <LogOut className="h-4 w-4" />
                 </button>
               </Tooltip>
-            </>
+            </div>
           )}
         </div>
       </aside>

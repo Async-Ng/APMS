@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, GraduationCap, IdCard, User2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -72,6 +72,12 @@ export default function ProfilePage() {
   const updateName = useUpdateDisplayName();
   const updateAcademic = useUpdateAcademicProfile();
 
+  useEffect(() => {
+    if (user?.displayName) {
+      setNameDraft(user.displayName);
+    }
+  }, [user?.displayName]);
+
   function validateDisplayName(raw: string): string | null {
     const trimmed = raw.trim();
     if (trimmed.length === 0) return "Vui lòng nhập tên hiển thị.";
@@ -80,10 +86,17 @@ export default function ProfilePage() {
   }
 
   return (
-    <>
-      <Topbar breadcrumbs={[{ label: "Hồ sơ" }]} onMenuOpen={() => {}} />
+    <div className="flex w-full min-w-0 flex-1 flex-col">
+      <Topbar
+        breadcrumbs={[{ label: "Hồ sơ" }]}
+        onMenuOpen={() => {}}
+        showBreadcrumbRootIcon={false}
+      />
 
-      <main className="flex-1 space-y-6 p-4 sm:p-6" id="main-content">
+      <main
+        className="mx-auto w-full min-w-0 max-w-3xl flex-1 space-y-6 overflow-x-hidden p-4 pb-8 sm:p-6 sm:pb-10"
+        id="main-content"
+      >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-accent shadow-brutal-sm">
             <User2 className="h-5 w-5 text-brutal-ink" />
@@ -98,7 +111,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <BrutalCard>
+        <BrutalCard className="min-w-0">
           <div className="mb-4 flex items-center gap-2">
             <IdCard className="h-5 w-5 text-brutal-ink" aria-hidden="true" />
             <h2 className="font-heading text-lg font-extrabold text-brutal-ink">
@@ -158,7 +171,7 @@ export default function ProfilePage() {
           )}
         </BrutalCard>
 
-        <BrutalCard>
+        <BrutalCard className="min-w-0">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-brutal-ink" aria-hidden="true" />
@@ -314,7 +327,7 @@ export default function ProfilePage() {
           </div>
         </BrutalCard>
       </main>
-    </>
+    </div>
   );
 }
 

@@ -11,21 +11,26 @@ export interface BreadcrumbItem {
 interface BreadcrumbNavProps {
   items: BreadcrumbItem[];
   className?: string;
+  showRootIcon?: boolean;
 }
 
 /** Neo-brutalism breadcrumb for folder navigation depth ≥ 2. */
-export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
+export function BreadcrumbNav({
+  items,
+  className,
+  showRootIcon = true,
+}: BreadcrumbNavProps) {
   return (
     <nav
       aria-label="Đường dẫn"
-      className={cn("flex items-center gap-1 overflow-x-auto", className)}
+      className={cn("flex min-w-0 items-center", className)}
     >
-      <ol className="flex items-center gap-1 text-sm font-medium">
+      <ol className="flex min-w-0 items-center gap-1 text-sm font-medium">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
-            <li key={index} className="flex items-center gap-1">
-              {index === 0 && (
+            <li key={index} className="flex min-w-0 items-center gap-1">
+              {index === 0 && showRootIcon && (
                 <HardDrive
                   className="mr-0.5 h-3.5 w-3.5 shrink-0 text-brutal-muted"
                   aria-hidden="true"
