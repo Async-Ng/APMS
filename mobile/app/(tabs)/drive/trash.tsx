@@ -6,6 +6,8 @@ import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "r
 import { ActionSheet, type ActionItem } from "../../../components/app/ActionSheet";
 import { FolderItem } from "../../../components/app/FolderItem";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { HeaderBar } from "../../../components/ui/HeaderBar";
+import { SectionHeaderRow } from "../../../components/ui/SectionHeaderRow";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import { type DriveDocument, type DriveFolder, useTrash } from "../../../hooks/useDrive";
@@ -86,35 +88,7 @@ export default function TrashScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          borderBottomWidth: 3,
-          borderBottomColor: colors.ink,
-          backgroundColor: colors.surface,
-        }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            borderWidth: 2,
-            borderColor: colors.ink,
-            backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-            alignItems: "center",
-            justifyContent: "center",
-          })}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.ink} />
-        </Pressable>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Thùng rác</Text>
-      </View>
+      <HeaderBar title="Thùng rác" onBack={() => router.back()} />
 
       {!isEmpty && (
         <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#FEF3C7", borderBottomWidth: 2, borderBottomColor: colors.ink }}>
@@ -138,12 +112,7 @@ export default function TrashScreen() {
           }
           renderItem={({ item }) => {
             if (item.type === "header") {
-              return (
-                <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>{item.label.toUpperCase()}</Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>{item.count}</Text>
-                </View>
-              );
+              return <SectionHeaderRow label={item.label} count={item.count} />;
             }
             if (item.type === "folder") {
               return (

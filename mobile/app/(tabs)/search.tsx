@@ -1,17 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  SafeAreaView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, SafeAreaView, Text, TextInput, View } from "react-native";
 
+import { SearchPromptState } from "../../components/app/SearchPromptState";
+import { SearchResultCard } from "../../components/app/SearchResultCard";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { HeaderBar } from "../../components/ui/HeaderBar";
 import { colors } from "../../constants/colors";
 import { useSearch } from "../../hooks/useSearch";
 
@@ -36,21 +31,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 12,
-          borderBottomWidth: 3,
-          borderBottomColor: colors.ink,
-          backgroundColor: colors.surface,
-          gap: 4,
-        }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>Tìm kiếm</Text>
-        <Text style={{ fontSize: 13, color: colors.muted }}>Tìm kiếm ngữ nghĩa trong tài liệu của bạn</Text>
-      </View>
+      <HeaderBar title="Tìm kiếm" subtitle="Tìm kiếm ngữ nghĩa trong tài liệu của bạn" />
 
       {/* Search bar */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
@@ -97,56 +78,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Results */}
-      {showPrompt && (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 40, gap: 20 }}>
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              borderWidth: 3,
-              borderColor: colors.ink,
-              backgroundColor: colors.fptBlue,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: colors.ink,
-              shadowOffset: { width: 4, height: 4 },
-              shadowOpacity: 1,
-              shadowRadius: 0,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="search" size={36} color={colors.onBrand} />
-          </View>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, textAlign: "center" }}>
-            Tìm kiếm ngữ nghĩa
-          </Text>
-          <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", lineHeight: 20 }}>
-            Đặt câu hỏi bằng ngôn ngữ tự nhiên — APMS tìm các đoạn liên quan nhất trong tài liệu của bạn.
-          </Text>
-          {["Gradient descent là gì?", "Điểm chính Chương 3", "Giải thích quản lý bộ nhớ"].map((q) => (
-            <Pressable
-              key={q}
-              onPress={() => setQuery(q)}
-              style={({ pressed }) => ({
-                backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-                borderWidth: 2,
-                borderColor: colors.ink,
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                width: "100%",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-              })}
-            >
-              <Ionicons name="sparkles-outline" size={16} color={colors.fptOrange} />
-              <Text style={{ fontSize: 13, color: colors.ink, fontWeight: "600" }}>{q}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      {showPrompt && <SearchPromptState onPickSuggestion={setQuery} />}
 
       {showShort && (
         <View style={{ alignItems: "center", paddingTop: 40 }}>
@@ -175,79 +107,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, gap: 12 }}
           renderItem={({ item, index }) => (
-            <Pressable
-              onPress={() => router.push(`/documents/${item.documentId}`)}
-              style={({ pressed }) => ({
-                backgroundColor: colors.surface,
-                borderWidth: 3,
-                borderColor: colors.ink,
-                borderRadius: 16,
-                padding: 16,
-                gap: 10,
-                shadowColor: colors.ink,
-                shadowOffset: pressed ? { width: 0, height: 0 } : { width: 4, height: 4 },
-                shadowOpacity: pressed ? 0 : 1,
-                shadowRadius: 0,
-                elevation: pressed ? 0 : 4,
-                transform: pressed ? [{ translateX: 4 }, { translateY: 4 }] : [],
-              })}
-              accessibilityRole="button"
-              accessibilityLabel={`Kết quả ${index + 1}: ${item.documentTitle}`}
-            >
-              {/* Score badge */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <View
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 6,
-                      backgroundColor: colors.fptOrange,
-                      borderWidth: 2,
-                      borderColor: colors.ink,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text style={{ fontSize: 10, fontWeight: "800", color: colors.onBrand }}>
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.muted }}>
-                    {(item.score * 100).toFixed(0)}% khớp
-                  </Text>
-                </View>
-                {item.pageNumber !== null && (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Ionicons name="bookmark-outline" size={12} color={colors.muted} />
-                    <Text style={{ fontSize: 11, color: colors.muted }}>p.{item.pageNumber}</Text>
-                  </View>
-                )}
-              </View>
-
-              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }} numberOfLines={1}>
-                {item.documentTitle}
-              </Text>
-
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: colors.muted,
-                  lineHeight: 19,
-                  borderLeftWidth: 3,
-                  borderLeftColor: colors.fptBlue,
-                  paddingLeft: 10,
-                }}
-                numberOfLines={4}
-              >
-                {item.excerpt}
-              </Text>
-
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="open-outline" size={12} color={colors.fptBlue} />
-                <Text style={{ fontSize: 12, color: colors.fptBlue, fontWeight: "700" }}>Xem tài liệu</Text>
-              </View>
-            </Pressable>
+            <SearchResultCard result={item} index={index} onPress={() => router.push(`/documents/${item.documentId}`)} />
           )}
         />
       )}
