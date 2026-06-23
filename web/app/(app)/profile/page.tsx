@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, GraduationCap, IdCard, User2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -34,7 +34,9 @@ function uniqueSubjects(
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
 
-  const [nameDraft, setNameDraft] = useState(user?.displayName ?? "");
+  const savedDisplayName = user?.displayName ?? "";
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const displayName = nameDraft ?? savedDisplayName;
   const [nameError, setNameError] = useState<string | null>(null);
 
   const { data: majors } = useCatalogMajors();
@@ -71,12 +73,6 @@ export default function ProfilePage() {
 
   const updateName = useUpdateDisplayName();
   const updateAcademic = useUpdateAcademicProfile();
-
-  useEffect(() => {
-    if (user?.displayName) {
-      setNameDraft(user.displayName);
-    }
-  }, [user?.displayName]);
 
   function validateDisplayName(raw: string): string | null {
     const trimmed = raw.trim();
@@ -134,7 +130,7 @@ export default function ProfilePage() {
                 <label className="text-xs font-bold text-brutal-muted">
                   Tên hiển thị
                   <input
-                    value={nameDraft}
+                    value={displayName}
                     onChange={(e) => setNameDraft(e.target.value)}
                     placeholder="Nhập tên hiển thị…"
                     className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink outline-none"
@@ -156,12 +152,14 @@ export default function ProfilePage() {
                   loading={updateName.isPending}
                   onClick={() => {
                     setNameError(null);
-                    const error = validateDisplayName(nameDraft);
+                    const error = validateDisplayName(displayName);
                     if (error) {
                       setNameError(error);
                       return;
                     }
-                    updateName.mutate(nameDraft.trim());
+                    updateName.mutate(displayName.trim(), {
+                      onSuccess: () => setNameDraft(null),
+                    });
                   }}
                 >
                   Lưu tên

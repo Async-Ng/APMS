@@ -21,10 +21,12 @@ export function AdminSearchBar({
   id = "admin-search",
 }: AdminSearchBarProps) {
   const [local, setLocal] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
 
-  useEffect(() => {
+  if (value !== prevValue) {
+    setPrevValue(value);
     setLocal(value);
-  }, [value]);
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

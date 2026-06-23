@@ -49,6 +49,13 @@ export function ForumFiltersBar({
 }: ForumFiltersBarProps) {
   const isLibrary = mode === "library";
   const [localSearch, setLocalSearch] = useState(filters.search);
+  const [prevSearch, setPrevSearch] = useState(filters.search);
+
+  if (filters.search !== prevSearch) {
+    setPrevSearch(filters.search);
+    setLocalSearch(filters.search);
+  }
+
   const { data: majors } = useCatalogMajors();
   const { data: profile } = useAcademicProfile();
   const semesterNum = filters.semesterNumber
@@ -58,10 +65,6 @@ export function ForumFiltersBar({
     filters.majorId || undefined,
     semesterNum,
   );
-
-  useEffect(() => {
-    setLocalSearch(filters.search);
-  }, [filters.search]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

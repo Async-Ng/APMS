@@ -20,8 +20,10 @@ export function useModalA11y(
   const onCloseRef = useRef(onClose);
   const preventCloseRef = useRef(options?.preventClose ?? false);
 
-  onCloseRef.current = onClose;
-  preventCloseRef.current = options?.preventClose ?? false;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    preventCloseRef.current = options?.preventClose ?? false;
+  });
 
   // Save trigger focus on open; restore only when modal closes
   useEffect(() => {

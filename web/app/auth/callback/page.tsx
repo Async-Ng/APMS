@@ -67,7 +67,7 @@ export default function AuthCallbackPage() {
         }
 
         router.replace("/drive");
-      } catch (err) {
+      } catch {
         setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
       }
     }
@@ -79,7 +79,6 @@ export default function AuthCallbackPage() {
       }
 
       if (payload.event === "signInWithRedirect_failure") {
-        const data = payload.data as { message?: string } | undefined;
         setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     });
