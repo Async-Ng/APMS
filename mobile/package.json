@@ -6,6 +6,8 @@
     "start": "expo start --offline",
     "android": "expo start --android --offline",
     "ios": "expo start --ios --offline",
+    "run:android": "expo run:android",
+    "run:ios": "expo run:ios",
     "web": "expo start --web --offline",
     "lint": "expo lint"
   },

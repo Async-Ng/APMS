@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "../constants/colors";
+import "../lib/amplify";
 
 export default function Index() {
   const [state, setState] = useState<"checking" | "auth" | "guest">("checking");
