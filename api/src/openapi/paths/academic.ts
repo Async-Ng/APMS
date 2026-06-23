@@ -5,7 +5,6 @@ import {
   createMajorSchema,
   createSubjectSchema,
   listCurriculumQuerySchema,
-  listLibraryDocumentsQuerySchema,
   updateAcademicProfileSchema,
   updateCurriculumCourseSchema,
   updateMajorSchema,
@@ -136,20 +135,4 @@ export function registerAcademicPaths(): void {
     responses: { 200: jsonResponse(entityResponse, "Academic profile"), 400: error400(), 401: error401, 403: error403 },
   });
 
-  registry.registerPath({
-    method: "get",
-    path: "/api/library/documents",
-    tags: ["Internal Library"],
-    security: [...bearerSecurity],
-    request: { query: listLibraryDocumentsQuerySchema },
-    responses: { 200: jsonResponse(entityResponse, "Paginated internal documents"), 401: error401, 403: error403 },
-  });
-  registry.registerPath({
-    method: "get",
-    path: "/api/library/documents/{id}",
-    tags: ["Internal Library"],
-    security: [...bearerSecurity],
-    request: { params: objectIdParamSchema },
-    responses: { 200: jsonResponse(entityResponse, "Internal document"), 401: error401, 403: error403, 404: error404 },
-  });
 }

@@ -5,24 +5,26 @@ import mongoose from "mongoose";
 import { connectDatabase } from "../src/config/database";
 import { loadEnv } from "../src/config/env";
 import { Document } from "../src/models/document.model";
-import { User } from "../src/models/user.model";
 
 async function migrate(): Promise<void> {
   await connectDatabase(loadEnv());
 
-  const [documents, users] = await Promise.all([
+  const [personal, internal, missing] = await Promise.all([
+    Document.updateMany({ visibility: "personal" }, { $set: { visibility: "private" } }),
+    Document.updateMany({ visibility: "internal" }, { $set: { visibility: "public" } }),
     Document.updateMany(
       { visibility: { $exists: false } },
-      { $set: { visibility: "private", curriculumCourseId: null } },
-    ),
-    User.updateMany(
-      { majorId: { $exists: false } },
-      { $set: { majorId: null, currentSemester: null, currentSubjectIds: [] } },
+      { $set: { visibility: "private" } },
     ),
   ]);
 
   console.log(
-    `Academic migration complete: documents=${documents.modifiedCount}, users=${users.modifiedCount}`,
+    [
+      "Document visibility migration complete:",
+      `personal->private=${personal.modifiedCount}`,
+      `internal->public=${internal.modifiedCount}`,
+      `missing->private=${missing.modifiedCount}`,
+    ].join(" "),
   );
 }
 
