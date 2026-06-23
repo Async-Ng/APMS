@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchAuthSession } from "aws-amplify/auth";
+import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -36,6 +36,19 @@ export default function AuthCallbackPage() {
 
         finishedRef.current = true;
         await fetchMe();
+
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          try {
+            await signOut();
+          } catch {
+            // Session may already be invalid
+          }
+          const authError =
+            useAuthStore.getState().error ?? "Không thể xác thực tài khoản. Vui lòng thử lại.";
+          setError(authError);
+          return;
+        }
 
         const inviteToken = getPendingInviteToken();
         if (inviteToken) {

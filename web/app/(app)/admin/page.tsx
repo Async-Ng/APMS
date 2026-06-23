@@ -2,32 +2,36 @@
 
 import { ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
+import { useState } from "react";
 
-import { AdminStatsGrid } from "@/components/app/AdminStatsGrid";
-import { Topbar } from "@/components/app/Topbar";
+import { AccessEmailsPanel } from "@/components/app/admin/AccessEmailsPanel";
+import { AcademicAdminPanel } from "@/components/app/admin/AcademicAdminPanel";
+import { AdminOverviewPanel } from "@/components/app/admin/AdminOverviewPanel";
+import { AdminTabs, type AdminTabId } from "@/components/app/admin/AdminTabs";
 import { UsersTable } from "@/components/app/UsersTable";
+import { Topbar } from "@/components/app/Topbar";
+import { useAdminStats } from "@/lib/queries/admin";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
+  const { data: stats } = useAdminStats();
 
-  // Guard: redirect non-admins (covers case where middleware cookie check passes
-  // but the resolved role is user)
   if (!isLoading && user && user.role !== "admin") {
     redirect("/drive");
   }
 
+  const badges: Partial<Record<AdminTabId, number>> = {};
+  if (stats?.totalUsers) badges.users = stats.totalUsers;
+
   return (
     <>
-      <Topbar
-        breadcrumbs={[{ label: "Quản trị" }]}
-        onMenuOpen={() => {}}
-      />
+      <Topbar breadcrumbs={[{ label: "Quản trị" }]} onMenuOpen={() => {}} />
 
-      <main className="flex-1 space-y-8 p-4 sm:p-6" id="main-content">
-        {/* Page header */}
-        <div className="flex items-center gap-3">
+      <main className="flex-1 p-4 sm:p-6" id="main-content">
+        <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary shadow-brutal-sm">
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
@@ -36,31 +40,85 @@ export default function AdminPage() {
               Quản trị
             </h1>
             <p className="text-sm text-brutal-muted">
-              Thống kê hệ thống và quản lý người dùng
+              Thống kê, người dùng, email truy cập và danh mục học thuật
             </p>
           </div>
         </div>
 
-        {/* Stats */}
-        <section aria-labelledby="stats-heading">
-          <h2
-            id="stats-heading"
-            className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-          >
-            Tổng quan hệ thống
-          </h2>
-          <AdminStatsGrid />
+        <AdminTabs active={activeTab} onChange={setActiveTab} badges={badges} />
+
+        <section
+          id="panel-overview"
+          role="tabpanel"
+          aria-labelledby="tab-overview"
+          tabIndex={0}
+          hidden={activeTab !== "overview"}
+          className="outline-none"
+        >
+          {activeTab === "overview" && <AdminOverviewPanel />}
         </section>
 
-        {/* Users */}
-        <section aria-labelledby="users-heading">
-          <h2
-            id="users-heading"
-            className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-          >
-            Quản lý người dùng
-          </h2>
-          <UsersTable />
+        <section
+          id="panel-users"
+          role="tabpanel"
+          aria-labelledby="tab-users"
+          tabIndex={0}
+          hidden={activeTab !== "users"}
+          className="outline-none"
+        >
+          {activeTab === "users" && (
+            <>
+              <h2
+                id="users-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Quản lý người dùng
+              </h2>
+              <UsersTable />
+            </>
+          )}
+        </section>
+
+        <section
+          id="panel-access-emails"
+          role="tabpanel"
+          aria-labelledby="tab-access-emails"
+          tabIndex={0}
+          hidden={activeTab !== "access-emails"}
+          className="outline-none"
+        >
+          {activeTab === "access-emails" && (
+            <>
+              <h2
+                id="access-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Email truy cập ngoại lệ
+              </h2>
+              <AccessEmailsPanel />
+            </>
+          )}
+        </section>
+
+        <section
+          id="panel-academic"
+          role="tabpanel"
+          aria-labelledby="tab-academic"
+          tabIndex={0}
+          hidden={activeTab !== "academic"}
+          className="outline-none"
+        >
+          {activeTab === "academic" && (
+            <>
+              <h2
+                id="academic-heading"
+                className="mb-4 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+              >
+                Danh mục học thuật
+              </h2>
+              <AcademicAdminPanel />
+            </>
+          )}
         </section>
       </main>
     </>

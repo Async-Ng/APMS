@@ -272,7 +272,7 @@ export function useAcceptInvite() {
 export function getResourceLabel(
   group: ShareByMeGroup,
 ): string {
-  if (!group.resource) return "Deleted item";
+  if (!group.resource) return "Mục đã xóa";
   if (group.resource.type === "folder") return group.resource.data.name;
   return group.resource.data.title;
 }

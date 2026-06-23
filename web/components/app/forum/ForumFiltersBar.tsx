@@ -1,0 +1,276 @@
+"use client";
+
+import { Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { BrutalButton } from "@/components/ui/BrutalButton";
+import {
+  useAcademicProfile,
+  useCatalogCurriculum,
+  useCatalogMajors,
+} from "@/lib/queries/catalog";
+import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
+import { cn } from "@/lib/cn";
+
+export interface ForumFilterState {
+  search: string;
+  majorId: string;
+  semesterNumber: string;
+  subjectId: string;
+  sort: InternalDocumentSort;
+}
+
+export const DEFAULT_FORUM_FILTERS: ForumFilterState = {
+  search: "",
+  majorId: "",
+  semesterNumber: "",
+  subjectId: "",
+  sort: "newest",
+};
+
+interface ForumFiltersBarProps {
+  filters: ForumFilterState;
+  onChange: (filters: ForumFilterState) => void;
+  defaultSort?: InternalDocumentSort;
+  mode: "forum" | "library";
+}
+
+const SORT_OPTIONS: { value: InternalDocumentSort; label: string }[] = [
+  { value: "newest", label: "Mới nhất" },
+  { value: "oldest", label: "Cũ nhất" },
+  { value: "title", label: "Tên A–Z" },
+];
+
+export function ForumFiltersBar({
+  filters,
+  onChange,
+  defaultSort = "newest",
+  mode,
+}: ForumFiltersBarProps) {
+  const isLibrary = mode === "library";
+  const [localSearch, setLocalSearch] = useState(filters.search);
+  const { data: majors } = useCatalogMajors();
+  const { data: profile } = useAcademicProfile();
+  const semesterNum = filters.semesterNumber
+    ? Number(filters.semesterNumber)
+    : undefined;
+  const { data: curriculum } = useCatalogCurriculum(
+    filters.majorId || undefined,
+    semesterNum,
+  );
+
+  useEffect(() => {
+    setLocalSearch(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (localSearch !== filters.search) {
+        onChange({ ...filters, search: localSearch });
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce search only
+  }, [localSearch]);
+
+  const subjects =
+    curriculum
+      ?.map((c) => c.subject)
+      .filter((s): s is NonNullable<typeof s> => s !== null) ?? [];
+
+  const uniqueSubjects = Array.from(
+    new Map(subjects.map((s) => [s.id, s])).values(),
+  );
+
+  function patch(partial: Partial<ForumFilterState>) {
+    onChange({ ...filters, ...partial });
+  }
+
+  function applyMyProfile() {
+    if (!profile?.isComplete || !profile.major || !profile.currentSemester) {
+      return;
+    }
+    const firstSubject = profile.currentSubjects[0];
+    onChange({
+      ...filters,
+      majorId: profile.major.id,
+      semesterNumber: String(profile.currentSemester),
+      subjectId: firstSubject?.id ?? "",
+    });
+  }
+
+  function clearFilters() {
+    onChange({ ...DEFAULT_FORUM_FILTERS, sort: defaultSort });
+    setLocalSearch("");
+  }
+
+  const hasActiveFilters = isLibrary
+    ? filters.search ||
+      filters.majorId ||
+      filters.semesterNumber ||
+      filters.subjectId ||
+      filters.sort !== defaultSort
+    : filters.search || filters.sort !== defaultSort;
+
+  return (
+    <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
+      {!isLibrary && (
+        <p className="text-xs text-brutal-muted">
+          Diễn đàn hiển thị tài liệu theo hồ sơ học thuật của bạn.
+        </p>
+      )}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brutal-muted"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            placeholder="Tìm theo tên tài liệu…"
+            className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg py-2.5 pl-9 pr-4 text-sm outline-none"
+            aria-label="Tìm tài liệu"
+          />
+        </div>
+
+        {isLibrary && (
+          <>
+        <label className="text-xs font-bold text-brutal-muted">
+          Ngành
+          <select
+            value={filters.majorId}
+            onChange={(e) =>
+              patch({
+                majorId: e.target.value,
+                semesterNumber: "",
+                subjectId: "",
+              })
+            }
+            className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
+          >
+            <option value="">Tất cả ngành</option>
+            {majors?.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.code} — {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-xs font-bold text-brutal-muted">
+          Học kỳ
+          <select
+            value={filters.semesterNumber}
+            onChange={(e) =>
+              patch({ semesterNumber: e.target.value, subjectId: "" })
+            }
+            disabled={!filters.majorId}
+            className="focus-brutal mt-1 block w-full min-w-[100px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
+          >
+            <option value="">Tất cả</option>
+            {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={String(n)}>
+                HK {n}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-xs font-bold text-brutal-muted">
+          Môn
+          <select
+            value={filters.subjectId}
+            onChange={(e) => patch({ subjectId: e.target.value })}
+            disabled={!filters.majorId}
+            className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
+          >
+            <option value="">Tất cả môn</option>
+            {uniqueSubjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+          </>
+        )}
+
+        <label className="text-xs font-bold text-brutal-muted">
+          Sắp xếp
+          <select
+            value={filters.sort}
+            onChange={(e) =>
+              patch({ sort: e.target.value as InternalDocumentSort })
+            }
+            className="focus-brutal mt-1 block w-full min-w-[120px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {isLibrary && (
+          <BrutalButton
+            variant="secondary"
+            className="px-3 py-1.5 text-xs"
+            onClick={applyMyProfile}
+            disabled={!profile?.isComplete}
+            title={
+              profile?.isComplete
+                ? undefined
+                : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
+            }
+          >
+            Theo hồ sơ của tôi
+          </BrutalButton>
+        )}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className={cn(
+              "focus-brutal inline-flex items-center gap-1 rounded-lg border-2 border-brutal-ink px-3 py-1.5 text-xs font-bold hover:bg-brutal-bg",
+            )}
+          >
+            <X className="h-3.5 w-3.5" />
+            Xóa bộ lọc
+          </button>
+        )}
+        {isLibrary && profile && !profile.isComplete && (
+          <p className="text-xs text-brutal-muted">
+            Cập nhật hồ sơ học thuật để lọc nhanh theo ngành và học kỳ của bạn.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function forumFiltersToQueryParams(filters: ForumFilterState) {
+  return {
+    search: filters.search || undefined,
+    sort: filters.sort,
+  };
+}
+
+export function libraryFiltersToQueryParams(filters: ForumFilterState) {
+  return {
+    search: filters.search || undefined,
+    majorId: filters.majorId || undefined,
+    semesterNumber: filters.semesterNumber
+      ? Number(filters.semesterNumber)
+      : undefined,
+    subjectId: filters.subjectId || undefined,
+    sort: filters.sort,
+  };
+}
+
+/** @deprecated Use libraryFiltersToQueryParams or forumFiltersToQueryParams */
+export const filtersToQueryParams = libraryFiltersToQueryParams;
