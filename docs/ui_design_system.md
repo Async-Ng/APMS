@@ -1,83 +1,48 @@
-# APMS - UI/UX Design System (Neo-brutalism + FPT Brand)
+# UI Design System
 
-Giao diện APMS theo **Neo-brutalism** (viền đen dày, shadow cứng offset) kết hợp **3 màu logo FPT University**.
+Tài liệu này mô tả hướng giao diện hiện tại của APMS. Nội dung không khẳng định web/mobile đã hoàn tất migration sang unified Documents API; phần client sẽ được cập nhật theo source code ở phase riêng.
 
-## 1. Phong cách chủ đạo
+## Visual Direction
 
-- **Neo-brutalism:** Khối UI rõ ràng, viền ink đậm, shadow không blur.
-- **FPT brand:** Ba màu logo — Blue (F), Orange (P), Green (T).
-- **Playful & engaging:** Landing LearnHub-style trên `/login` (catalog, progress, testimonials, CTA).
+APMS dùng phong cách neo-brutalism học thuật: rõ ràng, mạnh, tương phản cao, ít trang trí thừa. Mục tiêu là tạo cảm giác công cụ học tập chắc chắn, nhanh, và dễ hiểu.
 
-## 2. Brand FPT — 3 màu logo
+## Brand Colors
 
-| Khối | Tên | Hex | Token |
-|------|-----|-----|-------|
-| **F** | FPT Blue (light) | `#2B8FD4` | `--color-fpt-blue` / `brutal-secondary` |
-| **P** | FPT Orange | `#F37021` | `--color-fpt-orange` / `brutal-primary` |
-| **T** | FPT Green | `#33B04A` | `--color-fpt-green` / `brutal-accent` |
+| Token | Gợi ý |
+| --- | --- |
+| Primary | FPT orange |
+| Secondary | Deep blue / navy |
+| Accent | Green hoặc cyan cho trạng thái tích cực |
+| Surface | Warm off-white hoặc neutral light |
+| Border | High-contrast dark border |
+| Danger | Red với contrast đủ cao |
 
-**Neutral:**
+## Component Principles
 
-| Token | Hex | Dùng cho |
-|-------|-----|----------|
-| Background | `#FFF8F4` | Nền trang |
-| Surface | `#FFFFFF` | Card |
-| Ink | `#1A1A1A` | Viền, shadow, body text |
-| On-brand | `#FFFFFF` | Chữ trên nền FPT |
-| Muted | `#334155` | Mô tả phụ |
+- Button có border rõ, trạng thái hover/pressed khác biệt.
+- Card dùng shadow/border có chủ đích, không quá “soft”.
+- Table/list ưu tiên scan nhanh: title, course, owner/source, status, actions.
+- Empty state phải nói rõ user cần làm gì tiếp theo.
+- Upload form phải thể hiện rõ môn học bắt buộc và visibility `private/public`.
+- Public document surfaces nên hiển thị course và owner để người dùng hiểu ngữ cảnh.
 
-**Quy tắc:** Chữ trắng trên khối màu FPT; chữ ink trên nền trắng/cream.
+## Documents UX Terms
 
-## 3. Typography
+Thuật ngữ sản phẩm nên gom về `Tài liệu` / `Documents`.
 
-- **Headings:** `Outfit` — 700–800.
-- **Body:** `Inter` — 16px, line-height 1.5–1.6.
+| Term | Dùng cho |
+| --- | --- |
+| `Của tôi` | Owned folders/documents |
+| `Được chia sẻ` | Shared resources |
+| `Công khai` | Public documents |
+| `Đã đánh dấu` | Starred |
+| `Thùng rác` | Trash |
 
-## 4. Components
+Không dùng lại Drive/Library/Forum như ba sản phẩm riêng nếu đang mô tả API hiện tại.
 
-### 4.1. Cards
+## Accessibility
 
-- Nền trắng (hoặc màu FPT), viền `3px solid #1A1A1A`, `border-radius: 16px`.
-- Shadow: `4px 4px 0 #1A1A1A`.
-- Hover (tùy chọn): `translate(-2px, -2px)`, shadow `6px 6px 0`.
-
-### 4.2. Buttons
-
-- Primary: nền **FPT Orange**, chữ trắng.
-- Secondary: nền **FPT Blue**, chữ trắng.
-- Ghost: nền trắng, chữ ink.
-- **Pressed:** `translate(4px, 4px)`, shadow `0 0 0` (hiệu ứng nhấn xuống).
-- Min height **44px**.
-
-### 4.3. Badges
-
-- Pill, viền đen, nền **FPT Green**, chữ trắng.
-
-### 4.4. Landing navbar (`/login`)
-
-- Trái: logo **APMS** + dải 3 màu FPT.
-- Giữa: anchor `Features`, `Materials`, `Progress`, `Reviews` (scroll tới section).
-- Phải: **Sign in** (scroll `#hero`) hoặc chip user + **Sign out**.
-- Mobile web: nav links cuộn ngang; CTA luôn hiện.
-
-### 4.5. Landing sections (`/login`)
-
-| Section | Mô tả |
-|---------|--------|
-| Hero | Headline + form đăng nhập 2 cột |
-| Catalog preview | 3 card mock tài liệu (Blue / Green / Orange) |
-| Progress demo | Thanh tiến độ + stats demo |
-| Testimonials | Quote học sinh FPT |
-| Enrollment CTA | Card cam + Google sign-in |
-
-## 5. UX Guidelines
-
-- **Accessibility:** Touch target min 44×44px; focus ring 3px ink.
-- **Motion:** 150–200ms; `prefers-reduced-motion` tắt transform press.
-- **No horizontal scroll** trên mọi breakpoint.
-
-## 6. Implementation
-
-- Web tokens: [`web/app/globals.css`](../web/app/globals.css)
-- Web components: `BrutalCard`, `BrutalButton`, `GoogleSignInButton`, `web/components/landing/*`
-- Mobile colors: [`mobile/constants/colors.ts`](../mobile/constants/colors.ts)
+- Text và interactive controls cần đạt contrast tốt trên nền sáng.
+- Focus state phải nhìn thấy bằng bàn phím.
+- Icon-only buttons cần label/accessibility text.
+- Không chỉ dùng màu để biểu thị trạng thái processing/ready/failed.

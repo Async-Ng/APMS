@@ -1,50 +1,37 @@
-# Welcome to your Expo app 👋
+# APMS Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo mobile client for APMS.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- Expo 54
+- React Native 0.81
+- Expo Router
+- NativeWind
+- TanStack Query
+- Zustand
+- AWS Amplify for Cognito client integration
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Development
 
 ```bash
-npm run reset-project
+cd mobile
+pnpm install
+pnpm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Other useful commands:
 
-## Learn more
+```bash
+pnpm android
+pnpm ios
+pnpm lint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+The current scripts use Expo offline mode. Ensure the required Expo/Metro dependencies are already installed locally.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Environment
 
-## Join the community
+Use the package-local environment file expected by the app. Do not commit `.env`.
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The backend document API is now unified under `/api/documents`. If any mobile document screen still calls removed document surfaces, it must be migrated in a client phase.
