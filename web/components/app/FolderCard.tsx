@@ -20,6 +20,7 @@ interface FolderCardProps {
   parentId?: string;
   variant?: "default" | "shared";
   sharedAt?: string;
+  href?: string;
   onRename: (folder: DriveFolder) => void;
   onShare?: (folder: DriveFolder) => void;
 }
@@ -29,6 +30,7 @@ export function FolderCard({
   parentId,
   variant = "default",
   sharedAt,
+  href,
   onRename,
   onShare,
 }: FolderCardProps) {
@@ -88,7 +90,7 @@ export function FolderCard({
       )}
     >
       <Link
-        href={`/drive/${folder.id}`}
+        href={href ?? `/drive/${folder.id}`}
         className="focus-brutal absolute inset-0 rounded-2xl"
         aria-label={`Open folder ${folder.name}`}
       />

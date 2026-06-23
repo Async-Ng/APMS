@@ -34,8 +34,8 @@ function fileIconBg(mimeType: string): string {
   return "bg-brutal-secondary/15";
 }
 
-export function internalDocumentHref(id: string, source: InternalSource) {
-  return `/forum/${id}?source=${source}`;
+export function internalDocumentHref(id: string) {
+  return `/documents/${id}?from=public`;
 }
 
 interface InternalDocumentCardProps {
@@ -53,7 +53,7 @@ export function InternalDocumentCard({
 
   return (
     <Link
-      href={internalDocumentHref(doc.id, source)}
+      href={internalDocumentHref(doc.id)}
       className="focus-brutal brutal-card group flex h-full flex-col gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-brutal"
     >
       <div className="flex items-start gap-3">

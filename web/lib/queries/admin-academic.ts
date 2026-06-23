@@ -42,8 +42,7 @@ function invalidateAcademicCatalog(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: ["catalog", "majors"] });
   void qc.invalidateQueries({ queryKey: ["catalog", "curriculum"] });
   void qc.invalidateQueries({ queryKey: ["users", "me", "academic-profile"] });
-  void qc.invalidateQueries({ queryKey: ["library", "documents"] });
-  void qc.invalidateQueries({ queryKey: ["forum", "documents"] });
+  void qc.invalidateQueries({ queryKey: ["documents", "public"] });
 }
 
 function invalidateAdminAcademic(qc: QueryClient) {

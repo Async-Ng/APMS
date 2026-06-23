@@ -30,7 +30,6 @@ import {
   toDriveDocument,
   toDriveFolder,
   useRevokeShare,
-  useSharedDrive,
   useSharesByMe,
   useSharesWithMe,
   type ShareByMeGroup,
@@ -312,26 +311,28 @@ export default function SharedPage() {
     resourceName: string;
   } | null>(null);
 
-  const browse = useSharedDrive();
   const received = useSharesWithMe();
   const outgoing = useSharesByMe();
 
-  const incomingCount =
-    (browse.data?.folders.length ?? 0) + (browse.data?.documents.length ?? 0);
+  const receivedItems = received.data ?? [];
+  const sharedFolderItems = receivedItems.filter(
+    (item) => item.resource.type === "folder",
+  );
+  const sharedDocumentItems = receivedItems.filter(
+    (item) => item.resource.type === "document",
+  );
+
+  const incomingCount = receivedItems.length;
   const outgoingCount = outgoing.data?.length ?? 0;
 
   const activeTabMeta = TABS.find((t) => t.id === tab)!;
 
-  const incomingEmpty =
-    !browse.isLoading &&
-    !received.isLoading &&
-    incomingCount === 0 &&
-    (received.data?.length ?? 0) === 0;
+  const incomingEmpty = !received.isLoading && incomingCount === 0;
 
   const outgoingEmpty =
     !outgoing.isLoading && (outgoing.data?.length ?? 0) === 0;
 
-  const incomingError = browse.isError || received.isError;
+  const incomingError = received.isError;
   const outgoingError = outgoing.isError;
 
   function openManage(group: ShareByMeGroup) {
@@ -404,7 +405,7 @@ export default function SharedPage() {
             )}
 
             {incomingView === "grid" ? (
-              browse.isLoading ? (
+              received.isLoading ? (
                 <FileGrid>
                   <SkeletonGrid count={6} />
                 </FileGrid>
@@ -421,7 +422,7 @@ export default function SharedPage() {
                 />
               ) : (
                 <div className="space-y-6">
-                  {(browse.data?.folders.length ?? 0) > 0 && (
+                  {sharedFolderItems.length > 0 && (
                     <section aria-labelledby="shared-folders-heading">
                       <h2
                         id="shared-folders-heading"
@@ -430,20 +431,23 @@ export default function SharedPage() {
                         Thư mục đã chia sẻ
                       </h2>
                       <FileGrid>
-                        {browse.data?.folders.map((item) => (
-                          <FolderCard
-                            key={item.id}
-                            folder={toDriveFolder(item)}
-                            variant="shared"
-                            sharedAt={item.share.sharedAt}
-                            onRename={() => {}}
-                          />
-                        ))}
+                        {sharedFolderItems.map((item) =>
+                          item.resource.type === "folder" ? (
+                            <FolderCard
+                              key={item.share.id}
+                              folder={toDriveFolder(item.resource.data)}
+                              variant="shared"
+                              sharedAt={item.share.sharedAt}
+                              href={`/drive/${item.resource.data.id}?shared=1`}
+                              onRename={() => {}}
+                            />
+                          ) : null,
+                        )}
                       </FileGrid>
                     </section>
                   )}
 
-                  {(browse.data?.documents.length ?? 0) > 0 && (
+                  {sharedDocumentItems.length > 0 && (
                     <section aria-labelledby="shared-docs-heading">
                       <h2
                         id="shared-docs-heading"
@@ -452,15 +456,17 @@ export default function SharedPage() {
                         Tệp đã chia sẻ
                       </h2>
                       <FileGrid>
-                        {browse.data?.documents.map((item) => (
-                          <DocumentCard
-                            key={item.id}
-                            document={toDriveDocument(item)}
-                            variant="shared"
-                            sharedAt={item.share.sharedAt}
-                            onRename={() => {}}
-                          />
-                        ))}
+                        {sharedDocumentItems.map((item) =>
+                          item.resource.type === "document" ? (
+                            <DocumentCard
+                              key={item.share.id}
+                              document={toDriveDocument(item.resource.data)}
+                              variant="shared"
+                              sharedAt={item.share.sharedAt}
+                              onRename={() => {}}
+                            />
+                          ) : null,
+                        )}
                       </FileGrid>
                     </section>
                   )}

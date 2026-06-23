@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Share2 className="h-5 w-5 shrink-0" />,
   },
   {
-    label: "Tài liệu nội bộ",
+    label: "Thư viện công khai",
     href: "/forum",
     icon: <Globe className="h-5 w-5 shrink-0" />,
   },

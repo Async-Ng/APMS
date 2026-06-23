@@ -3,17 +3,21 @@
 import {
   ArrowLeft,
   Download,
+  Edit3,
   FileText,
+  Globe,
+  Lock,
   Presentation,
   Share2,
   Star,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, use, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
+import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -36,6 +40,7 @@ import {
   useToggleDocumentStar,
 } from "@/lib/queries/documents";
 import { useDocument } from "@/lib/queries/documents";
+import { useAuthStore } from "@/stores/auth-store";
 
 /* ── helpers ────────────────────────────────────────────────── */
 
@@ -113,17 +118,22 @@ interface PageProps {
   params: Promise<{ documentId: string }>;
 }
 
-export default function DocumentDetailPage({ params }: PageProps) {
-  const { documentId } = use(params);
+function DocumentDetailContent({ documentId }: { documentId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const currentUser = useAuthStore((s) => s.user);
 
   const { data: doc, isLoading, isError } = useDocument(documentId);
   const [fetchUrl, setFetchUrl] = useState(false);
   const { data: withUrl } = useDocumentDownloadUrl(documentId, fetchUrl);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { mutate: toggleStar } = useToggleDocumentStar();
   const { mutate: deleteDoc } = useDeleteDocument(documentId);
+
+  const isOwner = !!doc && !!currentUser && doc.ownerId === currentUser.id;
 
   const downloadUrl = withUrl?.downloadUrl;
   const canPreview = doc ? canPreviewInBrowser(doc.mimeType) : false;
@@ -179,8 +189,24 @@ export default function DocumentDetailPage({ params }: PageProps) {
     }
   }
 
+  const backRoot =
+    from === "public"
+      ? { label: "Thư viện công khai", href: "/forum" }
+      : from === "shared"
+        ? { label: "Đã chia sẻ", href: "/shared" }
+        : { label: "Drive của tôi", href: "/drive" };
+
+  const backHref =
+    from === "public"
+      ? "/forum"
+      : from === "shared"
+        ? "/shared"
+        : doc?.folderId
+          ? `/drive/${doc.folderId}`
+          : "/drive";
+
   const breadcrumbs = [
-    { label: "Drive của tôi", href: "/drive" },
+    backRoot,
     { label: isLoading ? "…" : (doc?.title ?? "Tài liệu") },
   ];
 
@@ -212,7 +238,7 @@ export default function DocumentDetailPage({ params }: PageProps) {
               {/* Back + title row */}
               <div className="flex items-center gap-3">
                 <Link
-                  href={doc.folderId ? `/drive/${doc.folderId}` : "/drive"}
+                  href={backHref}
                   className="focus-brutal flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-surface shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A]"
                   aria-label="Quay lại"
                 >
@@ -260,6 +286,24 @@ export default function DocumentDetailPage({ params }: PageProps) {
                     <StatusBadge status={doc.status} />
                   </dd>
                 </div>
+                {doc.visibility && (
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-brutal-muted">Quyền hiển thị</dt>
+                    <dd>
+                      <span className="inline-flex items-center gap-1 rounded-md border-2 border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-bold">
+                        {doc.visibility === "public" ? (
+                          <>
+                            <Globe className="h-3 w-3" /> Công khai
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-3 w-3" /> Riêng tư
+                          </>
+                        )}
+                      </span>
+                    </dd>
+                  </div>
+                )}
                 <div className="flex justify-between gap-2">
                   <dt className="text-brutal-muted">Kích thước</dt>
                   <dd className="font-semibold tabular-nums text-brutal-ink">
@@ -310,54 +354,68 @@ export default function DocumentDetailPage({ params }: PageProps) {
                   Tải xuống
                 </BrutalButton>
 
-                <BrutalButton
-                  id={`doc-${documentId}-share-btn`}
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setShareOpen(true)}
-                >
-                  <Share2 className="h-4 w-4" />
-                  Chia sẻ
-                </BrutalButton>
-
                 <AskAiLink
                   id={`doc-${documentId}-ask-ai-btn`}
                   href={`/chat?contextType=document&contextId=${documentId}`}
                   layout="block"
                 />
 
-                <BrutalButton
-                  id={`doc-${documentId}-star-btn`}
-                  variant={doc.isStarred ? "secondary" : "ghost"}
-                  className="w-full"
-                  onClick={() =>
-                    toggleStar({
-                      documentId: doc.id,
-                      starred: !doc.isStarred,
-                    })
-                  }
-                >
-                  <Star
-                    className={cn(
-                      "h-4 w-4",
-                      doc.isStarred && "fill-current",
-                    )}
-                  />
-                  {doc.isStarred ? "Bỏ đánh dấu" : "Đánh dấu sao"}
-                </BrutalButton>
+                {isOwner && (
+                  <>
+                    <BrutalButton
+                      id={`doc-${documentId}-edit-btn`}
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Chỉnh sửa
+                    </BrutalButton>
 
-                <BrutalButton
-                  id={`doc-${documentId}-trash-btn`}
-                  variant="ghost"
-                  className="w-full !text-brutal-danger hover:!bg-red-50"
-                  onClick={() => {
-                    deleteDoc();
-                    router.back();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-brutal-danger" />
-                  Chuyển vào Thùng rác
-                </BrutalButton>
+                    <BrutalButton
+                      id={`doc-${documentId}-share-btn`}
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setShareOpen(true)}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Chia sẻ
+                    </BrutalButton>
+
+                    <BrutalButton
+                      id={`doc-${documentId}-star-btn`}
+                      variant={doc.isStarred ? "secondary" : "ghost"}
+                      className="w-full"
+                      onClick={() =>
+                        toggleStar({
+                          documentId: doc.id,
+                          starred: !doc.isStarred,
+                        })
+                      }
+                    >
+                      <Star
+                        className={cn(
+                          "h-4 w-4",
+                          doc.isStarred && "fill-current",
+                        )}
+                      />
+                      {doc.isStarred ? "Bỏ đánh dấu" : "Đánh dấu sao"}
+                    </BrutalButton>
+
+                    <BrutalButton
+                      id={`doc-${documentId}-trash-btn`}
+                      variant="ghost"
+                      className="w-full !text-brutal-danger hover:!bg-red-50"
+                      onClick={() => {
+                        deleteDoc();
+                        router.back();
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-brutal-danger" />
+                      Chuyển vào Thùng rác
+                    </BrutalButton>
+                  </>
+                )}
               </div>
             </aside>
           </div>
@@ -372,6 +430,28 @@ export default function DocumentDetailPage({ params }: PageProps) {
           onClose={() => setShareOpen(false)}
         />
       )}
+
+      {settingsOpen && doc && (
+        <DocumentSettingsModal
+          document={doc}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </>
+  );
+}
+
+export default function DocumentDetailPage({ params }: PageProps) {
+  const { documentId } = use(params);
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center p-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
+        </div>
+      }
+    >
+      <DocumentDetailContent documentId={documentId} />
+    </Suspense>
   );
 }

@@ -14,7 +14,7 @@ import { InternalDocumentGrid } from "@/components/app/forum/InternalDocumentGri
 import { InternalDocumentList } from "@/components/app/forum/InternalDocumentList";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { useForumDocuments } from "@/lib/queries/forum";
+import { usePublicDocuments } from "@/lib/queries/documents";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
 
 const PAGE_LIMIT = 20;
@@ -37,7 +37,8 @@ export function ForumFeedPanel({
   const [view, setView] = useState<ViewMode>("grid");
   const router = useRouter();
 
-  const { data, isLoading, isError, error, refetch } = useForumDocuments({
+  const { data, isLoading, isError, error, refetch } = usePublicDocuments({
+    match: "auto",
     page,
     limit: PAGE_LIMIT,
     ...forumFiltersToQueryParams(filters),
@@ -68,7 +69,7 @@ export function ForumFeedPanel({
 
       {needsAcademicProfile && (
         <ErrorAlert
-          message="Hoàn thành hồ sơ học thuật để xem Diễn đàn tài liệu nội bộ."
+          message="Hoàn thành hồ sơ học thuật để nhận gợi ý tài liệu phù hợp."
           actionLabel="Cập nhật hồ sơ"
           onAction={() => router.push("/profile")}
         />

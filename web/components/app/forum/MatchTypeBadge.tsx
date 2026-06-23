@@ -1,17 +1,19 @@
 import { cn } from "@/lib/cn";
-import type { ForumDocument, ForumMatchType, InternalDocument } from "@/lib/queries/internal-documents";
+import type { ForumMatchType, InternalDocument } from "@/lib/queries/internal-documents";
 
 const MATCH_LABELS: Record<ForumMatchType, string> = {
   exact_course: "Đúng môn học kỳ",
   same_subject_other_semester: "Cùng môn, khác học kỳ",
+  global_public: "Công khai toàn hệ thống",
 };
 
 interface MatchTypeBadgeProps {
-  matchType: ForumMatchType;
+  matchType: ForumMatchType | null | undefined;
   className?: string;
 }
 
 export function MatchTypeBadge({ matchType, className }: MatchTypeBadgeProps) {
+  if (!matchType) return null;
   const isExact = matchType === "exact_course";
   return (
     <span
@@ -30,6 +32,6 @@ export function getMatchTypeLabel(matchType: ForumMatchType): string {
   return MATCH_LABELS[matchType];
 }
 
-export function isForumDocument(doc: InternalDocument): doc is ForumDocument {
-  return "matchType" in doc;
+export function isForumDocument(doc: InternalDocument): boolean {
+  return doc.matchType != null;
 }

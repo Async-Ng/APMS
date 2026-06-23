@@ -1,86 +1,20 @@
-import type { Pagination } from "@/lib/queries/admin";
+import type {
+  DocumentSort,
+  DriveDocument,
+  PublicMatchType,
+} from "@/lib/queries/drive";
 
-export type InternalDocumentSort = "newest" | "oldest" | "title";
+/**
+ * Public documents (Diễn đàn / Thư viện) share the unified document list shape
+ * returned by `GET /api/documents`. These aliases keep the forum components
+ * decoupled from the drive query module while pointing at one source of truth.
+ */
 
-export type InternalDocumentStatus =
-  | "pending"
-  | "processing"
-  | "ready"
-  | "failed";
-
-export interface InternalMajorRef {
-  id: string;
-  code: string;
-  name: string;
-}
-
-export interface InternalSubjectRef {
-  id: string;
-  code: string;
-  name: string;
-}
-
-export interface InternalCurriculumRef {
-  id: string;
-  semesterNumber: number;
-  major: InternalMajorRef | null;
-  subject: InternalSubjectRef | null;
-}
-
-export interface InternalOwnerRef {
-  id: string;
-  displayName: string;
-  avatarUrl: string | null;
-}
-
-export interface InternalDocument {
-  id: string;
-  title: string;
-  originalFilename: string;
-  mimeType: string;
-  fileSizeBytes: number;
-  status: InternalDocumentStatus;
-  pageCount: number | null;
-  tags: string[];
-  visibility: "personal" | "internal";
-  curriculumCourse: InternalCurriculumRef | null;
-  owner: InternalOwnerRef | null;
-  createdAt: string;
-  updatedAt: string;
-  downloadUrl?: string;
-}
-
-export type ForumMatchType = "exact_course" | "same_subject_other_semester";
-
-export interface ForumDocument extends InternalDocument {
-  matchType: ForumMatchType;
-}
-
-export interface InternalDocumentsResponse {
-  documents: InternalDocument[];
-  pagination: Pagination;
-}
-
-export interface ForumDocumentsResponse {
-  documents: ForumDocument[];
-  pagination: Pagination;
-}
-
-export interface InternalListParams {
-  page: number;
-  limit: number;
-  search?: string;
-  majorId?: string;
-  semesterNumber?: number;
-  subjectId?: string;
-  sort?: InternalDocumentSort;
-}
-
-export interface ForumListParams {
-  page: number;
-  limit: number;
-  search?: string;
-  sort?: InternalDocumentSort;
-}
-
+export type InternalDocumentSort = DocumentSort;
 export type InternalSource = "forum" | "library";
+
+export type InternalDocument = DriveDocument;
+
+export type ForumMatchType = PublicMatchType;
+/** Public documents always carry a `matchType`; alias kept for readability. */
+export type ForumDocument = DriveDocument;

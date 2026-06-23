@@ -3,6 +3,7 @@
 import {
   Download,
   FileText,
+  Globe,
   MoreVertical,
   Presentation,
   Share2,
@@ -216,7 +217,17 @@ export function DocumentCard({
       </p>
 
       <div className="flex items-center justify-between gap-1">
-        <StatusBadge status={doc.status} />
+        <div className="flex items-center gap-1">
+          <StatusBadge status={doc.status} />
+          {doc.visibility === "public" && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-md border-2 border-brutal-ink bg-brutal-bg px-1.5 py-0.5 text-xs font-bold"
+              title="Tài liệu công khai"
+            >
+              <Globe className="h-3 w-3" />
+            </span>
+          )}
+        </div>
         <span className="text-xs text-brutal-muted tabular-nums">
           {formatBytes(doc.fileSizeBytes)}
         </span>

@@ -11,13 +11,13 @@ const TABS: {
 }[] = [
   {
     id: "forum",
-    label: "Diễn đàn",
-    description: "Tài liệu đồng nghiệp chia sẻ trong APMS — feed mới nhất.",
+    label: "Gợi ý",
+    description: "Gợi ý theo hồ sơ học thuật của bạn — ưu tiên đúng môn học kỳ.",
   },
   {
     id: "library",
-    label: "Thư viện",
-    description: "Duyệt thư viện nội bộ theo ngành, học kỳ và môn học.",
+    label: "Duyệt toàn bộ",
+    description: "Duyệt toàn bộ tài liệu công khai theo ngành, học kỳ và môn học.",
   },
 ];
 
@@ -35,7 +35,7 @@ export function ForumLibraryTabs({
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
-        aria-label="Chế độ xem tài liệu nội bộ"
+        aria-label="Chế độ xem thư viện công khai"
       >
         {TABS.map((tab) => {
           const isActive = active === tab.id;

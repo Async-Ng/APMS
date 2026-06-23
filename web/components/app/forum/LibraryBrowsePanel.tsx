@@ -15,7 +15,7 @@ import { InternalDocumentList } from "@/components/app/forum/InternalDocumentLis
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
-import { useLibraryDocuments } from "@/lib/queries/library";
+import { usePublicDocuments } from "@/lib/queries/documents";
 
 const PAGE_LIMIT = 20;
 
@@ -37,7 +37,8 @@ export function LibraryBrowsePanel({
   const [view, setView] = useState<ViewMode>("list");
   const router = useRouter();
 
-  const { data, isLoading, isError, error, refetch } = useLibraryDocuments({
+  const { data, isLoading, isError, error, refetch } = usePublicDocuments({
+    match: "all",
     page,
     limit: PAGE_LIMIT,
     ...libraryFiltersToQueryParams(filters),
@@ -68,7 +69,7 @@ export function LibraryBrowsePanel({
 
       {needsAcademicProfile && (
         <ErrorAlert
-          message="Hoàn thành hồ sơ học thuật để xem Thư viện tài liệu nội bộ."
+          message="Hoàn thành hồ sơ học thuật để duyệt thư viện công khai."
           actionLabel="Cập nhật hồ sơ"
           onAction={() => router.push("/profile")}
         />

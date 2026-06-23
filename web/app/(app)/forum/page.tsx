@@ -15,8 +15,7 @@ import {
 import { LibraryBrowsePanel } from "@/components/app/forum/LibraryBrowsePanel";
 import { Topbar } from "@/components/app/Topbar";
 import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
-import { useForumDocuments } from "@/lib/queries/forum";
-import { useLibraryDocuments } from "@/lib/queries/library";
+import { usePublicDocuments } from "@/lib/queries/documents";
 import { forumFiltersToQueryParams, libraryFiltersToQueryParams } from "@/components/app/forum/ForumFiltersBar";
 
 function parseTab(value: string | null): ForumLibraryTabId {
@@ -106,13 +105,15 @@ function ForumPageContent() {
     syncUrl(tab, activeFilters, nextPage);
   };
 
-  const forumQuery = useForumDocuments({
+  const forumQuery = usePublicDocuments({
+    match: "auto",
     page,
     limit: 20,
     ...forumFiltersToQueryParams(activeFilters),
     enabled: tab === "forum",
   });
-  const libraryQuery = useLibraryDocuments({
+  const libraryQuery = usePublicDocuments({
+    match: "all",
     page,
     limit: 20,
     ...libraryFiltersToQueryParams(activeFilters),
@@ -121,12 +122,15 @@ function ForumPageContent() {
 
   const totalCount =
     tab === "forum"
-      ? forumQuery.data?.pagination.total
-      : libraryQuery.data?.pagination.total;
+      ? forumQuery.data?.pagination?.total
+      : libraryQuery.data?.pagination?.total;
 
   return (
     <>
-      <Topbar breadcrumbs={[{ label: "Tài liệu nội bộ" }]} onMenuOpen={() => {}} />
+      <Topbar
+        breadcrumbs={[{ label: "Thư viện công khai" }]}
+        onMenuOpen={() => {}}
+      />
 
       <main className="flex-1 space-y-6 p-4 sm:p-6" id="main-content">
         <div className="flex items-center gap-3">
@@ -135,10 +139,10 @@ function ForumPageContent() {
           </div>
           <div>
             <h1 className="font-heading text-2xl font-extrabold text-brutal-ink">
-              Tài liệu nội bộ
+              Thư viện công khai
             </h1>
             <p className="text-sm text-brutal-muted">
-              Diễn đàn và thư viện tài liệu học thuật trong APMS
+              Tài liệu học thuật công khai — gợi ý theo hồ sơ và duyệt toàn bộ
             </p>
           </div>
         </div>

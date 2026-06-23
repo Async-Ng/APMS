@@ -114,7 +114,7 @@ export function InternalDocumentList({
               >
                 <td className="px-4 py-3">
                   <Link
-                    href={internalDocumentHref(doc.id, source)}
+                    href={internalDocumentHref(doc.id)}
                     className="focus-brutal block min-w-[200px]"
                   >
                     <p className="font-semibold text-brutal-ink hover:text-brutal-primary">
