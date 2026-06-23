@@ -1,0 +1,22 @@
+[
+  {
+    "id": "pdf-section-001",
+    "category": "pdf_text_section_lookup",
+    "documentType": "pdf",
+    "question": "Ở mục 2.1.1 Ma trận A và B gồm những giá trị nào?",
+    "expectedSectionPath": ["2", "2.1", "2.1.1"],
+    "expectedPageNumber": 1,
+    "expectedAnswerMustContain": ["ma trận A", "a_ij", "ma trận B", "b_i"],
+    "expectedCitationPrecision": "high"
+  },
+  {
+    "id": "scan-formula-001",
+    "category": "pdf_scan_formula_lookup",
+    "documentType": "pdf_scan",
+    "question": "Công thức trên mô tả hệ phương trình nào?",
+    "expectedSectionPath": [],
+    "expectedPageNumber": 1,
+    "expectedAnswerMustContain": ["hệ phương trình tuyến tính"],
+    "expectedCitationPrecision": "medium"
+  }
+]

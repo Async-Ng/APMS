@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { createCanvas, DOMMatrix, Path2D, ImageData } from "@napi-rs/canvas";
 
 import { loadEnv } from "../../config/env";
+import { extractHeadingInfo, inferBlockType } from "../ai/reference-utils";
 import type { ExtractionResult } from "../extraction.service";
 import type { TextSegment } from "../extraction/types";
 import { describeImages, pageVisionBlock } from "./vision-ocr";
@@ -91,6 +92,38 @@ async function renderPageToPngBase64(page: any): Promise<string> {
   return canvas.toBuffer("image/png").toString("base64");
 }
 
+function extractPageTextLines(items: any[]): string[] {
+  const textItems = items
+    .filter((it) => typeof it?.str === "string" && it.str.trim().length > 0)
+    .map((it) => ({
+      text: String(it.str),
+      x: Array.isArray(it.transform) ? Number(it.transform[4] ?? 0) : 0,
+      y: Array.isArray(it.transform) ? Number(it.transform[5] ?? 0) : 0,
+    }))
+    .sort((a, b) => Math.abs(a.y - b.y) <= 2 ? a.x - b.x : b.y - a.y);
+
+  const lines: Array<{ y: number; parts: typeof textItems }> = [];
+  for (const item of textItems) {
+    const existing = lines.find((line) => Math.abs(line.y - item.y) <= 2);
+    if (existing) {
+      existing.parts.push(item);
+    } else {
+      lines.push({ y: item.y, parts: [item] });
+    }
+  }
+
+  return lines
+    .map((line) =>
+      line.parts
+        .sort((a, b) => a.x - b.x)
+        .map((part) => part.text.trim())
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter(Boolean);
+}
+
 export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionResult> {
   const env = loadEnv();
   const pdfjs = await getPdfjs();
@@ -105,22 +138,22 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
 
   const pageCount: number = doc.numPages;
   const pageTexts: string[] = [];
+  let scannedPageCount = 0;
   // Pages that need a vision pass, paired with their pre-rendered PNG.
   const visionPages: Array<{ pageNumber: number; base64: string }> = [];
 
   for (let p = 1; p <= pageCount; p++) {
     const page = await doc.getPage(p);
     const content = await page.getTextContent();
-    const pageText = content.items
-      .map((it: any) => ("str" in it ? it.str : ""))
-      .join(" ")
-      .trim();
+    const lines = extractPageTextLines(content.items);
+    const pageText = lines.join("\n").trim();
     pageTexts.push(pageText);
 
     if (!env.DOC_VISION_ENABLED) continue;
     if (visionPages.length >= env.DOC_VISION_MAX_IMAGES) continue;
 
     const scanned = pageText.length < env.DOC_VISION_SCANNED_TEXT_THRESHOLD;
+    if (scanned) scannedPageCount += 1;
     const needsVision = scanned || (await pageHasImages(pdfjs, page));
     if (needsVision) {
       const base64 = await renderPageToPngBase64(page);
@@ -138,13 +171,25 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
 
   const segments: TextSegment[] = pageTexts.map((t, i) => {
     const p = i + 1;
+    const headingInfo = extractHeadingInfo(t.split("\n")[0] ?? "");
+    const mergedText = `${t}${pageVisionBlock(p, descByPage.get(p) ?? "")}`.trim();
+    const hasVision = !!descByPage.get(p)?.trim();
     return {
-      text: `${t}${pageVisionBlock(p, descByPage.get(p) ?? "")}`,
+      text: mergedText,
       pageNumber: p,
+      sectionPath: headingInfo?.sectionPath ?? [],
+      headingText: headingInfo?.displayHeading ?? null,
+      blockType: hasVision ? "ocr" : inferBlockType(t),
+      extractionMode: hasVision ? (t ? "hybrid" : "ocr") : "text",
+      extractionConfidence: hasVision ? (t ? "medium" : "low") : "high",
     };
   });
 
   const text = segments.map((s) => s.text).join("\n\n");
+  const extractionMode =
+    scannedPageCount === 0 ? "text" : scannedPageCount === pageCount ? "ocr" : "hybrid";
+  const extractionConfidence =
+    scannedPageCount === 0 ? "high" : scannedPageCount < pageCount ? "medium" : "low";
 
-  return { text, pageCount, segments };
+  return { text, pageCount, segments, extractionMode, extractionConfidence };
 }

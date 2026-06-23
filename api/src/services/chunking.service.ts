@@ -1,124 +1,156 @@
-import type { TextSegment } from "./extraction/types";
 import { runConcurrent } from "../utils/concurrency";
 import { loadEnv } from "../config/env";
 import * as aiService from "./ai/ai.service";
+import {
+  extractHeadingInfo,
+  inferBlockType,
+  isStructuralHeading,
+  normalizeMathQueryableText,
+  splitLineIntoSentences,
+} from "./ai/reference-utils";
+import type {
+  ExtractionConfidence,
+  ExtractionMode,
+  SegmentBlockType,
+  TextSegment,
+} from "./extraction/types";
 
 export const CHUNKING_MAX_CHARS = 1500;
 export const CHUNKING_OVERLAP_CHARS = 150;
-export const CHUNKING_MIN_CHARS = 400;
-export const CHUNKING_MERGE_TAIL_CHARS = 200;
+export const CHUNKING_MIN_CHARS = 260;
+export const CHUNKING_MERGE_TAIL_CHARS = 180;
 
 const SEMANTIC_BREAK_PERCENTILE = 20;
 const MAX_BREAK_SIMILARITY = 0.9;
 const SIMILARITY_DROP_DELTA = 0.05;
-const MIN_UNITS_PER_CHUNK = 3;
+const MIN_UNITS_PER_CHUNK = 2;
 const SENTENCE_EMBED_BATCH = 50;
 const WINDOW_RADIUS = 2;
 
-const DOT = "\x00DOT\x00";
-const ABBREV = [
-  "TS", "ThS", "GS", "PGS", "BS", "KS", "TP", "Tp", "ĐH", "CĐ", "Nxb", "NXB",
-  "tr", "vd", "VD", "Mr", "Mrs", "Ms", "Dr", "Prof", "etc", "No", "Fig", "Vol", "St",
-];
+interface TextUnit {
+  text: string;
+  pageNumber: number | null;
+  sectionPath: string[];
+  displayHeading: string | null;
+  blockType: SegmentBlockType;
+  extractionMode: ExtractionMode;
+  extractionConfidence: ExtractionConfidence;
+  isHeading: boolean;
+}
 
 export interface TextChunk {
   content: string;
+  queryText: string;
   chunkIndex: number;
   pageNumber: number | null;
+  sectionPath: string[];
+  displayHeading: string | null;
+  blockType: SegmentBlockType;
+  extractionMode: ExtractionMode;
+  extractionConfidence: ExtractionConfidence;
 }
 
-function protectDots(s: string): string {
-  let out = s.replace(/(\d)\.(\d)/g, `$1${DOT}$2`);
-  out = out.replace(/(^|\s)(\d{1,2})\.\s/g, `$1$2${DOT} `);
-  out = out.replace(/\bv\.v\.?/gi, `v${DOT}v${DOT}`);
-  for (const a of ABBREV) {
-    out = out.replace(new RegExp(`\\b${a}\\.`, "g"), `${a}${DOT}`);
-  }
-  return out;
+function detectHeading(line: string): { sectionPath: string[]; displayHeading: string } | null {
+  return extractHeadingInfo(line);
 }
 
-function isNumberedHeading(line: string): boolean {
-  return /^\d+(\.\d+)*\s+\S/.test(line);
+function buildHeadingFromAllCaps(line: string, priorSectionPath: string[]): {
+  sectionPath: string[];
+  displayHeading: string;
+} | null {
+  if (!isStructuralHeading(line) || detectHeading(line)) return null;
+  const nextSectionPath =
+    priorSectionPath.length > 0 ? [...priorSectionPath, String(priorSectionPath.length + 1)] : [];
+  return {
+    sectionPath: nextSectionPath,
+    displayHeading: line.trim(),
+  };
 }
 
-function isAllCapsHeading(line: string): boolean {
-  if (line.length > 80 || line.length < 3) return false;
-  const letters = line.replace(/[^A-Za-zÀ-ỹ]/g, "");
-  return letters.length > 0 && letters === letters.toUpperCase();
-}
-
-function isStructuralHeading(line: string): boolean {
-  const trimmed = line.trim();
-  return isNumberedHeading(trimmed) || isAllCapsHeading(trimmed);
-}
-
-function splitLineIntoSentences(line: string): string[] {
-  const normalised = protectDots(line.replace(/[ \t]+/g, " ").trim());
-  const result: string[] = [];
-  for (const part of normalised.split(/(?<=[.?!])\s+/)) {
-    const s = part.replace(new RegExp(DOT, "g"), ".").trim();
-    if (s.length > 0) result.push(s);
-  }
-  return result;
-}
-
-/** Split segment text into semantic units (paragraphs, headings, sentences). */
-function splitIntoUnits(text: string): string[] {
-  const normalised = text.replace(/\r\n/g, "\n").trim();
+function splitIntoUnits(segment: TextSegment): TextUnit[] {
+  const normalised = segment.text.replace(/\r\n/g, "\n").trim();
   if (!normalised) return [];
 
-  const units: string[] = [];
-  const paragraphs = normalised.split(/\n{2,}/);
+  const lines = normalised
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-  for (const para of paragraphs) {
-    const trimmed = para.trim();
-    if (!trimmed) continue;
+  const units: TextUnit[] = [];
+  let currentSectionPath = [...(segment.sectionPath ?? [])];
+  let currentHeading = segment.headingText ?? null;
 
-    if (isStructuralHeading(trimmed)) {
-      units.push(trimmed);
+  for (const line of lines) {
+    const numberedHeading = detectHeading(line);
+    const allCapsHeading = numberedHeading ? null : buildHeadingFromAllCaps(line, currentSectionPath);
+    const heading = numberedHeading ?? allCapsHeading;
+
+    if (heading) {
+      currentSectionPath = heading.sectionPath;
+      currentHeading = heading.displayHeading;
+      units.push({
+        text: heading.displayHeading,
+        pageNumber: segment.pageNumber,
+        sectionPath: [...currentSectionPath],
+        displayHeading: currentHeading,
+        blockType: "heading",
+        extractionMode: segment.extractionMode ?? "text",
+        extractionConfidence: segment.extractionConfidence ?? "medium",
+        isHeading: true,
+      });
       continue;
     }
 
-    const lines = trimmed.split(/\n/);
-    for (const rawLine of lines) {
-      const line = rawLine.trim();
-      if (!line) continue;
+    const blockType = segment.blockType && segment.blockType !== "paragraph"
+      ? segment.blockType
+      : inferBlockType(line);
 
-      if (isStructuralHeading(line)) {
-        units.push(line);
-        continue;
-      }
+    const sentenceLike =
+      blockType === "paragraph" || blockType === "figure_caption"
+        ? splitLineIntoSentences(line)
+        : [line];
 
-      const sentences = splitLineIntoSentences(line);
-      if (sentences.length === 0) {
-        units.push(line);
-      } else {
-        units.push(...sentences);
-      }
+    for (const text of sentenceLike) {
+      units.push({
+        text,
+        pageNumber: segment.pageNumber,
+        sectionPath: [...currentSectionPath],
+        displayHeading: currentHeading,
+        blockType,
+        extractionMode: segment.extractionMode ?? "text",
+        extractionConfidence: segment.extractionConfidence ?? "medium",
+        isHeading: false,
+      });
     }
   }
 
   return units;
 }
 
-function findHardBreaks(units: string[]): Set<number> {
+function findHardBreaks(units: TextUnit[]): Set<number> {
   const breaks = new Set<number>([0]);
   for (let i = 1; i < units.length; i++) {
-    if (isStructuralHeading(units[i] ?? "")) {
+    const current = units[i]!;
+    const previous = units[i - 1]!;
+    if (
+      current.isHeading ||
+      current.pageNumber !== previous.pageNumber ||
+      current.sectionPath.join(".") !== previous.sectionPath.join(".")
+    ) {
       breaks.add(i);
     }
   }
   return breaks;
 }
 
-async function embedUnitsInBatches(units: string[]): Promise<number[][]> {
+async function embedUnitsInBatches(units: TextUnit[]): Promise<number[][]> {
   const env = loadEnv();
   const batches: string[][] = [];
   for (let i = 0; i < units.length; i += SENTENCE_EMBED_BATCH) {
-    batches.push(units.slice(i, i + SENTENCE_EMBED_BATCH));
+    batches.push(units.slice(i, i + SENTENCE_EMBED_BATCH).map((unit) => unit.text));
   }
-  const results = await runConcurrent(batches, env.SENTENCE_EMBED_CONCURRENCY, (b) =>
-    aiService.embedBatch(b, "similarity"),
+  const results = await runConcurrent(batches, env.SENTENCE_EMBED_CONCURRENCY, (batch) =>
+    aiService.embedBatch(batch, "similarity"),
   );
   return results.flat();
 }
@@ -171,17 +203,34 @@ function findSemanticBreaks(embeddings: number[][], hardBreaks: Set<number>): Se
   const threshold = Math.min(percentile(sorted, SEMANTIC_BREAK_PERCENTILE), MAX_BREAK_SIMILARITY);
 
   for (let i = 1; i < embeddings.length; i++) {
-    const belowThreshold = (adjSims[i - 1] ?? 1) < threshold;
-    const sharpDrop =
-      i >= 2 &&
-      (windowSims[i - 2] ?? 0) - (windowSims[i - 1] ?? 0) >= SIMILARITY_DROP_DELTA;
-
-    if (belowThreshold || sharpDrop) {
-      breaks.add(i);
-    }
+    const current = i < adjSims.length ? unitsPreferSemanticSplit(i, hardBreaks, adjSims, windowSims, threshold) : false;
+    if (current) breaks.add(i);
   }
 
   return breaks;
+}
+
+function unitsPreferSemanticSplit(
+  index: number,
+  hardBreaks: Set<number>,
+  adjSims: number[],
+  windowSims: number[],
+  threshold: number,
+): boolean {
+  if (hardBreaks.has(index)) return true;
+  const belowThreshold = (adjSims[index - 1] ?? 1) < threshold;
+  const sharpDrop =
+    index >= 2 &&
+    (windowSims[index - 2] ?? 0) - (windowSims[index - 1] ?? 0) >= SIMILARITY_DROP_DELTA;
+  return belowThreshold || sharpDrop;
+}
+
+function dominantBlockType(units: TextUnit[]): SegmentBlockType {
+  if (units.some((unit) => unit.blockType === "equation")) return "equation";
+  if (units.some((unit) => unit.blockType === "table")) return "table";
+  if (units.some((unit) => unit.blockType === "ocr")) return "ocr";
+  if (units.some((unit) => unit.blockType === "figure_caption")) return "figure_caption";
+  return units.some((unit) => unit.blockType === "heading") ? "heading" : "paragraph";
 }
 
 function takeOverlapTail(text: string): string {
@@ -191,61 +240,81 @@ function takeOverlapTail(text: string): string {
   return spaceIdx > 0 ? tail.slice(spaceIdx + 1) : tail;
 }
 
-function applySectionPrefix(content: string, sectionTitle: string | null): string {
-  if (!sectionTitle?.trim()) return content;
-  return `[${sectionTitle.trim()}]\n${content}`;
+function buildChunkFromUnits(
+  units: TextUnit[],
+  overlapPrefix: string,
+): Omit<TextChunk, "chunkIndex"> | null {
+  const body = units.map((unit) => unit.text).join(" ").replace(/\s+/g, " ").trim();
+  if (!body) return null;
+
+  const content = overlapPrefix ? `${overlapPrefix} ${body}`.trim() : body;
+  const first = units[0]!;
+  const blockType = dominantBlockType(units);
+  const extractionMode =
+    units.some((unit) => unit.extractionMode === "hybrid")
+      ? "hybrid"
+      : units.some((unit) => unit.extractionMode === "ocr")
+        ? "ocr"
+        : "text";
+  const extractionConfidence =
+    units.some((unit) => unit.extractionConfidence === "low")
+      ? "low"
+      : units.some((unit) => unit.extractionConfidence === "medium")
+        ? "medium"
+        : "high";
+
+  return {
+    content,
+    queryText: normalizeMathQueryableText(
+      `${first.displayHeading ? `${first.displayHeading} ` : ""}${content}`,
+    ),
+    pageNumber: first.pageNumber,
+    sectionPath: [...first.sectionPath],
+    displayHeading: first.displayHeading,
+    blockType,
+    extractionMode,
+    extractionConfidence,
+  };
 }
 
 function groupUnitsIntoChunks(
-  units: string[],
+  units: TextUnit[],
   breaksBefore: Set<number>,
-  pageNumber: number | null,
 ): Omit<TextChunk, "chunkIndex">[] {
   const chunks: Omit<TextChunk, "chunkIndex">[] = [];
   let groupStart = 0;
   let overlapPrefix = "";
-  let sectionTitle: string | null = null;
 
   const flush = (endExclusive: number) => {
-    const slice = units.slice(groupStart, endExclusive);
-    let body = slice.join(" ").trim();
-    if (!body) return;
-
-    if (overlapPrefix) {
-      body = `${overlapPrefix} ${body}`.trim();
-    }
-
-    const content = applySectionPrefix(body, sectionTitle);
-    chunks.push({ content, pageNumber });
-    overlapPrefix = takeOverlapTail(body);
+    const chunk = buildChunkFromUnits(units.slice(groupStart, endExclusive), overlapPrefix);
+    if (!chunk) return;
+    chunks.push(chunk);
+    overlapPrefix = takeOverlapTail(chunk.content);
     groupStart = endExclusive;
   };
 
-  for (let i = 0; i < units.length; i++) {
-    const unit = units[i] ?? "";
-
-    if (isStructuralHeading(unit)) {
-      const hasMin = i - groupStart >= MIN_UNITS_PER_CHUNK;
-      const currentChars = units.slice(groupStart, i).join(" ").length;
-      if (hasMin && currentChars >= CHUNKING_MIN_CHARS) {
-        flush(i);
-      }
-      sectionTitle = unit;
+  for (let i = 1; i <= units.length; i++) {
+    if (i === units.length) {
+      flush(i);
+      break;
     }
 
-    if (i === 0) continue;
-
+    const slice = units.slice(groupStart, i);
+    const currentText = slice.map((unit) => unit.text).join(" ");
+    const currentChars = currentText.length;
+    const nextUnit = units[i]!;
     const isBreak = breaksBefore.has(i);
-    const currentChars = units.slice(groupStart, i).join(" ").length;
-    const wouldExceedMax = currentChars + unit.length + 1 > CHUNKING_MAX_CHARS;
-    const hasMin = i - groupStart >= MIN_UNITS_PER_CHUNK;
+    const wouldExceedMax = currentChars + nextUnit.text.length + 1 > CHUNKING_MAX_CHARS;
+    const minChars = dominantBlockType(slice) === "equation" || dominantBlockType(slice) === "table"
+      ? Math.floor(CHUNKING_MIN_CHARS / 2)
+      : CHUNKING_MIN_CHARS;
+    const hasMin = currentChars >= minChars || i - groupStart >= MIN_UNITS_PER_CHUNK;
 
     if ((isBreak && hasMin) || wouldExceedMax) {
       flush(i);
     }
   }
 
-  flush(units.length);
   return chunks;
 }
 
@@ -256,40 +325,40 @@ function mergeSmallTrailingChunks(
   if (chunks.length < 2) return chunks;
 
   const last = chunks[chunks.length - 1]!;
-  if (last.content.length >= minChars) return chunks;
+  if (last.content.length >= minChars || last.blockType === "equation" || last.blockType === "table") {
+    return chunks;
+  }
 
   const prev = chunks[chunks.length - 2]!;
   prev.content = `${prev.content}\n\n${last.content}`.trim();
+  prev.queryText = normalizeMathQueryableText(`${prev.queryText} ${last.queryText}`);
   return chunks.slice(0, -1);
 }
 
-async function chunkSegmentText(
-  text: string,
-  pageNumber: number | null,
-): Promise<Omit<TextChunk, "chunkIndex">[]> {
-  const units = splitIntoUnits(text);
+async function chunkSegmentText(segment: TextSegment): Promise<Omit<TextChunk, "chunkIndex">[]> {
+  const units = splitIntoUnits(segment);
   if (units.length === 0) return [];
 
   if (units.length < 3) {
-    const content = units.join(" ").trim();
-    return content ? [{ content, pageNumber }] : [];
+    const chunk = buildChunkFromUnits(units, "");
+    return chunk ? [chunk] : [];
   }
 
   const hardBreaks = findHardBreaks(units);
   const embeddings = await embedUnitsInBatches(units);
   const breaks = findSemanticBreaks(embeddings, hardBreaks);
-  const chunks = groupUnitsIntoChunks(units, breaks, pageNumber);
+  const chunks = groupUnitsIntoChunks(units, breaks);
   return mergeSmallTrailingChunks(chunks, CHUNKING_MERGE_TAIL_CHARS);
 }
 
 export async function chunkSegments(segments: TextSegment[]): Promise<TextChunk[]> {
   const env = loadEnv();
-  const nonEmptySegments = segments.filter((s) => s.text.trim());
+  const nonEmptySegments = segments.filter((segment) => segment.text.trim());
 
   const perSegmentChunks = await runConcurrent(
     nonEmptySegments,
     env.SENTENCE_EMBED_CONCURRENCY,
-    (segment) => chunkSegmentText(segment.text, segment.pageNumber),
+    (segment) => chunkSegmentText(segment),
   );
 
   const allChunks: TextChunk[] = [];
@@ -303,7 +372,7 @@ export async function chunkSegments(segments: TextSegment[]): Promise<TextChunk[
   return allChunks;
 }
 
-/** @deprecated Use chunkSegments — kept for scripts/tests. */
+/** @deprecated Use chunkSegments â€” kept for scripts/tests. */
 export async function chunkText(
   text: string,
   pageCount: number | null = null,

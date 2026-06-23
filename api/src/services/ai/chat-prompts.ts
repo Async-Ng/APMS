@@ -1,5 +1,19 @@
 export type ChatMode = "chat" | "summary" | "faq" | "study_guide";
 
+interface QueryAnalysisLike {
+  intent:
+    | "section_lookup"
+    | "page_lookup"
+    | "formula_lookup"
+    | "definition_lookup"
+    | "comparison"
+    | "summary"
+    | "general";
+  sectionPath: string[] | null;
+  pageNumber: number | null;
+  formulaTokens: string[];
+}
+
 const BASE_RULES = `You are a warm, encouraging study assistant who helps students truly understand their documents. Answer using ONLY the excerpts labelled [Source N] below.
 
 How to answer:
@@ -10,6 +24,8 @@ How to answer:
 - Cite as you go: attach an inline [N] (matching [Source N]) to each claim, right after the sentence it supports. Paraphrase in your own words; do not copy long passages verbatim.
 - If the documents only partly cover the question, answer what you can and clearly say which part isn't in the documents. Never invent facts that aren't supported by the sources.
 - If the question is ambiguous, briefly state the most reasonable interpretation, then answer it.
+- If the user refers to a specific section, page, or formula, first verify whether that exact reference appears in the retrieved context. If it does not, say the exact reference was not found in the retrieved context instead of claiming the document does not contain it.
+- Prefer the most exact matching section/page/formula evidence before broader semantic summaries.
 - Always reply in the same language as the user's question.`;
 
 const MODE_INSTRUCTIONS: Record<Exclude<ChatMode, "chat">, string> = {
@@ -32,13 +48,28 @@ export function buildChatSystemPrompt(
   contextText: string,
   mode: ChatMode,
   userGuidance?: string,
+  analysis?: QueryAnalysisLike,
 ): string {
   if (contextText.length === 0) {
     return NO_CONTEXT_PROMPT;
   }
 
+  const referenceHints = analysis
+    ? [
+        analysis.sectionPath?.length ? `section=${analysis.sectionPath.join(".")}` : null,
+        analysis.pageNumber !== null ? `page=${analysis.pageNumber}` : null,
+        analysis.formulaTokens.length > 0
+          ? `formula_tokens=${analysis.formulaTokens.join(", ")}`
+          : null,
+        analysis.intent !== "general" ? `intent=${analysis.intent}` : null,
+      ]
+        .filter(Boolean)
+        .join("; ")
+    : "";
+
   if (mode === "chat") {
-    return `${BASE_RULES}\n\nContext:\n${contextText}`;
+    const hintBlock = referenceHints ? `\n\nReference hints: ${referenceHints}` : "";
+    return `${BASE_RULES}${hintBlock}\n\nContext:\n${contextText}`;
   }
 
   const modeBlock = MODE_INSTRUCTIONS[mode];

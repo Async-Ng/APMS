@@ -7,10 +7,11 @@ import * as aiService from "../ai/ai.service";
  * short description so both text-in-image and figures/charts become searchable.
  */
 export const VISION_OCR_PROMPT =
-  "You ar a OCR tool and image description tool. Please: (1) extract the VERBATIM OCR of the entire text " +
-  "in the image (keep the original language), (2) provide a short description of the image content, charts, " +
-  "and tables if any. Return the raw text, no markdown. If the image has no meaningful content, " +
-  "return an empty string.";
+  "You are a document OCR and layout extraction tool. Please: (1) extract the VERBATIM text in reading order, " +
+  "keeping headings, numbered sections, formulas, matrix notation, and tables as faithfully as possible; " +
+  "(2) preserve important structural cues such as section numbers or figure/table labels; " +
+  "(3) add a short plain-text note only when needed to explain a chart, diagram, or image that contains little text. " +
+  "Return raw text only, no markdown fences. If the image has no meaningful content, return an empty string.";
 
 export interface ImageInput {
   base64: string;

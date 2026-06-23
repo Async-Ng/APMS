@@ -2,6 +2,7 @@ import { XMLParser } from "fast-xml-parser";
 import JSZip from "jszip";
 
 import { loadEnv } from "../../config/env";
+import { inferBlockType } from "../ai/reference-utils";
 import type { ExtractionResult } from "../extraction.service";
 import type { TextSegment } from "../extraction/types";
 import { describeImages, imageDescriptionsBlock, type ImageInput } from "./vision-ocr";
@@ -90,15 +91,27 @@ export async function extractPptxWithVision(buffer: Buffer): Promise<ExtractionR
   const segments: TextSegment[] = slideTexts.map((t, i) => ({
     text: t,
     pageNumber: i + 1,
+    blockType: inferBlockType(t),
+    extractionMode: "text",
+    extractionConfidence: t.trim() ? "high" : "low",
   }));
 
   if (imageBlock.trim()) {
     segments.push({
       text: imageBlock.trim(),
       pageNumber: slideCount > 0 ? slideCount : null,
+      blockType: "ocr",
+      extractionMode: "hybrid",
+      extractionConfidence: "medium",
     });
   }
 
   const text = `${slideTexts.join("\n\n")}${imageBlock}`;
-  return { text, pageCount: slideCount > 0 ? slideCount : null, segments };
+  return {
+    text,
+    pageCount: slideCount > 0 ? slideCount : null,
+    segments,
+    extractionMode: imageBlock.trim() ? "hybrid" : "text",
+    extractionConfidence: imageBlock.trim() ? "medium" : "high",
+  };
 }

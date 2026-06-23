@@ -1,7 +1,11 @@
 import { extractDocxWithVision } from "./extraction/docx";
 import { extractPdfWithVision } from "./extraction/pdf";
 import { extractPptxWithVision } from "./extraction/pptx";
-import type { TextSegment } from "./extraction/types";
+import type {
+  ExtractionConfidence,
+  ExtractionMode,
+  TextSegment,
+} from "./extraction/types";
 
 export type { TextSegment } from "./extraction/types";
 
@@ -9,6 +13,8 @@ export interface ExtractionResult {
   text: string;
   pageCount: number | null;
   segments: TextSegment[];
+  extractionMode: ExtractionMode;
+  extractionConfidence: ExtractionConfidence;
 }
 
 const DOCX_MIME =
@@ -33,5 +39,11 @@ export async function extractText(
   }
 
   console.warn(`[extraction] Unknown mimeType ${mimeType} — skipping`);
-  return { text: "", pageCount: null, segments: [] };
+  return {
+    text: "",
+    pageCount: null,
+    segments: [],
+    extractionMode: "text",
+    extractionConfidence: "low",
+  };
 }

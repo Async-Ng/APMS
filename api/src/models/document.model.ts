@@ -36,6 +36,8 @@ const documentSchema = new Schema(
     },
     pageCount: { type: Number },
     chunkCount: { type: Number, default: 0 },
+    extractionMode: { type: String, default: "text" },
+    extractionConfidence: { type: String, default: "medium" },
     processingAttempts: { type: Number, default: 0 },
     lastError: { type: String, default: null },
     nextRetryAt: { type: Date, default: null },

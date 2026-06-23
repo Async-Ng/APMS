@@ -3,8 +3,14 @@ import type { Types } from "mongoose";
 export interface RetrievedChunk {
   documentId: Types.ObjectId;
   content: string;
+  queryText: string;
   pageNumber: number | null;
   score: number;
+  sectionPath: string[];
+  displayHeading: string | null;
+  blockType: string;
+  extractionMode: string;
+  extractionConfidence: string;
   /** Position of the chunk within its document; used for neighbor expansion. */
   chunkIndex?: number;
   /**
@@ -19,6 +25,8 @@ export interface BuiltCitation {
   documentId: Types.ObjectId;
   documentTitle: string;
   pageNumber: number | null;
+  sectionPath: string[];
+  heading: string | null;
   excerpt: string;
 }
 
@@ -70,6 +78,8 @@ export function buildCitationsFromResponse(
       documentId: chunk.documentId,
       documentTitle: titleMap.get(docIdStr) ?? "",
       pageNumber: chunk.pageNumber ?? null,
+      sectionPath: chunk.sectionPath,
+      heading: chunk.displayHeading,
       excerpt: (chunk.citationExcerpt ?? chunk.content).slice(0, excerptLength),
     });
   }

@@ -1,6 +1,7 @@
 import mammoth from "mammoth";
 
 import { loadEnv } from "../../config/env";
+import { inferBlockType } from "../ai/reference-utils";
 import type { ExtractionResult } from "../extraction.service";
 import type { TextSegment } from "../extraction/types";
 import { describeImages, imageDescriptionsBlock, type ImageInput } from "./vision-ocr";
@@ -12,8 +13,22 @@ export async function extractDocxWithVision(buffer: Buffer): Promise<ExtractionR
   const body = textResult.value;
 
   if (!env.DOC_VISION_ENABLED) {
-    const segments: TextSegment[] = [{ text: body, pageNumber: null }];
-    return { text: body, pageCount: null, segments };
+    const segments: TextSegment[] = [
+      {
+        text: body,
+        pageNumber: null,
+        blockType: inferBlockType(body),
+        extractionMode: "text",
+        extractionConfidence: body.trim() ? "high" : "low",
+      },
+    ];
+    return {
+      text: body,
+      pageCount: null,
+      segments,
+      extractionMode: "text",
+      extractionConfidence: body.trim() ? "high" : "low",
+    };
   }
 
   // Collect embedded images via a separate convertToHtml pass. The convertImage hook
@@ -34,6 +49,21 @@ export async function extractDocxWithVision(buffer: Buffer): Promise<ExtractionR
 
   const descriptions = await describeImages(images);
   const text = `${body}${imageDescriptionsBlock(descriptions)}`;
-  const segments: TextSegment[] = [{ text, pageNumber: null }];
-  return { text, pageCount: null, segments };
+  const hasImageText = descriptions.some((value) => value.trim().length > 0);
+  const segments: TextSegment[] = [
+    {
+      text,
+      pageNumber: null,
+      blockType: hasImageText ? "ocr" : inferBlockType(body),
+      extractionMode: hasImageText ? "hybrid" : "text",
+      extractionConfidence: hasImageText ? "medium" : body.trim() ? "high" : "low",
+    },
+  ];
+  return {
+    text,
+    pageCount: null,
+    segments,
+    extractionMode: hasImageText ? "hybrid" : "text",
+    extractionConfidence: hasImageText ? "medium" : body.trim() ? "high" : "low",
+  };
 }

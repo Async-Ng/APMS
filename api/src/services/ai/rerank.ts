@@ -42,7 +42,9 @@ export async function rerankChunks(
   const numbered = chunks
     .map(
       (chunk, i) =>
-        `[${i}] ${chunk.content.slice(0, RERANK_SNIPPET_CHARS).replace(/\s+/g, " ")}`,
+        `[${i}] ${chunk.sectionPath.length > 0 ? `section=${chunk.sectionPath.join(".")} ` : ""}${
+          chunk.displayHeading ? `heading=${chunk.displayHeading} ` : ""
+        }${chunk.content.slice(0, RERANK_SNIPPET_CHARS).replace(/\s+/g, " ")}`,
     )
     .join("\n\n");
 

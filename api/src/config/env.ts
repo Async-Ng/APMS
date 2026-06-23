@@ -35,7 +35,7 @@ const envSchema = z
     GEMINI_CHAT_MODEL: z.string().default("gemini-2.5-flash"),
     GEMINI_VISION_MODEL: z.string().default("gemini-2.5-flash"),
     // Lightweight model used for query rewriting and chunk reranking (cheap + fast).
-    GEMINI_RERANK_MODEL: z.string().default("gemini-2.5-flash-lite"),
+    GEMINI_RERANK_MODEL: z.string().default("gemini-2.5-flash"),
     // Thinking budget for the chat model. 0 disables reasoning; -1 = dynamic; >0 = fixed token budget.
     GEMINI_CHAT_THINKING_BUDGET: z.coerce.number().int().min(-1).default(2048),
     GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
