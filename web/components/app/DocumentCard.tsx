@@ -3,6 +3,7 @@
 import {
   Download,
   FileText,
+  Globe,
   MoreVertical,
   Presentation,
   Share2,
@@ -10,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -21,6 +22,7 @@ import {
   useDocumentDownloadUrl,
   useToggleDocumentStar,
 } from "@/lib/queries/documents";
+import { formatSharedAt } from "@/lib/queries/shares";
 
 function FileIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.includes("pdf"))
@@ -50,6 +52,7 @@ interface DocumentCardProps {
   document: DriveDocument;
   parentId?: string;
   variant?: "default" | "shared";
+  sharedAt?: string;
   onRename: (doc: DriveDocument) => void;
   onShare?: (doc: DriveDocument) => void;
 }
@@ -58,11 +61,13 @@ export function DocumentCard({
   document: doc,
   parentId,
   variant = "default",
+  sharedAt,
   onRename,
   onShare,
 }: DocumentCardProps) {
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [triggerDownload, setTriggerDownload] = useState(false);
 
   const { mutate: toggleStar } = useToggleDocumentStar(parentId);
@@ -128,7 +133,12 @@ export function DocumentCard({
       ];
 
   return (
-    <div className="brutal-card brutal-card-hover group relative flex flex-col gap-2 p-3 cursor-pointer select-none">
+    <div
+      className={cn(
+        "brutal-card brutal-card-hover group relative flex flex-col gap-2 p-3 cursor-pointer select-none",
+        menuOpen && "z-[var(--z-dropdown)]",
+      )}
+    >
       <Link
         href={`/documents/${doc.id}`}
         className="focus-brutal absolute inset-0 rounded-2xl"
@@ -173,6 +183,7 @@ export function DocumentCard({
             {menuItems.length > 0 && (
               <>
                 <button
+                  ref={menuButtonRef}
                   id={`doc-menu-${doc.id}`}
                   type="button"
                   onClick={(e) => {
@@ -190,6 +201,7 @@ export function DocumentCard({
 
                 {menuOpen && (
                   <ContextMenu
+                    anchorRef={menuButtonRef}
                     onClose={() => setMenuOpen(false)}
                     items={menuItems}
                   />
@@ -205,11 +217,26 @@ export function DocumentCard({
       </p>
 
       <div className="flex items-center justify-between gap-1">
-        <StatusBadge status={doc.status} />
+        <div className="flex items-center gap-1">
+          <StatusBadge status={doc.status} />
+          {doc.visibility === "public" && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-md border-2 border-brutal-ink bg-brutal-bg px-1.5 py-0.5 text-xs font-bold"
+              title="Tài liệu công khai"
+            >
+              <Globe className="h-3 w-3" />
+            </span>
+          )}
+        </div>
         <span className="text-xs text-brutal-muted tabular-nums">
           {formatBytes(doc.fileSizeBytes)}
         </span>
       </div>
+      {isShared && sharedAt && (
+        <p className="text-xs text-brutal-muted">
+          Chia sẻ {formatSharedAt(sharedAt)}
+        </p>
+      )}
     </div>
   );
 }

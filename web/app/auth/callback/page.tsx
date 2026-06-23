@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchAuthSession } from "aws-amplify/auth";
+import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +37,19 @@ export default function AuthCallbackPage() {
         finishedRef.current = true;
         await fetchMe();
 
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          try {
+            await signOut();
+          } catch {
+            // Session may already be invalid
+          }
+          const authError =
+            useAuthStore.getState().error ?? "Không thể xác thực tài khoản. Vui lòng thử lại.";
+          setError(authError);
+          return;
+        }
+
         const inviteToken = getPendingInviteToken();
         if (inviteToken) {
           clearPendingInviteToken();
@@ -54,7 +67,7 @@ export default function AuthCallbackPage() {
         }
 
         router.replace("/drive");
-      } catch (err) {
+      } catch {
         setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
       }
     }
@@ -66,7 +79,6 @@ export default function AuthCallbackPage() {
       }
 
       if (payload.event === "signInWithRedirect_failure") {
-        const data = payload.data as { message?: string } | undefined;
         setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     });

@@ -1,9 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
+import { FlatList, RefreshControl, SafeAreaView, View } from "react-native";
 
-import { ActionSheet, type ActionItem } from "../../../components/app/ActionSheet";
+import { ActionSheet } from "../../../components/app/ActionSheet";
 import { BreadcrumbNav, type BreadcrumbItem } from "../../../components/app/BreadcrumbNav";
 import { FileItem } from "../../../components/app/FileItem";
 import { FolderItem } from "../../../components/app/FolderItem";
@@ -11,12 +10,14 @@ import { FolderModal } from "../../../components/app/FolderModal";
 import { ShareSheet } from "../../../components/app/ShareSheet";
 import { UploadSheet } from "../../../components/app/UploadSheet";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { Fab } from "../../../components/ui/Fab";
+import { HeaderBar } from "../../../components/ui/HeaderBar";
+import { SectionHeaderRow } from "../../../components/ui/SectionHeaderRow";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
-import { brutalCtaStyle, pressedBrutalStyle } from "../../../lib/brutal-style";
 import { useDrive, type DriveDocument, type DriveFolder } from "../../../hooks/useDrive";
-import { useFolder, useCreateFolder, useDeleteFolder, useToggleFolderStar } from "../../../hooks/useFolders";
-import { useDeleteDocument, useToggleDocumentStar } from "../../../hooks/useDocuments";
+import { useFolder, useCreateFolder } from "../../../hooks/useFolders";
+import { useDriveItemActions, type ShareTarget } from "../../../hooks/useDriveItemActions";
 
 type ActionTarget =
   | { kind: "folder"; item: DriveFolder }
@@ -31,16 +32,13 @@ export default function FolderScreen() {
   const { data, isLoading, refetch, isRefetching } = useDrive(folderId);
 
   const createFolder = useCreateFolder();
-  const deleteFolder = useDeleteFolder();
-  const toggleFolderStar = useToggleFolderStar();
-  const deleteDocument = useDeleteDocument();
-  const toggleDocumentStar = useToggleDocumentStar();
 
   const [showUpload, setShowUpload] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
-  const [showFab, setShowFab] = useState(false);
   const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
-  const [shareTarget, setShareTarget] = useState<{ type: "folder" | "document"; id: string; name: string } | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
+
+  const { buildFolderActions, buildDocumentActions } = useDriveItemActions(setShareTarget);
 
   const folderName = folderQuery.data?.name ?? "Thư mục";
   const folders = data?.folders ?? [];
@@ -54,57 +52,6 @@ export default function FolderScreen() {
 
   function handleBreadcrumbNavigate(id: string | null) {
     if (id === null) router.push("/(tabs)/drive");
-  }
-
-  function buildFolderActions(folder: DriveFolder): ActionItem[] {
-    return [
-      {
-        label: folder.isStarred ? "Bỏ gắn sao" : "Gắn sao",
-        icon: folder.isStarred ? "star" : "star-outline",
-        onPress: () => toggleFolderStar.mutate({ id: folder.id, star: !folder.isStarred }),
-      },
-      {
-        label: "Chia sẻ",
-        icon: "share-outline",
-        onPress: () => setShareTarget({ type: "folder", id: folder.id, name: folder.name }),
-      },
-      {
-        label: "Xóa",
-        icon: "trash-outline",
-        destructive: true,
-        onPress: () => deleteFolder.mutate(folder.id),
-      },
-    ];
-  }
-
-  function buildDocumentActions(doc: DriveDocument): ActionItem[] {
-    return [
-      {
-        label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
-        icon: doc.isStarred ? "star" : "star-outline",
-        onPress: () => toggleDocumentStar.mutate({ id: doc.id, star: !doc.isStarred }),
-      },
-      {
-        label: "Chia sẻ",
-        icon: "share-outline",
-        onPress: () => setShareTarget({ type: "document", id: doc.id, name: doc.title }),
-      },
-      {
-        label: "Trò chuyện về tài liệu này",
-        icon: "chatbubble-outline",
-        onPress: () =>
-          router.push({
-            pathname: "/(tabs)/chat",
-            params: { contextType: "document", contextId: doc.id, contextName: doc.title },
-          }),
-      },
-      {
-        label: "Xóa",
-        icon: "trash-outline",
-        destructive: true,
-        onPress: () => deleteDocument.mutate(doc.id),
-      },
-    ];
   }
 
   type ListItem =
@@ -131,40 +78,11 @@ export default function FolderScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View
-        style={{
-          borderBottomWidth: 3,
-          borderBottomColor: colors.ink,
-          backgroundColor: colors.surface,
-          paddingTop: 8,
-          paddingBottom: 0,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 10, gap: 10 }}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              borderWidth: 2,
-              borderColor: colors.ink,
-              backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-              alignItems: "center",
-              justifyContent: "center",
-            })}
-            accessibilityLabel="Quay lại"
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.ink} />
-          </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, flex: 1 }} numberOfLines={1}>
-            {folderName}
-          </Text>
-        </View>
-        <BreadcrumbNav items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
-        <View style={{ height: 10 }} />
-      </View>
+      <HeaderBar
+        title={folderName}
+        onBack={() => router.back()}
+        below={<BreadcrumbNav items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />}
+      />
 
       {/* Content */}
       {isLoading ? (
@@ -181,14 +99,7 @@ export default function FolderScreen() {
           }
           renderItem={({ item }) => {
             if (item.type === "header") {
-              return (
-                <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>
-                    {item.label.toUpperCase()}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>{item.count}</Text>
-                </View>
-              );
+              return <SectionHeaderRow label={item.label} count={item.count} />;
             }
             if (item.type === "folder") {
               return (
@@ -226,78 +137,12 @@ export default function FolderScreen() {
         />
       )}
 
-      {/* FAB */}
-      {showFab && (
-        <Pressable style={{ position: "absolute", inset: 0 }} onPress={() => setShowFab(false)} />
-      )}
-      {showFab && (
-        <View style={{ position: "absolute", bottom: 90, right: 20, gap: 12, alignItems: "flex-end" }}>
-          <Pressable
-            onPress={() => { setShowFab(false); setShowNewFolder(true); }}
-            style={({ pressed }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              backgroundColor: colors.fptBlue,
-              borderWidth: 3,
-              borderColor: colors.ink,
-              borderRadius: 14,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              shadowColor: colors.ink,
-              shadowOffset: pressed ? { width: 0, height: 0 } : { width: 4, height: 4 },
-              shadowOpacity: pressed ? 0 : 1,
-              shadowRadius: 0,
-              elevation: pressed ? 0 : 4,
-              transform: pressed ? [{ translateX: 4 }, { translateY: 4 }] : [],
-            })}
-          >
-            <Ionicons name="folder-open-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Thư mục mới</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => { setShowFab(false); setShowUpload(true); }}
-            style={({ pressed }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              backgroundColor: colors.fptOrange,
-              borderWidth: 3,
-              borderColor: colors.ink,
-              borderRadius: 14,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              shadowColor: colors.ink,
-              shadowOffset: pressed ? { width: 0, height: 0 } : { width: 4, height: 4 },
-              shadowOpacity: pressed ? 0 : 1,
-              shadowRadius: 0,
-              elevation: pressed ? 0 : 4,
-              transform: pressed ? [{ translateX: 4 }, { translateY: 4 }] : [],
-            })}
-          >
-            <Ionicons name="cloud-upload-outline" size={18} color={colors.onBrand} />
-            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>Tải lên tệp</Text>
-          </Pressable>
-        </View>
-      )}
-
-      <Pressable
-        onPress={() => setShowFab((v) => !v)}
-        style={({ pressed }) => ({
-          ...brutalCtaStyle,
-          position: "absolute",
-          bottom: 90,
-          right: 20,
-          width: 56,
-          height: 56,
-          borderRadius: 18,
-          backgroundColor: showFab ? colors.ink : colors.fptOrange,
-          ...pressedBrutalStyle(pressed),
-        })}
-        accessibilityLabel="Thêm mục"
-      >
-        <Ionicons name={showFab ? "close" : "add"} size={28} color={colors.onBrand} />
-      </Pressable>
+      <Fab
+        actions={[
+          { label: "Thư mục mới", icon: "folder-open-outline", color: colors.fptBlue, onPress: () => setShowNewFolder(true) },
+          { label: "Tải lên tệp", icon: "cloud-upload-outline", color: colors.fptOrange, onPress: () => setShowUpload(true) },
+        ]}
+      />
 
       <UploadSheet visible={showUpload} folderId={folderId} onDismiss={() => setShowUpload(false)} />
       <FolderModal

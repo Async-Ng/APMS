@@ -1,7 +1,8 @@
 "use client";
 
-import { FolderPlus } from "lucide-react";
-import { use, useState } from "react";
+import { FolderPlus, Share2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, use, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
@@ -16,15 +17,20 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
-import { useDriveContents } from "@/lib/queries/drive";
+import { useDriveContents, useSharedFolderContents } from "@/lib/queries/drive";
 
 interface PageProps {
   params: Promise<{ folderId: string }>;
 }
 
-export default function FolderPage({ params }: PageProps) {
-  const { folderId } = use(params);
-  const { data, isLoading, isError } = useDriveContents(folderId);
+function FolderPageContent({ folderId }: { folderId: string }) {
+  const searchParams = useSearchParams();
+  const isShared = searchParams.get("shared") === "1";
+
+  const owned = useDriveContents(isShared ? undefined : folderId);
+  const shared = useSharedFolderContents(isShared ? folderId : "");
+  const { data, isLoading, isError } = isShared ? shared : owned;
+
   const [uploadOpen, setUploadOpen] = useState(false);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
@@ -38,10 +44,11 @@ export default function FolderPage({ params }: PageProps) {
   const isEmpty =
     !isLoading && data?.folders.length === 0 && data?.documents.length === 0;
 
-  // Build breadcrumb — in a real app you'd fetch the full path from the folder detail
   const breadcrumbs = [
-    { label: "Drive của tôi", href: "/drive" },
-    { label: isLoading ? "…" : (data?.folders[0]?.name ?? "Thư mục") },
+    isShared
+      ? { label: "Đã chia sẻ", href: "/shared" }
+      : { label: "Drive của tôi", href: "/drive" },
+    { label: isLoading ? "…" : "Thư mục" },
   ];
 
   return (
@@ -49,27 +56,36 @@ export default function FolderPage({ params }: PageProps) {
       <Topbar
         breadcrumbs={breadcrumbs}
         onMenuOpen={() => {}}
-        onUploadClick={() => setUploadOpen(true)}
+        onUploadClick={isShared ? undefined : () => setUploadOpen(true)}
         actions={
-          <>
-            <AskAiLink
-              id={`folder-${folderId}-ask-ai-btn`}
-              href={`/chat?contextType=folder&contextId=${folderId}`}
-            />
-            <BrutalButton
-              id={`folder-${folderId}-new-folder-btn`}
-              variant="ghost"
-              onClick={() => setFolderModalOpen(true)}
-              className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
-            >
-              <FolderPlus className="h-4 w-4" aria-hidden="true" />
-              Thư mục mới
-            </BrutalButton>
-          </>
+          isShared ? undefined : (
+            <>
+              <AskAiLink
+                id={`folder-${folderId}-ask-ai-btn`}
+                href={`/chat?contextType=folder&contextId=${folderId}`}
+              />
+              <BrutalButton
+                id={`folder-${folderId}-new-folder-btn`}
+                variant="ghost"
+                onClick={() => setFolderModalOpen(true)}
+                className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
+              >
+                <FolderPlus className="h-4 w-4" aria-hidden="true" />
+                Thư mục mới
+              </BrutalButton>
+            </>
+          )
         }
       />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
+        {isShared && (
+          <div className="mb-4 flex items-center gap-3 rounded-xl border-2 border-brutal-ink bg-brutal-accent/20 px-4 py-3 text-sm text-brutal-ink shadow-brutal-sm">
+            <Share2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Bạn đang xem thư mục được chia sẻ ở chế độ chỉ đọc.
+          </div>
+        )}
+
         {isError && (
           <ErrorAlert
             className="mb-4"
@@ -86,11 +102,20 @@ export default function FolderPage({ params }: PageProps) {
         ) : isEmpty ? (
           <EmptyState
             title="Thư mục trống"
-            description="Tải lên tệp hoặc tạo thư mục con để bắt đầu."
+            description={
+              isShared
+                ? "Thư mục được chia sẻ này chưa có nội dung."
+                : "Tải lên tệp hoặc tạo thư mục con để bắt đầu."
+            }
             action={
-              <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
-                Tải lên tệp
-              </BrutalButton>
+              isShared ? undefined : (
+                <BrutalButton
+                  variant="primary"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  Tải lên tệp
+                </BrutalButton>
+              )
             }
           />
         ) : (
@@ -109,13 +134,20 @@ export default function FolderPage({ params }: PageProps) {
                       key={folder.id}
                       folder={folder}
                       parentId={folderId}
+                      variant={isShared ? "shared" : "default"}
+                      href={
+                        isShared ? `/drive/${folder.id}?shared=1` : undefined
+                      }
                       onRename={setRenameFolder}
-                      onShare={(f) =>
-                        setShareTarget({
-                          resourceType: "folder",
-                          resourceId: f.id,
-                          resourceName: f.name,
-                        })
+                      onShare={
+                        isShared
+                          ? undefined
+                          : (f) =>
+                              setShareTarget({
+                                resourceType: "folder",
+                                resourceId: f.id,
+                                resourceName: f.name,
+                              })
                       }
                     />
                   ))}
@@ -137,13 +169,17 @@ export default function FolderPage({ params }: PageProps) {
                       key={doc.id}
                       document={doc}
                       parentId={folderId}
+                      variant={isShared ? "shared" : "default"}
                       onRename={setRenameDoc}
-                      onShare={(d) =>
-                        setShareTarget({
-                          resourceType: "document",
-                          resourceId: d.id,
-                          resourceName: d.title,
-                        })
+                      onShare={
+                        isShared
+                          ? undefined
+                          : (d) =>
+                              setShareTarget({
+                                resourceType: "document",
+                                resourceId: d.id,
+                                resourceName: d.title,
+                              })
                       }
                     />
                   ))}
@@ -186,5 +222,14 @@ export default function FolderPage({ params }: PageProps) {
         />
       )}
     </>
+  );
+}
+
+export default function FolderPage({ params }: PageProps) {
+  const { folderId } = use(params);
+  return (
+    <Suspense fallback={null}>
+      <FolderPageContent folderId={folderId} />
+    </Suspense>
   );
 }

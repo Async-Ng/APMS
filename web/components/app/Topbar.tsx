@@ -11,6 +11,7 @@ interface TopbarProps {
   onUploadClick?: () => void;
   actions?: React.ReactNode;
   className?: string;
+  showBreadcrumbRootIcon?: boolean;
 }
 
 /**
@@ -25,6 +26,7 @@ export function Topbar({
   onUploadClick,
   actions,
   className,
+  showBreadcrumbRootIcon = true,
 }: TopbarProps) {
   return (
     <header
@@ -51,7 +53,10 @@ export function Topbar({
 
       {/* Breadcrumb — fills remaining space */}
       <div className="flex min-w-0 flex-1">
-        <BreadcrumbNav items={breadcrumbs} />
+        <BreadcrumbNav
+          items={breadcrumbs}
+          showRootIcon={showBreadcrumbRootIcon}
+        />
       </div>
 
       {/* Action area */}

@@ -22,21 +22,6 @@ export interface ShareRecord {
   sharedAt: string;
 }
 
-export interface SharedDriveFolder extends DriveFolder {
-  share: ShareRecord;
-  ownerId: string;
-}
-
-export interface SharedDriveDocument extends DriveDocument {
-  share: ShareRecord;
-  ownerId: string;
-}
-
-export interface SharedDriveContents {
-  folders: SharedDriveFolder[];
-  documents: SharedDriveDocument[];
-}
-
 export interface ShareFolderResource {
   id: string;
   ownerId: string;
@@ -124,36 +109,38 @@ export interface AcceptInviteResult {
 
 /* ── Helpers ───────────────────────────────────────────────── */
 
-export function toDriveFolder(item: SharedDriveFolder): DriveFolder {
+export function toDriveFolder(resource: ShareFolderResource): DriveFolder {
   return {
-    id: item.id,
-    name: item.name,
-    color: item.color,
-    parentId: item.parentId,
-    isStarred: item.isStarred,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    id: resource.id,
+    ownerId: resource.ownerId,
+    name: resource.name,
+    color: resource.color,
+    parentId: resource.parentId,
+    isStarred: resource.isStarred,
+    createdAt: resource.createdAt,
+    updatedAt: resource.updatedAt,
   };
 }
 
-export function toDriveDocument(item: SharedDriveDocument): DriveDocument {
+export function toDriveDocument(resource: ShareDocumentResource): DriveDocument {
   return {
-    id: item.id,
-    title: item.title,
-    originalFilename: item.originalFilename,
-    mimeType: item.mimeType,
-    fileSizeBytes: item.fileSizeBytes,
-    status: item.status,
-    folderId: item.folderId,
-    isStarred: item.isStarred,
-    tags: item.tags,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    id: resource.id,
+    ownerId: resource.ownerId,
+    title: resource.title,
+    originalFilename: resource.originalFilename,
+    mimeType: resource.mimeType,
+    fileSizeBytes: resource.fileSizeBytes,
+    status: resource.status,
+    folderId: resource.folderId,
+    isStarred: resource.isStarred,
+    tags: resource.tags,
+    source: "shared",
+    createdAt: resource.createdAt,
+    updatedAt: resource.updatedAt,
   };
 }
 
 export const shareKeys = {
-  drive: ["shares", "drive"] as const,
   withMe: ["shares", "with-me"] as const,
   byMe: ["shares", "by-me"] as const,
   userSearch: (params: UserSearchParams) =>
@@ -161,24 +148,12 @@ export const shareKeys = {
 };
 
 function invalidateShareQueries(qc: ReturnType<typeof useQueryClient>) {
-  void qc.invalidateQueries({ queryKey: shareKeys.drive });
   void qc.invalidateQueries({ queryKey: shareKeys.withMe });
   void qc.invalidateQueries({ queryKey: shareKeys.byMe });
+  void qc.invalidateQueries({ queryKey: ["drive", "shared"] });
 }
 
 /* ── Queries ───────────────────────────────────────────────── */
-
-export function useSharedDrive() {
-  return useQuery({
-    queryKey: shareKeys.drive,
-    queryFn: async () => {
-      const res = await api.get<{ status: string; data: SharedDriveContents }>(
-        "/drive/shared",
-      );
-      return res.data.data;
-    },
-  });
-}
 
 export function useSharesWithMe() {
   return useQuery({
@@ -272,7 +247,7 @@ export function useAcceptInvite() {
 export function getResourceLabel(
   group: ShareByMeGroup,
 ): string {
-  if (!group.resource) return "Deleted item";
+  if (!group.resource) return "Mục đã xóa";
   if (group.resource.type === "folder") return group.resource.data.name;
   return group.resource.data.title;
 }

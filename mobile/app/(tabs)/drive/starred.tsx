@@ -1,11 +1,12 @@
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FlatList, RefreshControl, SafeAreaView, View } from "react-native";
 
 import { FileItem } from "../../../components/app/FileItem";
 import { FolderItem } from "../../../components/app/FolderItem";
 import { ActionSheet, type ActionItem } from "../../../components/app/ActionSheet";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { HeaderBar } from "../../../components/ui/HeaderBar";
+import { SectionHeaderRow } from "../../../components/ui/SectionHeaderRow";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import { useStarred, type DriveFolder, type DriveDocument } from "../../../hooks/useDrive";
@@ -83,35 +84,7 @@ export default function StarredScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          borderBottomWidth: 3,
-          borderBottomColor: colors.ink,
-          backgroundColor: colors.surface,
-        }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            borderWidth: 2,
-            borderColor: colors.ink,
-            backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-            alignItems: "center",
-            justifyContent: "center",
-          })}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.ink} />
-        </Pressable>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Đã gắn sao</Text>
-      </View>
+      <HeaderBar title="Đã gắn sao" onBack={() => router.back()} />
 
       {isLoading ? (
         <View style={{ padding: 16 }}>
@@ -127,12 +100,7 @@ export default function StarredScreen() {
           }
           renderItem={({ item }) => {
             if (item.type === "header") {
-              return (
-                <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>{item.label.toUpperCase()}</Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>{item.count}</Text>
-                </View>
-              );
+              return <SectionHeaderRow label={item.label} count={item.count} />;
             }
             if (item.type === "folder") {
               return (

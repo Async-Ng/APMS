@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
-import type { DriveContents, DriveDocument } from "@/lib/queries/drive";
+import type {
+  DocumentVisibility,
+  DriveContents,
+  DriveDocument,
+} from "@/lib/queries/drive";
 import { useAuthStore } from "@/stores/auth-store";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -10,6 +14,8 @@ interface UploadIntentBody {
   originalFilename: string;
   mimeType: string;
   fileSizeBytes: number;
+  curriculumCourseId: string;
+  visibility: DocumentVisibility;
   folderId?: string | null;
   title?: string;
 }
@@ -33,6 +39,7 @@ export function useDocument(documentId: string) {
       );
       return res.data.data;
     },
+    enabled: !!documentId,
   });
 }
 
@@ -52,12 +59,58 @@ export function useDocumentDownloadUrl(documentId: string, enabled: boolean) {
   });
 }
 
+/* ── Public documents (Diễn đàn / Thư viện) ─────────────────── */
+
+export interface PublicDocumentsParams {
+  match: "auto" | "all";
+  page: number;
+  limit: number;
+  search?: string;
+  sort?: "newest" | "oldest" | "title";
+  majorId?: string;
+  semesterNumber?: number;
+  subjectId?: string;
+}
+
+export function usePublicDocuments(
+  params: PublicDocumentsParams & { enabled?: boolean },
+) {
+  const { enabled = true, ...listParams } = params;
+  return useQuery({
+    queryKey: ["documents", "public", listParams],
+    queryFn: async () => {
+      const query: Record<string, string | number> = {
+        view: "public",
+        match: listParams.match,
+        page: listParams.page,
+        limit: listParams.limit,
+      };
+      if (listParams.search) query.search = listParams.search;
+      if (listParams.sort) query.sort = listParams.sort;
+      if (listParams.majorId) query.majorId = listParams.majorId;
+      if (listParams.semesterNumber !== undefined)
+        query.semesterNumber = listParams.semesterNumber;
+      if (listParams.subjectId) query.subjectId = listParams.subjectId;
+
+      const res = await api.get<{ status: string; data: DriveContents }>(
+        "/documents",
+        { params: query },
+      );
+      return res.data.data;
+    },
+    placeholderData: (prev) => prev,
+    enabled,
+  });
+}
+
 /* ── Document mutations ─────────────────────────────────────── */
 
-interface UpdateDocumentBody {
+export interface UpdateDocumentBody {
   title?: string;
   tags?: string[];
   folderId?: string | null;
+  curriculumCourseId?: string;
+  visibility?: DocumentVisibility;
 }
 
 export function useUpdateDocument(documentId: string, parentId?: string) {
@@ -68,6 +121,7 @@ export function useUpdateDocument(documentId: string, parentId?: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["documents", documentId] });
       void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
+      void qc.invalidateQueries({ queryKey: ["documents", "public"] });
     },
   });
 }
@@ -78,7 +132,7 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
     mutationFn: () => api.delete(`/documents/${documentId}`),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["drive"] });
-      
+
       qc.setQueriesData(
         { queryKey: ["drive"] },
         (old: DriveContents | undefined) => {
@@ -96,6 +150,7 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
+      void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void qc.invalidateQueries({ queryKey: ["documents", documentId] });
     },
   });
@@ -108,6 +163,7 @@ export function useRestoreDocument() {
       api.post(`/documents/${documentId}/restore`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+      void qc.invalidateQueries({ queryKey: ["drive", "root"] });
     },
   });
 }
@@ -141,21 +197,17 @@ export function useToggleDocumentStar(parentId?: string) {
         : api.delete(`/documents/${documentId}/star`),
     onMutate: async (variables) => {
       const docKey = ["documents", variables.documentId];
-      // 1. Cancel outgoing refetches
       await qc.cancelQueries({ queryKey: docKey });
-      
-      // 2. Snapshot previous value
+
       const previousDoc = qc.getQueryData(docKey);
-      
-      // 3. Optimistically update
+
       if (previousDoc) {
         qc.setQueryData(docKey, {
           ...(previousDoc as DriveDocument),
           isStarred: variables.starred,
         });
       }
-      
-      // Do the same for all drive lists
+
       await qc.cancelQueries({ queryKey: ["drive"] });
       qc.setQueriesData(
         { queryKey: ["drive"] },
@@ -175,7 +227,6 @@ export function useToggleDocumentStar(parentId?: string) {
       return { previousDoc, docKey };
     },
     onError: (err, variables, context) => {
-      // Rollback on error
       if (context?.previousDoc) qc.setQueryData(context.docKey, context.previousDoc);
       void qc.invalidateQueries({ queryKey: ["drive"] });
     },
@@ -246,6 +297,7 @@ export function useCompleteUpload() {
     },
     onSuccess: ({ parentId }) => {
       void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
+      void qc.invalidateQueries({ queryKey: ["documents", "public"] });
     },
   });
 }
