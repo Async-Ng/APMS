@@ -2,12 +2,13 @@
 
 import { Folder, MoreVertical, Share2, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { cn } from "@/lib/cn";
 import { useDeleteFolder, useToggleFolderStar } from "@/lib/queries/drive";
 import type { DriveFolder } from "@/lib/queries/drive";
+import { formatSharedAt } from "@/lib/queries/shares";
 
 /** Map a folder color (hex or null) to a Tailwind-friendly inline style. */
 function folderIconColor(color: string | null): string {
@@ -18,6 +19,8 @@ interface FolderCardProps {
   folder: DriveFolder;
   parentId?: string;
   variant?: "default" | "shared";
+  sharedAt?: string;
+  href?: string;
   onRename: (folder: DriveFolder) => void;
   onShare?: (folder: DriveFolder) => void;
 }
@@ -26,11 +29,14 @@ export function FolderCard({
   folder,
   parentId,
   variant = "default",
+  sharedAt,
+  href,
   onRename,
   onShare,
 }: FolderCardProps) {
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { mutate: toggleStar } = useToggleFolderStar(parentId);
   const { mutate: deleteFolder } = useDeleteFolder(folder.id, parentId);
 
@@ -80,10 +86,11 @@ export function FolderCard({
       className={cn(
         "brutal-card brutal-card-hover group relative flex flex-col gap-2 p-3",
         "cursor-pointer select-none",
+        menuOpen && "z-[var(--z-dropdown)]",
       )}
     >
       <Link
-        href={`/drive/${folder.id}`}
+        href={href ?? `/drive/${folder.id}`}
         className="focus-brutal absolute inset-0 rounded-2xl"
         aria-label={`Open folder ${folder.name}`}
       />
@@ -126,6 +133,7 @@ export function FolderCard({
             {menuItems.length > 0 && (
               <>
                 <button
+                  ref={menuButtonRef}
                   id={`folder-menu-${folder.id}`}
                   type="button"
                   onClick={(e) => {
@@ -143,6 +151,7 @@ export function FolderCard({
 
                 {menuOpen && (
                   <ContextMenu
+                    anchorRef={menuButtonRef}
                     onClose={() => setMenuOpen(false)}
                     items={menuItems}
                   />
@@ -156,6 +165,11 @@ export function FolderCard({
       <p className="truncate text-sm font-bold text-brutal-ink leading-snug">
         {folder.name}
       </p>
+      {isShared && sharedAt && (
+        <p className="text-xs text-brutal-muted">
+          Chia sẻ {formatSharedAt(sharedAt)}
+        </p>
+      )}
     </div>
   );
 }

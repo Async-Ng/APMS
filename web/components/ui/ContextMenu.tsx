@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/cn";
 
@@ -15,43 +23,134 @@ export interface ContextMenuItem {
 interface ContextMenuProps {
   items: ContextMenuItem[];
   onClose: () => void;
+  anchorRef: RefObject<HTMLElement | null>;
   className?: string;
 }
 
+type MenuPosition = {
+  top?: number;
+  bottom?: number;
+  right: number;
+  minWidth: number;
+};
+
+const MENU_GAP = 4;
+const MENU_MIN_WIDTH = 160;
+const ITEM_HEIGHT_ESTIMATE = 44;
+
+function computePosition(
+  anchor: HTMLElement,
+  menuHeight: number,
+): MenuPosition {
+  const rect = anchor.getBoundingClientRect();
+  const right = Math.max(8, window.innerWidth - rect.right);
+
+  const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP;
+  const spaceAbove = rect.top - MENU_GAP;
+  const openBelow = spaceBelow >= menuHeight || spaceBelow >= spaceAbove;
+
+  if (openBelow) {
+    return {
+      top: rect.bottom + MENU_GAP,
+      right,
+      minWidth: MENU_MIN_WIDTH,
+    };
+  }
+
+  return {
+    bottom: window.innerHeight - rect.top + MENU_GAP,
+    right,
+    minWidth: MENU_MIN_WIDTH,
+  };
+}
+
 /**
- * Dropdown context menu — closes on outside click or Escape.
- * Positioned absolute relative to the trigger button's parent.
+ * Dropdown context menu — portaled to document.body with fixed positioning.
+ * Closes on outside click or Escape. Flips above trigger when space is tight.
  */
-export function ContextMenu({ items, onClose, className }: ContextMenuProps) {
+export function ContextMenu({
+  items,
+  onClose,
+  anchorRef,
+  className,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<MenuPosition | null>(null);
+
+  const updatePosition = useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+
+    const menuHeight =
+      menuRef.current?.offsetHeight ??
+      items.length * ITEM_HEIGHT_ESTIMATE;
+
+    setPosition(computePosition(anchor, menuHeight));
+  }, [anchorRef, items.length]);
+
+  useLayoutEffect(() => {
+    updatePosition();
+    const frameId = requestAnimationFrame(() => updatePosition());
+    return () => cancelAnimationFrame(frameId);
+  }, [updatePosition]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
+
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
+      const target = e.target as Node;
+      if (
+        menuRef.current?.contains(target) ||
+        anchorRef.current?.contains(target)
+      ) {
+        return;
       }
+      onClose();
     }
+
+    function handleScrollOrResize() {
+      updatePosition();
+    }
+
     document.addEventListener("keydown", handleKey);
     document.addEventListener("mousedown", handleClick);
+    window.addEventListener("resize", handleScrollOrResize);
+    window.addEventListener("scroll", handleScrollOrResize, {
+      capture: true,
+      passive: true,
+    });
+
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("scroll", handleScrollOrResize, {
+        capture: true,
+      });
     };
-  }, [onClose]);
+  }, [onClose, anchorRef, updatePosition]);
 
-  return (
+  const menuStyle: React.CSSProperties = {
+    position: "fixed",
+    zIndex: "var(--z-dropdown)",
+    minWidth: position?.minWidth ?? MENU_MIN_WIDTH,
+    right: position?.right ?? 8,
+    ...(position?.top !== undefined ? { top: position.top } : {}),
+    ...(position?.bottom !== undefined ? { bottom: position.bottom } : {}),
+  };
+
+  return createPortal(
     <div
       ref={menuRef}
       role="menu"
       aria-orientation="vertical"
       className={cn(
-        "absolute right-0 top-full mt-1 min-w-[160px] overflow-hidden rounded-xl border-2 border-brutal-ink bg-brutal-surface shadow-brutal",
+        "min-w-[160px] overflow-hidden rounded-xl border-2 border-brutal-ink bg-brutal-surface shadow-brutal",
         className,
       )}
-      style={{ zIndex: "var(--z-dropdown)" }}
+      style={menuStyle}
     >
       {items.map((item, idx) => (
         <button
@@ -71,13 +170,17 @@ export function ContextMenu({ items, onClose, className }: ContextMenuProps) {
           )}
         >
           {item.icon && (
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
               {item.icon}
             </span>
           )}
           {item.label}
         </button>
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }

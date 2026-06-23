@@ -1,3 +1,4 @@
+import { fetchAuthSession } from "aws-amplify/auth";
 import { create } from "zustand";
 
 import { api } from "@/lib/api-client";
@@ -22,19 +23,26 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   fetchMe: () => Promise<void>;
+  setUser: (user: AppUser) => void;
   clearUser: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  isLoading: false,
+  isLoading: true,
   error: null,
   fetchMe: async () => {
     set({ isLoading: true, error: null });
 
     try {
+      const session = await fetchAuthSession();
+      if (!session.tokens?.idToken) {
+        set({ user: null, isLoading: false, error: null });
+        return;
+      }
+
       const response = await api.get<{ status: string; data: AppUser }>("/auth/me");
-      set({ user: response.data.data, isLoading: false });
+      set({ user: response.data.data, isLoading: false, error: null });
     } catch (err) {
       set({
         user: null,
@@ -43,5 +51,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     }
   },
-  clearUser: () => set({ user: null, error: null }),
+  setUser: (user) => set({ user, error: null }),
+  clearUser: () => set({ user: null, error: null, isLoading: false }),
 }));
