@@ -2,6 +2,7 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import { create } from "zustand";
 
 import { api } from "../lib/api-client";
+import { registerAuthSessionHandlers } from "../lib/auth-session";
 import { getUserErrorMessage } from "../lib/errors";
 
 export interface AppUser {
@@ -27,30 +28,42 @@ interface AuthState {
   clearUser: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   error: null,
   fetchMe: async () => {
-    set({ isLoading: true, error: null });
+    const hadUser = get().user !== null;
+    if (!hadUser) {
+      set({ isLoading: true, error: null });
+    }
 
     try {
       const session = await fetchAuthSession();
       if (!session.tokens?.idToken) {
-        set({ user: null, isLoading: false, error: null });
+        set({ user: null, error: null });
         return;
       }
 
       const response = await api.get<{ status: string; data: AppUser }>("/auth/me");
-      set({ user: response.data.data, isLoading: false, error: null });
+      set({ user: response.data.data, error: null });
     } catch (err) {
-      set({
-        user: null,
-        isLoading: false,
-        error: getUserErrorMessage(err),
-      });
+      if (!hadUser) {
+        set({
+          user: null,
+          error: getUserErrorMessage(err),
+        });
+      }
+    } finally {
+      if (!hadUser) {
+        set({ isLoading: false });
+      }
     }
   },
   setUser: (user) => set({ user, error: null }),
   clearUser: () => set({ user: null, error: null, isLoading: false }),
 }));
+
+registerAuthSessionHandlers({
+  clearUser: () => useAuthStore.getState().clearUser(),
+});
