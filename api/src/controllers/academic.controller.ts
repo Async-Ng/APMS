@@ -3,14 +3,12 @@ import type { z } from "zod";
 
 import { unauthorizedError } from "../errors/unauthorized";
 import * as academicService from "../services/academic.service";
-import * as libraryService from "../services/library.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
 import type {
   catalogCurriculumQuerySchema,
   listCurriculumQuerySchema,
-  listLibraryDocumentsQuerySchema,
 } from "../validators/academic.validator";
 
 function requireUser(req: Request) {
@@ -83,19 +81,4 @@ export const getAcademicProfile = catchAsync(async (req: Request, res: Response)
 });
 export const updateAcademicProfile = catchAsync(async (req: Request, res: Response) => {
   sendSuccess(res, await academicService.updateAcademicProfile(requireUser(req), req.body));
-});
-
-export const listLibraryDocuments = catchAsync(async (req: Request, res: Response) => {
-  const query = req.validatedQuery as z.infer<typeof listLibraryDocumentsQuerySchema>;
-  sendSuccess(res, await libraryService.listDocuments(query));
-});
-export const getLibraryDocument = catchAsync(async (req: Request, res: Response) => {
-  sendSuccess(
-    res,
-    await libraryService.getDocument(
-      requireUser(req),
-      getRouteParam(req, "id"),
-      req.query.download === "true",
-    ),
-  );
 });

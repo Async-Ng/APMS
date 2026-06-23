@@ -294,14 +294,14 @@ async function assertContextAccess(
   } else {
     const owned = await Document.findOne({ _id: contextId, ownerId: user._id, deletedAt: null });
     if (owned) return;
-    const internal = await Document.exists({
+    const publicDocument = await Document.exists({
       _id: contextId,
-      visibility: "internal",
+      visibility: "public",
       curriculumCourseId: { $ne: null },
       status: { $ne: "pending" },
       deletedAt: null,
     });
-    if (internal) return;
+    if (publicDocument) return;
     const hasShare = await checkShareAccess(user._id, "document", contextId);
     if (!hasShare) throw createAppError(ErrorCode.CHAT_ACCESS_DENIED, 404);
   }
@@ -335,12 +335,21 @@ async function buildVectorSearchFilter(
     return { documentId: { $in: ids } };
   }
 
-  // scope "all": owned docs + shared docs
-  const sharedDocIds = await getSharedDocumentIds(user._id);
+  // scope "all": owned docs + shared docs + public docs
+  const [sharedDocIds, publicDocIds] = await Promise.all([
+    getSharedDocumentIds(user._id),
+    Document.find({
+      visibility: "public",
+      curriculumCourseId: { $ne: null },
+      deletedAt: null,
+      status: { $ne: "pending" },
+    }).distinct("_id"),
+  ]);
 
-  if (sharedDocIds.length > 0) {
+  const readableDocIds = [...sharedDocIds, ...publicDocIds];
+  if (readableDocIds.length > 0) {
     return {
-      $or: [{ ownerId: user._id }, { documentId: { $in: sharedDocIds } }],
+      $or: [{ ownerId: user._id }, { documentId: { $in: readableDocIds } }],
     };
   }
 

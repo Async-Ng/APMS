@@ -8,6 +8,7 @@ import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
 import {
   createUploadIntentSchema,
+  listDocumentsQuerySchema,
   updateDocumentSchema,
 } from "../validators/document.validator";
 
@@ -15,6 +16,11 @@ const documentsRouter = Router();
 
 documentsRouter.use(authenticate, resolveUser, requireActiveUser);
 
+documentsRouter.get(
+  "/",
+  validate({ query: listDocumentsQuerySchema }),
+  documentsController.listDocuments,
+);
 documentsRouter.post(
   "/upload-intents",
   validate({ body: createUploadIntentSchema }),

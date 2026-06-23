@@ -2,10 +2,12 @@ import { z } from "zod";
 import { objectIdParamSchema } from "../../validators/common.validator";
 import {
   createUploadIntentSchema,
+  listDocumentsQuerySchema,
   updateDocumentSchema,
 } from "../../validators/document.validator";
 import { registry } from "../setup";
 import {
+  documentListSuccessResponseSchema,
   documentSuccessResponseSchema,
   uploadIntentSuccessResponseSchema,
 } from "../schemas/document";
@@ -28,6 +30,25 @@ const downloadQuerySchema = z.object({
 });
 
 export function registerDocumentsPaths(): void {
+  registry.registerPath({
+    method: "get",
+    path: "/api/documents",
+    tags: ["Documents"],
+    summary: "List documents across owned, shared, public, starred, and trash views",
+    description:
+      "Unified document listing API replacing the legacy Drive, Library, and Forum list surfaces.",
+    security: [...bearerSecurity],
+    request: {
+      query: listDocumentsQuerySchema,
+    },
+    responses: {
+      200: jsonResponse(documentListSuccessResponseSchema, "Documents"),
+      400: error400("Validation error"),
+      401: error401,
+      403: error403,
+    },
+  });
+
   registry.registerPath({
     method: "post",
     path: "/api/documents/upload-intents",

@@ -558,7 +558,7 @@ export async function findReadableDocument(
     return doc;
   }
 
-  if (doc.visibility === "internal" && doc.curriculumCourseId) {
+  if (doc.visibility === "public" && doc.curriculumCourseId) {
     return doc;
   }
 

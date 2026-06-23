@@ -20,10 +20,19 @@ export async function semanticSearch(
 ): Promise<SearchResult[]> {
   const queryVector = await aiService.embedText(query, "search_query");
 
-  const sharedDocIds = await getSharedDocumentIds(userId);
+  const [sharedDocIds, publicDocIds] = await Promise.all([
+    getSharedDocumentIds(userId),
+    Document.find({
+      visibility: "public",
+      curriculumCourseId: { $ne: null },
+      deletedAt: null,
+      status: { $ne: "pending" },
+    }).distinct("_id"),
+  ]);
+  const readableDocIds = [...sharedDocIds, ...publicDocIds];
   const vectorFilter =
-    sharedDocIds.length > 0
-      ? { $or: [{ ownerId: userId }, { documentId: { $in: sharedDocIds } }] }
+    readableDocIds.length > 0
+      ? { $or: [{ ownerId: userId }, { documentId: { $in: readableDocIds } }] }
       : { ownerId: userId };
 
   // Atlas Vector Search via aggregation pipeline
@@ -57,6 +66,10 @@ export async function semanticSearch(
   const documents = await Document.find({
     _id: { $in: documentIds },
     deletedAt: null,
+    $or: [
+      { ownerId: userId },
+      { _id: { $in: readableDocIds } },
+    ],
   })
     .select("_id title")
     .lean();

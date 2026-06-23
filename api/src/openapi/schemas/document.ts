@@ -32,6 +32,49 @@ export const documentSchema = registry.register(
     .openapi("Document"),
 );
 
+export const documentListItemSchema = registry.register(
+  "DocumentListItem",
+  documentSchema.extend({
+    source: z.enum(["owned", "shared", "public"]),
+    owner: z
+      .object({
+        id: z.string(),
+        displayName: z.string(),
+        email: z.string(),
+        avatarUrl: z.string().nullable(),
+      })
+      .nullable(),
+    curriculumCourse: z
+      .object({
+        id: z.string(),
+        semesterNumber: z.number(),
+        major: z.record(z.string(), z.unknown()).nullable(),
+        subject: z.record(z.string(), z.unknown()).nullable(),
+      })
+      .nullable(),
+    share: z.record(z.string(), z.unknown()).nullable(),
+    matchType: z
+      .enum(["exact_course", "same_subject_other_semester", "global_public"])
+      .nullable(),
+  }),
+);
+
+export const documentListSuccessResponseSchema = successEnvelope(
+  z.object({
+    folders: z.array(z.record(z.string(), z.unknown())),
+    documents: z.array(documentListItemSchema),
+    pagination: z
+      .object({
+        page: z.number(),
+        limit: z.number(),
+        total: z.number(),
+        totalPages: z.number(),
+      })
+      .optional(),
+  }),
+  "DocumentList",
+);
+
 export const documentSuccessResponseSchema = successEnvelope(documentSchema, "Document");
 
 export const uploadIntentDataSchema = z.object({
