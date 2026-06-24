@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 
 import { unauthorizedError } from "../errors/unauthorized";
+import * as documentListService from "../services/document-list.service";
 import * as documentService from "../services/document.service";
 import * as trashPurgeService from "../services/trash-purge.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
+import type { listDocumentsQuerySchema } from "../validators/document.validator";
+import type { z } from "zod";
 
 function requireUser(req: Request) {
   if (!req.currentUser) {
@@ -20,6 +23,12 @@ export const createUploadIntent = catchAsync(
     sendSuccess(res, data, 201);
   },
 );
+
+export const listDocuments = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const query = req.validatedQuery as z.infer<typeof listDocumentsQuerySchema>;
+  const data = await documentListService.listDocuments(requireUser(req), query);
+  sendSuccess(res, data);
+});
 
 export const completeUpload = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const data = await documentService.completeUpload(requireUser(req), getRouteParam(req, "id"));

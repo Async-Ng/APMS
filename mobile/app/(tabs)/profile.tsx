@@ -19,7 +19,7 @@ export default function ProfileScreen() {
   const { user, fetchMe } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const isAdmin = useAuthStore((s) => (s.user as (typeof s.user & { role?: string }) | null)?.role === "admin");
+  const isAdmin = user?.role === "admin";
 
   const adminStatsQuery = useQuery({
     queryKey: ["admin", "stats"],

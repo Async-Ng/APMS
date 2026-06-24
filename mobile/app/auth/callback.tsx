@@ -1,6 +1,5 @@
 import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
-import { isAxiosError } from "axios";
 import { Link, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -24,19 +23,29 @@ export default function AuthCallbackScreen() {
         const session = await fetchAuthSession({ forceRefresh: true });
 
         if (!session.tokens?.idToken) {
-          setError("Sign-in did not return a valid session.");
+          setError("Đăng nhập không thành công. Vui lòng thử lại.");
           return;
         }
 
         finishedRef.current = true;
         await fetchMe();
+
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          try {
+            await signOut();
+          } catch {
+            // Session may already be invalid
+          }
+          const authError =
+            useAuthStore.getState().error ?? "Không thể xác thực tài khoản. Vui lòng thử lại.";
+          setError(authError);
+          return;
+        }
+
         router.replace("/(tabs)/drive");
-      } catch (err) {
-        const message = isAxiosError(err)
-          ? (err.response?.data?.message as string | undefined)
-          : undefined;
-        setError(message ?? (err instanceof Error ? err.message : "Failed to complete sign-in."));
-        await signOut();
+      } catch {
+        setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
       }
     }
 
@@ -44,8 +53,7 @@ export default function AuthCallbackScreen() {
       if (payload.event === "signInWithRedirect") {
         void finishSignIn();
       } else if (payload.event === "signInWithRedirect_failure") {
-        const data = payload.data as { message?: string } | undefined;
-        setError(data?.message ?? "Sign-in failed. Please try again.");
+        setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     });
 
@@ -63,7 +71,7 @@ export default function AuthCallbackScreen() {
         <View style={{ ...brutalCardStyle, padding: 20, maxWidth: 400, gap: 12 }}>
           <Text style={{ color: colors.error, textAlign: "center", fontSize: 14 }}>{error}</Text>
           <Link href="/login" style={{ color: colors.fptBlue, textAlign: "center", fontWeight: "700" }}>
-            Back to login
+            Về trang đăng nhập
           </Link>
         </View>
       </View>
@@ -74,8 +82,8 @@ export default function AuthCallbackScreen() {
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg, padding: 24 }}>
       <View style={{ ...brutalCardStyle, padding: 24, alignItems: "center", gap: 12 }}>
         <ActivityIndicator size="large" color={colors.fptBlue} />
-        <Text style={{ fontWeight: "800", fontSize: 18, color: colors.ink }}>Completing sign-in...</Text>
-        <Text style={{ color: colors.muted }}>Please wait a moment.</Text>
+        <Text style={{ fontWeight: "800", fontSize: 18, color: colors.ink }}>Đang hoàn tất đăng nhập...</Text>
+        <Text style={{ color: colors.muted }}>Vui lòng đợi trong giây lát.</Text>
       </View>
     </View>
   );

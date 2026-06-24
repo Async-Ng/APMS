@@ -1,10 +1,11 @@
 "use client";
 
 import { AlertTriangle, X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 import { cn } from "@/lib/cn";
 
 export interface ConfirmDialogProps {
@@ -30,23 +31,18 @@ export function ConfirmDialog({
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !isPending) onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, isPending, onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, dialogRef, { preventClose: isPending });
 
   if (!open) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",
-        backgroundColor: "rgba(26,26,26,0.5)",
+        backgroundColor: "var(--brutal-overlay)",
         backdropFilter: "blur(2px)",
       }}
       onClick={(e) => {
@@ -65,7 +61,7 @@ export function ConfirmDialog({
           <div className="flex min-w-0 items-start gap-3">
             {tone === "danger" && (
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-red-50 shadow-brutal-sm"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-danger/10 shadow-brutal-sm"
                 aria-hidden="true"
               >
                 <AlertTriangle className="h-5 w-5 text-brutal-danger" />

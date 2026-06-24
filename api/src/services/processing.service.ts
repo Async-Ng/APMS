@@ -51,12 +51,17 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
       const buffer = await s3Service.getObjectBuffer(document.s3Key);
 
       // 2. Extract text
-      const { pageCount, segments } = await extractText(buffer, document.mimeType);
+      const { pageCount, segments, extractionMode, extractionConfidence } = await extractText(
+        buffer,
+        document.mimeType,
+      );
 
       // Update pageCount if we got one
       if (pageCount !== null) {
         document.pageCount = pageCount;
       }
+      document.extractionMode = extractionMode;
+      document.extractionConfidence = extractionConfidence;
 
       // 3. Chunk text (page-aware segments)
       const chunks = await chunkSegments(
@@ -84,7 +89,13 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
                 ownerId: document.ownerId,
                 chunkIndex: chunk.chunkIndex,
                 content: chunk.content,
+                queryText: chunk.queryText,
                 pageNumber: chunk.pageNumber,
+                sectionPath: chunk.sectionPath,
+                displayHeading: chunk.displayHeading,
+                blockType: chunk.blockType,
+                extractionMode: chunk.extractionMode,
+                extractionConfidence: chunk.extractionConfidence,
                 embedding: embeddings[j],
               }));
             }),

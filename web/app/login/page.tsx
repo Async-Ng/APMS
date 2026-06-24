@@ -12,6 +12,7 @@ import { ProgressDemoCard } from "@/components/landing/ProgressDemoCard";
 import { TestimonialCard } from "@/components/landing/TestimonialCard";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
 import { catalogItems, testimonials } from "@/lib/landing-mock";
 import { useAuthStore } from "@/stores/auth-store";
@@ -67,7 +68,7 @@ function SignInPanel({
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { user, isLoading: isAuthLoading, fetchMe, clearUser } = useAuthStore();
+  const { user, isLoading: isAuthLoading, error: authError, fetchMe, clearUser } = useAuthStore();
 
   useEffect(() => {
     void fetchMe();
@@ -146,6 +147,9 @@ export default function LoginPage() {
           <section className="mx-auto w-full max-w-md">
             <BrutalCard hover>
               <div className="space-y-6">
+                {!isAuthLoading && !user && authError && (
+                  <ErrorAlert message={authError} />
+                )}
                 <SignInPanel
                   isAuthLoading={isAuthLoading}
                   user={user}

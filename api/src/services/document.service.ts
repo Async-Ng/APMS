@@ -87,6 +87,7 @@ export async function createUploadIntent(
     mimeType: string;
     fileSizeBytes: number;
     curriculumCourseId: string;
+    visibility: "private" | "public";
     folderId?: string | null;
     title?: string;
   },
@@ -111,7 +112,7 @@ export async function createUploadIntent(
     ownerId: user._id,
     folderId,
     curriculumCourseId: curriculumCourse._id,
-    visibility: "internal",
+    visibility: input.visibility,
     title,
     originalFilename: input.originalFilename,
     mimeType: input.mimeType,
@@ -210,7 +211,8 @@ export async function updateDocument(
     title?: string;
     tags?: string[];
     folderId?: string | null;
-    curriculumCourseId?: string | null;
+    curriculumCourseId?: string;
+    visibility?: "private" | "public";
   },
 ) {
   const document = await findActiveDocument(parseObjectId(documentId), user._id);
@@ -230,17 +232,20 @@ export async function updateDocument(
   }
 
   if (input.curriculumCourseId !== undefined) {
-    if (input.curriculumCourseId === null) {
-      document.curriculumCourseId = null;
-      document.visibility = "personal";
-    } else {
-      const curriculumCourse = await assertUserCanUseCurriculumCourse(
-        user,
-        input.curriculumCourseId,
-      );
-      document.curriculumCourseId = curriculumCourse._id;
-      document.visibility = "internal";
+    const curriculumCourse = await assertUserCanUseCurriculumCourse(
+      user,
+      input.curriculumCourseId,
+    );
+    document.curriculumCourseId = curriculumCourse._id;
+  }
+
+  if (input.visibility !== undefined) {
+    if (!document.curriculumCourseId) {
+      throw createAppError(ErrorCode.VALIDATION_ERROR, 400, {
+        technicalDetail: "curriculumCourseId is required before changing visibility",
+      });
     }
+    document.visibility = input.visibility;
   }
 
   await document.save();

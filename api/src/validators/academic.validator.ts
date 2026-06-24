@@ -66,13 +66,3 @@ export const updateAcademicProfileSchema = z.object({
   currentSemester: z.number().int().min(1).max(9),
   currentSubjectIds: z.array(objectId).max(30).transform((ids) => [...new Set(ids)]),
 });
-
-export const listLibraryDocumentsQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().trim().max(255).optional(),
-  majorId: objectId.optional(),
-  semesterNumber: z.coerce.number().int().min(1).max(9).optional(),
-  subjectId: objectId.optional(),
-  sort: z.enum(["newest", "oldest", "title"]).default("newest"),
-});

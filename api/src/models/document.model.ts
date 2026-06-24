@@ -2,7 +2,7 @@ import { Schema, model, type HydratedDocument, type InferSchemaType } from "mong
 
 export const DOCUMENT_STATUSES = ["pending", "processing", "ready", "failed"] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
-export const DOCUMENT_VISIBILITIES = ["personal", "internal"] as const;
+export const DOCUMENT_VISIBILITIES = ["private", "public"] as const;
 export type DocumentVisibility = (typeof DOCUMENT_VISIBILITIES)[number];
 
 export const MAX_PROCESSING_ATTEMPTS = 5;
@@ -20,7 +20,7 @@ const documentSchema = new Schema(
     visibility: {
       type: String,
       enum: DOCUMENT_VISIBILITIES,
-      default: "personal",
+      default: "private",
       index: true,
     },
     title: { type: String, required: true, trim: true, maxlength: 255 },
@@ -36,6 +36,8 @@ const documentSchema = new Schema(
     },
     pageCount: { type: Number },
     chunkCount: { type: Number, default: 0 },
+    extractionMode: { type: String, default: "text" },
+    extractionConfidence: { type: String, default: "medium" },
     processingAttempts: { type: Number, default: 0 },
     lastError: { type: String, default: null },
     nextRetryAt: { type: Date, default: null },

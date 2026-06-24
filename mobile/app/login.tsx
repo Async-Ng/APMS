@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { signInWithRedirect } from "aws-amplify/auth";
-import { useState } from "react";
+import { signInWithRedirect, signOut } from "aws-amplify/auth";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, Text, View } from "react-native";
 
 import { BrutalButton } from "../components/ui/BrutalButton";
 import { colors } from "../constants/colors";
 import { brutalCardStyle } from "../lib/brutal-style";
+import "../lib/amplify";
+import { useAuthStore } from "../stores/auth-store";
 
 const features: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "document-text-outline", text: "Lưu trữ tài liệu PDF, DOCX, PPTX theo cây thư mục riêng" },
@@ -14,8 +17,20 @@ const features: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
 ];
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const { user, isLoading: isAuthLoading, fetchMe, clearUser } = useAuthStore();
+
+  useEffect(() => {
+    void fetchMe();
+  }, [fetchMe]);
+
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      router.replace("/(tabs)/drive");
+    }
+  }, [isAuthLoading, user, router]);
 
   async function handleGoogleSignIn() {
     if (signingIn) return;
@@ -25,13 +40,66 @@ export default function LoginScreen() {
       await signInWithRedirect({ provider: "Google" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error("Google sign-in failed:", err);
       if (!message.toLowerCase().includes("canceled")) {
-        setAuthError(`Đăng nhập thất bại: ${message}`);
+        setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     } finally {
       setSigningIn(false);
     }
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    clearUser();
+  }
+
+  function renderSignInCard() {
+    if (isAuthLoading) {
+      return <Text style={{ textAlign: "center", color: colors.muted, fontSize: 14 }}>Đang tải...</Text>;
+    }
+
+    if (user) {
+      return (
+        <View style={{ gap: 14 }}>
+          <View style={{ gap: 6 }}>
+            <Text style={{ textAlign: "center", fontSize: 20, fontWeight: "800", color: colors.ink }}>
+              Chào mừng trở lại
+            </Text>
+            <Text style={{ textAlign: "center", color: colors.muted, fontSize: 13 }}>
+              Bạn đã đăng nhập và sẵn sàng.
+            </Text>
+          </View>
+          <BrutalButton
+            label={`Tiếp tục với ${user.displayName}`}
+            onPress={() => router.replace("/(tabs)/drive")}
+            variant="primary"
+            fullWidth
+            size="lg"
+          />
+          <BrutalButton label="Đăng xuất" onPress={() => void handleSignOut()} variant="secondary" fullWidth />
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {authError && (
+          <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{authError}</Text>
+        )}
+        <BrutalButton
+          label={signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
+          onPress={() => void handleGoogleSignIn()}
+          disabled={signingIn}
+          loading={signingIn}
+          variant="secondary"
+          fullWidth
+          size="lg"
+        />
+        <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
+          Đăng nhập bảo mật qua Amazon Cognito
+        </Text>
+      </>
+    );
   }
 
   return (
@@ -40,7 +108,6 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: "center", gap: 28 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Brand */}
         <View style={{ alignItems: "center", gap: 12 }}>
           <View style={{ flexDirection: "row", gap: 3 }}>
             {[colors.fptBlue, colors.fptOrange, colors.fptGreen].map((c) => (
@@ -63,26 +130,8 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        {/* Sign-in card */}
-        <View style={{ ...brutalCardStyle, padding: 20, gap: 14 }}>
-          {authError && (
-            <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{authError}</Text>
-          )}
-          <BrutalButton
-            label={signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
-            onPress={() => void handleGoogleSignIn()}
-            disabled={signingIn}
-            loading={signingIn}
-            variant="secondary"
-            fullWidth
-            size="lg"
-          />
-          <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
-            Đăng nhập bảo mật qua Amazon Cognito
-          </Text>
-        </View>
+        <View style={{ ...brutalCardStyle, padding: 20, gap: 14 }}>{renderSignInCard()}</View>
 
-        {/* Feature highlights */}
         <View style={{ gap: 12 }}>
           {features.map((f) => (
             <View key={f.text} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>

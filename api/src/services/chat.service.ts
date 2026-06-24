@@ -1,6 +1,5 @@
 import type { Response } from "express";
 import type { Types } from "mongoose";
-import type { UserDocument } from "../models/user.model";
 
 import { loadEnv } from "../config/env";
 import { createAppError, ErrorCode } from "../errors/error-codes";
@@ -9,14 +8,23 @@ import { ChatSession, toChatSessionResponse, type ChatSessionDocument } from "..
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
 import { Folder } from "../models/folder.model";
+import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
 import * as aiService from "./ai/ai.service";
 import { buildCitationsFromResponse, type RetrievedChunk } from "./ai/citation-utils";
+import {
+  buildRetrievalDebugInfo,
+  findLexicalChunks,
+  mergeRetrievedChunks,
+  type RetrievalDebugInfo,
+} from "./ai/retrieval.service";
 import {
   buildChatSystemPrompt,
   type ChatMode,
   PRESET_DEFAULT_CONTENT,
 } from "./ai/chat-prompts";
+import { rewriteQueryWithHistory } from "./ai/query-rewrite";
+import { rerankChunks } from "./ai/rerank";
 import type { ChatTurn } from "./ai/types";
 import {
   CONTEXT_CHUNKS,
@@ -27,8 +35,6 @@ import {
   RETRIEVE_CHUNKS,
   VECTOR_SEARCH_CANDIDATES,
 } from "./ai/types";
-import { rewriteQueryWithHistory } from "./ai/query-rewrite";
-import { rerankChunks } from "./ai/rerank";
 import {
   checkShareAccess,
   getDocumentIdsInFolderTree,
@@ -174,9 +180,7 @@ function contextLabelFromMessages(
   if (contextType !== "document" || !contextId) return null;
   const contextIdStr = contextId.toString();
   for (const msg of messages) {
-    const hit = msg.citations.find(
-      (c) => c.documentId.toString() === contextIdStr,
-    );
+    const hit = msg.citations.find((c) => c.documentId.toString() === contextIdStr);
     if (hit?.documentTitle) return hit.documentTitle;
   }
   return null;
@@ -294,14 +298,14 @@ async function assertContextAccess(
   } else {
     const owned = await Document.findOne({ _id: contextId, ownerId: user._id, deletedAt: null });
     if (owned) return;
-    const internal = await Document.exists({
+    const publicDocument = await Document.exists({
       _id: contextId,
-      visibility: "internal",
+      visibility: "public",
       curriculumCourseId: { $ne: null },
       status: { $ne: "pending" },
       deletedAt: null,
     });
-    if (internal) return;
+    if (publicDocument) return;
     const hasShare = await checkShareAccess(user._id, "document", contextId);
     if (!hasShare) throw createAppError(ErrorCode.CHAT_ACCESS_DENIED, 404);
   }
@@ -335,12 +339,20 @@ async function buildVectorSearchFilter(
     return { documentId: { $in: ids } };
   }
 
-  // scope "all": owned docs + shared docs
-  const sharedDocIds = await getSharedDocumentIds(user._id);
+  const [sharedDocIds, publicDocIds] = await Promise.all([
+    getSharedDocumentIds(user._id),
+    Document.find({
+      visibility: "public",
+      curriculumCourseId: { $ne: null },
+      deletedAt: null,
+      status: { $ne: "pending" },
+    }).distinct("_id"),
+  ]);
 
-  if (sharedDocIds.length > 0) {
+  const readableDocIds = [...sharedDocIds, ...publicDocIds];
+  if (readableDocIds.length > 0) {
     return {
-      $or: [{ ownerId: user._id }, { documentId: { $in: sharedDocIds } }],
+      $or: [{ ownerId: user._id }, { documentId: { $in: readableDocIds } }],
     };
   }
 
@@ -378,9 +390,7 @@ export async function createSession(
     await assertDocumentsAccess(user, contextIds);
   }
 
-  const labelMap = await resolveContextLabels([
-    { contextType, contextId, contextIds },
-  ]);
+  const labelMap = await resolveContextLabels([{ contextType, contextId, contextIds }]);
 
   let title = input.title?.trim();
   if (!title || GENERIC_SESSION_TITLES.has(title)) {
@@ -476,6 +486,8 @@ export async function getSession(user: UserDocument, sessionId: string) {
         documentId: c.documentId.toString(),
         documentTitle: c.documentTitle,
         pageNumber: c.pageNumber ?? null,
+        sectionPath: c.sectionPath ?? [],
+        heading: c.heading ?? null,
         excerpt: c.excerpt,
       })),
       createdAt: m.createdAt,
@@ -516,16 +528,12 @@ export async function deleteSession(user: UserDocument, sessionId: string) {
   await session.deleteOne();
 }
 
-/**
- * Drop duplicate chunks from the same document+page, keeping the first occurrence.
- * Input order is preserved so an upstream relevance ranking (rerank) is respected.
- */
-function dedupeChunksByPage(chunks: RetrievedChunk[]): RetrievedChunk[] {
+function dedupeChunks(chunks: RetrievedChunk[]): RetrievedChunk[] {
   const seen = new Set<string>();
   const result: RetrievedChunk[] = [];
 
   for (const chunk of chunks) {
-    const key = `${chunk.documentId.toString()}:${chunk.pageNumber ?? "n"}`;
+    const key = `${chunk.documentId.toString()}:${chunk.chunkIndex ?? chunk.pageNumber ?? "n"}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(chunk);
@@ -534,11 +542,6 @@ function dedupeChunksByPage(chunks: RetrievedChunk[]): RetrievedChunk[] {
   return result;
 }
 
-/**
- * Widen each retrieved chunk with its adjacent chunks (chunkIndex ± NEIGHBOR_WINDOW)
- * from the same document so the model sees surrounding context instead of an
- * isolated snippet. The citation excerpt still points to the original matched chunk.
- */
 async function expandChunksWithNeighbors(
   chunks: RetrievedChunk[],
 ): Promise<RetrievedChunk[]> {
@@ -575,16 +578,16 @@ function buildContextText(
   chunks: RetrievedChunk[],
   titleMap: Map<string, string>,
 ): string {
-  // Allow merged neighbor content (chunkIndex ± NEIGHBOR_WINDOW) to fit without truncation.
   const maxChars = CONTEXT_CHUNK_MAX_CHARS * (2 * NEIGHBOR_WINDOW + 1);
   const parts = chunks.map((chunk, i) => {
     const title = titleMap.get(chunk.documentId.toString()) ?? "Unknown";
     const pageSuffix = chunk.pageNumber ? `, page ${chunk.pageNumber}` : "";
+    const sectionSuffix =
+      chunk.sectionPath.length > 0 ? `, section ${chunk.sectionPath.join(".")}` : "";
+    const headingLine = chunk.displayHeading ? `\nHeading: ${chunk.displayHeading}` : "";
     const body =
-      chunk.content.length > maxChars
-        ? `${chunk.content.slice(0, maxChars)}…`
-        : chunk.content;
-    return `[Source ${i + 1}: ${title}${pageSuffix}]\n${body}`;
+      chunk.content.length > maxChars ? `${chunk.content.slice(0, maxChars)}…` : chunk.content;
+    return `[Source ${i + 1}: ${title}${pageSuffix}${sectionSuffix}]${headingLine}\n${body}`;
   });
 
   return parts.join("\n\n---\n\n");
@@ -619,6 +622,7 @@ interface PreparedChatContext {
   titleMap: Map<string, string>;
   systemPrompt: string;
   historyMessages: ChatTurn[];
+  retrievalDebug: RetrievalDebugInfo;
 }
 
 async function prepareChatContext(
@@ -637,8 +641,6 @@ async function prepareChatContext(
     content,
   });
 
-  // Conversation history (prior turns only). Fetched before retrieval so we can
-  // rewrite follow-up questions into standalone queries.
   const history = await ChatMessage.find({ sessionId: session._id, _id: { $ne: userMessage._id } })
     .sort({ createdAt: -1 })
     .limit(HISTORY_MESSAGES)
@@ -650,17 +652,11 @@ async function prepareChatContext(
     content: m.content,
   }));
 
-  // Rewrite follow-up questions into a self-contained query for better retrieval.
-  // Only meaningful in free-form chat mode; presets (summary/faq/...) don't depend
-  // on prior turns. Falls back to the original content on any failure.
   const retrievalQuery =
-    mode === "chat"
-      ? await rewriteQueryWithHistory(content, priorTurns)
-      : content;
-
+    mode === "chat" ? await rewriteQueryWithHistory(content, priorTurns) : content;
   const queryVector = await aiService.embedText(retrievalQuery, "search_query");
 
-  const contextId = session.contextId ? (session.contextId as unknown as Types.ObjectId) : null;
+  const contextId = session.contextId ? (session.contextId as Types.ObjectId) : null;
   const contextIds = (session.contextIds ?? []) as Types.ObjectId[];
   const vectorSearchFilter = await buildVectorSearchFilter(
     user,
@@ -684,19 +680,31 @@ async function prepareChatContext(
       $project: {
         documentId: 1,
         content: 1,
+        queryText: 1,
         pageNumber: 1,
         chunkIndex: 1,
+        sectionPath: 1,
+        displayHeading: 1,
+        blockType: 1,
+        extractionMode: 1,
+        extractionConfidence: 1,
         score: { $meta: "vectorSearchScore" },
       },
     },
   ]);
 
-  const scoredChunks: RetrievedChunk[] = rawChunks.map((c) => {
+  const vectorChunks: RetrievedChunk[] = rawChunks.map((c) => {
     const chunk: RetrievedChunk = {
       documentId: c.documentId as Types.ObjectId,
       content: c.content as string,
+      queryText: String(c.queryText ?? ""),
       pageNumber: (c.pageNumber as number | null) ?? null,
       score: c.score as number,
+      sectionPath: (c.sectionPath as string[] | undefined) ?? [],
+      displayHeading: (c.displayHeading as string | null | undefined) ?? null,
+      blockType: String(c.blockType ?? "paragraph"),
+      extractionMode: String(c.extractionMode ?? "text"),
+      extractionConfidence: String(c.extractionConfidence ?? "medium"),
     };
     if (typeof c.chunkIndex === "number") {
       chunk.chunkIndex = c.chunkIndex;
@@ -704,16 +712,13 @@ async function prepareChatContext(
     return chunk;
   });
 
-  const aboveThreshold = scoredChunks.filter((c) => c.score >= MIN_CHUNK_SCORE);
-  const chunksForContext =
-    aboveThreshold.length > 0 ? aboveThreshold : scoredChunks;
+  const { chunks: lexicalChunks, analysis } = await findLexicalChunks(vectorSearchFilter, retrievalQuery);
+  const combined = mergeRetrievedChunks(vectorChunks, lexicalChunks);
+  const aboveThreshold = combined.filter((chunk) => chunk.score >= MIN_CHUNK_SCORE);
+  const chunksForContext = aboveThreshold.length > 0 ? aboveThreshold : combined;
 
-  // Rerank the wider candidate set down to the top CONTEXT_CHUNKS by relevance
-  // (falls back to vector-score order on failure), then dedupe near-duplicate pages.
   const reranked = await rerankChunks(retrievalQuery, chunksForContext, CONTEXT_CHUNKS);
-  const deduped = dedupeChunksByPage(reranked).slice(0, CONTEXT_CHUNKS);
-
-  // Widen each chunk with adjacent chunks for fuller context.
+  const deduped = dedupeChunks(reranked).slice(0, CONTEXT_CHUNKS);
   const chunkResults = await expandChunksWithNeighbors(deduped);
 
   const docIds = [...new Set(chunkResults.map((c) => c.documentId.toString()))];
@@ -721,10 +726,9 @@ async function prepareChatContext(
   const titleMap = new Map(docs.map((d) => [d._id.toString(), d.title]));
 
   const contextText = buildContextText(chunkResults, titleMap);
-  const systemPrompt = buildChatSystemPrompt(contextText, mode, content);
+  const systemPrompt = buildChatSystemPrompt(contextText, mode, content, analysis);
 
-  const historyMessages: ChatTurn[] = [...priorTurns];
-  historyMessages.push({ role: "user", content });
+  const historyMessages: ChatTurn[] = [...priorTurns, { role: "user", content }];
 
   return {
     session,
@@ -733,6 +737,7 @@ async function prepareChatContext(
     titleMap,
     systemPrompt,
     historyMessages,
+    retrievalDebug: buildRetrievalDebugInfo(analysis, vectorChunks, lexicalChunks),
   };
 }
 
@@ -746,19 +751,16 @@ export async function sendMessage(
   sessionId: string,
   content: string,
   mode: ChatMode = "chat",
+  options?: { debug?: boolean },
 ) {
   const id = parseObjectId(sessionId);
-  const messageContent =
-    mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
+  const messageContent = mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
 
   const prepared = await prepareChatContext(user, id, messageContent, mode);
 
   let assistantText: string;
   try {
-    assistantText = await aiService.chatWithContext(
-      prepared.systemPrompt,
-      prepared.historyMessages,
-    );
+    assistantText = await aiService.chatWithContext(prepared.systemPrompt, prepared.historyMessages);
   } catch (error) {
     mapChatError(error);
   }
@@ -781,6 +783,7 @@ export async function sendMessage(
   return {
     userMessage: toChatMessageResponse(prepared.userMessage),
     assistantMessage: toChatMessageResponse(assistantMessage),
+    ...(options?.debug ? { debug: prepared.retrievalDebug } : {}),
   };
 }
 
@@ -790,10 +793,10 @@ export async function sendMessageStream(
   content: string,
   mode: ChatMode,
   res: Response,
+  options?: { debug?: boolean },
 ): Promise<void> {
   const id = parseObjectId(sessionId);
-  const messageContent =
-    mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
+  const messageContent = mode === "chat" ? content : (content.trim() || PRESET_DEFAULT_CONTENT[mode]);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -805,6 +808,9 @@ export async function sendMessageStream(
   try {
     prepared = await prepareChatContext(user, id, messageContent, mode);
     writeSse(res, "user_message", toChatMessageResponse(prepared.userMessage));
+    if (options?.debug) {
+      writeSse(res, "debug", prepared.retrievalDebug);
+    }
   } catch (error) {
     writeSse(res, "error", {
       message: error instanceof Error ? error.message : String(error),
@@ -850,6 +856,7 @@ export async function sendMessageStream(
     writeSse(res, "done", {
       userMessage: toChatMessageResponse(prepared.userMessage),
       assistantMessage: toChatMessageResponse(assistantMessage),
+      ...(options?.debug ? { debug: prepared.retrievalDebug } : {}),
     });
   } catch (error) {
     writeSse(res, "error", {

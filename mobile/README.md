@@ -1,50 +1,73 @@
-# Welcome to your Expo app 👋
+# APMS Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo mobile client for APMS.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- Expo 54
+- React Native 0.81
+- Expo Router
+- NativeWind
+- TanStack Query
+- Zustand
+- AWS Amplify for Cognito client integration
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Development
 
 ```bash
-npm run reset-project
+cd mobile
+pnpm install
+pnpm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Android dev build on Windows
 
-## Learn more
+Native Android builds on Windows need **npm** (not pnpm) to avoid CMake `OBJECT_PATH_MAX` errors from pnpm's long nested paths:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+cd mobile
+npm install
+pnpm run:android
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+`app.json` limits ABIs to `arm64-v8a` and `x86_64` (skips `armeabi-v7a`, which fails with NDK 27).
 
-## Join the community
+If a previous pnpm install left stale caches, remove `node_modules/.pnpm` and any `node_modules/**/.cxx` folders, then run `npm install` again.
 
-Join our community of developers creating universal apps.
+Other useful commands:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+pnpm android
+pnpm ios
+pnpm lint
+```
+
+The current scripts use Expo offline mode. Ensure the required Expo/Metro dependencies are already installed locally.
+
+## Environment
+
+Copy `.env.example` to `.env` and fill in Cognito values (must match web and the Render API):
+
+```env
+EXPO_PUBLIC_API_URL=https://apms-bscq.onrender.com/api
+EXPO_PUBLIC_COGNITO_USER_POOL_ID=...
+EXPO_PUBLIC_COGNITO_CLIENT_ID=...
+EXPO_PUBLIC_COGNITO_DOMAIN=....auth.ap-southeast-1.amazoncognito.com
+```
+
+Do not commit `.env`.
+
+## Google sign-in (dev)
+
+Google OAuth uses Cognito Hosted UI with deep link `apms://auth/callback`. **Expo Go does not support the custom `apms://` scheme** — use a development build:
+
+```bash
+npm install   # required on Windows before first native build
+pnpm run:android
+# or
+pnpm run:ios
+```
+
+Cognito App Client must include callback URL `apms://auth/callback` and logout URL `apms://` (see `infrastructure/.env.example`).
+
+The backend document API is unified under `/api/documents`.

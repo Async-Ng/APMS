@@ -1,29 +1,21 @@
-# Hướng dẫn Rebuild MongoDB Vector Index (384 dims)
+# Rebuild MongoDB Vector Index - Gemini 1024 Dims
 
-Thực hiện khi chuyển sang local embedding `bge-small-en-v1.5` (384 dims).
+APMS hiện dùng Vertex AI `gemini-embedding-001` với `GEMINI_EMBEDDING_OUTPUT_DIMENSION=1024`. MongoDB Atlas Vector Search index phải có cùng dimension.
 
-## Bước 1 — Xóa chunks cũ
+> Cẩn thận: rebuild index và reset processing state có thể khiến worker reprocess nhiều tài liệu. Chỉ chạy khi đã backup hoặc hiểu rõ dữ liệu môi trường.
 
-Vào **MongoDB Atlas → Collections → `document_chunks`**, chạy trong shell:
+## 1. Kiểm Tra Env
 
-```javascript
-db.document_chunks.deleteMany({})
+```env
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_EMBEDDING_OUTPUT_DIMENSION=1024
 ```
 
-> ⚠️ Thao tác này không thể hoàn tác. Chunks sẽ được tạo lại khi worker re-process documents.
+## 2. Atlas Vector Search Index
 
-## Bước 2 — Xóa Vector Search Index cũ
+Tạo hoặc cập nhật vector index cho collection `document_chunks` với field embedding.
 
-1. Vào **Atlas → Search → Indexes**
-2. Tìm index tên `embedding_vector_index` trên collection `document_chunks`
-3. Click **Delete**
-
-## Bước 3 — Tạo Vector Search Index mới (384 dims)
-
-1. Click **Create Index → Atlas Vector Search → JSON Editor**
-2. Chọn collection: `document_chunks`
-3. Đặt tên index: `embedding_vector_index`
-4. Paste JSON sau:
+Ví dụ cấu hình index:
 
 ```json
 {
@@ -31,7 +23,7 @@ db.document_chunks.deleteMany({})
     {
       "type": "vector",
       "path": "embedding",
-      "numDimensions": 384,
+      "numDimensions": 1024,
       "similarity": "cosine"
     },
     {
@@ -46,35 +38,39 @@ db.document_chunks.deleteMany({})
 }
 ```
 
-5. Click **Create Search Index** → Chờ trạng thái **Active** (~1-2 phút)
+Nếu search service filter thêm field khác, thêm filter field tương ứng vào index.
 
-## Bước 4 — Reset tất cả documents để re-embed
+## 3. Reset Chunks Khi Đổi Dimension
 
-```javascript
+Khi đổi embedding dimension, chunks cũ không còn tương thích. Reset trạng thái để worker tạo lại chunks:
+
+```js
+db.document_chunks.deleteMany({});
 db.documents.updateMany(
-  { status: "ready" },
-  { $set: { status: "processing" } }
-)
+  { status: { $in: ["ready", "failed"] } },
+  {
+    $set: {
+      status: "processing",
+      chunkCount: 0,
+      processingAttempts: 0,
+      lastError: null,
+      nextRetryAt: null
+    }
+  }
+);
 ```
 
-Worker (`document.worker.ts`) sẽ tự động pick up và re-embed tất cả documents với `bge-small-en-v1.5` (384 dims) khi server khởi động lại.
+Restart API để document worker xử lý lại.
 
-## Kiểm tra sau khi xong
+## 4. Verification
 
-```javascript
-// Xác nhận chunks mới có đúng 384 dims
-db.document_chunks.findOne({}, { embedding: 1 })
-// embedding.length phải === 384
+```bash
+cd api
+pnpm build
 ```
 
----
+Sau khi worker chạy, kiểm tra:
 
-## Thông số model
-
-| | Trước | Sau |
-|---|---|---|
-| Model | `nomic-embed-text-v1` | `bge-small-en-v1.5` |
-| Dimensions | 768 | **384** |
-| Kích thước (quantized) | ~270MB | **~30MB** |
-| RAM server | ~500MB (OOM Render Free) | **~280MB ✅** |
-| Render Free | ❌ | **✅** |
+- `document_chunks.embedding.length === 1024`.
+- Search trả kết quả cho tài liệu `ready`.
+- Chat citations trỏ về tài liệu/chunk hợp lệ.
