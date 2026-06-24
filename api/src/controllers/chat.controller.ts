@@ -44,21 +44,25 @@ export const deleteSession = catchAsync(async (req: Request, res: Response): Pro
 });
 
 export const sendMessage = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const debug = req.get("x-apms-ai-debug") === "1";
   const data = await chatService.sendMessage(
     requireUser(req),
     getRouteParam(req, "id"),
     req.body.content as string,
     (req.body.mode as ChatMode | undefined) ?? "chat",
+    { debug },
   );
   sendSuccess(res, data, 201);
 });
 
 export const sendMessageStream = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const debug = req.get("x-apms-ai-debug") === "1";
   await chatService.sendMessageStream(
     requireUser(req),
     getRouteParam(req, "id"),
     req.body.content as string,
     (req.body.mode as ChatMode | undefined) ?? "chat",
     res,
+    { debug },
   );
 });

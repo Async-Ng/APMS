@@ -2,11 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
 
+import { RequireAuth } from "../../components/app/RequireAuth";
 import { colors } from "../../constants/colors";
 
 export default function TabsLayout() {
   return (
-    <Tabs
+    <RequireAuth>
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.fptOrange,
@@ -68,5 +70,6 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    </RequireAuth>
   );
 }

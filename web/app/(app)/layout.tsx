@@ -3,23 +3,16 @@
 import "@/lib/amplify";
 import { useEffect, useState } from "react";
 
+import { RequireAuth } from "@/components/app/RequireAuth";
 import { Sidebar } from "@/components/app/Sidebar";
 import { cn } from "@/lib/cn";
-import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * Authenticated app shell: persistent sidebar (collapsible) + main content area.
- * Fetches the current user profile on mount.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { fetchMe } = useAuthStore();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Hydrate user profile when the shell first mounts
-  useEffect(() => {
-    void fetchMe();
-  }, [fetchMe]);
 
   // Close mobile sidebar on resize to desktop
   useEffect(() => {
@@ -32,24 +25,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-brutal-bg">
-      <Sidebar
-        isOpen={isMobileOpen}
-        isCollapsed={isCollapsed}
-        onClose={() => setIsMobileOpen(false)}
-        onToggleCollapse={() => setIsCollapsed((v) => !v)}
-      />
+    <RequireAuth>
+      <div className="flex min-h-screen bg-brutal-bg">
+        <Sidebar
+          isOpen={isMobileOpen}
+          isCollapsed={isCollapsed}
+          onClose={() => setIsMobileOpen(false)}
+          onToggleCollapse={() => setIsCollapsed((v) => !v)}
+        />
 
-      {/* Main content — offset by sidebar width on desktop */}
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col transition-[margin-left] duration-200",
-          "lg:ml-60",
-          isCollapsed && "lg:ml-16",
-        )}
-      >
-        {children}
+        {/* Main content — offset by sidebar width on desktop */}
+        <div
+          className={cn(
+            "flex w-full min-w-0 flex-1 flex-col overflow-x-hidden transition-[margin-left] duration-200",
+            isCollapsed
+              ? "lg:ml-[var(--sidebar-collapsed-width)]"
+              : "lg:ml-[var(--sidebar-width)]",
+          )}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+    </RequireAuth>
   );
 }

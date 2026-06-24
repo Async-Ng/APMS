@@ -8,7 +8,7 @@ interface SkeletonCardProps {
   style?: ViewStyle;
 }
 
-function SkeletonLine({ width, height = 12 }: { width: string | number; height?: number }) {
+function SkeletonLine({ width, height = 12 }: { width: `${number}%` | number; height?: number }) {
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {

@@ -1,48 +1,36 @@
-import { signInWithRedirect } from "aws-amplify/auth";
-import { useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { signInWithRedirect, signOut } from "aws-amplify/auth";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { SafeAreaView, ScrollView, Text, View } from "react-native";
 
+import { BrutalButton } from "../components/ui/BrutalButton";
 import { colors } from "../constants/colors";
-import { brutalCardStyle, brutalCtaStyle, pressedBrutalStyle } from "../lib/brutal-style";
+import { brutalCardStyle } from "../lib/brutal-style";
+import "../lib/amplify";
+import { useAuthStore } from "../stores/auth-store";
 
-const catalogItems = [
-  { title: "CS101 Slides", tag: "Presentation", color: colors.fptBlue },
-  { title: "WDP301 Docs", tag: "Course pack", color: colors.fptGreen },
-  { title: "Thesis PDF", tag: "Research", color: colors.fptOrange },
+const features: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
+  { icon: "document-text-outline", text: "Lưu trữ tài liệu PDF, DOCX, PPTX theo cây thư mục riêng" },
+  { icon: "sparkles-outline", text: "Trò chuyện với AI dựa trên chính tài liệu của bạn, có trích dẫn rõ ràng" },
+  { icon: "shield-checkmark-outline", text: "Đăng nhập an toàn qua Google & Amazon Cognito" },
 ];
-
-const testimonials = [
-  {
-    name: "Minh Anh",
-    role: "WDP301 — FPT University",
-    quote: "I finally found answers inside my own lecture notes.",
-  },
-  {
-    name: "Hoang Long",
-    role: "SE — FPT University",
-    quote: "Cited AI replies saved me hours every week.",
-  },
-];
-
-const navLinks = [
-  { label: "Tính năng", key: "hero" as const },
-  { label: "Tài liệu", key: "catalog" as const },
-  { label: "Tiến độ", key: "progress" as const },
-  { label: "Đánh giá", key: "testimonials" as const },
-];
-
-type SectionKey = (typeof navLinks)[number]["key"];
 
 export default function LoginScreen() {
-  const scrollRef = useRef<ScrollView>(null);
+  const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const sectionOffsets = useRef<Record<SectionKey, number>>({
-    hero: 0,
-    catalog: 0,
-    progress: 0,
-    testimonials: 0,
-  });
+  const { user, isLoading: isAuthLoading, fetchMe, clearUser } = useAuthStore();
+
+  useEffect(() => {
+    void fetchMe();
+  }, [fetchMe]);
+
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      router.replace("/(tabs)/drive");
+    }
+  }, [isAuthLoading, user, router]);
 
   async function handleGoogleSignIn() {
     if (signingIn) return;
@@ -60,275 +48,119 @@ export default function LoginScreen() {
     }
   }
 
-  function scrollToSection(key: SectionKey) {
-    const y = sectionOffsets.current[key];
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+  async function handleSignOut() {
+    await signOut();
+    clearUser();
   }
 
-  return (
-    <ScrollView
-      ref={scrollRef}
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 24 }}
-    >
-      <View style={{ ...brutalCardStyle, padding: 16, gap: 12 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={{ flexDirection: "row", gap: 2 }}>
-              <View
-                style={{
-                  width: 10,
-                  height: 18,
-                  backgroundColor: colors.fptBlue,
-                  borderWidth: 2,
-                  borderColor: colors.ink,
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 10,
-                  height: 18,
-                  backgroundColor: colors.fptOrange,
-                  borderWidth: 2,
-                  borderColor: colors.ink,
-                  borderRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 10,
-                  height: 18,
-                  backgroundColor: colors.fptGreen,
-                  borderWidth: 2,
-                  borderColor: colors.ink,
-                  borderRadius: 2,
-                }}
-              />
-            </View>
-            <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>APMS</Text>
+  function renderSignInCard() {
+    if (isAuthLoading) {
+      return <Text style={{ textAlign: "center", color: colors.muted, fontSize: 14 }}>Đang tải...</Text>;
+    }
+
+    if (user) {
+      return (
+        <View style={{ gap: 14 }}>
+          <View style={{ gap: 6 }}>
+            <Text style={{ textAlign: "center", fontSize: 20, fontWeight: "800", color: colors.ink }}>
+              Chào mừng trở lại
+            </Text>
+            <Text style={{ textAlign: "center", color: colors.muted, fontSize: 13 }}>
+              Bạn đã đăng nhập và sẵn sàng.
+            </Text>
           </View>
-          <Pressable
-            onPress={() => scrollToSection("hero")}
-            style={({ pressed }) => ({
-              ...brutalCtaStyle,
-              backgroundColor: colors.fptOrange,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              minHeight: 40,
-              ...pressedBrutalStyle(pressed),
-            })}
-          >
-            <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 14 }}>Đăng nhập</Text>
-          </Pressable>
+          <BrutalButton
+            label={`Tiếp tục với ${user.displayName}`}
+            onPress={() => router.replace("/(tabs)/drive")}
+            variant="primary"
+            fullWidth
+            size="lg"
+          />
+          <BrutalButton label="Đăng xuất" onPress={() => void handleSignOut()} variant="secondary" fullWidth />
         </View>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>Đại học FPT · Trung tâm học tập</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {navLinks.map((link) => (
-            <Pressable
-              key={link.key}
-              onPress={() => scrollToSection(link.key)}
-              style={({ pressed }) => ({
-                borderWidth: 2,
-                borderColor: colors.ink,
-                borderRadius: 999,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                backgroundColor: pressed ? colors.fptBlue : colors.surface,
-              })}
-            >
-              {({ pressed }) => (
-                <Text
-                  style={{
-                    fontWeight: "700",
-                    fontSize: 13,
-                    color: pressed ? colors.onBrand : colors.ink,
-                  }}
-                >
-                  {link.label}
-                </Text>
-              )}
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+      );
+    }
 
-      <View
-        onLayout={(e) => {
-          sectionOffsets.current.hero = e.nativeEvent.layout.y;
-        }}
-        style={{ gap: 12 }}
-      >
-        <View
-          style={{
-            alignSelf: "flex-start",
-            backgroundColor: colors.fptGreen,
-            borderWidth: 2,
-            borderColor: colors.ink,
-            borderRadius: 999,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-          }}
-        >
-          <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 12 }}>
-            Quản lý học tập cá nhân
-          </Text>
-        </View>
-        <Text style={{ fontSize: 32, fontWeight: "800", color: colors.ink, lineHeight: 38 }}>
-          Học thông minh hơn với <Text style={{ color: colors.fptOrange }}>tài liệu của bạn</Text>
-        </Text>
-        <Text style={{ color: colors.muted, fontSize: 15, lineHeight: 22 }}>
-          Đăng nhập bằng Google để quản lý tài liệu học tập và trò chuyện với trợ lý AI dựa trên
-          tệp của bạn.
-        </Text>
-      </View>
-
-      <View style={{ ...brutalCardStyle, padding: 20, gap: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: colors.ink }}>Chào mừng trở lại</Text>
-        <Text style={{ color: colors.muted, fontSize: 14 }}>
-          Dùng tài khoản Google để tiếp tục.
-        </Text>
+    return (
+      <>
         {authError && (
           <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{authError}</Text>
         )}
-        <Pressable
+        <BrutalButton
+          label={signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
           onPress={() => void handleGoogleSignIn()}
           disabled={signingIn}
-          style={({ pressed }) => ({
-            ...brutalCtaStyle,
-            backgroundColor: signingIn ? colors.muted : colors.fptBlue,
-            ...pressedBrutalStyle(pressed),
-          })}
-        >
-          <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            {signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
-          </Text>
-        </Pressable>
+          loading={signingIn}
+          variant="secondary"
+          fullWidth
+          size="lg"
+        />
         <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
           Đăng nhập bảo mật qua Amazon Cognito
         </Text>
-      </View>
+      </>
+    );
+  }
 
-      <View
-        onLayout={(e) => {
-          sectionOffsets.current.catalog = e.nativeEvent.layout.y;
-        }}
-        style={{ gap: 12 }}
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: "center", gap: 28 }}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          Xem trước danh mục tài liệu
-        </Text>
-        {catalogItems.map((item) => (
-          <View
-            key={item.title}
-            style={{
-              ...brutalCardStyle,
-              backgroundColor: item.color,
-              padding: 16,
-              gap: 8,
-            }}
-          >
-            <Text
-              style={{
-                alignSelf: "flex-start",
-                backgroundColor: colors.surface,
-                color: colors.ink,
-                borderWidth: 2,
-                borderColor: colors.ink,
-                borderRadius: 999,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                fontSize: 11,
-                fontWeight: "700",
-              }}
-            >
-              {item.tag}
-            </Text>
-            <Text style={{ color: colors.onBrand, fontSize: 18, fontWeight: "800" }}>
-              {item.title}
-            </Text>
+        <View style={{ alignItems: "center", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: 3 }}>
+            {[colors.fptBlue, colors.fptOrange, colors.fptGreen].map((c) => (
+              <View
+                key={c}
+                style={{
+                  width: 14,
+                  height: 26,
+                  backgroundColor: c,
+                  borderWidth: 2,
+                  borderColor: colors.ink,
+                  borderRadius: 3,
+                }}
+              />
+            ))}
           </View>
-        ))}
-      </View>
-
-      <View
-        onLayout={(e) => {
-          sectionOffsets.current.progress = e.nativeEvent.layout.y;
-        }}
-        style={{ ...brutalCardStyle, padding: 20, gap: 12 }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          Tiến độ học tập
-        </Text>
-        <Text style={{ color: colors.muted }}>68% tài liệu đã lập chỉ mục — bản xem trước</Text>
-        <View
-          style={{
-            height: 14,
-            borderWidth: 2,
-            borderColor: colors.ink,
-            borderRadius: 999,
-            overflow: "hidden",
-            backgroundColor: colors.surface,
-          }}
-        >
-          <View style={{ width: "68%", height: "100%", backgroundColor: colors.fptGreen }} />
-        </View>
-      </View>
-
-      <View
-        onLayout={(e) => {
-          sectionOffsets.current.testimonials = e.nativeEvent.layout.y;
-        }}
-        style={{ gap: 12 }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.ink }}>
-          Sinh viên nói gì
-        </Text>
-        {testimonials.map((item) => (
-          <View key={item.name} style={{ ...brutalCardStyle, padding: 16, gap: 12 }}>
-            <Text style={{ color: colors.ink, fontSize: 14, lineHeight: 20 }}>
-              &ldquo;{item.quote}&rdquo;
-            </Text>
-            <Text style={{ fontWeight: "800", color: colors.ink }}>{item.name}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>{item.role}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View
-        style={{
-          ...brutalCardStyle,
-          backgroundColor: colors.fptOrange,
-          padding: 24,
-          gap: 16,
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: colors.onBrand,
-            fontSize: 24,
-            fontWeight: "800",
-            textAlign: "center",
-          }}
-        >
-          Sẵn sàng bắt đầu học?
-        </Text>
-        <Pressable
-          onPress={() => void handleGoogleSignIn()}
-          disabled={signingIn}
-          style={({ pressed }) => ({
-            ...brutalCtaStyle,
-            backgroundColor: signingIn ? colors.muted : colors.fptBlue,
-            width: "100%",
-            ...pressedBrutalStyle(pressed),
-          })}
-        >
-          <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 16 }}>
-            {signingIn ? "Đang mở trình duyệt..." : "Tiếp tục với Google"}
+          <Text style={{ fontSize: 30, fontWeight: "800", color: colors.ink }}>APMS</Text>
+          <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", lineHeight: 20 }}>
+            Quản lý tài liệu học tập & trò chuyện với AI{"\n"}dựa trên chính tài liệu của bạn
           </Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+        </View>
+
+        <View style={{ ...brutalCardStyle, padding: 20, gap: 14 }}>{renderSignInCard()}</View>
+
+        <View style={{ gap: 12 }}>
+          {features.map((f) => (
+            <View key={f.text} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: colors.ink,
+                  backgroundColor: colors.surface,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Ionicons name={f.icon} size={18} color={colors.fptOrange} />
+              </View>
+              <Text style={{ flex: 1, fontSize: 13, color: colors.muted, lineHeight: 19, paddingTop: 6 }}>
+                {f.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={{ textAlign: "center", fontSize: 11, color: colors.muted }}>
+          Đại học FPT · Trung tâm học tập
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
