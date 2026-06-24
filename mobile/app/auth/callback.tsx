@@ -1,5 +1,6 @@
-import { fetchAuthSession } from "aws-amplify/auth";
+import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
+import { isAxiosError } from "axios";
 import { Link, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -31,7 +32,11 @@ export default function AuthCallbackScreen() {
         await fetchMe();
         router.replace("/(tabs)/drive");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to complete sign-in.");
+        const message = isAxiosError(err)
+          ? (err.response?.data?.message as string | undefined)
+          : undefined;
+        setError(message ?? (err instanceof Error ? err.message : "Failed to complete sign-in."));
+        await signOut();
       }
     }
 

@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../lib/api-client";
+import { getErrorMessage } from "../lib/api-error";
+import { useToastStore } from "../stores/toast-store";
 
 export function useFolder(folderId: string) {
   return useQuery({
@@ -24,6 +26,9 @@ export function useCreateFolder() {
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["drive", vars.parentId ?? "root"] });
     },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Tạo thư mục thất bại. Vui lòng thử lại."));
+    },
   });
 }
 
@@ -38,6 +43,9 @@ export function useUpdateFolder() {
       void queryClient.invalidateQueries({ queryKey: ["folder", vars.id] });
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
     },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Cập nhật thư mục thất bại. Vui lòng thử lại."));
+    },
   });
 }
 
@@ -49,6 +57,9 @@ export function useDeleteFolder() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Xóa thư mục thất bại. Vui lòng thử lại."));
     },
   });
 }
@@ -62,6 +73,9 @@ export function usePermanentDeleteFolder() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
     },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Xóa vĩnh viễn thất bại. Vui lòng thử lại."));
+    },
   });
 }
 
@@ -73,6 +87,9 @@ export function useRestoreFolder() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Khôi phục thư mục thất bại. Vui lòng thử lại."));
     },
   });
 }
@@ -89,6 +106,9 @@ export function useToggleFolderStar() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+    onError: (err) => {
+      useToastStore.getState().show(getErrorMessage(err, "Cập nhật trạng thái gắn sao thất bại."));
     },
   });
 }

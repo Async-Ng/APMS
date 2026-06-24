@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import { create } from "zustand";
 
 import { api } from "../lib/api-client";
@@ -32,12 +33,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await api.get<{ status: string; data: AppUser }>("/auth/me");
       set({ user: response.data.data, isLoading: false });
-    } catch {
-      set({
-        user: null,
-        isLoading: false,
-        error: "Failed to load user profile",
-      });
+    } catch (err) {
+      const message = isAxiosError(err) ? err.response?.data?.message : undefined;
+      set({ user: null, isLoading: false, error: message ?? "Failed to load user profile" });
+      throw err;
     }
   },
   clearUser: () => set({ user: null, error: null }),

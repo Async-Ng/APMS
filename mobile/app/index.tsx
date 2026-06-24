@@ -1,17 +1,27 @@
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, signOut } from "aws-amplify/auth";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "../constants/colors";
+import { useAuthStore } from "../stores/auth-store";
 
 export default function Index() {
   const [state, setState] = useState<"checking" | "auth" | "guest">("checking");
 
   useEffect(() => {
-    getCurrentUser()
-      .then(() => setState("auth"))
-      .catch(() => setState("guest"));
+    async function checkSession() {
+      try {
+        await getCurrentUser();
+        await useAuthStore.getState().fetchMe();
+        setState("auth");
+      } catch {
+        await signOut();
+        setState("guest");
+      }
+    }
+
+    void checkSession();
   }, []);
 
   if (state === "checking") {
