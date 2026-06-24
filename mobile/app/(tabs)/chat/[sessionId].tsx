@@ -55,6 +55,8 @@ export default function ChatSessionScreen() {
 
     try {
       await sendMessage.mutateAsync({ sessionId, content });
+    } catch {
+      // Error toast + cache rollback already handled in useSendMessage's onError.
     } finally {
       setIsSending(false);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);

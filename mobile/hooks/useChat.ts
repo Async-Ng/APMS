@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../lib/api-client";
+import { getErrorMessage } from "../lib/api-error";
+import { useToastStore } from "../stores/toast-store";
 
 export interface ChatSession {
   id: string;
@@ -124,14 +126,44 @@ export function useSendMessage() {
       }>(`/chat/sessions/${sessionId}/messages`, { content });
       return res.data.data;
     },
-    onSuccess: (data, { sessionId }) => {
+    onMutate: async ({ sessionId, content }) => {
+      const queryKey = ["chat", "session", sessionId];
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SessionWithMessages>(queryKey);
+
+      const optimisticMessage: ChatMessage = {
+        id: `optimistic-${Date.now()}`,
+        sessionId,
+        role: "user",
+        content,
+        citations: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData<SessionWithMessages>(queryKey, (old) =>
+        old ? { ...old, messages: [...old.messages, optimisticMessage] } : old,
+      );
+
+      return { previous, optimisticId: optimisticMessage.id };
+    },
+    onSuccess: (data, { sessionId }, context) => {
       queryClient.setQueryData<SessionWithMessages>(["chat", "session", sessionId], (old) => {
         if (!old) return old;
         return {
           ...old,
-          messages: [...old.messages, data.userMessage, data.assistantMessage],
+          messages: [
+            ...old.messages.filter((m) => m.id !== context?.optimisticId),
+            data.userMessage,
+            data.assistantMessage,
+          ],
         };
       });
+    },
+    onError: (err, { sessionId }, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["chat", "session", sessionId], context.previous);
+      }
+      useToastStore.getState().show(getErrorMessage(err, "Gửi tin nhắn thất bại. Vui lòng thử lại."));
     },
   });
 }

@@ -63,8 +63,9 @@ export const ErrorCode = {
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
-  AUTH_EMAIL_DOMAIN: "Your email address has not been granted access to this internal system.",
-  AUTH_ACCESS_CHECK_FAILED: "Unable to verify email access. Please try again later.",
+  AUTH_EMAIL_DOMAIN:
+    "Email của bạn chưa được cấp quyền truy cập. Vui lòng đăng nhập bằng email FPT (@fpt.edu.vn hoặc @fe.edu.vn).",
+  AUTH_ACCESS_CHECK_FAILED: "Không thể xác minh quyền truy cập email. Vui lòng thử lại sau.",
   MAJOR_NOT_FOUND: "Major not found.",
   SUBJECT_NOT_FOUND: "Subject not found.",
   CURRICULUM_NOT_FOUND: "Curriculum course not found.",
