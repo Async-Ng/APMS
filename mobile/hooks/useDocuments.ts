@@ -116,6 +116,8 @@ export function useUploadDocument() {
       mimeType,
       size,
       folderId,
+      curriculumCourseId,
+      visibility,
       onProgress,
     }: {
       uri: string;
@@ -123,6 +125,8 @@ export function useUploadDocument() {
       mimeType: string;
       size: number;
       folderId?: string | null;
+      curriculumCourseId: string;
+      visibility: "private" | "public";
       onProgress?: (pct: number) => void;
     }) => {
       const intentRes = await api.post<{ status: string; data: UploadIntent }>("/documents/upload-intents", {
@@ -130,6 +134,8 @@ export function useUploadDocument() {
         mimeType,
         fileSizeBytes: size,
         folderId: folderId ?? null,
+        curriculumCourseId,
+        visibility,
         title: name.replace(/\.[^.]+$/, ""),
       });
       const { id, uploadUrl } = intentRes.data.data;

@@ -34,8 +34,9 @@ export function useDrive(parentId?: string | null) {
   return useQuery({
     queryKey: ["drive", parentId ?? "root"],
     queryFn: async () => {
-      const url = parentId ? `/drive?parentId=${parentId}` : "/drive";
-      const res = await api.get<{ status: string; data: DriveData }>(url);
+      const res = await api.get<{ status: string; data: DriveData }>("/documents", {
+        params: { view: "my", ...(parentId ? { parentId } : {}) },
+      });
       return res.data.data;
     },
   });
@@ -45,7 +46,9 @@ export function useStarred() {
   return useQuery({
     queryKey: ["drive", "starred"],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: DriveData }>("/drive/starred");
+      const res = await api.get<{ status: string; data: DriveData }>("/documents", {
+        params: { view: "starred" },
+      });
       return res.data.data;
     },
   });
@@ -55,7 +58,9 @@ export function useTrash() {
   return useQuery({
     queryKey: ["drive", "trash"],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: DriveData }>("/drive/trash");
+      const res = await api.get<{ status: string; data: DriveData }>("/documents", {
+        params: { view: "trash" },
+      });
       return res.data.data;
     },
   });
