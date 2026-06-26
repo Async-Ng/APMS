@@ -243,7 +243,7 @@ export function CurriculumPanel() {
           }
         >
           <Plus className="mr-2 h-4 w-4" />
-          Thêm mapping
+          Gán môn
         </BrutalButton>
       </div>
 
@@ -270,7 +270,7 @@ export function CurriculumPanel() {
             <tr>
               <td colSpan={5} className="px-4 py-10 text-center">
                 <Layers className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có mapping CTĐT</p>
+                <p className="text-sm font-semibold text-brutal-ink">Chưa có môn trong CTĐT</p>
                 <p className="mt-1 text-xs text-brutal-muted">
                   Gán môn học vào ngành và học kỳ cụ thể.
                 </p>
@@ -311,7 +311,7 @@ export function CurriculumPanel() {
                       variant="ghost"
                       className="px-3 py-1 text-xs"
                       onClick={() => openEdit(course)}
-                      aria-label={`Sửa mapping ${course.major?.code ?? ""} HK${course.semesterNumber}`}
+                      aria-label={`Sửa môn CTĐT ${course.major?.code ?? ""} HK${course.semesterNumber}`}
                     >
                       Sửa
                     </BrutalButton>
@@ -342,7 +342,7 @@ export function CurriculumPanel() {
 
       <AdminFormModal
         open={formOpen}
-        title={editing ? "Sửa mapping CTĐT" : "Thêm mapping CTĐT"}
+        title={editing ? "Sửa môn trong CTĐT" : "Gán môn vào CTĐT"}
         onClose={() => setFormOpen(false)}
         footer={
           <>
@@ -432,8 +432,8 @@ export function CurriculumPanel() {
 
       <ConfirmDialog
         open={!!archiveTarget}
-        title="Xóa mapping CTĐT?"
-        description="Mapping này sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên hoặc tài liệu đang tham chiếu. Có thể kích hoạt lại sau."
+        title="Xóa môn khỏi CTĐT?"
+        description="Môn này sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên hoặc tài liệu đang tham chiếu. Có thể kích hoạt lại sau."
         confirmLabel="Xóa"
         tone="danger"
         isPending={isArchiving}

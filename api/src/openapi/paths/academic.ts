@@ -10,6 +10,11 @@ import {
   updateMajorSchema,
   updateSubjectSchema,
 } from "../../validators/academic.validator";
+import {
+  academicProfileSuccessResponseSchema,
+  curriculumListSuccessResponseSchema,
+  majorListSuccessResponseSchema,
+} from "../schemas/academic";
 import { registry, z } from "../setup";
 import { bearerSecurity, error400, error401, error403, error404, jsonResponse } from "./helpers";
 
@@ -108,7 +113,7 @@ export function registerAcademicPaths(): void {
     path: "/api/catalog/majors",
     tags: ["Academic Catalog"],
     security: [...bearerSecurity],
-    responses: { 200: jsonResponse(listResponse, "Active majors"), 401: error401, 403: error403 },
+    responses: { 200: jsonResponse(majorListSuccessResponseSchema, "Active majors"), 401: error401, 403: error403 },
   });
   registry.registerPath({
     method: "get",
@@ -116,7 +121,7 @@ export function registerAcademicPaths(): void {
     tags: ["Academic Catalog"],
     security: [...bearerSecurity],
     request: { params: majorParam, query: catalogCurriculumQuerySchema },
-    responses: { 200: jsonResponse(listResponse, "Active curriculum"), 401: error401, 403: error403, 404: error404 },
+    responses: { 200: jsonResponse(curriculumListSuccessResponseSchema, "Active curriculum"), 401: error401, 403: error403, 404: error404 },
   });
 
   registry.registerPath({
@@ -124,7 +129,7 @@ export function registerAcademicPaths(): void {
     path: "/api/users/me/academic-profile",
     tags: ["Users", "Academic Catalog"],
     security: [...bearerSecurity],
-    responses: { 200: jsonResponse(entityResponse, "Academic profile"), 401: error401, 403: error403 },
+    responses: { 200: jsonResponse(academicProfileSuccessResponseSchema, "Academic profile"), 401: error401, 403: error403 },
   });
   registry.registerPath({
     method: "patch",
@@ -132,7 +137,7 @@ export function registerAcademicPaths(): void {
     tags: ["Users", "Academic Catalog"],
     security: [...bearerSecurity],
     request: { body: body(updateAcademicProfileSchema) },
-    responses: { 200: jsonResponse(entityResponse, "Academic profile"), 400: error400(), 401: error401, 403: error403 },
+    responses: { 200: jsonResponse(academicProfileSuccessResponseSchema, "Academic profile"), 400: error400(), 401: error401, 403: error403 },
   });
 
 }
