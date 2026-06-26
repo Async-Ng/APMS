@@ -70,6 +70,13 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginBottom: 4 }}>DRIVE</Text>
           <View style={{ ...brutalCardStyle, padding: 4, gap: 0 }}>
             <ProfileMenuItem
+              icon="people-outline"
+              label="Đã chia sẻ"
+              subtitle="Xem mục được chia sẻ và quản lý quyền truy cập"
+              onPress={() => router.push("/(tabs)/drive/shared")}
+            />
+            <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
+            <ProfileMenuItem
               icon="star-outline"
               label="Đã gắn sao"
               subtitle="Truy cập nhanh các mục đã gắn sao"
@@ -81,6 +88,16 @@ export default function ProfileScreen() {
               label="Thùng rác"
               subtitle="Khôi phục hoặc xóa vĩnh viễn"
               onPress={() => router.push("/(tabs)/drive/trash")}
+            />
+          </View>
+
+          <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginTop: 16, marginBottom: 4 }}>HỌC TẬP</Text>
+          <View style={{ ...brutalCardStyle, padding: 4 }}>
+            <ProfileMenuItem
+              icon="school-outline"
+              label="Hồ sơ học thuật"
+              subtitle="Ngành, học kỳ và môn học hiện tại"
+              onPress={() => router.push("/profile/academic")}
             />
           </View>
         </View>

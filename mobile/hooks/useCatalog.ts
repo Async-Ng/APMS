@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../lib/api-client";
 
@@ -38,6 +38,39 @@ export function useAcademicProfile() {
         "/users/me/academic-profile",
       );
       return res.data.data;
+    },
+  });
+}
+
+export function useCatalogMajors() {
+  return useQuery({
+    queryKey: ["catalog", "majors"],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: CatalogMajor[] }>("/catalog/majors");
+      return res.data.data;
+    },
+  });
+}
+
+export interface UpdateAcademicProfileBody {
+  majorId: string;
+  currentSemester: number;
+  currentSubjectIds: string[];
+}
+
+export function useUpdateAcademicProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateAcademicProfileBody) => {
+      const res = await api.patch<{ status: string; data: AcademicProfile }>(
+        "/users/me/academic-profile",
+        input,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["users", "me", "academic-profile"] });
+      void qc.invalidateQueries({ queryKey: ["documents", "public"] });
     },
   });
 }

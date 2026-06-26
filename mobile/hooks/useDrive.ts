@@ -65,3 +65,17 @@ export function useTrash() {
     },
   });
 }
+
+/** Shared-with-me folder contents — GET /documents?view=shared&parentId= */
+export function useSharedFolderContents(parentId: string) {
+  return useQuery({
+    queryKey: ["drive", "shared", parentId],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: DriveData }>("/documents", {
+        params: { view: "shared", parentId },
+      });
+      return res.data.data;
+    },
+    enabled: !!parentId,
+  });
+}

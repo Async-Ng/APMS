@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,6 +36,7 @@ interface PickedFile {
 }
 
 export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(400)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -161,15 +163,23 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                     {profileLoading ? (
                       <ActivityIndicator style={{ marginVertical: 24 }} color={colors.fptOrange} />
                     ) : !profile?.isComplete ? (
-                      <View style={{ paddingVertical: 24, gap: 8, alignItems: "center" }}>
+                      <View style={{ paddingVertical: 24, gap: 12, alignItems: "center" }}>
                         <Ionicons name="school-outline" size={36} color={colors.fptOrange} />
                         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink, textAlign: "center" }}>
                           Cần hồ sơ học thuật
                         </Text>
                         <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
-                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật ngành, học kỳ và môn học trên web trước
-                          khi tải lên từ ứng dụng di động.
+                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật ngành, học kỳ và môn học trước khi tải
+                          lên.
                         </Text>
+                        <BrutalButton
+                          label="Cập nhật hồ sơ học thuật"
+                          onPress={() => {
+                            onDismiss();
+                            router.push("/profile/academic");
+                          }}
+                          variant="secondary"
+                        />
                       </View>
                     ) : (
                       <View style={{ gap: 14, marginTop: 12 }}>
