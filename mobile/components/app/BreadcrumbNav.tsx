@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Fragment } from "react";
 import { ScrollView, Pressable, Text } from "react-native";
 
 import { colors } from "../../constants/colors";
@@ -21,12 +22,11 @@ export function BreadcrumbNav({ items, onNavigate }: BreadcrumbNavProps) {
       contentContainerStyle={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 16 }}
     >
       {items.map((item, idx) => (
-        <>
+        <Fragment key={item.id ?? "root"}>
           {idx > 0 && (
-            <Ionicons key={`sep-${item.id}`} name="chevron-forward" size={14} color={colors.muted} />
+            <Ionicons name="chevron-forward" size={14} color={colors.muted} />
           )}
           <Pressable
-            key={item.id ?? "root"}
             onPress={() => onNavigate(item.id)}
             style={({ pressed }) => ({
               paddingHorizontal: 10,
@@ -47,7 +47,7 @@ export function BreadcrumbNav({ items, onNavigate }: BreadcrumbNavProps) {
               {item.name}
             </Text>
           </Pressable>
-        </>
+        </Fragment>
       ))}
     </ScrollView>
   );
