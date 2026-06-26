@@ -64,5 +64,5 @@ export const catalogCurriculumQuerySchema = z.object({
 export const updateAcademicProfileSchema = z.object({
   majorId: objectId,
   currentSemester: z.number().int().min(1).max(9),
-  currentSubjectIds: z.array(objectId).max(30).transform((ids) => [...new Set(ids)]),
+  currentSubjectIds: z.array(objectId).min(1).max(30).transform((ids) => [...new Set(ids)]),
 });
