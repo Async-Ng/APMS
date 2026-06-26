@@ -4,6 +4,7 @@ import { CurriculumCourse } from "../models/curriculum-course.model";
 import { Document, toDocumentResponse, type DocumentDocument } from "../models/document.model";
 import { Folder, toFolderResponse, type FolderDocument } from "../models/folder.model";
 import { Major, toMajorResponse } from "../models/major.model";
+import { Semester, toSemesterResponse } from "../models/semester.model";
 import { Subject, toSubjectResponse } from "../models/subject.model";
 import { User, type UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
@@ -21,7 +22,7 @@ export interface ListDocumentsOptions {
   search?: string | undefined;
   sort: "newest" | "oldest" | "title";
   majorId?: string | undefined;
-  semesterNumber?: number | undefined;
+  semesterId?: string | undefined;
   subjectId?: string | undefined;
   match: "auto" | "exact" | "related" | "all";
 }
@@ -83,10 +84,12 @@ async function serializeDocuments(
   const courses = await CurriculumCourse.find({ _id: { $in: courseIds } });
   const majorIds = [...new Set(courses.map((course) => course.majorId.toString()))];
   const subjectIds = [...new Set(courses.map((course) => course.subjectId.toString()))];
+  const semesterIds = [...new Set(courses.map((course) => course.semesterId.toString()))];
 
-  const [majors, subjects, owners] = await Promise.all([
+  const [majors, subjects, semesters, owners] = await Promise.all([
     Major.find({ _id: { $in: majorIds } }),
     Subject.find({ _id: { $in: subjectIds } }),
+    Semester.find({ _id: { $in: semesterIds } }),
     User.find({ _id: { $in: ownerIds } }).select("_id displayName email avatarUrl"),
   ]);
 
@@ -94,6 +97,9 @@ async function serializeDocuments(
   const majorMap = new Map(majors.map((major) => [major._id.toString(), toMajorResponse(major)]));
   const subjectMap = new Map(
     subjects.map((subject) => [subject._id.toString(), toSubjectResponse(subject)]),
+  );
+  const semesterMap = new Map(
+    semesters.map((semester) => [semester._id.toString(), toSemesterResponse(semester)]),
   );
   const ownerMap = new Map(
     owners.map((owner) => [
@@ -118,7 +124,8 @@ async function serializeDocuments(
       curriculumCourse: course
         ? {
             id: course._id.toString(),
-            semesterNumber: course.semesterNumber,
+            semesterId: course.semesterId.toString(),
+            semester: semesterMap.get(course.semesterId.toString()) ?? null,
             major: majorMap.get(course.majorId.toString()) ?? null,
             subject: subjectMap.get(course.subjectId.toString()) ?? null,
           }
@@ -261,7 +268,7 @@ async function listTrashDocuments(user: UserDocument, options: ListDocumentsOpti
 async function getCourseIdsForFilter(options: ListDocumentsOptions): Promise<Types.ObjectId[] | null> {
   const filter: Record<string, unknown> = { isActive: true };
   if (options.majorId) filter.majorId = parseObjectId(options.majorId, "majorId");
-  if (options.semesterNumber !== undefined) filter.semesterNumber = options.semesterNumber;
+  if (options.semesterId) filter.semesterId = parseObjectId(options.semesterId, "semesterId");
   if (options.subjectId) filter.subjectId = parseObjectId(options.subjectId, "subjectId");
 
   if (Object.keys(filter).length === 1) {
@@ -272,13 +279,13 @@ async function getCourseIdsForFilter(options: ListDocumentsOptions): Promise<Typ
 }
 
 async function getProfileCourseBuckets(user: UserDocument) {
-  if (!user.majorId || !user.currentSemester || user.currentSubjectIds.length === 0) {
+  if (!user.majorId || !user.currentSemesterId || user.currentSubjectIds.length === 0) {
     return { exactCourseIds: [] as Types.ObjectId[], relatedCourseIds: [] as Types.ObjectId[] };
   }
 
   const exactCourses = await CurriculumCourse.find({
     majorId: user.majorId,
-    semesterNumber: user.currentSemester,
+    semesterId: user.currentSemesterId,
     subjectId: { $in: user.currentSubjectIds },
     isActive: true,
   }).select("_id subjectId");
@@ -291,7 +298,7 @@ async function getProfileCourseBuckets(user: UserDocument) {
       : await CurriculumCourse.find({
           majorId: user.majorId,
           subjectId: { $in: subjectIds.map((id) => parseObjectId(id, "subjectId")) },
-          semesterNumber: { $ne: user.currentSemester },
+          semesterId: { $ne: user.currentSemesterId },
           isActive: true,
         }).distinct("_id");
 

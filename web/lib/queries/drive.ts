@@ -34,9 +34,17 @@ export interface DocumentSubjectRef {
   name: string;
 }
 
+export interface DocumentSemesterRef {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+}
+
 export interface DocumentCurriculumRef {
   id: string;
-  semesterNumber: number;
+  semesterId: string;
+  semester: DocumentSemesterRef | null;
   major: DocumentMajorRef | null;
   subject: DocumentSubjectRef | null;
 }
@@ -107,7 +115,7 @@ export interface ListDocumentsParams {
   limit?: number;
   match?: "auto" | "exact" | "related" | "all";
   majorId?: string;
-  semesterNumber?: number;
+  semesterId?: string;
   subjectId?: string;
 }
 
@@ -120,8 +128,7 @@ function buildListQuery(params: ListDocumentsParams): Record<string, string | nu
   if (params.limit) query.limit = params.limit;
   if (params.match) query.match = params.match;
   if (params.majorId) query.majorId = params.majorId;
-  if (params.semesterNumber !== undefined)
-    query.semesterNumber = params.semesterNumber;
+  if (params.semesterId) query.semesterId = params.semesterId;
   if (params.subjectId) query.subjectId = params.subjectId;
   return query;
 }

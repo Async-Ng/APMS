@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useModalA11y } from "@/components/ui/useModalA11y";
 import { useAdminUser } from "@/lib/queries/admin";
-import { useAdminMajors, useAdminSubjects } from "@/lib/queries/admin-academic";
+import { useAdminMajors, useAdminSemesters, useAdminSubjects } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -38,12 +38,19 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
   const { data: user, isLoading, isError } = useAdminUser(userId);
   const { data: majors } = useAdminMajors();
   const { data: subjects } = useAdminSubjects();
+  const { data: semesters } = useAdminSemesters();
 
   const majorLabel = useMemo(() => {
     if (!user?.majorId) return null;
     const major = majors?.find((m) => m.id === user.majorId);
     return major ? `${major.code} — ${major.name}` : user.majorId;
   }, [user, majors]);
+
+  const semesterLabel = useMemo(() => {
+    if (!user?.currentSemesterId) return null;
+    const semester = semesters?.find((s) => s.id === user.currentSemesterId);
+    return semester ? `${semester.code} — ${semester.name}` : user.currentSemesterId;
+  }, [user, semesters]);
 
   const currentSubjects = useMemo(() => {
     if (!user?.currentSubjectIds.length) return [];
@@ -164,10 +171,10 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
                   <dd className="text-right font-semibold">{majorLabel}</dd>
                 </div>
               )}
-              {user.currentSemester && (
+              {semesterLabel && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-brutal-muted">Học kỳ hiện tại</dt>
-                  <dd className="font-semibold">{user.currentSemester}</dd>
+                  <dd className="font-semibold">{semesterLabel}</dd>
                 </div>
               )}
               {currentSubjects.length > 0 && (

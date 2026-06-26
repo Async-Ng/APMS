@@ -50,7 +50,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
   const { data: curriculum } = useCatalogCurriculum(
     profile?.major?.id,
-    profile?.currentSemester ?? undefined,
+    profile?.currentSemester?.id,
   );
 
   const uploadIntent = useUploadIntent();

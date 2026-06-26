@@ -8,7 +8,7 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
-import { useAcademicProfile, useCatalogCurriculum, useCatalogMajors } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCurriculum, useCatalogMajorSemesters, useCatalogMajors } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile, useUpdateDisplayName } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/stores/auth-store";
@@ -43,25 +43,29 @@ export default function ProfilePage() {
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
   const [majorId, setMajorId] = useState("");
-  const [semesterNumber, setSemesterNumber] = useState("");
+  const [semesterId, setSemesterId] = useState("");
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [academicError, setAcademicError] = useState<string | null>(null);
 
   const majorFromProfile = profile?.major?.id ?? "";
-  const semesterFromProfile =
-    profile?.currentSemester !== null && profile?.currentSemester !== undefined
-      ? String(profile.currentSemester)
-      : "";
+  const semesterFromProfile = profile?.currentSemester?.id ?? "";
   const subjectsFromProfile = profile?.currentSubjects?.map((s) => s.id) ?? [];
 
   const effectiveMajorId = majorId || majorFromProfile;
-  const effectiveSemesterNumber = semesterNumber || semesterFromProfile;
-  const semesterNumParsed = effectiveSemesterNumber ? Number(effectiveSemesterNumber) : undefined;
+  const effectiveSemesterId = semesterId || semesterFromProfile;
 
   const { data: curriculum } = useCatalogCurriculum(
     effectiveMajorId || undefined,
-    semesterNumParsed,
+    effectiveSemesterId || undefined,
   );
+
+  const { data: majorSemesters } = useCatalogMajorSemesters(effectiveMajorId || undefined);
+
+  const availableSemesters =
+    majorSemesters
+      ?.filter((link) => link.isActive && link.semester)
+      .map((link) => link.semester!)
+      .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
 
   const availableSubjects = useMemo(
     () => uniqueSubjects(curriculum),
@@ -207,7 +211,7 @@ export default function ProfilePage() {
                   onChange={(e) => {
                     setAcademicError(null);
                     setMajorId(e.target.value);
-                    setSemesterNumber("");
+                    setSemesterId("");
                     setSubjectIds([]);
                   }}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
@@ -224,24 +228,21 @@ export default function ProfilePage() {
               <label className="text-xs font-bold text-brutal-muted">
                 Học kỳ
                 <select
-                  value={effectiveSemesterNumber}
+                  value={effectiveSemesterId}
                   onChange={(e) => {
                     setAcademicError(null);
-                    setSemesterNumber(e.target.value);
+                    setSemesterId(e.target.value);
                     setSubjectIds([]);
                   }}
                   disabled={!effectiveMajorId}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink disabled:opacity-50"
                 >
                   <option value="">Chọn học kỳ</option>
-                  {Array.from({ length: 9 }).map((_, idx) => {
-                    const v = String(idx + 1);
-                    return (
-                      <option key={v} value={v}>
-                        Học kỳ {v}
-                      </option>
-                    );
-                  })}
+                  {availableSemesters.map((semester) => (
+                    <option key={semester.id} value={semester.id}>
+                      {semester.code} — {semester.name}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -251,7 +252,7 @@ export default function ProfilePage() {
               <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
                 {isProfileLoading ? (
                   <p className="text-sm text-brutal-muted">Đang tải…</p>
-                ) : !effectiveMajorId || !effectiveSemesterNumber ? (
+                ) : !effectiveMajorId || !effectiveSemesterId ? (
                   <p className="text-sm text-brutal-muted">
                     Chọn ngành và học kỳ để hiển thị danh sách môn.
                   </p>
@@ -304,7 +305,7 @@ export default function ProfilePage() {
                     setAcademicError("Vui lòng chọn ngành.");
                     return;
                   }
-                  if (!effectiveSemesterNumber) {
+                  if (!effectiveSemesterId) {
                     setAcademicError("Vui lòng chọn học kỳ.");
                     return;
                   }
@@ -314,7 +315,7 @@ export default function ProfilePage() {
                   }
                   updateAcademic.mutate({
                     majorId: effectiveMajorId,
-                    currentSemester: Number(effectiveSemesterNumber),
+                    currentSemesterId: effectiveSemesterId,
                     currentSubjectIds: effectiveSubjectIds,
                   });
                 }}

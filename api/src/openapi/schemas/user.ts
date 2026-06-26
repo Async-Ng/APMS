@@ -14,7 +14,7 @@ export const userSchema = registry.register(
       role: z.enum(USER_ROLES),
       isDisabled: z.boolean(),
       majorId: z.string().nullable(),
-      currentSemester: z.number().int().min(1).max(9).nullable(),
+      currentSemesterId: z.string().nullable(),
       currentSubjectIds: z.array(z.string()),
       storageUsedBytes: z.number(),
       storageQuotaBytes: z.number(),

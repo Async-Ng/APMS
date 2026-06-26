@@ -39,7 +39,7 @@ export interface AdminUser {
   role: "user" | "admin";
   isDisabled: boolean;
   majorId: string | null;
-  currentSemester: number | null;
+  currentSemesterId: string | null;
   currentSubjectIds: string[];
   storageUsedBytes: number;
   storageQuotaBytes: number;
@@ -103,6 +103,7 @@ export function useAdminUser(userId: string | null) {
 interface UpdateAdminUserBody {
   storageQuotaBytes?: number;
   isDisabled?: boolean;
+  role?: "user" | "admin";
 }
 
 export function useUpdateAdminUser() {

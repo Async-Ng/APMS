@@ -49,9 +49,14 @@ export const ErrorCode = {
   // Admin
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
+  CANNOT_DEMOTE_SELF: "CANNOT_DEMOTE_SELF",
+  CANNOT_DEMOTE_LAST_ADMIN: "CANNOT_DEMOTE_LAST_ADMIN",
+  COGNITO_GROUP_UPDATE_FAILED: "COGNITO_GROUP_UPDATE_FAILED",
   QUOTA_TOO_LOW: "QUOTA_TOO_LOW",
   MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
   SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  SEMESTER_NOT_FOUND: "SEMESTER_NOT_FOUND",
+  MAJOR_SEMESTER_NOT_FOUND: "MAJOR_SEMESTER_NOT_FOUND",
   CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
   CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
   ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
@@ -67,6 +72,8 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   AUTH_ACCESS_CHECK_FAILED: "Unable to verify email access. Please try again later.",
   MAJOR_NOT_FOUND: "Major not found.",
   SUBJECT_NOT_FOUND: "Subject not found.",
+  SEMESTER_NOT_FOUND: "Semester not found.",
+  MAJOR_SEMESTER_NOT_FOUND: "Semester is not assigned to this major.",
   CURRICULUM_NOT_FOUND: "Curriculum course not found.",
   CURRICULUM_NOT_ENROLLED: "The subject is not in your current major, semester, or selected courses.",
   ACADEMIC_PROFILE_REQUIRED: "Complete your academic profile before uploading documents.",
@@ -113,6 +120,9 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
 
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",
+  CANNOT_DEMOTE_SELF: "Bạn không thể thu hồi quyền quản trị của chính mình.",
+  CANNOT_DEMOTE_LAST_ADMIN: "Không thể thu hồi quyền quản trị của admin cuối cùng.",
+  COGNITO_GROUP_UPDATE_FAILED: "Không thể cập nhật nhóm quản trị trên Cognito. Vui lòng thử lại.",
   QUOTA_TOO_LOW: "Dung lượng mới không thể nhỏ hơn dung lượng đang sử dụng.",
 };
 

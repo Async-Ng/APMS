@@ -33,16 +33,35 @@ export const updateSubjectSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
 
+export const createSemesterSchema = z.object({
+  code,
+  name: z.string().trim().min(1).max(150),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const updateSemesterSchema = z
+  .object({
+    code: code.optional(),
+    name: z.string().trim().min(1).max(150).optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
+
+export const assignMajorSemestersSchema = z.object({
+  semesterIds: z.array(objectId).min(1).max(50).transform((ids) => [...new Set(ids)]),
+});
+
 export const createCurriculumCourseSchema = z.object({
   majorId: objectId,
-  semesterNumber: z.number().int().min(1).max(9),
+  semesterId: objectId,
   subjectId: objectId,
 });
 
 export const updateCurriculumCourseSchema = z
   .object({
     majorId: objectId.optional(),
-    semesterNumber: z.number().int().min(1).max(9).optional(),
+    semesterId: objectId.optional(),
     subjectId: objectId.optional(),
     isActive: z.boolean().optional(),
   })
@@ -50,7 +69,7 @@ export const updateCurriculumCourseSchema = z
 
 export const listCurriculumQuerySchema = z.object({
   majorId: objectId.optional(),
-  semesterNumber: z.coerce.number().int().min(1).max(9).optional(),
+  semesterId: objectId.optional(),
   includeInactive: z
     .enum(["true", "false"])
     .transform((value) => value === "true")
@@ -58,11 +77,11 @@ export const listCurriculumQuerySchema = z.object({
 });
 
 export const catalogCurriculumQuerySchema = z.object({
-  semesterNumber: z.coerce.number().int().min(1).max(9).optional(),
+  semesterId: objectId.optional(),
 });
 
 export const updateAcademicProfileSchema = z.object({
   majorId: objectId,
-  currentSemester: z.number().int().min(1).max(9),
+  currentSemesterId: objectId,
   currentSubjectIds: z.array(objectId).max(30).transform((ids) => [...new Set(ids)]),
 });

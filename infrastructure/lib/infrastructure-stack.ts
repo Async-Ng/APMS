@@ -206,6 +206,17 @@ export class InfrastructureStack extends cdk.Stack {
       }),
     );
 
+    apiBackendUser.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminAddUserToGroup",
+          "cognito-idp:AdminRemoveUserFromGroup",
+        ],
+        resources: [userPool.userPoolArn],
+      }),
+    );
+
     // =========================================================================
     // 4. XUẤT THÔNG TIN ĐẦU RA (CLOUDFORMATION OUTPUTS)
     // =========================================================================

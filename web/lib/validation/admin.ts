@@ -31,14 +31,20 @@ export const subjectFormSchema = z.object({
   description: descriptionField.optional(),
 });
 
+export const semesterFormSchema = z.object({
+  code: codeField,
+  name: z
+    .string()
+    .trim()
+    .min(1, "Tên không được để trống")
+    .max(150, "Tên tối đa 150 ký tự"),
+  sortOrder: z.coerce.number().int().min(0, "Thứ tự phải ≥ 0"),
+});
+
 export const curriculumFormSchema = z.object({
   majorId: z.string().min(1, "Chọn ngành học"),
   subjectId: z.string().min(1, "Chọn môn học"),
-  semesterNumber: z.coerce
-    .number()
-    .int("Học kỳ phải là số nguyên")
-    .min(1, "Học kỳ từ 1 đến 9")
-    .max(9, "Học kỳ từ 1 đến 9"),
+  semesterId: z.string().min(1, "Chọn học kỳ"),
 });
 
 export const accessEmailSchema = z

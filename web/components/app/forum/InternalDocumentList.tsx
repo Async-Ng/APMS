@@ -130,7 +130,7 @@ export function InternalDocumentList({
                     <div className="text-xs">
                       <p className="font-bold">{course.major?.code ?? "—"}</p>
                       <p className="text-brutal-muted">
-                        HK{course.semesterNumber} · {course.subject?.code ?? "—"}
+                        {course.semester?.code ?? "—"} · {course.subject?.code ?? "—"}
                       </p>
                     </div>
                   ) : (

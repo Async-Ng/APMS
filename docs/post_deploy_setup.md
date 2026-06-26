@@ -76,12 +76,25 @@ cd api
 pnpm migrate:document-visibility
 ```
 
-Migration này idempotent:
+Sau khi deploy semester entities:
+
+```bash
+cd api
+pnpm migrate:semester-entities
+```
+
+Migration document visibility idempotent:
 
 - Legacy `personal` -> `private`.
 - Legacy `internal` -> `public`.
 - Không đụng S3, chunks, shares, folders.
 - Không tự gán `curriculumCourseId` cho document cũ.
+
+Migration semester entities idempotent:
+
+- Upsert `HK1..HK9` vào `semesters`.
+- Map `curriculumcourses.semesterNumber` -> `semesterId`, tạo `majorsemesters`.
+- Map `users.currentSemester` + `majorId` -> `currentSemesterId`.
 
 ## 6. Smoke Tests
 

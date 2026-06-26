@@ -88,7 +88,7 @@ export function InternalDocumentCard({
             </span>
           )}
           <span className="rounded-md border border-brutal-ink bg-brutal-accent/20 px-2 py-0.5 text-xs font-bold">
-            HK {course.semesterNumber}
+            {course.semester?.code ?? "—"}
           </span>
           {course.subject && (
             <span className="rounded-md border border-brutal-ink bg-brutal-secondary/15 px-2 py-0.5 text-xs font-bold">

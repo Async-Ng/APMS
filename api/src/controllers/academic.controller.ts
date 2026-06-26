@@ -42,6 +42,42 @@ export const archiveSubject = catchAsync(async (req: Request, res: Response) => 
   sendSuccess(res, await academicService.archiveSubject(getRouteParam(req, "id")));
 });
 
+export const createSemester = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.createSemester(req.body), 201);
+});
+export const listAdminSemesters = catchAsync(async (_req: Request, res: Response) => {
+  sendSuccess(res, await academicService.listSemesters(true));
+});
+export const updateSemester = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.updateSemester(getRouteParam(req, "id"), req.body));
+});
+export const archiveSemester = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.archiveSemester(getRouteParam(req, "id")));
+});
+
+export const listAdminMajorSemesters = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.listMajorSemesters(getRouteParam(req, "majorId"), true));
+});
+export const assignMajorSemesters = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(
+    res,
+    await academicService.assignSemestersToMajor(
+      getRouteParam(req, "majorId"),
+      req.body.semesterIds,
+    ),
+    201,
+  );
+});
+export const archiveMajorSemester = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(
+    res,
+    await academicService.archiveMajorSemester(
+      getRouteParam(req, "majorId"),
+      getRouteParam(req, "semesterId"),
+    ),
+  );
+});
+
 export const createCurriculumCourse = catchAsync(async (req: Request, res: Response) => {
   sendSuccess(res, await academicService.createCurriculumCourse(req.body), 201);
 });
@@ -65,13 +101,19 @@ export const archiveCurriculumCourse = catchAsync(async (req: Request, res: Resp
 export const listCatalogMajors = catchAsync(async (_req: Request, res: Response) => {
   sendSuccess(res, await academicService.listCatalogMajors());
 });
+export const listCatalogSemesters = catchAsync(async (_req: Request, res: Response) => {
+  sendSuccess(res, await academicService.listCatalogSemesters());
+});
+export const listCatalogMajorSemesters = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.listCatalogMajorSemesters(getRouteParam(req, "majorId")));
+});
 export const listCatalogCurriculum = catchAsync(async (req: Request, res: Response) => {
   const query = req.validatedQuery as z.infer<typeof catalogCurriculumQuerySchema>;
   sendSuccess(
     res,
     await academicService.listCatalogCurriculum(
       getRouteParam(req, "majorId"),
-      query.semesterNumber,
+      query.semesterId,
     ),
   );
 });

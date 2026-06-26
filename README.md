@@ -25,7 +25,7 @@ APMS is a student knowledge-management system for academic documents. It lets us
 - Sharing: `/api/shares` remains available for direct read-only sharing of documents and folders.
 - Academic discovery: public document listing supports major, semester, subject, and match filters.
 - Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search.
-- Admin access control: active/disabled users, email-domain allowlist, and exact-email exceptions.
+- Admin access control: active/disabled users, email-domain allowlist, exact-email exceptions, and promote/demote admin role (Cognito group + MongoDB).
 
 Removed API surfaces: `/api/drive`, `/api/library`, and `/api/forum` are no longer mounted. They are replaced by the unified `/api/documents` API.
 
@@ -47,9 +47,9 @@ Web / Mobile
 | --- | --- |
 | `GET /api/health` | Health check |
 | `/api/auth` | Login callback, current user, profile setup |
-| `/api/admin` | Admin users, stats, email allowlist |
+| `/api/admin` | Admin users (quota, disable, role), stats, email allowlist, academic catalog |
 | `/api/users` | Current user profile and academic metadata |
-| `/api/catalog` | Majors, subjects, curriculum-course mappings |
+| `/api/catalog` | Majors, semesters, major-semester links, curriculum courses |
 | `/api/folders` | Folder CRUD, star, restore, permanent delete |
 | `/api/documents` | Unified document list and document operations |
 | `/api/shares` | Direct document/folder sharing |
@@ -95,6 +95,7 @@ Useful API maintenance commands:
 ```bash
 cd api
 pnpm migrate:document-visibility
+pnpm migrate:semester-entities
 pnpm setup:atlas
 pnpm purge:trash
 pnpm build

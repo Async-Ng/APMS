@@ -1,13 +1,16 @@
 import { objectIdParamSchema } from "../../validators/common.validator";
 import {
+  assignMajorSemestersSchema,
   catalogCurriculumQuerySchema,
   createCurriculumCourseSchema,
   createMajorSchema,
+  createSemesterSchema,
   createSubjectSchema,
   listCurriculumQuerySchema,
   updateAcademicProfileSchema,
   updateCurriculumCourseSchema,
   updateMajorSchema,
+  updateSemesterSchema,
   updateSubjectSchema,
 } from "../../validators/academic.validator";
 import { registry, z } from "../setup";
@@ -28,6 +31,11 @@ export function registerAcademicPaths(): void {
       segment: "majors",
       create: createMajorSchema,
       update: updateMajorSchema,
+    },
+    {
+      segment: "semesters",
+      create: createSemesterSchema,
+      update: updateSemesterSchema,
     },
     {
       segment: "subjects",
@@ -103,6 +111,51 @@ export function registerAcademicPaths(): void {
     responses: { 200: jsonResponse(entityResponse, "Archived"), 401: error401, 403: error403, 404: error404 },
   });
 
+  registry.registerPath({
+    method: "get",
+    path: "/api/admin/majors/{majorId}/semesters",
+    tags: ["Admin", "Academic Catalog"],
+    security: [...bearerSecurity],
+    request: { params: majorParam },
+    responses: { 200: jsonResponse(listResponse, "Major semesters"), 401: error401, 403: error403, 404: error404 },
+  });
+  registry.registerPath({
+    method: "post",
+    path: "/api/admin/majors/{majorId}/semesters",
+    tags: ["Admin", "Academic Catalog"],
+    security: [...bearerSecurity],
+    request: { params: majorParam, body: body(assignMajorSemestersSchema) },
+    responses: { 200: jsonResponse(listResponse, "Assigned"), 400: error400(), 401: error401, 403: error403, 404: error404 },
+  });
+  registry.registerPath({
+    method: "delete",
+    path: "/api/admin/majors/{majorId}/semesters/{semesterId}",
+    tags: ["Admin", "Academic Catalog"],
+    security: [...bearerSecurity],
+    request: {
+      params: z.object({
+        majorId: z.string().regex(/^[a-f\d]{24}$/i),
+        semesterId: z.string().regex(/^[a-f\d]{24}$/i),
+      }),
+    },
+    responses: { 200: jsonResponse(entityResponse, "Removed"), 401: error401, 403: error403, 404: error404 },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/api/catalog/semesters",
+    tags: ["Academic Catalog"],
+    security: [...bearerSecurity],
+    responses: { 200: jsonResponse(listResponse, "Active semesters"), 401: error401, 403: error403 },
+  });
+  registry.registerPath({
+    method: "get",
+    path: "/api/catalog/majors/{majorId}/semesters",
+    tags: ["Academic Catalog"],
+    security: [...bearerSecurity],
+    request: { params: majorParam },
+    responses: { 200: jsonResponse(listResponse, "Major semesters"), 401: error401, 403: error403, 404: error404 },
+  });
   registry.registerPath({
     method: "get",
     path: "/api/catalog/majors",

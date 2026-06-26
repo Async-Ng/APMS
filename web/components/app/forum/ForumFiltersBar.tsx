@@ -7,6 +7,7 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import {
   useAcademicProfile,
   useCatalogCurriculum,
+  useCatalogMajorSemesters,
   useCatalogMajors,
 } from "@/lib/queries/catalog";
 import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/cn";
 export interface ForumFilterState {
   search: string;
   majorId: string;
-  semesterNumber: string;
+  semesterId: string;
   subjectId: string;
   sort: InternalDocumentSort;
 }
@@ -23,7 +24,7 @@ export interface ForumFilterState {
 export const DEFAULT_FORUM_FILTERS: ForumFilterState = {
   search: "",
   majorId: "",
-  semesterNumber: "",
+  semesterId: "",
   subjectId: "",
   sort: "newest",
 };
@@ -58,12 +59,10 @@ export function ForumFiltersBar({
 
   const { data: majors } = useCatalogMajors();
   const { data: profile } = useAcademicProfile();
-  const semesterNum = filters.semesterNumber
-    ? Number(filters.semesterNumber)
-    : undefined;
+  const { data: majorSemesters } = useCatalogMajorSemesters(filters.majorId || undefined);
   const { data: curriculum } = useCatalogCurriculum(
     filters.majorId || undefined,
-    semesterNum,
+    filters.semesterId || undefined,
   );
 
   useEffect(() => {
@@ -75,6 +74,12 @@ export function ForumFiltersBar({
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce search only
   }, [localSearch]);
+
+  const semesterOptions =
+    majorSemesters
+      ?.filter((link) => link.isActive && link.semester)
+      .map((link) => link.semester!)
+      .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
 
   const subjects =
     curriculum
@@ -97,7 +102,7 @@ export function ForumFiltersBar({
     onChange({
       ...filters,
       majorId: profile.major.id,
-      semesterNumber: String(profile.currentSemester),
+      semesterId: profile.currentSemester.id,
       subjectId: firstSubject?.id ?? "",
     });
   }
@@ -110,7 +115,7 @@ export function ForumFiltersBar({
   const hasActiveFilters = isLibrary
     ? filters.search ||
       filters.majorId ||
-      filters.semesterNumber ||
+      filters.semesterId ||
       filters.subjectId ||
       filters.sort !== defaultSort
     : filters.search || filters.sort !== defaultSort;
@@ -140,63 +145,61 @@ export function ForumFiltersBar({
 
         {isLibrary && (
           <>
-        <label className="text-xs font-bold text-brutal-muted">
-          Ngành
-          <select
-            value={filters.majorId}
-            onChange={(e) =>
-              patch({
-                majorId: e.target.value,
-                semesterNumber: "",
-                subjectId: "",
-              })
-            }
-            className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
-          >
-            <option value="">Tất cả ngành</option>
-            {majors?.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.code} — {m.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="text-xs font-bold text-brutal-muted">
+              Ngành
+              <select
+                value={filters.majorId}
+                onChange={(e) =>
+                  patch({
+                    majorId: e.target.value,
+                    semesterId: "",
+                    subjectId: "",
+                  })
+                }
+                className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
+              >
+                <option value="">Tất cả ngành</option>
+                {majors?.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.code} — {m.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="text-xs font-bold text-brutal-muted">
-          Học kỳ
-          <select
-            value={filters.semesterNumber}
-            onChange={(e) =>
-              patch({ semesterNumber: e.target.value, subjectId: "" })
-            }
-            disabled={!filters.majorId}
-            className="focus-brutal mt-1 block w-full min-w-[100px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
-          >
-            <option value="">Tất cả</option>
-            {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={String(n)}>
-                HK {n}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="text-xs font-bold text-brutal-muted">
+              Học kỳ
+              <select
+                value={filters.semesterId}
+                onChange={(e) => patch({ semesterId: e.target.value, subjectId: "" })}
+                disabled={!filters.majorId}
+                className="focus-brutal mt-1 block w-full min-w-[100px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
+              >
+                <option value="">Tất cả</option>
+                {semesterOptions.map((semester) => (
+                  <option key={semester.id} value={semester.id}>
+                    {semester.code} — {semester.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="text-xs font-bold text-brutal-muted">
-          Môn
-          <select
-            value={filters.subjectId}
-            onChange={(e) => patch({ subjectId: e.target.value })}
-            disabled={!filters.majorId}
-            className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
-          >
-            <option value="">Tất cả môn</option>
-            {uniqueSubjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="text-xs font-bold text-brutal-muted">
+              Môn
+              <select
+                value={filters.subjectId}
+                onChange={(e) => patch({ subjectId: e.target.value })}
+                disabled={!filters.majorId}
+                className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
+              >
+                <option value="">Tất cả môn</option>
+                {uniqueSubjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         )}
 
@@ -204,9 +207,7 @@ export function ForumFiltersBar({
           Sắp xếp
           <select
             value={filters.sort}
-            onChange={(e) =>
-              patch({ sort: e.target.value as InternalDocumentSort })
-            }
+            onChange={(e) => patch({ sort: e.target.value as InternalDocumentSort })}
             className="focus-brutal mt-1 block w-full min-w-[120px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
           >
             {SORT_OPTIONS.map((o) => (
@@ -267,9 +268,7 @@ export function libraryFiltersToQueryParams(filters: ForumFilterState) {
   return {
     search: filters.search || undefined,
     majorId: filters.majorId || undefined,
-    semesterNumber: filters.semesterNumber
-      ? Number(filters.semesterNumber)
-      : undefined,
+    semesterId: filters.semesterId || undefined,
     subjectId: filters.subjectId || undefined,
     sort: filters.sort,
   };

@@ -3,17 +3,32 @@
 import { useState } from "react";
 
 import { CurriculumPanel } from "@/components/app/admin/CurriculumPanel";
+import { MajorSemestersPanel } from "@/components/app/admin/MajorSemestersPanel";
 import { MajorsPanel } from "@/components/app/admin/MajorsPanel";
+import { SemestersPanel } from "@/components/app/admin/SemestersPanel";
 import { SubjectsPanel } from "@/components/app/admin/SubjectsPanel";
 import { useTabArrowNav } from "@/components/ui/useTabArrowNav";
 import { cn } from "@/lib/cn";
 
-type AcademicSubTab = "majors" | "subjects" | "curriculum";
+type AcademicSubTab =
+  | "majors"
+  | "semesters"
+  | "major-semesters"
+  | "subjects"
+  | "curriculum";
 
-const SUB_TAB_IDS: AcademicSubTab[] = ["majors", "subjects", "curriculum"];
+const SUB_TAB_IDS: AcademicSubTab[] = [
+  "majors",
+  "semesters",
+  "major-semesters",
+  "subjects",
+  "curriculum",
+];
 
 const SUB_TABS: { id: AcademicSubTab; label: string }[] = [
   { id: "majors", label: "Ngành học" },
+  { id: "semesters", label: "Học kỳ" },
+  { id: "major-semesters", label: "Kỳ theo ngành" },
   { id: "subjects", label: "Môn học" },
   { id: "curriculum", label: "Chương trình đào tạo" },
 ];
@@ -61,6 +76,26 @@ export function AcademicAdminPanel() {
         className="outline-none"
       >
         {subTab === "majors" && <MajorsPanel />}
+      </div>
+      <div
+        id="panel-academic-semesters"
+        role="tabpanel"
+        aria-labelledby="tab-academic-semesters"
+        tabIndex={0}
+        hidden={subTab !== "semesters"}
+        className="outline-none"
+      >
+        {subTab === "semesters" && <SemestersPanel />}
+      </div>
+      <div
+        id="panel-academic-major-semesters"
+        role="tabpanel"
+        aria-labelledby="tab-academic-major-semesters"
+        tabIndex={0}
+        hidden={subTab !== "major-semesters"}
+        className="outline-none"
+      >
+        {subTab === "major-semesters" && <MajorSemestersPanel />}
       </div>
       <div
         id="panel-academic-subjects"

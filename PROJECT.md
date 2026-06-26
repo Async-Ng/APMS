@@ -35,8 +35,8 @@ Search / Chat
 | Nhóm | Route | Ghi chú |
 | --- | --- | --- |
 | Auth | `/api/auth` | Cognito JWT, sync user local |
-| Admin | `/api/admin` | Users, stats, access email allowlist |
-| Catalog | `/api/catalog` | Major, subject, curriculum course |
+| Admin | `/api/admin` | Users, stats, access emails, academic catalog (majors, semesters, CTĐT) |
+| Catalog | `/api/catalog` | Majors, semesters, curriculum mappings (read) |
 | Folders | `/api/folders` | Folder CRUD cho workspace cá nhân/share |
 | Documents | `/api/documents` | List unified, upload, detail, update, delete, restore, star |
 | Shares | `/api/shares` | Chia sẻ read-only document/folder |
@@ -64,7 +64,7 @@ Search / Chat
 | Collection | Mục đích |
 | --- | --- |
 | `users` | Local profile, role, academic profile, storage quota |
-| `majors`, `subjects`, `curriculumcourses` | Catalog học vụ |
+| `majors`, `subjects`, `semesters`, `majorsemesters`, `curriculumcourses` | Catalog học vụ |
 | `folders` | Cây thư mục cá nhân |
 | `documents` | Metadata tài liệu, `visibility`, `curriculumCourseId`, trạng thái xử lý |
 | `document_chunks` | Text chunks + embedding 1024 chiều |

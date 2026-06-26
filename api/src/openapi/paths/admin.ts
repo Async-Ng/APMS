@@ -145,7 +145,7 @@ export function registerAdminPaths(): void {
     method: "patch",
     path: "/api/admin/users/{id}",
     tags: ["Admin"],
-    summary: "Update user (quota / disabled)",
+    summary: "Update user (quota / disabled / role)",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,
