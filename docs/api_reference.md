@@ -175,7 +175,86 @@ Patch example:
 | `GET` | `/api/catalog/majors/:majorId/semesters` | Semesters assigned to a major |
 | `GET` | `/api/catalog/majors/:majorId/curriculum?semesterId=` | Subjects for major + semester |
 
-`PATCH /api/users/me/academic-profile` accepts `majorId`, `currentSemesterId`, and `currentSubjectIds`.
+### `GET /api/catalog/majors`
+
+Returns active majors sorted by code.
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "code": "SE",
+      "name": "Kỹ thuật phần mềm",
+      "description": "",
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### `GET /api/catalog/majors/{majorId}/curriculum`
+
+Returns active curriculum courses for the major. Optional query `semesterId` filters to one semester.
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "majorId": "507f1f77bcf86cd799439011",
+      "semesterId": "507f1f77bcf86cd799439014",
+      "subjectId": "507f1f77bcf86cd799439013",
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+      "semester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
+      "subject": { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    }
+  ]
+}
+```
+
+Returns `404` when `majorId` is missing or inactive.
+
+### `GET /api/users/me/academic-profile`
+
+Returns the signed-in user's academic profile.
+
+```json
+{
+  "status": "success",
+  "data": {
+    "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    "currentSemester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
+    "currentSubjects": [
+      { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    ],
+    "isComplete": true
+  }
+}
+```
+
+`isComplete` is `true` when major, semester, and at least one subject are set.
+
+### `PATCH /api/users/me/academic-profile`
+
+Updates the signed-in user's academic profile. Every subject must be active and belong to the selected major and semester in the curriculum catalog.
+
+```json
+{
+  "majorId": "507f1f77bcf86cd799439011",
+  "currentSemesterId": "507f1f77bcf86cd799439014",
+  "currentSubjectIds": ["507f1f77bcf86cd799439013"]
+}
+```
+
+`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `CURRICULUM_NOT_ENROLLED` when a subject is outside the selected major/semester curriculum.
 
 Admin academic CRUD under `/api/admin`:
 

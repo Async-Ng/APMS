@@ -8,24 +8,16 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
-import { useAcademicProfile, useCatalogCurriculum, useCatalogMajorSemesters, useCatalogMajors } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCurriculum, useCatalogMajorSemesters, useCatalogMajors, type CatalogCurriculumItem } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile, useUpdateDisplayName } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/stores/auth-store";
 
-function uniqueSubjects(
-  curriculum:
-    | {
-        subject: { id: string; code: string; name: string } | null;
-      }[]
-    | undefined,
-) {
+function uniqueSubjects(curriculum: CatalogCurriculumItem[] | undefined) {
   const subjects =
     curriculum
       ?.map((c) => c.subject)
-      .filter(
-        (s): s is NonNullable<typeof s> => s !== null,
-      ) ?? [];
+      .filter((s): s is NonNullable<typeof s> => s !== null) ?? [];
   return Array.from(new Map(subjects.map((s) => [s.id, s])).values()).sort((a, b) =>
     a.code.localeCompare(b.code),
   );
@@ -39,13 +31,18 @@ export default function ProfilePage() {
   const displayName = nameDraft ?? savedDisplayName;
   const [nameError, setNameError] = useState<string | null>(null);
 
-  const { data: majors } = useCatalogMajors();
+  const {
+    data: majors,
+    isLoading: isMajorsLoading,
+    isError: isMajorsError,
+  } = useCatalogMajors();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
   const [majorId, setMajorId] = useState("");
   const [semesterId, setSemesterId] = useState("");
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [academicError, setAcademicError] = useState<string | null>(null);
+  const [academicSuccess, setAcademicSuccess] = useState<string | null>(null);
 
   const majorFromProfile = profile?.major?.id ?? "";
   const semesterFromProfile = profile?.currentSemester?.id ?? "";
@@ -54,7 +51,11 @@ export default function ProfilePage() {
   const effectiveMajorId = majorId || majorFromProfile;
   const effectiveSemesterId = semesterId || semesterFromProfile;
 
-  const { data: curriculum } = useCatalogCurriculum(
+  const {
+    data: curriculum,
+    isLoading: isCurriculumLoading,
+    isError: isCurriculumError,
+  } = useCatalogCurriculum(
     effectiveMajorId || undefined,
     effectiveSemesterId || undefined,
   );
@@ -72,7 +73,17 @@ export default function ProfilePage() {
     [curriculum],
   );
 
-  const effectiveSubjectIds = subjectIds.length > 0 ? subjectIds : subjectsFromProfile;
+  const selectionMatchesProfile =
+    effectiveMajorId === majorFromProfile &&
+    effectiveSemesterId === semesterFromProfile;
+
+  const selectedSubjectIds =
+    subjectIds.length > 0
+      ? subjectIds
+      : selectionMatchesProfile
+        ? subjectsFromProfile
+        : [];
+
   const isAcademicComplete = Boolean(profile?.isComplete);
 
   const updateName = useUpdateDisplayName();
@@ -194,7 +205,27 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {academicSuccess && (
+            <p
+              role="status"
+              className="mb-3 rounded-xl border-2 border-brutal-ink bg-brutal-primary px-3 py-2 text-sm font-semibold text-white"
+            >
+              {academicSuccess}
+            </p>
+          )}
           {academicError && <ErrorAlert message={academicError} className="mb-3" />}
+          {isMajorsError && (
+            <ErrorAlert
+              message="Không tải được danh sách ngành. Vui lòng thử lại sau."
+              className="mb-3"
+            />
+          )}
+          {isCurriculumError && effectiveMajorId && (
+            <ErrorAlert
+              message="Không tải được chương trình đào tạo của ngành đã chọn."
+              className="mb-3"
+            />
+          )}
           {updateAcademic.isError && (
             <ErrorAlert
               message={getUserErrorMessage(updateAcademic.error)}
@@ -203,6 +234,13 @@ export default function ProfilePage() {
           )}
 
           <div className="space-y-4">
+            {isMajorsLoading ? (
+              <p className="text-sm text-brutal-muted">Đang tải danh sách ngành…</p>
+            ) : majors?.length === 0 ? (
+              <p className="text-sm text-brutal-muted">
+                Chưa có ngành nào. Liên hệ quản trị viên.
+              </p>
+            ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="text-xs font-bold text-brutal-muted">
                 Ngành
@@ -210,6 +248,7 @@ export default function ProfilePage() {
                   value={effectiveMajorId}
                   onChange={(e) => {
                     setAcademicError(null);
+                    setAcademicSuccess(null);
                     setMajorId(e.target.value);
                     setSemesterId("");
                     setSubjectIds([]);
@@ -231,6 +270,7 @@ export default function ProfilePage() {
                   value={effectiveSemesterId}
                   onChange={(e) => {
                     setAcademicError(null);
+                    setAcademicSuccess(null);
                     setSemesterId(e.target.value);
                     setSubjectIds([]);
                   }}
@@ -246,15 +286,24 @@ export default function ProfilePage() {
                 </select>
               </label>
             </div>
+            )}
 
             <div>
               <p className="text-xs font-bold text-brutal-muted">Môn đang học</p>
               <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
-                {isProfileLoading ? (
+                {isProfileLoading || (effectiveMajorId && isCurriculumLoading) ? (
                   <p className="text-sm text-brutal-muted">Đang tải…</p>
-                ) : !effectiveMajorId || !effectiveSemesterId ? (
+                ) : !effectiveMajorId ? (
                   <p className="text-sm text-brutal-muted">
-                    Chọn ngành và học kỳ để hiển thị danh sách môn.
+                    Chọn ngành để xem học kỳ và môn học.
+                  </p>
+                ) : !effectiveSemesterId ? (
+                  <p className="text-sm text-brutal-muted">
+                    Chọn học kỳ để hiển thị danh sách môn.
+                  </p>
+                ) : availableSemesters.length === 0 ? (
+                  <p className="text-sm text-brutal-muted">
+                    Ngành này chưa có học kỳ được gán.
                   </p>
                 ) : availableSubjects.length === 0 ? (
                   <p className="text-sm text-brutal-muted">
@@ -263,7 +312,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {availableSubjects.map((s) => {
-                      const checked = effectiveSubjectIds.includes(s.id);
+                      const checked = selectedSubjectIds.includes(s.id);
                       return (
                         <label
                           key={s.id}
@@ -274,9 +323,10 @@ export default function ProfilePage() {
                             checked={checked}
                             onChange={(e) => {
                               setAcademicError(null);
+                              setAcademicSuccess(null);
                               const next = e.target.checked
-                                ? [...new Set([...effectiveSubjectIds, s.id])]
-                                : effectiveSubjectIds.filter((id) => id !== s.id);
+                                ? [...new Set([...selectedSubjectIds, s.id])]
+                                : selectedSubjectIds.filter((id) => id !== s.id);
                               setSubjectIds(next);
                             }}
                             className="mt-1"
@@ -301,6 +351,7 @@ export default function ProfilePage() {
                 loading={updateAcademic.isPending}
                 onClick={() => {
                   setAcademicError(null);
+                  setAcademicSuccess(null);
                   if (!effectiveMajorId) {
                     setAcademicError("Vui lòng chọn ngành.");
                     return;
@@ -309,15 +360,29 @@ export default function ProfilePage() {
                     setAcademicError("Vui lòng chọn học kỳ.");
                     return;
                   }
-                  if (effectiveSubjectIds.length === 0) {
+                  const availableSubjectIdSet = new Set(availableSubjects.map((s) => s.id));
+                  const subjectIdsToSave = selectedSubjectIds.filter((id) =>
+                    availableSubjectIdSet.has(id),
+                  );
+                  if (subjectIdsToSave.length === 0) {
                     setAcademicError("Vui lòng chọn ít nhất 1 môn.");
                     return;
                   }
-                  updateAcademic.mutate({
-                    majorId: effectiveMajorId,
-                    currentSemesterId: effectiveSemesterId,
-                    currentSubjectIds: effectiveSubjectIds,
-                  });
+                  updateAcademic.mutate(
+                    {
+                      majorId: effectiveMajorId,
+                      currentSemesterId: effectiveSemesterId,
+                      currentSubjectIds: subjectIdsToSave,
+                    },
+                    {
+                      onSuccess: () => {
+                        setMajorId("");
+                        setSemesterId("");
+                        setSubjectIds([]);
+                        setAcademicSuccess("Đã lưu hồ sơ học thuật.");
+                      },
+                    },
+                  );
                 }}
               >
                 Lưu hồ sơ

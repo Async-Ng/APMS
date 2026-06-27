@@ -116,6 +116,8 @@ export function useUploadDocument() {
       mimeType,
       size,
       folderId,
+      curriculumCourseId,
+      visibility,
       onProgress,
     }: {
       uri: string;
@@ -123,6 +125,8 @@ export function useUploadDocument() {
       mimeType: string;
       size: number;
       folderId?: string | null;
+      curriculumCourseId: string;
+      visibility: "private" | "public";
       onProgress?: (pct: number) => void;
     }) => {
       const intentRes = await api.post<{ status: string; data: UploadIntent }>("/documents/upload-intents", {
@@ -130,17 +134,40 @@ export function useUploadDocument() {
         mimeType,
         fileSizeBytes: size,
         folderId: folderId ?? null,
+        curriculumCourseId,
+        visibility,
         title: name.replace(/\.[^.]+$/, ""),
       });
       const { id, uploadUrl } = intentRes.data.data;
 
-      const blob = { uri, type: mimeType, name } as unknown as Blob;
-      await axios.put(uploadUrl, blob, {
-        headers: { "Content-Type": mimeType },
-        onUploadProgress: (e) => {
-          if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
-        },
-      });
+      const fileResponse = await fetch(uri);
+      const rawBlob = await fileResponse.blob();
+      // RN's XHR sends the wire Content-Type from blob.type, not from the header set
+      // below. fetch(uri).blob() on a file:// URI often yields an empty/generic type,
+      // which then mismatches the mimeType the server signed into the presigned URL
+      // and causes a 403 SignatureDoesNotMatch. Re-stamp the blob's type so they agree.
+      const blob = rawBlob.slice(0, rawBlob.size, mimeType);
+      try {
+        await axios.put(uploadUrl, blob, {
+          headers: { "Content-Type": mimeType },
+          responseType: "text",
+          onUploadProgress: (e) => {
+            if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+          },
+        });
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          const xml = typeof err.response?.data === "string" ? err.response.data : "";
+          const code = /<Code>(.*?)<\/Code>/.exec(xml)?.[1];
+          const message = /<Message>(.*?)<\/Message>/.exec(xml)?.[1];
+          throw new Error(
+            `Tải lên S3 thất bại (${err.response?.status ?? "?"}${code ? ` ${code}` : ""}): ${
+              message ?? err.message
+            }`,
+          );
+        }
+        throw err;
+      }
 
       await api.post(`/documents/${id}/complete`);
       return id;

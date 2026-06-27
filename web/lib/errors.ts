@@ -103,7 +103,7 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
     "Bạn không thể thu hồi quyền truy cập của chính email mình.",
   MAJOR_NOT_FOUND: "Không tìm thấy ngành học.",
   SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
-  CURRICULUM_NOT_FOUND: "Không tìm thấy mapping chương trình đào tạo.",
+  CURRICULUM_NOT_FOUND: "Không tìm thấy môn trong chương trình đào tạo.",
   ACADEMIC_PROFILE_REQUIRED:
     "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
   CURRICULUM_NOT_ENROLLED:

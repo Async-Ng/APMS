@@ -121,11 +121,7 @@ export async function createUploadIntent(
     status: "pending",
   });
 
-  const { uploadUrl, expiresIn } = await s3Service.createPresignedPutUrl(
-    s3Key,
-    input.mimeType,
-    input.fileSizeBytes,
-  );
+  const { uploadUrl, expiresIn } = await s3Service.createPresignedPutUrl(s3Key);
 
   return {
     document: toDocumentResponse(document),
