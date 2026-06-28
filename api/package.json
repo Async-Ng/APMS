@@ -11,6 +11,7 @@
     "purge:trash": "ts-node --files scripts/purge-trash.ts",
     "migrate:academic": "ts-node --files scripts/migrate-academic-library.ts",
     "migrate:document-visibility": "ts-node --files scripts/migrate-document-visibility.ts",
+    "migrate:semester-entities": "ts-node --files scripts/migrate-semester-entities.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
@@ -22,6 +23,7 @@
   "packageManager": "pnpm@10.27.0",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1072.0",
     "@aws-sdk/client-s3": "^3.1047.0",
     "@aws-sdk/client-ses": "^3.1072.0",
     "@aws-sdk/s3-request-presigner": "^3.1050.0",

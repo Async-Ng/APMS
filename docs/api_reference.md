@@ -10,9 +10,9 @@ Tài liệu này mô tả API hiện tại sau refactor Documents. Source of tru
 | --- | --- |
 | `GET /api/health` | Health check |
 | `/api/auth` | Auth callback, current user, profile setup |
-| `/api/admin` | Admin users, stats, access emails |
+| `/api/admin` | Admin users (quota, disable, role), stats, access emails, academic catalog |
 | `/api/users` | User profile |
-| `/api/catalog` | Major, subject, curriculum-course catalog |
+| `/api/catalog` | Majors, semesters, major-semester links, curriculum courses |
 | `/api/folders` | Folder operations |
 | `/api/documents` | Unified document list and document operations |
 | `/api/shares` | Direct read-only sharing |
@@ -52,7 +52,7 @@ Query:
 | `page` | number | `1` | Used by public view pagination |
 | `limit` | number, max `100` | `20` | Used by public view pagination |
 | `majorId` | ObjectId | none | Public academic filter |
-| `semesterNumber` | `1..9` | none | Public academic filter |
+| `semesterId` | ObjectId | none | Public academic filter |
 | `subjectId` | ObjectId | none | Public academic filter |
 | `match` | `auto | exact | related | all` | `auto` | Public matching behavior |
 
@@ -79,7 +79,8 @@ Response shape:
       },
       "curriculumCourse": {
         "id": "courseId",
-        "semesterNumber": 1,
+        "semesterId": "semesterObjectId",
+        "semester": { "id": "semesterObjectId", "code": "HK1", "name": "Học kỳ 1" },
         "major": {},
         "subject": {}
       },
@@ -165,7 +166,105 @@ Patch example:
 
 ## Catalog And Academic Profile
 
-`/api/catalog` exposes majors, subjects, and curriculum-course mappings. Documents reference `curriculumCourseId`, which links a subject to a major and semester. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
+`/api/catalog` exposes majors, semesters, major-semester assignments, and curriculum-course mappings.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/api/catalog/majors` | Active majors |
+| `GET` | `/api/catalog/semesters` | Active semesters |
+| `GET` | `/api/catalog/majors/:majorId/semesters` | Semesters assigned to a major |
+| `GET` | `/api/catalog/majors/:majorId/curriculum?semesterId=` | Subjects for major + semester |
+
+### `GET /api/catalog/majors`
+
+Returns active majors sorted by code.
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "code": "SE",
+      "name": "Kỹ thuật phần mềm",
+      "description": "",
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### `GET /api/catalog/majors/{majorId}/curriculum`
+
+Returns active curriculum courses for the major. Optional query `semesterId` filters to one semester.
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "majorId": "507f1f77bcf86cd799439011",
+      "semesterId": "507f1f77bcf86cd799439014",
+      "subjectId": "507f1f77bcf86cd799439013",
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+      "semester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
+      "subject": { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    }
+  ]
+}
+```
+
+Returns `404` when `majorId` is missing or inactive.
+
+### `GET /api/users/me/academic-profile`
+
+Returns the signed-in user's academic profile.
+
+```json
+{
+  "status": "success",
+  "data": {
+    "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    "currentSemester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
+    "currentSubjects": [
+      { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    ],
+    "isComplete": true
+  }
+}
+```
+
+`isComplete` is `true` when major, semester, and at least one subject are set.
+
+### `PATCH /api/users/me/academic-profile`
+
+Updates the signed-in user's academic profile. Every subject must be active and belong to the selected major and semester in the curriculum catalog.
+
+```json
+{
+  "majorId": "507f1f77bcf86cd799439011",
+  "currentSemesterId": "507f1f77bcf86cd799439014",
+  "currentSubjectIds": ["507f1f77bcf86cd799439013"]
+}
+```
+
+`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `CURRICULUM_NOT_ENROLLED` when a subject is outside the selected major/semester curriculum.
+
+Admin academic CRUD under `/api/admin`:
+
+- `GET/POST/PATCH/DELETE /api/admin/semesters`
+- `GET/POST/DELETE /api/admin/majors/:majorId/semesters`
+- Existing majors, subjects, and `curriculum-courses` (body uses `semesterId` instead of `semesterNumber`)
+
+`PATCH /api/admin/users/:id` accepts optional `role: user | admin` (syncs Cognito group `admin` + MongoDB `users.role`). Guards: cannot demote self, cannot demote last active admin, cannot promote disabled users.
+
+Documents reference `curriculumCourseId`, which links a subject to a major and semester entity. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
 
 ## Search And Chat
 
@@ -179,11 +278,20 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 
 ## Migration Notes
 
-Run this after deploying the document visibility refactor:
+Run after deploying the document visibility refactor:
 
 ```bash
 cd api
 pnpm migrate:document-visibility
 ```
 
-The migration maps legacy `personal` values to `private` and legacy `internal` values to `public`. It does not modify S3 objects, chunks, shares, folders, or assign missing courses to old records.
+Run after deploying semester entities (replaces legacy `semesterNumber` / `currentSemester` fields):
+
+```bash
+cd api
+pnpm migrate:semester-entities
+```
+
+The semester migration upserts `HK1..HK9` semester records, maps existing curriculum courses and user profiles to `semesterId`, and creates `major_semesters` links. It is idempotent.
+
+The visibility migration maps legacy `personal` values to `private` and legacy `internal` values to `public`. It does not modify S3 objects, chunks, shares, folders, or assign missing courses to old records.

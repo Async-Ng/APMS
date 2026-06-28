@@ -70,6 +70,12 @@ export default function DriveRoot() {
         right={
           <View style={{ flexDirection: "row", gap: 8 }}>
             <HeaderIconButton
+              icon="people-outline"
+              size={40}
+              accessibilityLabel="Đã chia sẻ"
+              onPress={() => router.push("/(tabs)/drive/shared")}
+            />
+            <HeaderIconButton
               icon="star-outline"
               size={40}
               accessibilityLabel="Đã gắn sao"

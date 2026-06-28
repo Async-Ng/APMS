@@ -23,10 +23,32 @@ export interface Subject {
   updatedAt: string;
 }
 
+export interface Semester {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MajorSemesterLink {
+  id: string;
+  majorId: string;
+  semesterId: string;
+  sortOrder: number | null;
+  isActive: boolean;
+  semester: Semester | null;
+  effectiveSortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CurriculumCourse {
   id: string;
   majorId: string;
-  semesterNumber: number;
+  semesterId: string;
   subjectId: string;
   isActive: boolean;
   createdAt: string;
@@ -36,10 +58,13 @@ export interface CurriculumCourse {
 export interface EnrichedCurriculumCourse extends CurriculumCourse {
   major: Major | null;
   subject: Subject | null;
+  semester: Semester | null;
 }
 
 function invalidateAcademicCatalog(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: ["catalog", "majors"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "semesters"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "major-semesters"] });
   void qc.invalidateQueries({ queryKey: ["catalog", "curriculum"] });
   void qc.invalidateQueries({ queryKey: ["users", "me", "academic-profile"] });
   void qc.invalidateQueries({ queryKey: ["documents", "public"] });
@@ -129,6 +154,141 @@ export function useArchiveMajor() {
   });
 }
 
+export function useAdminSemesters() {
+  return useQuery({
+    queryKey: ["admin", "semesters"],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: Semester[] }>(
+        "/admin/semesters",
+      );
+      return res.data.data;
+    },
+  });
+}
+
+export function useCreateSemester() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      code: string;
+      name: string;
+      sortOrder?: number;
+    }) => {
+      const res = await api.post<{ status: string; data: Semester }>(
+        "/admin/semesters",
+        body,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "semesters"] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
+export function useUpdateSemester() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: Partial<{
+        code: string;
+        name: string;
+        sortOrder: number;
+        isActive: boolean;
+      }>;
+    }) => {
+      const res = await api.patch<{ status: string; data: Semester }>(
+        `/admin/semesters/${id}`,
+        body,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "semesters"] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
+export function useArchiveSemester() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete<{ status: string; data: Semester }>(
+        `/admin/semesters/${id}`,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "semesters"] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
+export function useAdminMajorSemesters(majorId: string | undefined) {
+  return useQuery({
+    queryKey: ["admin", "major-semesters", majorId],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: MajorSemesterLink[] }>(
+        `/admin/majors/${majorId}/semesters`,
+      );
+      return res.data.data;
+    },
+    enabled: !!majorId,
+  });
+}
+
+export function useAssignMajorSemesters() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      majorId,
+      semesterIds,
+    }: {
+      majorId: string;
+      semesterIds: string[];
+    }) => {
+      const res = await api.post<{ status: string; data: MajorSemesterLink[] }>(
+        `/admin/majors/${majorId}/semesters`,
+        { semesterIds },
+      );
+      return res.data.data;
+    },
+    onSuccess: (_data, { majorId }) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "major-semesters", majorId] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
+export function useArchiveMajorSemester() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      majorId,
+      semesterId,
+    }: {
+      majorId: string;
+      semesterId: string;
+    }) => {
+      const res = await api.delete<{ status: string; data: MajorSemesterLink }>(
+        `/admin/majors/${majorId}/semesters/${semesterId}`,
+      );
+      return res.data.data;
+    },
+    onSuccess: (_data, { majorId }) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "major-semesters", majorId] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
 export function useAdminSubjects() {
   return useQuery({
     queryKey: ["admin", "subjects"],
@@ -211,16 +371,15 @@ export function useArchiveSubject() {
 
 export function useAdminCurriculum(params: {
   majorId?: string;
-  semesterNumber?: number;
+  semesterId?: string;
   includeInactive?: boolean;
 }) {
   return useQuery({
     queryKey: ["admin", "curriculum", params],
     queryFn: async () => {
-      const queryParams: Record<string, string | number> = {};
+      const queryParams: Record<string, string> = {};
       if (params.majorId) queryParams.majorId = params.majorId;
-      if (params.semesterNumber)
-        queryParams.semesterNumber = params.semesterNumber;
+      if (params.semesterId) queryParams.semesterId = params.semesterId;
       if (params.includeInactive) queryParams.includeInactive = "true";
 
       const res = await api.get<{
@@ -237,7 +396,7 @@ export function useCreateCurriculum() {
   return useMutation({
     mutationFn: async (body: {
       majorId: string;
-      semesterNumber: number;
+      semesterId: string;
       subjectId: string;
     }) => {
       const res = await api.post<{ status: string; data: CurriculumCourse }>(
@@ -263,7 +422,7 @@ export function useUpdateCurriculum() {
       id: string;
       body: Partial<{
         majorId: string;
-        semesterNumber: number;
+        semesterId: string;
         subjectId: string;
         isActive: boolean;
       }>;

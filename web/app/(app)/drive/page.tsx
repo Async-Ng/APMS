@@ -1,10 +1,12 @@
 "use client";
 
 import { FolderPlus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
+import { DriveAcademicBanner } from "@/components/app/drive/DriveAcademicBanner";
+import { SubjectFolderCard } from "@/components/app/drive/SubjectFolderCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
 import { FolderModal } from "@/components/app/FolderModal";
@@ -15,12 +17,25 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
+import {
+  getEnrolledCourses,
+  getOtherRootDocuments,
+  groupRootDocumentsBySubject,
+} from "@/lib/drive/academic-grouping";
+import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
 
 export default function DrivePage() {
   const { data, isLoading, isError } = useDriveContents();
+  const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
+  const { data: curriculum } = useCatalogCurriculum(
+    profile?.major?.id,
+    profile?.currentSemester?.id,
+  );
+
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadCourseId, setUploadCourseId] = useState<string | undefined>();
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
   const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
@@ -30,15 +45,65 @@ export default function DrivePage() {
     resourceName: string;
   } | null>(null);
 
+  const profileComplete = Boolean(profile?.isComplete);
+  const enrolledCourses = useMemo(
+    () => getEnrolledCourses(profile, curriculum),
+    [profile, curriculum],
+  );
+  const subjectGroups = useMemo(
+    () => groupRootDocumentsBySubject(data?.documents ?? [], enrolledCourses),
+    [data?.documents, enrolledCourses],
+  );
+  const documentCountByCourseId = useMemo(
+    () => new Map(subjectGroups.map((g) => [g.curriculumCourseId, g.documents.length])),
+    [subjectGroups],
+  );
+  const otherDocuments = useMemo(
+    () =>
+      getOtherRootDocuments(
+        data?.documents ?? [],
+        enrolledCourses,
+        profile?.currentSemester?.id,
+      ),
+    [data?.documents, enrolledCourses, profile?.currentSemester?.id],
+  );
+
+  const folders = data?.folders ?? [];
+  const documents = data?.documents ?? [];
+  const showAcademicLayout =
+    profileComplete && enrolledCourses.length > 0 && !isLoading;
+  const hasUnifiedFolders =
+    showAcademicLayout && (enrolledCourses.length > 0 || folders.length > 0);
   const isEmpty =
-    !isLoading && data?.folders.length === 0 && data?.documents.length === 0;
+    !isLoading &&
+    !showAcademicLayout &&
+    folders.length === 0 &&
+    documents.length === 0;
+
+  function openUpload(curriculumCourseId?: string) {
+    setUploadCourseId(curriculumCourseId);
+    setUploadOpen(true);
+  }
+
+  function closeUpload() {
+    setUploadOpen(false);
+    setUploadCourseId(undefined);
+  }
+
+  function shareDocument(doc: DriveDocument) {
+    setShareTarget({
+      resourceType: "document",
+      resourceId: doc.id,
+      resourceName: doc.title,
+    });
+  }
 
   return (
     <>
       <Topbar
         breadcrumbs={[{ label: "Drive của tôi" }]}
-        onMenuOpen={() => {}} // hoisted to layout via context in real app; noop here
-        onUploadClick={() => setUploadOpen(true)}
+        onMenuOpen={() => {}}
+        onUploadClick={() => openUpload()}
         actions={
           <>
             <AskAiLink id="drive-ask-ai-btn" href="/chat" />
@@ -56,6 +121,8 @@ export default function DrivePage() {
       />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
+        <DriveAcademicBanner profile={profile} isLoading={isProfileLoading} />
+
         {isError && (
           <ErrorAlert
             className="mb-4"
@@ -74,18 +141,14 @@ export default function DrivePage() {
             title="Drive trống"
             description="Tải lên tệp PDF, DOCX hoặc PPTX để bắt đầu, hoặc tạo thư mục để sắp xếp tài liệu."
             action={
-              <BrutalButton
-                variant="primary"
-                onClick={() => setUploadOpen(true)}
-              >
+              <BrutalButton variant="primary" onClick={() => openUpload()}>
                 Tải lên tệp đầu tiên
               </BrutalButton>
             }
           />
-        ) : (
-          <div className="space-y-6">
-            {/* Folders section */}
-            {(data?.folders.length ?? 0) > 0 && (
+        ) : showAcademicLayout ? (
+          <div className="space-y-8">
+            {hasUnifiedFolders && (
               <section aria-labelledby="folders-heading">
                 <h2
                   id="folders-heading"
@@ -94,7 +157,18 @@ export default function DrivePage() {
                   Thư mục
                 </h2>
                 <FileGrid>
-                  {data?.folders.map((folder) => (
+                  {enrolledCourses.map((course) => {
+                    if (!course.subject) return null;
+                    return (
+                      <SubjectFolderCard
+                        key={course.id}
+                        subject={course.subject}
+                        curriculumCourseId={course.id}
+                        documentCount={documentCountByCourseId.get(course.id) ?? 0}
+                      />
+                    );
+                  })}
+                  {folders.map((folder) => (
                     <FolderCard
                       key={folder.id}
                       folder={folder}
@@ -113,8 +187,59 @@ export default function DrivePage() {
               </section>
             )}
 
-            {/* Documents section */}
-            {(data?.documents.length ?? 0) > 0 && (
+            {otherDocuments.length > 0 && (
+              <section aria-labelledby="other-docs-heading">
+                <h2
+                  id="other-docs-heading"
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Tài liệu khác
+                </h2>
+                <FileGrid>
+                  {otherDocuments.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      parentId={undefined}
+                      onRename={setRenameDoc}
+                      onShare={shareDocument}
+                    />
+                  ))}
+                </FileGrid>
+              </section>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {folders.length > 0 && (
+              <section aria-labelledby="folders-heading">
+                <h2
+                  id="folders-heading"
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Thư mục
+                </h2>
+                <FileGrid>
+                  {folders.map((folder) => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      parentId={undefined}
+                      onRename={setRenameFolder}
+                      onShare={(f) =>
+                        setShareTarget({
+                          resourceType: "folder",
+                          resourceId: f.id,
+                          resourceName: f.name,
+                        })
+                      }
+                    />
+                  ))}
+                </FileGrid>
+              </section>
+            )}
+
+            {documents.length > 0 && (
               <section aria-labelledby="docs-heading">
                 <h2
                   id="docs-heading"
@@ -123,19 +248,13 @@ export default function DrivePage() {
                   Tệp
                 </h2>
                 <FileGrid>
-                  {data?.documents.map((doc) => (
+                  {documents.map((doc) => (
                     <DocumentCard
                       key={doc.id}
                       document={doc}
                       parentId={undefined}
                       onRename={setRenameDoc}
-                      onShare={(d) =>
-                        setShareTarget({
-                          resourceType: "document",
-                          resourceId: d.id,
-                          resourceName: d.title,
-                        })
-                      }
+                      onShare={shareDocument}
                     />
                   ))}
                 </FileGrid>
@@ -145,11 +264,12 @@ export default function DrivePage() {
         )}
       </main>
 
-      {/* Modals */}
       {uploadOpen && (
         <UploadModal
+          key={uploadCourseId ?? "default"}
           folderId={null}
-          onClose={() => setUploadOpen(false)}
+          defaultCurriculumCourseId={uploadCourseId}
+          onClose={closeUpload}
         />
       )}
 

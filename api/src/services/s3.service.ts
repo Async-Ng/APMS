@@ -18,15 +18,19 @@ export function buildS3Key(userId: string, originalFilename: string): string {
 
 export async function createPresignedPutUrl(
   s3Key: string,
-  mimeType: string,
-  fileSizeBytes: number,
 ): Promise<{ uploadUrl: string; expiresIn: number }> {
   const env = getEnv();
+  // Deliberately omit ContentType/ContentLength here: the AWS SDK presigner bakes any
+  // headers set on the command into the SigV4 signature (X-Amz-SignedHeaders), which
+  // then requires the client's actual PUT to reproduce them byte-for-byte. React
+  // Native's fetch/Blob/XHR stack doesn't reliably preserve an exact Content-Type or
+  // byte count through that pipeline, which was causing 403 SignatureDoesNotMatch.
+  // The client still sends its own Content-Type header and real body bytes on the PUT;
+  // S3 stores those as the object's metadata regardless of what's signed, and
+  // verifyUploadedObject() validates them afterwards via HEAD.
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET_NAME,
     Key: s3Key,
-    ContentType: mimeType,
-    ContentLength: fileSizeBytes,
   });
 
   const expiresIn = env.S3_PRESIGN_EXPIRES_SECONDS;

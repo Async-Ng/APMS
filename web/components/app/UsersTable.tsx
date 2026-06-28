@@ -110,6 +110,7 @@ export function UsersTable() {
   const [search, setSearch] = useState("");
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [confirmDisable, setConfirmDisable] = useState<AdminUser | null>(null);
+  const [confirmRole, setConfirmRole] = useState<AdminUser | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [savingQuotaId, setSavingQuotaId] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
@@ -178,6 +179,39 @@ export function UsersTable() {
         onError: (err) => {
           setMutationError(getUserErrorMessage(err));
           setConfirmDisable(null);
+        },
+      },
+    );
+  };
+
+  const handleToggleRole = useCallback((user: AdminUser) => {
+    if (user.role === "admin") {
+      setConfirmRole(user);
+      return;
+    }
+    setMutationError(null);
+    setPendingUserId(user.id);
+    updateUser(
+      { userId: user.id, body: { role: "admin" } },
+      {
+        onSettled: () => setPendingUserId(null),
+        onError: (err) => setMutationError(getUserErrorMessage(err)),
+      },
+    );
+  }, [updateUser]);
+
+  const confirmDemoteUser = () => {
+    if (!confirmRole) return;
+    setMutationError(null);
+    setPendingUserId(confirmRole.id);
+    updateUser(
+      { userId: confirmRole.id, body: { role: "user" } },
+      {
+        onSuccess: () => setConfirmRole(null),
+        onSettled: () => setPendingUserId(null),
+        onError: (err) => {
+          setMutationError(getUserErrorMessage(err));
+          setConfirmRole(null);
         },
       },
     );
@@ -285,16 +319,32 @@ export function UsersTable() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
-                        user.role === "admin"
-                          ? "border-brutal-secondary bg-brutal-secondary/10 text-brutal-secondary"
-                          : "border-brutal-ink/20 bg-brutal-bg text-brutal-muted",
-                      )}
-                    >
-                      {user.role === "admin" ? "quản trị" : "người dùng"}
-                    </span>
+                    {isSelf ? (
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
+                          user.role === "admin"
+                            ? "border-brutal-secondary bg-brutal-secondary/10 text-brutal-secondary"
+                            : "border-brutal-ink/20 bg-brutal-bg text-brutal-muted",
+                        )}
+                      >
+                        {user.role === "admin" ? "quản trị" : "người dùng"}
+                      </span>
+                    ) : (
+                      <BrutalButton
+                        variant={user.role === "admin" ? "secondary" : "ghost"}
+                        className="px-3 py-1 text-xs"
+                        onClick={() => handleToggleRole(user)}
+                        disabled={isRowPending(user.id) || user.isDisabled}
+                        title={
+                          user.isDisabled
+                            ? "Không thể đổi vai trò tài khoản đã vô hiệu"
+                            : undefined
+                        }
+                      >
+                        {user.role === "admin" ? "Thu hồi quản trị" : "Cấp quản trị"}
+                      </BrutalButton>
+                    )}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-brutal-muted">
                     {formatBytes(user.storageUsedBytes)}
@@ -368,6 +418,21 @@ export function UsersTable() {
       <UserDetailModal
         userId={detailUserId}
         onClose={() => setDetailUserId(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmRole}
+        title="Thu hồi quyền quản trị?"
+        description={
+          confirmRole
+            ? `${confirmRole.displayName} sẽ mất quyền truy cập trang Quản trị. Thay đổi được đồng bộ với Cognito.`
+            : ""
+        }
+        confirmLabel="Thu hồi"
+        tone="danger"
+        isPending={isPending}
+        onConfirm={confirmDemoteUser}
+        onClose={() => setConfirmRole(null)}
       />
 
       <ConfirmDialog

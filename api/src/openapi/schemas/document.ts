@@ -47,7 +47,8 @@ export const documentListItemSchema = registry.register(
     curriculumCourse: z
       .object({
         id: z.string(),
-        semesterNumber: z.number(),
+        semesterId: z.string(),
+        semester: z.record(z.string(), z.unknown()).nullable(),
         major: z.record(z.string(), z.unknown()).nullable(),
         subject: z.record(z.string(), z.unknown()).nullable(),
       })

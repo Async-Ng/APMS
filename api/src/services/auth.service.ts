@@ -53,7 +53,7 @@ export function toUserResponse(user: UserDocument) {
     role: user.role,
     isDisabled: user.isDisabled,
     majorId: user.majorId ? user.majorId.toString() : null,
-    currentSemester: user.currentSemester ?? null,
+    currentSemesterId: user.currentSemesterId ? user.currentSemesterId.toString() : null,
     currentSubjectIds: user.currentSubjectIds.map((id) => id.toString()),
     storageUsedBytes: user.storageUsedBytes,
     storageQuotaBytes: user.storageQuotaBytes,

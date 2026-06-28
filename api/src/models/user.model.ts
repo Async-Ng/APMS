@@ -14,7 +14,12 @@ const userSchema = new Schema(
     role: { type: String, enum: USER_ROLES, default: "user", index: true },
     isDisabled: { type: Boolean, default: false, index: true },
     majorId: { type: Schema.Types.ObjectId, ref: "Major", default: null, index: true },
-    currentSemester: { type: Number, min: 1, max: 9, default: null },
+    currentSemesterId: {
+      type: Schema.Types.ObjectId,
+      ref: "Semester",
+      default: null,
+      index: true,
+    },
     currentSubjectIds: {
       type: [{ type: Schema.Types.ObjectId, ref: "Subject" }],
       default: [],

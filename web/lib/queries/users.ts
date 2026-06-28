@@ -38,7 +38,7 @@ export function useUpdateAcademicProfile() {
   return useMutation({
     mutationFn: async (input: {
       majorId: string;
-      currentSemester: number;
+      currentSemesterId: string;
       currentSubjectIds: string[];
     }) => {
       const res = await api.patch<{ status: string; data: AcademicProfile }>(

@@ -39,7 +39,7 @@ function filtersFromParams(
   return {
     search: params.get("q") ?? "",
     majorId: params.get("majorId") ?? "",
-    semesterNumber: params.get("semester") ?? "",
+    semesterId: params.get("semester") ?? "",
     subjectId: params.get("subject") ?? "",
     sort: parseSort(params.get("sort"), tab),
   };
@@ -70,8 +70,8 @@ function ForumPageContent() {
       if (nextFilters.search) params.set("q", nextFilters.search);
       if (nextTab === "library") {
         if (nextFilters.majorId) params.set("majorId", nextFilters.majorId);
-        if (nextFilters.semesterNumber)
-          params.set("semester", nextFilters.semesterNumber);
+        if (nextFilters.semesterId)
+          params.set("semester", nextFilters.semesterId);
         if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
       }
       if (nextFilters.sort !== (nextTab === "library" ? "title" : "newest")) {
@@ -90,7 +90,7 @@ function ForumPageContent() {
       ...activeFilters,
       sort: nextTab === "library" ? "title" : "newest",
       ...(nextTab === "forum"
-        ? { majorId: "", semesterNumber: "", subjectId: "" }
+        ? { majorId: "", semesterId: "", subjectId: "" }
         : {}),
     } as ForumFilterState;
     syncUrl(nextTab, nextFilters, 1);

@@ -15,7 +15,7 @@ import { HeaderBar } from "../../../components/ui/HeaderBar";
 import { SectionHeaderRow } from "../../../components/ui/SectionHeaderRow";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
-import { useDrive, type DriveDocument, type DriveFolder } from "../../../hooks/useDrive";
+import { useDrive, useSharedFolderContents, type DriveDocument, type DriveFolder } from "../../../hooks/useDrive";
 import { useFolder, useCreateFolder } from "../../../hooks/useFolders";
 import { useDriveItemActions, type ShareTarget } from "../../../hooks/useDriveItemActions";
 
@@ -25,11 +25,14 @@ type ActionTarget =
   | null;
 
 export default function FolderScreen() {
-  const { folderId } = useLocalSearchParams<{ folderId: string }>();
+  const { folderId, shared } = useLocalSearchParams<{ folderId: string; shared?: string }>();
+  const isShared = shared === "1";
   const router = useRouter();
 
   const folderQuery = useFolder(folderId);
-  const { data, isLoading, refetch, isRefetching } = useDrive(folderId);
+  const owned = useDrive(folderId);
+  const sharedContents = useSharedFolderContents(isShared ? folderId : "");
+  const { data, isLoading, refetch, isRefetching } = isShared ? sharedContents : owned;
 
   const createFolder = useCreateFolder();
 
@@ -46,12 +49,12 @@ export default function FolderScreen() {
   const isEmpty = !isLoading && folders.length === 0 && documents.length === 0;
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { id: null, name: "Drive của tôi" },
+    { id: null, name: isShared ? "Đã chia sẻ" : "Drive của tôi" },
     { id: folderId, name: folderName },
   ];
 
   function handleBreadcrumbNavigate(id: string | null) {
-    if (id === null) router.push("/(tabs)/drive");
+    if (id === null) router.push(isShared ? "/(tabs)/drive/shared" : "/(tabs)/drive");
   }
 
   type ListItem =
@@ -107,8 +110,10 @@ export default function FolderScreen() {
                   name={item.item.name}
                   isStarred={item.item.isStarred}
                   accentColor={item.item.color}
-                  onPress={() => router.push(`/(tabs)/drive/${item.item.id}`)}
-                  onLongPress={() => setActionTarget({ kind: "folder", item: item.item })}
+                  onPress={() =>
+                    router.push(isShared ? `/(tabs)/drive/${item.item.id}?shared=1` : `/(tabs)/drive/${item.item.id}`)
+                  }
+                  onLongPress={() => !isShared && setActionTarget({ kind: "folder", item: item.item })}
                 />
               );
             }
@@ -121,7 +126,7 @@ export default function FolderScreen() {
                   status={item.item.status}
                   isStarred={item.item.isStarred}
                   onPress={() => router.push(`/documents/${item.item.id}`)}
-                  onLongPress={() => setActionTarget({ kind: "document", item: item.item })}
+                  onLongPress={() => !isShared && setActionTarget({ kind: "document", item: item.item })}
                 />
               );
             }
@@ -129,20 +134,22 @@ export default function FolderScreen() {
               <EmptyState
                 icon="folder-open-outline"
                 title="Thư mục trống"
-                description="Tải lên tệp hoặc tạo thư mục con tại đây."
-                action={{ label: "Tải lên tệp", onPress: () => setShowUpload(true) }}
+                description={isShared ? "Chưa có nội dung trong thư mục này." : "Tải lên tệp hoặc tạo thư mục con tại đây."}
+                action={isShared ? undefined : { label: "Tải lên tệp", onPress: () => setShowUpload(true) }}
               />
             );
           }}
         />
       )}
 
-      <Fab
-        actions={[
-          { label: "Thư mục mới", icon: "folder-open-outline", color: colors.fptBlue, onPress: () => setShowNewFolder(true) },
-          { label: "Tải lên tệp", icon: "cloud-upload-outline", color: colors.fptOrange, onPress: () => setShowUpload(true) },
-        ]}
-      />
+      {!isShared && (
+        <Fab
+          actions={[
+            { label: "Thư mục mới", icon: "folder-open-outline", color: colors.fptBlue, onPress: () => setShowNewFolder(true) },
+            { label: "Tải lên tệp", icon: "cloud-upload-outline", color: colors.fptOrange, onPress: () => setShowUpload(true) },
+          ]}
+        />
+      )}
 
       <UploadSheet visible={showUpload} folderId={folderId} onDismiss={() => setShowUpload(false)} />
       <FolderModal

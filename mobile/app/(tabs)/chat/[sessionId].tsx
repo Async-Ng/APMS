@@ -55,6 +55,8 @@ export default function ChatSessionScreen() {
 
     try {
       await sendMessage.mutateAsync({ sessionId, content });
+    } catch {
+      // Error toast + cache rollback already handled in useSendMessage's onError.
     } finally {
       setIsSending(false);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
@@ -65,10 +67,11 @@ export default function ChatSessionScreen() {
     | { type: "message"; key: string; data: ChatMessage }
     | { type: "thinking"; key: string };
 
-  const listItems: ListItem[] = [
-    ...messages.map((m) => ({ type: "message" as const, key: m.id, data: m })),
-    ...(isSending ? [{ type: "thinking" as const, key: "thinking" }] : []),
-  ];
+  const listItems: ListItem[] = messages.map((m) =>
+    m.role === "assistant" && m.id.startsWith("streaming-") && m.content === ""
+      ? { type: "thinking" as const, key: m.id }
+      : { type: "message" as const, key: m.id, data: m },
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

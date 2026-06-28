@@ -21,7 +21,7 @@ export const listDocumentsQuerySchema = z.object({
   search: z.string().trim().max(255).optional(),
   sort: z.enum(["newest", "oldest", "title"]).default("newest"),
   majorId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  semesterNumber: z.coerce.number().int().min(1).max(9).optional(),
+  semesterId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   subjectId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   match: z.enum(["auto", "exact", "related", "all"]).default("auto"),
 });

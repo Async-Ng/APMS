@@ -68,7 +68,7 @@ export interface PublicDocumentsParams {
   search?: string;
   sort?: "newest" | "oldest" | "title";
   majorId?: string;
-  semesterNumber?: number;
+  semesterId?: string;
   subjectId?: string;
 }
 
@@ -88,8 +88,7 @@ export function usePublicDocuments(
       if (listParams.search) query.search = listParams.search;
       if (listParams.sort) query.sort = listParams.sort;
       if (listParams.majorId) query.majorId = listParams.majorId;
-      if (listParams.semesterNumber !== undefined)
-        query.semesterNumber = listParams.semesterNumber;
+      if (listParams.semesterId) query.semesterId = listParams.semesterId;
       if (listParams.subjectId) query.subjectId = listParams.subjectId;
 
       const res = await api.get<{ status: string; data: DriveContents }>(

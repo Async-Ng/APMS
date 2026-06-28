@@ -35,12 +35,19 @@ type Step = "pick" | "uploading" | "done" | "error";
 interface UploadModalProps {
   folderId: string | null;
   onClose: () => void;
+  defaultCurriculumCourseId?: string;
 }
 
-export function UploadModal({ folderId, onClose }: UploadModalProps) {
+export function UploadModal({
+  folderId,
+  onClose,
+  defaultCurriculumCourseId,
+}: UploadModalProps) {
   const [step, setStep] = useState<Step>("pick");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [curriculumCourseId, setCurriculumCourseId] = useState("");
+  const [curriculumCourseId, setCurriculumCourseId] = useState(
+    defaultCurriculumCourseId ?? "",
+  );
   const [visibility, setVisibility] = useState<DocumentVisibility>("private");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -50,7 +57,7 @@ export function UploadModal({ folderId, onClose }: UploadModalProps) {
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
   const { data: curriculum } = useCatalogCurriculum(
     profile?.major?.id,
-    profile?.currentSemester ?? undefined,
+    profile?.currentSemester?.id,
   );
 
   const uploadIntent = useUploadIntent();

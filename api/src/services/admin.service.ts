@@ -1,8 +1,12 @@
 import { createAppError, ErrorCode } from "../errors/error-codes";
 import { Document as ApmsDocument } from "../models/document.model";
 import { Folder } from "../models/folder.model";
-import { User, type UserDocument } from "../models/user.model";
+import { User, type UserDocument, type UserRole } from "../models/user.model";
 import { toUserResponse } from "./auth.service";
+import {
+  addUserToAdminGroup,
+  removeUserFromAdminGroup,
+} from "./cognito-admin.service";
 import { parseObjectId } from "../utils/objectId";
 
 export async function listUsers(options: {
@@ -46,10 +50,33 @@ export async function getUserById(userId: string) {
   return toUserResponse(user);
 }
 
+async function countActiveAdmins(excludeUserId?: string): Promise<number> {
+  const filter: Record<string, unknown> = { role: "admin", isDisabled: false };
+  if (excludeUserId) {
+    filter._id = { $ne: parseObjectId(excludeUserId) };
+  }
+  return User.countDocuments(filter);
+}
+
+async function syncCognitoAdminRole(
+  cognitoSub: string,
+  role: UserRole,
+  previousRole: UserRole,
+): Promise<void> {
+  if (role === previousRole) return;
+
+  if (role === "admin") {
+    await addUserToAdminGroup(cognitoSub);
+    return;
+  }
+
+  await removeUserFromAdminGroup(cognitoSub);
+}
+
 export async function updateUser(
   admin: UserDocument,
   userId: string,
-  input: { storageQuotaBytes?: number; isDisabled?: boolean },
+  input: { storageQuotaBytes?: number; isDisabled?: boolean; role?: UserRole },
 ) {
   const targetId = parseObjectId(userId);
   const target = await User.findById(targetId);
@@ -62,6 +89,25 @@ export async function updateUser(
     throw createAppError(ErrorCode.CANNOT_DISABLE_SELF, 400);
   }
 
+  if (input.role === "user" && target._id.equals(admin._id)) {
+    throw createAppError(ErrorCode.CANNOT_DEMOTE_SELF, 400);
+  }
+
+  if (input.role === "user" && target.role === "admin") {
+    const remainingAdmins = await countActiveAdmins(target._id.toString());
+    if (remainingAdmins === 0) {
+      throw createAppError(ErrorCode.CANNOT_DEMOTE_LAST_ADMIN, 400);
+    }
+  }
+
+  if (input.role === "admin" && target.isDisabled) {
+    throw createAppError(ErrorCode.VALIDATION_ERROR, 400, {
+      technicalDetail: "Cannot promote a disabled user to admin",
+    });
+  }
+
+  const previousRole = target.role;
+
   if (input.storageQuotaBytes !== undefined) {
     if (input.storageQuotaBytes < target.storageUsedBytes) {
       throw createAppError(ErrorCode.QUOTA_TOO_LOW, 400);
@@ -73,7 +119,20 @@ export async function updateUser(
     target.isDisabled = input.isDisabled;
   }
 
-  await target.save();
+  if (input.role !== undefined && input.role !== target.role) {
+    await syncCognitoAdminRole(target.cognitoSub, input.role, previousRole);
+    target.role = input.role;
+  }
+
+  try {
+    await target.save();
+  } catch (error) {
+    if (input.role !== undefined && input.role !== previousRole) {
+      await syncCognitoAdminRole(target.cognitoSub, previousRole, input.role).catch(() => undefined);
+    }
+    throw error;
+  }
+
   return toUserResponse(target);
 }
 

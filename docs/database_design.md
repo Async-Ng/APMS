@@ -9,8 +9,10 @@ APMS dùng MongoDB Atlas cho metadata, học vụ, sharing, chat history và vec
 | `users` | User local profile, role, disabled state, quota, academic profile |
 | `access_emails` | Exact-email allowlist ngoài domain mặc định |
 | `majors` | Ngành học |
+| `semesters` | Học kỳ (entity: code, name, sortOrder) |
+| `majorsemesters` | Junction ngành ↔ học kỳ |
 | `subjects` | Môn học |
-| `curriculumcourses` | Mapping ngành + học kỳ + môn |
+| `curriculumcourses` | Mapping ngành + semesterId + môn |
 | `folders` | Cây thư mục cá nhân |
 | `documents` | Metadata tài liệu |
 | `document_chunks` | Text chunks + embeddings |
@@ -60,6 +62,47 @@ Indexes in source:
 
 Legacy enum values are handled by `pnpm migrate:document-visibility`: old `personal` becomes `private`; old `internal` becomes `public`.
 
+## Academic Catalog
+
+### `semesters`
+
+| Field | Notes |
+| --- | --- |
+| `code` | Unique uppercase, e.g. `HK1` |
+| `name` | Display name |
+| `sortOrder` | Global sort in dropdowns |
+| `isActive` | Soft archive |
+
+### `majorsemesters`
+
+Junction **Major ↔ Semester**. Admin assigns semesters to a major before curriculum mapping.
+
+| Field | Notes |
+| --- | --- |
+| `majorId`, `semesterId` | Unique pair |
+| `sortOrder` | Optional per-major order override |
+| `isActive` | Remove semester from major without deleting global semester |
+
+### `curriculumcourses`
+
+| Field | Notes |
+| --- | --- |
+| `majorId` | Ref `majors` |
+| `semesterId` | Ref `semesters` (replaces legacy `semesterNumber`) |
+| `subjectId` | Ref `subjects` |
+
+Unique index: `{ majorId, semesterId, subjectId }`. `(majorId, semesterId)` must exist in active `majorsemesters`.
+
+### `users` academic profile
+
+| Field | Notes |
+| --- | --- |
+| `majorId` | Ref `majors` |
+| `currentSemesterId` | Ref `semesters`; must belong to `majorsemesters` for selected major |
+| `currentSubjectIds` | Ref `subjects` |
+
+Legacy `currentSemester` (number) is migrated by `pnpm migrate:semester-entities`.
+
 ## Unified List Queries
 
 `GET /api/documents` is implemented by `document-list.service.ts`.
@@ -76,7 +119,7 @@ Public match types:
 
 | Match type | Meaning |
 | --- | --- |
-| `exact_course` | Same major, current semester, current subject |
+| `exact_course` | Same major, current semesterId, current subject |
 | `same_subject_other_semester` | Same subject in another semester of the same major |
 | `global_public` | Public but not profile-related |
 

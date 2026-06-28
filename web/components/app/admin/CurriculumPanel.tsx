@@ -1,7 +1,7 @@
 "use client";
 
 import { Layers, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
 import {
@@ -15,29 +15,28 @@ import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
   useAdminCurriculum,
+  useAdminMajorSemesters,
   useAdminMajors,
+  useAdminSemesters,
   useAdminSubjects,
   useArchiveCurriculum,
   useCreateCurriculum,
   useUpdateCurriculum,
   type EnrichedCurriculumCourse,
 } from "@/lib/queries/admin-academic";
-import {
-  curriculumFormSchema,
-  formatZodFieldErrors,
-} from "@/lib/validation/admin";
+import { curriculumFormSchema, formatZodFieldErrors } from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
 interface CurriculumFormState {
   majorId: string;
   subjectId: string;
-  semesterNumber: string;
+  semesterId: string;
 }
 
 const EMPTY_FORM: CurriculumFormState = {
   majorId: "",
   subjectId: "",
-  semesterNumber: "1",
+  semesterId: "",
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -52,10 +51,11 @@ export function CurriculumPanel() {
 
   const { data: majors } = useAdminMajors();
   const { data: subjects } = useAdminSubjects();
+  const { data: allSemesters } = useAdminSemesters();
 
   const { data: courses, isLoading, isError } = useAdminCurriculum({
     majorId: majorFilter || undefined,
-    semesterNumber: semesterFilter ? Number(semesterFilter) : undefined,
+    semesterId: semesterFilter || undefined,
     includeInactive,
   });
 
@@ -71,25 +71,40 @@ export function CurriculumPanel() {
   const [error, setError] = useState<string | null>(null);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
+  const { data: formMajorSemesters } = useAdminMajorSemesters(form.majorId || undefined);
+
   const activeMajors = majors?.filter((m) => m.isActive) ?? [];
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
+  const semesterOptions =
+    formMajorSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
 
   const isFormValid = useMemo(
     () =>
       curriculumFormSchema.safeParse({
         majorId: form.majorId,
         subjectId: form.subjectId,
-        semesterNumber: form.semesterNumber,
-      }).success && activeMajors.length > 0 && activeSubjects.length > 0,
-    [form, activeMajors.length, activeSubjects.length],
+        semesterId: form.semesterId,
+      }).success &&
+      activeMajors.length > 0 &&
+      activeSubjects.length > 0 &&
+      semesterOptions.length > 0,
+    [form, activeMajors.length, activeSubjects.length, semesterOptions.length],
   );
 
+  useEffect(() => {
+    if (!form.majorId || semesterOptions.length === 0) return;
+    if (!semesterOptions.some((s) => s.id === form.semesterId)) {
+      setForm((f) => ({ ...f, semesterId: semesterOptions[0]?.id ?? "" }));
+    }
+  }, [form.majorId, form.semesterId, semesterOptions]);
+
   function openCreate() {
+    const defaultMajor = activeMajors[0]?.id ?? "";
     setEditing(null);
     setForm({
-      majorId: activeMajors[0]?.id ?? "",
+      majorId: defaultMajor,
       subjectId: activeSubjects[0]?.id ?? "",
-      semesterNumber: "1",
+      semesterId: "",
     });
     setFieldErrors({});
     setError(null);
@@ -101,7 +116,7 @@ export function CurriculumPanel() {
     setForm({
       majorId: course.majorId,
       subjectId: course.subjectId,
-      semesterNumber: String(course.semesterNumber),
+      semesterId: course.semesterId,
     });
     setFieldErrors({});
     setError(null);
@@ -112,7 +127,7 @@ export function CurriculumPanel() {
     const parsed = curriculumFormSchema.safeParse({
       majorId: form.majorId,
       subjectId: form.subjectId,
-      semesterNumber: form.semesterNumber,
+      semesterId: form.semesterId,
     });
     if (!parsed.success) {
       setFieldErrors(formatZodFieldErrors(parsed.error));
@@ -128,7 +143,7 @@ export function CurriculumPanel() {
           body: {
             majorId: parsed.data.majorId,
             subjectId: parsed.data.subjectId,
-            semesterNumber: parsed.data.semesterNumber,
+            semesterId: parsed.data.semesterId,
           },
         },
         {
@@ -141,7 +156,7 @@ export function CurriculumPanel() {
         {
           majorId: parsed.data.majorId,
           subjectId: parsed.data.subjectId,
-          semesterNumber: parsed.data.semesterNumber,
+          semesterId: parsed.data.semesterId,
         },
         {
           onSuccess: () => setFormOpen(false),
@@ -174,6 +189,8 @@ export function CurriculumPanel() {
       },
     });
   }
+
+  const filterSemesters = allSemesters?.filter((s) => s.isActive) ?? [];
 
   return (
     <div className="space-y-4">
@@ -214,9 +231,9 @@ export function CurriculumPanel() {
               aria-label="Lọc theo học kỳ"
             >
               <option value="">Tất cả học kỳ</option>
-              {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={String(n)}>
-                  HK {n}
+              {filterSemesters.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
                 </option>
               ))}
             </select>
@@ -236,14 +253,9 @@ export function CurriculumPanel() {
           variant="primary"
           onClick={openCreate}
           disabled={activeMajors.length === 0 || activeSubjects.length === 0}
-          title={
-            activeMajors.length === 0 || activeSubjects.length === 0
-              ? "Cần có ít nhất một ngành và môn đang hoạt động"
-              : undefined
-          }
         >
           <Plus className="mr-2 h-4 w-4" />
-          Thêm mapping
+          Gán môn
         </BrutalButton>
       </div>
 
@@ -270,7 +282,7 @@ export function CurriculumPanel() {
             <tr>
               <td colSpan={5} className="px-4 py-10 text-center">
                 <Layers className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có mapping CTĐT</p>
+                <p className="text-sm font-semibold text-brutal-ink">Chưa có môn trong CTĐT</p>
                 <p className="mt-1 text-xs text-brutal-muted">
                   Gán môn học vào ngành và học kỳ cụ thể.
                 </p>
@@ -288,18 +300,17 @@ export function CurriculumPanel() {
                 )}
               >
                 <td className="px-4 py-3">
-                  <p className="font-mono text-xs font-bold">
-                    {course.major?.code ?? "—"}
-                  </p>
+                  <p className="font-mono text-xs font-bold">{course.major?.code ?? "—"}</p>
                   <p className="text-sm">{course.major?.name ?? course.majorId}</p>
                 </td>
-                <td className="px-4 py-3 font-bold tabular-nums">
-                  HK {course.semesterNumber}
+                <td className="px-4 py-3 font-bold">
+                  {course.semester?.code ?? "—"}
+                  <p className="text-xs font-normal text-brutal-muted">
+                    {course.semester?.name}
+                  </p>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="font-mono text-xs font-bold">
-                    {course.subject?.code ?? "—"}
-                  </p>
+                  <p className="font-mono text-xs font-bold">{course.subject?.code ?? "—"}</p>
                   <p className="text-sm">{course.subject?.name ?? course.subjectId}</p>
                 </td>
                 <td className="px-4 py-3">
@@ -311,7 +322,7 @@ export function CurriculumPanel() {
                       variant="ghost"
                       className="px-3 py-1 text-xs"
                       onClick={() => openEdit(course)}
-                      aria-label={`Sửa mapping ${course.major?.code ?? ""} HK${course.semesterNumber}`}
+                      aria-label={`Sửa môn CTĐT ${course.major?.code ?? ""} ${course.semester?.code ?? ""}`}
                     >
                       Sửa
                     </BrutalButton>
@@ -342,7 +353,7 @@ export function CurriculumPanel() {
 
       <AdminFormModal
         open={formOpen}
-        title={editing ? "Sửa mapping CTĐT" : "Thêm mapping CTĐT"}
+        title={editing ? "Sửa môn trong CTĐT" : "Gán môn vào CTĐT"}
         onClose={() => setFormOpen(false)}
         footer={
           <>
@@ -361,26 +372,15 @@ export function CurriculumPanel() {
           </>
         }
       >
-        {activeMajors.length === 0 && (
-          <p className="text-sm text-brutal-danger">
-            Chưa có ngành đang hoạt động. Tạo hoặc kích hoạt ngành trước.
-          </p>
-        )}
-        {activeSubjects.length === 0 && (
-          <p className="text-sm text-brutal-danger">
-            Chưa có môn đang hoạt động. Tạo hoặc kích hoạt môn trước.
-          </p>
-        )}
         <label className="block text-sm font-bold">
           Ngành học
           <select
             value={form.majorId}
             onChange={(e) => {
-              setForm((f) => ({ ...f, majorId: e.target.value }));
+              setForm((f) => ({ ...f, majorId: e.target.value, semesterId: "" }));
               setFieldErrors((fe) => ({ ...fe, majorId: "" }));
             }}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
-            aria-invalid={!!fieldErrors.majorId}
           >
             {activeMajors.map((m) => (
               <option key={m.id} value={m.id}>
@@ -391,6 +391,29 @@ export function CurriculumPanel() {
           <FieldError message={fieldErrors.majorId} />
         </label>
         <label className="block text-sm font-bold">
+          Học kỳ
+          <select
+            value={form.semesterId}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, semesterId: e.target.value }));
+              setFieldErrors((fe) => ({ ...fe, semesterId: "" }));
+            }}
+            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
+            disabled={semesterOptions.length === 0}
+          >
+            {semesterOptions.length === 0 ? (
+              <option value="">Chưa gán học kỳ cho ngành</option>
+            ) : (
+              semesterOptions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))
+            )}
+          </select>
+          <FieldError message={fieldErrors.semesterId} />
+        </label>
+        <label className="block text-sm font-bold">
           Môn học
           <select
             value={form.subjectId}
@@ -399,7 +422,6 @@ export function CurriculumPanel() {
               setFieldErrors((fe) => ({ ...fe, subjectId: "" }));
             }}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
-            aria-invalid={!!fieldErrors.subjectId}
           >
             {activeSubjects.map((s) => (
               <option key={s.id} value={s.id}>
@@ -409,31 +431,12 @@ export function CurriculumPanel() {
           </select>
           <FieldError message={fieldErrors.subjectId} />
         </label>
-        <label className="block text-sm font-bold">
-          Học kỳ (1–9)
-          <select
-            value={form.semesterNumber}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, semesterNumber: e.target.value }));
-              setFieldErrors((fe) => ({ ...fe, semesterNumber: "" }));
-            }}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
-            aria-invalid={!!fieldErrors.semesterNumber}
-          >
-            {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={String(n)}>
-                Học kỳ {n}
-              </option>
-            ))}
-          </select>
-          <FieldError message={fieldErrors.semesterNumber} />
-        </label>
       </AdminFormModal>
 
       <ConfirmDialog
         open={!!archiveTarget}
-        title="Xóa mapping CTĐT?"
-        description="Mapping này sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên hoặc tài liệu đang tham chiếu. Có thể kích hoạt lại sau."
+        title="Xóa môn khỏi CTĐT?"
+        description="Môn này sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên hoặc tài liệu đang tham chiếu. Có thể kích hoạt lại sau."
         confirmLabel="Xóa"
         tone="danger"
         isPending={isArchiving}

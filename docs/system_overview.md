@@ -47,6 +47,18 @@ Các view:
 
 Upload mới bắt buộc có `curriculumCourseId`. `visibility` mặc định là `private`; owner có thể đổi sang `public` nếu tài liệu đã gắn môn học hợp lệ.
 
+## Academic Catalog
+
+Học vụ dùng entity `Semester` (không còn số học kỳ cứng 1–9):
+
+- `semesters`: học kỳ global (`code`, `name`, `sortOrder`)
+- `majorsemesters`: junction ngành ↔ học kỳ
+- `curriculumcourses`: mapping ngành + `semesterId` + môn
+
+Admin quản lý qua `/api/admin` (majors, semesters, gán kỳ theo ngành, CTĐT). User đọc catalog qua `/api/catalog`. Hồ sơ học vụ (`PATCH /api/users/me/academic-profile`) dùng `currentSemesterId` thay số nguyên.
+
+Admin có thể promote/demote user qua `PATCH /api/admin/users/:id` với `role`; API đồng bộ Cognito group `admin` và `users.role`.
+
 ## AI / RAG Pipeline
 
 ```text

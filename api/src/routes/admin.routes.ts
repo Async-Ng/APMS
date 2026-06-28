@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 
 import * as adminController from "../controllers/admin.controller";
 import * as academicController from "../controllers/academic.controller";
@@ -16,12 +17,15 @@ import {
   updateAdminUserSchema,
 } from "../validators/admin.validator";
 import {
+  assignMajorSemestersSchema,
   createCurriculumCourseSchema,
   createMajorSchema,
+  createSemesterSchema,
   createSubjectSchema,
   listCurriculumQuerySchema,
   updateCurriculumCourseSchema,
   updateMajorSchema,
+  updateSemesterSchema,
   updateSubjectSchema,
 } from "../validators/academic.validator";
 
@@ -78,6 +82,49 @@ adminRouter.delete(
   "/majors/:id",
   validate({ params: objectIdParamSchema }),
   academicController.archiveMajor,
+);
+
+adminRouter.get(
+  "/majors/:majorId/semesters",
+  validate({
+    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
+  }),
+  academicController.listAdminMajorSemesters,
+);
+adminRouter.post(
+  "/majors/:majorId/semesters",
+  validate({
+    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
+    body: assignMajorSemestersSchema,
+  }),
+  academicController.assignMajorSemesters,
+);
+adminRouter.delete(
+  "/majors/:majorId/semesters/:semesterId",
+  validate({
+    params: z.object({
+      majorId: z.string().regex(/^[a-f\d]{24}$/i),
+      semesterId: z.string().regex(/^[a-f\d]{24}$/i),
+    }),
+  }),
+  academicController.archiveMajorSemester,
+);
+
+adminRouter.get("/semesters", academicController.listAdminSemesters);
+adminRouter.post(
+  "/semesters",
+  validate({ body: createSemesterSchema }),
+  academicController.createSemester,
+);
+adminRouter.patch(
+  "/semesters/:id",
+  validate({ params: objectIdParamSchema, body: updateSemesterSchema }),
+  academicController.updateSemester,
+);
+adminRouter.delete(
+  "/semesters/:id",
+  validate({ params: objectIdParamSchema }),
+  academicController.archiveSemester,
 );
 
 adminRouter.get("/subjects", academicController.listAdminSubjects);
