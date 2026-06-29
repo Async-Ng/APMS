@@ -1,0 +1,45 @@
+@startuml APMS_Activity2_Drive
+skinparam swimlane {
+  WrapTitle false
+}
+
+|#E8F4FD|Sinh viên|
+start
+:Vào **Drive của tôi**;
+
+|#E8FDE8|Hệ thống APMS|
+if (Tải tài liệu mới?) then (có)
+  :Kiểm tra định dạng PDF/DOCX/PPTX,\n≤ 50 MB, còn quota, môn thuộc hồ sơ;
+  if (Hợp lệ?) then (không)
+    :Thông báo lý do — từ chối;
+    detach
+  else (có)
+    :Lưu tệp — mặc định **Riêng tư**;
+    :Xử lý nền: đọc nội dung tài liệu;
+    repeat
+      :Tiếp tục xử lý;
+    repeat while (Tài liệu sẵn sàng?) is (chưa)
+    ->có;
+    :Hiển thị trong Drive — nhóm theo môn học;
+  endif
+else (không)
+  :Hiển thị danh sách tài liệu hiện có;
+endif
+
+|Sinh viên|
+partition "Thao tác tuỳ chọn (lặp)" {
+  :Sắp xếp: thư mục, đổi tên, thẻ, gắn sao;
+  :Chia sẻ chỉ đọc — bạn học hoặc email\n(lời mời hết hạn 7 ngày);
+  :Đặt **Riêng tư** hoặc **Công khai**\n(công khai phải đã gắn môn);
+  :Chuyển Thùng rác / khôi phục / xóa vĩnh viễn;
+}
+
+|Hệ thống APMS|
+:Cấp quyền xem chỉ đọc / gửi lời mời;
+:Áp dụng chế độ Riêng tư hoặc Công khai;
+:Tự xóa vĩnh viễn sau **30 ngày** trong thùng rác;
+
+|Sinh viên|
+stop
+
+@enduml

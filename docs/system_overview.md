@@ -1,6 +1,6 @@
 # System Overview
 
-APMS là hệ thống quản lý tài liệu học tập cá nhân và cộng đồng cho sinh viên. Backend hiện tại tập trung vào một surface tài liệu thống nhất: Documents.
+Business rules: xem `docs/SRS.md` (FR/BR/NFR). APMS là hệ thống quản lý tài liệu học tập cá nhân và cộng đồng cho sinh viên. Backend hiện tại tập trung vào một surface tài liệu thống nhất: Documents.
 
 ## Mục Tiêu
 
@@ -78,11 +78,16 @@ Search hoặc Chat
   -> Trả citations theo document/page/chunk
 ```
 
-Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public.
+Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
 
 ## Non-Functional Notes
 
+- Giới hạn & chính sách (xem SRS):
+  - Upload tối đa 50 MB/tệp; quota 500 MB/người (FR-014, BR-009). Loại tệp: PDF, DOCX, PPTX (FR-013).
+  - Trash là soft delete; purge job xóa vĩnh viễn sau 30 ngày (BR-027).
+  - Chat 50 lượt/người/ngày (FR-062, BR-025).
+  - Lời mời chia sẻ hết hạn sau 7 ngày (BR-015); link tải presigned hết hạn sau 15 phút.
+  - Đăng nhập giới hạn theo allowlist domain mặc định `fpt.edu.vn`, `fe.edu.vn` + access emails ngoại lệ (BR-002).
 - File gốc không trả trực tiếp từ API; API cấp presigned URL khi user có quyền đọc.
-- Trash là soft delete; purge job xóa vĩnh viễn theo retention.
 - Public discovery không làm lộ private/shared-only data.
 - Web/mobile có thể cần phase cập nhật riêng sau API-only refactor; không giả định client đã hoàn tất migration nếu code chưa thể hiện.

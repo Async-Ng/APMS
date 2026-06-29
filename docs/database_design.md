@@ -1,6 +1,6 @@
 # Database Design
 
-APMS dùng MongoDB Atlas cho metadata, học vụ, sharing, chat history và vector search. File gốc nằm trên Amazon S3; MongoDB chỉ lưu metadata và chunks.
+Business rules: see `docs/SRS.md` (FR/BR). APMS dùng MongoDB Atlas cho metadata, học vụ, sharing, chat history và vector search. File gốc nằm trên Amazon S3; MongoDB chỉ lưu metadata và chunks.
 
 ## Collections
 
@@ -17,9 +17,11 @@ APMS dùng MongoDB Atlas cho metadata, học vụ, sharing, chat history và vec
 | `documents` | Metadata tài liệu |
 | `document_chunks` | Text chunks + embeddings |
 | `shares` | Quyền read-only trực tiếp |
-| `invites` | Invite records |
+| `shareinvites` | Email share invite records (hết hạn sau 7 ngày, BR-015) |
 | `chat_sessions` | Chat sessions |
 | `chat_messages` | Chat messages và citations |
+
+Storage quota mặc định 500 MB/người (`users.storageQuotaBytes`); tài liệu trong thùng rác bị purge sau 30 ngày (`TRASH_RETENTION_DAYS`, BR-027).
 
 ## Documents
 
@@ -36,12 +38,15 @@ Important fields:
 | `mimeType` | string | File MIME type |
 | `s3Key` | string | Unique S3 object key |
 | `fileSizeBytes` | number | Used for quota |
-| `status` | `pending | processing | ready | failed` | Processing lifecycle |
+| `status` | `pending | processing | ready | failed` | Processing lifecycle (FR-015) |
+| `processingAttempts` | number | Retry counter, capped at `MAX_PROCESSING_ATTEMPTS` |
+| `lastError`, `nextRetryAt` | string \| Date \| null | Last failure detail and next retry time |
+| `extractionMode`, `extractionConfidence` | string | How text was extracted |
 | `pageCount` | number | Optional after extraction |
 | `chunkCount` | number | Number of chunks |
 | `tags` | string[] | User tags |
 | `isStarred` | boolean | Owner-only star |
-| `deletedAt` | Date \| null | Soft delete marker |
+| `deletedAt` | Date \| null | Soft delete marker; trash purged after 30 days (BR-027) |
 
 Indexes in source:
 
@@ -79,9 +84,9 @@ Junction **Major ↔ Semester**. Admin assigns semesters to a major before curri
 
 | Field | Notes |
 | --- | --- |
-| `majorId`, `semesterId` | Unique pair |
+| `majorId`, `semesterId` | Unique pair (BR-018) |
 | `sortOrder` | Optional per-major order override |
-| `isActive` | Remove semester from major without deleting global semester |
+| `isActive` | Soft-archive: remove semester from major without deleting global semester (BR-020) |
 
 ### `curriculumcourses`
 
@@ -91,7 +96,7 @@ Junction **Major ↔ Semester**. Admin assigns semesters to a major before curri
 | `semesterId` | Ref `semesters` (replaces legacy `semesterNumber`) |
 | `subjectId` | Ref `subjects` |
 
-Unique index: `{ majorId, semesterId, subjectId }`. `(majorId, semesterId)` must exist in active `majorsemesters`.
+Unique index: `{ majorId, semesterId, subjectId }` (BR-019). `(majorId, semesterId)` must exist in active `majorsemesters` (BR-018). Catalog entries use soft-archive (`isActive`) and cannot be deactivated/changed while still referenced by users or documents (BR-020, BR-021).
 
 ### `users` academic profile
 
@@ -100,6 +105,8 @@ Unique index: `{ majorId, semesterId, subjectId }`. `(majorId, semesterId)` must
 | `majorId` | Ref `majors` |
 | `currentSemesterId` | Ref `semesters`; must belong to `majorsemesters` for selected major |
 | `currentSubjectIds` | Ref `subjects` |
+| `storageUsedBytes` | Bytes currently used by the user's documents |
+| `storageQuotaBytes` | Storage quota, default 500 MB (`524_288_000`) |
 
 Legacy `currentSemester` (number) is migrated by `pnpm migrate:semester-entities`.
 
@@ -131,8 +138,11 @@ Public match types:
 | --- | --- |
 | `documentId` | Ref `documents` |
 | `ownerId` | Used for access filtering |
-| `text` | Chunk text |
+| `content` | Chunk text content |
+| `queryText` | Normalized text used for keyword/text search |
 | `pageNumber` | Optional page/source location |
+| `sectionPath`, `displayHeading`, `blockType` | Structural context of the chunk |
+| `extractionMode`, `extractionConfidence` | How the chunk text was extracted |
 | `embedding` | 1024-dimensional vector from Vertex AI `gemini-embedding-001` |
 
 Atlas Vector Search index dimension must match `GEMINI_EMBEDDING_OUTPUT_DIMENSION`, default `1024`.
