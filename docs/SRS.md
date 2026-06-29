@@ -257,6 +257,8 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | FR-010 | Hệ thống phải chỉ cho phép chọn học kỳ thuộc ngành đã chọn và môn học thuộc đúng cặp ngành – học kỳ trong chương trình đào tạo. |
 | FR-011 | Hệ thống phải yêu cầu chọn ít nhất một môn học khi lưu hồ sơ học thuật. |
 | FR-012 | Hệ thống phải hiển thị trạng thái hồ sơ học thuật là "Đã hoàn thành" hoặc "Chưa hoàn thành". |
+| FR-063 | Hệ thống phải cho phép người dùng chọn học kỳ **hiển thị** trên Drive (độc lập học kỳ chính trong hồ sơ); chỉ ảnh hưởng bố cục xem tài liệu, không đổi quyền upload hay gợi ý Thư viện. |
+| FR-064 | Hệ thống phải cung cấp lối tắt **đổi học kỳ chính** từ Drive: một thao tác đặt học kỳ mới và mặc định chọn tất cả môn trong CTĐT của học kỳ đó (người dùng có thể chỉnh trong Hồ sơ sau). |
 
 **Chi tiết FR-009 — Thiết lập hồ sơ học thuật:**
 
@@ -913,6 +915,8 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-009-02: Khi chọn học kỳ không thuộc ngành, hệ thống không cho lưu.
 - [ ] AC-009-03: Khi chưa chọn môn nào, hệ thống yêu cầu chọn ít nhất một môn.
 - [ ] AC-009-04: Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong CTĐT của học kỳ đó; lưu sau khi bỏ bớt vẫn hợp lệ nếu còn ít nhất một môn.
+- [ ] AC-063-01: Khi chọn tab học kỳ trên Drive, hệ thống nhóm tài liệu theo học kỳ đó mà không thay đổi hồ sơ đã lưu trên server.
+- [ ] AC-064-01: Khi dùng lối tắt「Lên học kỳ」từ Drive, hệ thống cập nhật học kỳ chính và môn mặc định theo CTĐT trong một lần lưu.
 
 ### Tải tài liệu (FR-013, FR-014, FR-019)
 - [ ] AC-013-01: Khi tải tệp PDF/DOCX/PPTX hợp lệ kèm môn học thuộc hồ sơ, hệ thống tạo tài liệu và bắt đầu xử lý.

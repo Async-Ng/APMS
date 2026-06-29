@@ -18,6 +18,11 @@ import {
   findEnrolledCourse,
   getEnrolledCourses,
 } from "@/lib/drive/academic-grouping";
+import {
+  canOpenSubjectCourse,
+  findCourseInCurriculum,
+  isPrimarySemesterCourse,
+} from "@/lib/drive/semester-view";
 import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
 import type { DriveDocument } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
@@ -31,22 +36,51 @@ export default function SubjectDrivePage({ params }: PageProps) {
 
   const { data, isLoading, isError } = useDriveContents();
   const { data: profile } = useAcademicProfile();
-  const { data: curriculum } = useCatalogCurriculum(
+  const { data: allCurriculum } = useCatalogCurriculum(profile?.major?.id);
+  const { data: primaryCurriculum } = useCatalogCurriculum(
     profile?.major?.id,
     profile?.currentSemester?.id,
   );
 
+  const documents = data?.documents ?? [];
   const enrolledCourses = useMemo(
-    () => getEnrolledCourses(profile, curriculum),
-    [profile, curriculum],
+    () => getEnrolledCourses(profile, primaryCurriculum),
+    [profile, primaryCurriculum],
   );
-  const course = useMemo(
-    () => findEnrolledCourse(enrolledCourses, curriculumCourseId),
-    [enrolledCourses, curriculumCourseId],
+  const enrolledCourseIds = useMemo(
+    () => new Set(enrolledCourses.map((c) => c.id)),
+    [enrolledCourses],
   );
-  const documents = useMemo(
-    () => filterRootDocumentsByCourse(data?.documents ?? [], curriculumCourseId),
-    [data?.documents, curriculumCourseId],
+
+  const course = useMemo(() => {
+    const enrolled = findEnrolledCourse(enrolledCourses, curriculumCourseId);
+    if (enrolled) return enrolled;
+    return findCourseInCurriculum(allCurriculum, curriculumCourseId);
+  }, [enrolledCourses, allCurriculum, curriculumCourseId]);
+
+  const canAccess = useMemo(
+    () =>
+      canOpenSubjectCourse({
+        course,
+        documents,
+        enrolledCourseIds,
+      }),
+    [course, documents, enrolledCourseIds],
+  );
+
+  const canUpload = useMemo(
+    () =>
+      isPrimarySemesterCourse(
+        course,
+        profile?.currentSemester?.id,
+        enrolledCourseIds,
+      ),
+    [course, profile?.currentSemester?.id, enrolledCourseIds],
+  );
+
+  const subjectDocuments = useMemo(
+    () => filterRootDocumentsByCourse(documents, curriculumCourseId),
+    [documents, curriculumCourseId],
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -57,10 +91,10 @@ export default function SubjectDrivePage({ params }: PageProps) {
     resourceName: string;
   } | null>(null);
 
-  const subjectLabel = course
+  const subjectLabel = course?.subject
     ? `${course.subject.code} — ${course.subject.name}`
     : "Môn học";
-  const isEmpty = !isLoading && documents.length === 0;
+  const isEmpty = !isLoading && subjectDocuments.length === 0;
 
   function shareDocument(doc: DriveDocument) {
     setShareTarget({
@@ -75,12 +109,12 @@ export default function SubjectDrivePage({ params }: PageProps) {
       <Topbar
         breadcrumbs={[
           { label: "Drive của tôi", href: "/drive" },
-          { label: isLoading || !course ? "…" : course.subject.code },
+          { label: isLoading || !course ? "…" : course.subject?.code ?? "…" },
         ]}
         onMenuOpen={() => {}}
-        onUploadClick={() => setUploadOpen(true)}
+        onUploadClick={() => canUpload && setUploadOpen(true)}
         actions={
-          course ? (
+          course && canUpload ? (
             <AskAiLink
               id={`subject-${curriculumCourseId}-ask-ai-btn`}
               href="/chat"
@@ -90,10 +124,10 @@ export default function SubjectDrivePage({ params }: PageProps) {
       />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
-        {!isLoading && !course && (
+        {!isLoading && !canAccess && (
           <ErrorAlert
             className="mb-4"
-            message="Không tìm thấy môn học hoặc môn không thuộc học kỳ đang học."
+            message="Không tìm thấy môn học hoặc bạn không có tài liệu cho môn này."
             actionLabel="Về Drive"
             onAction={() => {
               window.location.href = "/drive";
@@ -101,8 +135,16 @@ export default function SubjectDrivePage({ params }: PageProps) {
           />
         )}
 
-        {course && (
+        {canAccess && course?.subject && (
           <p className="mb-4 text-sm text-brutal-muted">{subjectLabel}</p>
+        )}
+
+        {canAccess && !canUpload && (
+          <ErrorAlert
+            variant="inline"
+            className="mb-4"
+            message={`Chỉ upload vào học kỳ chính (${profile?.currentSemester?.code ?? ""}). Dùng「Lên học kỳ」trên Drive hoặc sửa Hồ sơ để đổi học kỳ chính.`}
+          />
         )}
 
         {isError && (
@@ -118,14 +160,20 @@ export default function SubjectDrivePage({ params }: PageProps) {
           <FileGrid>
             <SkeletonGrid count={8} />
           </FileGrid>
-        ) : !course ? null : isEmpty ? (
+        ) : !canAccess ? null : isEmpty ? (
           <EmptyState
             title="Chưa có tài liệu"
-            description={`Tải lên tệp PDF, DOCX hoặc PPTX cho môn ${course.subject.code}.`}
+            description={
+              canUpload
+                ? `Tải lên tệp PDF, DOCX hoặc PPTX cho môn ${course?.subject?.code ?? ""}.`
+                : `Chưa có tài liệu cho môn ${course?.subject?.code ?? ""} ở học kỳ này.`
+            }
             action={
-              <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
-                Tải lên tệp
-              </BrutalButton>
+              canUpload ? (
+                <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
+                  Tải lên tệp
+                </BrutalButton>
+              ) : undefined
             }
           />
         ) : (
@@ -137,7 +185,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
               Tệp
             </h2>
             <FileGrid>
-              {documents.map((doc) => (
+              {subjectDocuments.map((doc) => (
                 <DocumentCard
                   key={doc.id}
                   document={doc}
@@ -151,7 +199,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
         )}
       </main>
 
-      {uploadOpen && course && (
+      {uploadOpen && canUpload && course?.subject && (
         <UploadModal
           key={curriculumCourseId}
           folderId={null}

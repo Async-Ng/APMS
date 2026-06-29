@@ -2,16 +2,29 @@
 
 import { GraduationCap } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
+import { QuickSemesterAdvanceModal } from "@/components/app/drive/QuickSemesterAdvanceModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import type { CatalogSemester } from "@/lib/queries/catalog";
 import type { AcademicProfile } from "@/lib/queries/catalog";
+import type { DriveViewSemesterId } from "@/stores/drive-view-store";
 
 interface DriveAcademicBannerProps {
   profile: AcademicProfile | undefined;
   isLoading?: boolean;
+  viewSemesterId?: DriveViewSemesterId;
+  availableSemesters?: CatalogSemester[];
 }
 
-export function DriveAcademicBanner({ profile, isLoading }: DriveAcademicBannerProps) {
+export function DriveAcademicBanner({
+  profile,
+  isLoading,
+  viewSemesterId,
+  availableSemesters = [],
+}: DriveAcademicBannerProps) {
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+
   if (isLoading) {
     return (
       <div className="mb-4 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-4 py-3 text-sm text-brutal-muted">
@@ -44,25 +57,61 @@ export function DriveAcademicBanner({ profile, isLoading }: DriveAcademicBannerP
   }
 
   const subjectCount = profile.currentSubjects.length;
+  const primarySemester = profile.currentSemester;
+  const viewingOtherSemester =
+    viewSemesterId &&
+    viewSemesterId !== "all" &&
+    viewSemesterId !== primarySemester.id;
 
   return (
-    <div className="mb-4 flex flex-col gap-2 rounded-xl border-2 border-brutal-ink bg-brutal-surface px-4 py-3 shadow-brutal-sm sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2 text-sm font-semibold text-brutal-ink">
-        <GraduationCap className="h-4 w-4 shrink-0" aria-hidden />
-        <span>
-          <span className="font-mono font-extrabold">{profile.major.code}</span>
-          <span className="text-brutal-muted"> · </span>
-          {profile.currentSemester.code} — {profile.currentSemester.name}
-          <span className="text-brutal-muted"> · </span>
-          {subjectCount} môn đang học
-        </span>
+    <>
+      <div className="mb-4 flex flex-col gap-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface px-4 py-3 shadow-brutal-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-brutal-ink">
+            <GraduationCap className="h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              <span className="text-brutal-muted">Học kỳ chính:</span>{" "}
+              <span className="font-mono font-extrabold">{profile.major.code}</span>
+              <span className="text-brutal-muted"> · </span>
+              {primarySemester.code} — {primarySemester.name}
+              <span className="text-brutal-muted"> · </span>
+              {subjectCount} môn
+            </span>
+          </div>
+          {viewingOtherSemester && (
+            <p className="text-xs font-semibold text-brutal-primary">
+              Đang xem học kỳ khác trên Drive — hồ sơ và upload vẫn theo học kỳ chính.
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {availableSemesters.length > 1 && (
+            <BrutalButton
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() => setAdvanceOpen(true)}
+            >
+              Lên học kỳ
+            </BrutalButton>
+          )}
+          <Link
+            href="/profile"
+            className="text-xs font-bold text-brutal-primary underline-offset-2 hover:underline"
+          >
+            Sửa hồ sơ
+          </Link>
+        </div>
       </div>
-      <Link
-        href="/profile"
-        className="text-xs font-bold text-brutal-primary underline-offset-2 hover:underline"
-      >
-        Sửa hồ sơ
-      </Link>
-    </div>
+
+      {advanceOpen && (
+        <QuickSemesterAdvanceModal
+          majorId={profile.major.id}
+          currentSemester={primarySemester}
+          availableSemesters={availableSemesters}
+          onClose={() => setAdvanceOpen(false)}
+          onSuccess={() => setAdvanceOpen(false)}
+        />
+      )}
+    </>
   );
 }

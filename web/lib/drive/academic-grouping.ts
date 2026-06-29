@@ -66,24 +66,30 @@ export function filterRootDocumentsByCourse(
   );
 }
 
-/** Group root-level documents by enrolled subject (one section per subject). */
-export function groupRootDocumentsBySubject(
+/** Group root-level documents by curriculum course (exact course id). */
+export function groupRootDocumentsByCourse(
   documents: DriveDocument[],
-  enrolledCourses: CatalogCurriculumItem[],
+  courses: CatalogCurriculumItem[],
 ): SubjectDocumentGroup[] {
   const rootDocs = documents.filter((doc) => doc.folderId === null);
 
-  return enrolledCourses
+  return courses
     .filter((course): course is CatalogCurriculumItem & { subject: CatalogSubject } =>
       course.subject !== null,
     )
     .map((course) => ({
       subject: course.subject,
       curriculumCourseId: course.id,
-      documents: rootDocs.filter(
-        (doc) => doc.curriculumCourse?.subject?.id === course.subject.id,
-      ),
+      documents: rootDocs.filter((doc) => doc.curriculumCourse?.id === course.id),
     }));
+}
+
+/** Group root-level documents by enrolled subject (one section per subject). */
+export function groupRootDocumentsBySubject(
+  documents: DriveDocument[],
+  enrolledCourses: CatalogCurriculumItem[],
+): SubjectDocumentGroup[] {
+  return groupRootDocumentsByCourse(documents, enrolledCourses);
 }
 
 /** Root documents that do not belong to any enrolled subject for the current semester. */
