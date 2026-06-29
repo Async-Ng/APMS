@@ -37,9 +37,9 @@ export default function ProfilePage() {
   const [nameError, setNameError] = useState<string | null>(null);
 
   const {
-    data: majors,
-    isLoading: isMajorsLoading,
-    isError: isMajorsError,
+    data: curricula,
+    isLoading: isCurriculaLoading,
+    isError: isCurriculaError,
   } = useCatalogCurricula();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
@@ -65,10 +65,10 @@ export default function ProfilePage() {
     effectiveSemesterId || undefined,
   );
 
-  const { data: majorSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId || undefined);
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId || undefined);
 
   const availableSemesters =
-    majorSemesters
+    curriculumSemesters
       ?.filter((link) => link.isActive && link.semester)
       .map((link) => link.semester!)
       .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
@@ -220,7 +220,7 @@ export default function ProfilePage() {
             </p>
           )}
           {academicError && <ErrorAlert message={academicError} className="mb-3" />}
-          {isMajorsError && (
+          {isCurriculaError && (
             <ErrorAlert
               message="Không tải được danh sách ngành. Vui lòng thử lại sau."
               className="mb-3"
@@ -240,9 +240,9 @@ export default function ProfilePage() {
           )}
 
           <div className="space-y-4">
-            {isMajorsLoading ? (
+            {isCurriculaLoading ? (
               <p className="text-sm text-brutal-muted">Đang tải danh sách ngành…</p>
-            ) : majors?.length === 0 ? (
+            ) : curricula?.length === 0 ? (
               <p className="text-sm text-brutal-muted">
                 Chưa có ngành nào. Liên hệ quản trị viên.
               </p>
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
                 >
                   <option value="">Chọn ngành</option>
-                  {majors?.map((m) => (
+                  {curricula?.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.code} — {m.name}
                     </option>

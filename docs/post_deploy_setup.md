@@ -88,7 +88,7 @@ Migration document visibility idempotent:
 - Legacy `personal` -> `private`.
 - Legacy `internal` -> `public`.
 - Không đụng S3, chunks, shares, folders.
-- Không tự gán `curriculumCourseId` cho document cũ.
+- Không tự gán `courseSlotId` cho document cũ.
 
 Migration semester entities idempotent:
 
@@ -103,7 +103,7 @@ Migration semester entities idempotent:
 | 1 | `GET /api/health` | `200` |
 | 2 | Login through client/Cognito | JWT valid, local user synced |
 | 3 | `GET /api/documents?view=my` | `200`, `{ folders, documents }` |
-| 4 | `POST /api/documents/upload-intents` with `curriculumCourseId` | `201`, includes `uploadUrl` |
+| 4 | `POST /api/documents/upload-intents` with `courseSlotId` | `201`, includes `uploadUrl` |
 | 5 | PUT file to S3, then `POST /api/documents/:id/complete` | Document moves to `processing` |
 | 6 | Worker completes processing | Document becomes `ready`, chunks created |
 | 7 | `GET /api/documents?view=public&match=auto` | Public documents prioritized by academic profile |

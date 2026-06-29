@@ -66,16 +66,16 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
   const [subjectIds, setSubjectIds] = useState<string[] | null>(seed.subjectIds);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: majors, isLoading: isMajorsLoading } = useCatalogCurricula();
+  const { data: curricula, isLoading: isCurriculaLoading } = useCatalogCurricula();
   const { data: curriculum, isLoading: isCurriculumLoading } = useCatalogCourseSlots(
     curriculumId || undefined,
     semesterId || undefined,
   );
-  const { data: majorSemesters } = useCatalogCurriculumSemesters(curriculumId || undefined);
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(curriculumId || undefined);
   const updateAcademic = useUpdateAcademicProfile();
 
   const availableSemesters =
-    majorSemesters
+    curriculumSemesters
       ?.filter((link) => link.isActive && link.semester)
       .map((link) => link.semester!)
       .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
@@ -140,7 +140,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
       {step === 1 && (
         <div className="space-y-3">
           <p className="text-sm text-brutal-muted">Bạn đang theo ngành nào?</p>
-          {isMajorsLoading ? (
+          {isCurriculaLoading ? (
             <p className="text-sm text-brutal-muted">Đang tải…</p>
           ) : (
             <select
@@ -154,7 +154,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
               data-initial-focus
             >
               <option value="">Chọn ngành</option>
-              {majors?.map((m) => (
+              {curricula?.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.code} — {m.name}
                 </option>

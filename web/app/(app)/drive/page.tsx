@@ -82,14 +82,14 @@ export default function DrivePage() {
     pastViewSemesterId,
   );
 
-  const { data: majorSemesters } = useCatalogCurriculumSemesters(profile?.curriculum?.id);
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(profile?.curriculum?.id);
   const availableSemesters = useMemo(
     () =>
-      (majorSemesters ?? [])
+      (curriculumSemesters ?? [])
         .filter((link) => link.isActive && link.semester)
         .map((link) => link.semester!)
         .sort((a, b) => a.sortOrder - b.sortOrder),
-    [majorSemesters],
+    [curriculumSemesters],
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);

@@ -75,12 +75,12 @@ export function CourseSlotsPanel({
   const [error, setError] = useState<string | null>(null);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
-  const { data: formMajorSemesters } = useAdminCurriculumSemesters(form.curriculumId || undefined);
+  const { data: formCurriculumSemesters } = useAdminCurriculumSemesters(form.curriculumId || undefined);
 
   const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
   const semesterOptions =
-    formMajorSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
+    formCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
 
   const resolvedSemesterId = useMemo(() => {
     if (!form.curriculumId || semesterOptions.length === 0) return form.semesterId;

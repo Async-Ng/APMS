@@ -26,13 +26,13 @@ import {
 } from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
-interface MajorFormState {
+interface CurriculumFormState {
   code: string;
   name: string;
   description: string;
 }
 
-const EMPTY_FORM: MajorFormState = { code: "", name: "", description: "" };
+const EMPTY_FORM: CurriculumFormState = { code: "", name: "", description: "" };
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -41,13 +41,13 @@ function FieldError({ message }: { message?: string }) {
 
 export function CurriculaPanel() {
   const { data: curricula, isLoading, isError } = useAdminCurricula();
-  const { mutate: createMajor, isPending: isCreating } = useCreateCurriculum();
-  const { mutate: updateMajor, isPending: isUpdating } = useUpdateCurriculum();
-  const { mutate: archiveMajor, isPending: isArchiving } = useArchiveCurriculum();
+  const { mutate: createCurriculum, isPending: isCreating } = useCreateCurriculum();
+  const { mutate: updateCurriculum, isPending: isUpdating } = useUpdateCurriculum();
+  const { mutate: archiveCurriculum, isPending: isArchiving } = useArchiveCurriculum();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Curriculum | null>(null);
-  const [form, setForm] = useState<MajorFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<CurriculumFormState>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [archiveTarget, setArchiveTarget] = useState<Curriculum | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export function CurriculaPanel() {
     };
 
     if (editing) {
-      updateMajor(
+      updateCurriculum(
         { id: editing.id, body },
         {
           onSuccess: () => setFormOpen(false),
@@ -110,7 +110,7 @@ export function CurriculaPanel() {
         },
       );
     } else {
-      createMajor(body, {
+      createCurriculum(body, {
         onSuccess: () => setFormOpen(false),
         onError: (err) => setError(getUserErrorMessage(err)),
       });
@@ -120,7 +120,7 @@ export function CurriculaPanel() {
   function handleReactivate(curriculum: Curriculum) {
     setError(null);
     setPendingCurriculumId(curriculum.id);
-    updateMajor(
+    updateCurriculum(
       { id: curriculum.id, body: { isActive: true } },
       {
         onSettled: () => setPendingCurriculumId(null),
@@ -132,7 +132,7 @@ export function CurriculaPanel() {
   function confirmArchive() {
     if (!archiveTarget) return;
     setError(null);
-    archiveMajor(archiveTarget.id, {
+    archiveCurriculum(archiveTarget.id, {
       onSuccess: () => setArchiveTarget(null),
       onError: (err) => {
         setError(getUserErrorMessage(err));
