@@ -36,7 +36,7 @@ PlantUML Activity swimlane (`|Tên lane|`) đảm bảo hai cột dọc **cùng 
 
 **SRS:** FR-001–FR-012, BR-002
 
-Sinh viên đăng nhập Google; hệ thống kiểm tra email trong allowlist. Nếu được phép, tài khoản được tạo hoặc đồng bộ. Khi vào Drive, nếu hồ sơ học thuật chưa hoàn thành, sinh viên chọn Ngành, Học kỳ hiện tại và ít nhất một Môn đang học từ chương trình đào tạo, rồi lưu. Hệ thống xác thực môn thuộc đúng Ngành–Học kỳ trước khi ghi nhận trạng thái **Đã hoàn thành**.
+Sinh viên đăng nhập Google; hệ thống kiểm tra email trong allowlist. Nếu được phép, tài khoản được tạo hoặc đồng bộ. Khi vào Drive, nếu hồ sơ học thuật chưa hoàn thành, sinh viên chọn Ngành và Học kỳ hiện tại; hệ thống **mặc định chọn tất cả** môn trong CTĐT của học kỳ đó, sinh viên bỏ tick môn không học rồi lưu. Hệ thống xác thực môn thuộc đúng Ngành–Học kỳ trước khi ghi nhận trạng thái **Đã hoàn thành**.
 
 **File:** [diagrams/apms-activity-1.puml](./diagrams/apms-activity-1.puml)
 

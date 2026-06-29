@@ -265,8 +265,9 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Actor | Người dùng |
 | Màn hình | Hồ sơ của tôi |
 | Điều kiện thực hiện | Đã đăng nhập; danh mục học thuật đã được thiết lập. |
-| Người dùng thực hiện | Chọn Ngành → chọn Học kỳ → chọn một hoặc nhiều Môn đang học → nhấn "Lưu hồ sơ". |
+| Người dùng thực hiện | Chọn Ngành → chọn Học kỳ → điều chỉnh danh sách Môn đang học (mặc định đã chọn tất cả môn trong CTĐT của học kỳ) → nhấn "Lưu hồ sơ". |
 | Dữ liệu cần nhập | Ngành, Học kỳ, danh sách Môn đang học. |
+| Hành vi mặc định | Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong chương trình đào tạo của học kỳ đó (tối đa 30); người dùng có thể bỏ chọn trước khi lưu. |
 | Kết quả thành công | Hệ thống lưu hồ sơ và hiển thị thông báo "Đã lưu hồ sơ học thuật"; trạng thái chuyển sang "Đã hoàn thành". |
 | Ngoại lệ | Nếu chưa chọn ngành/học kỳ hoặc chưa chọn môn nào, hệ thống hiển thị thông báo yêu cầu bổ sung và không lưu. |
 
@@ -911,6 +912,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-009-01: Khi chọn đủ ngành, học kỳ và ít nhất một môn hợp lệ, hệ thống lưu và đánh dấu hồ sơ "Đã hoàn thành".
 - [ ] AC-009-02: Khi chọn học kỳ không thuộc ngành, hệ thống không cho lưu.
 - [ ] AC-009-03: Khi chưa chọn môn nào, hệ thống yêu cầu chọn ít nhất một môn.
+- [ ] AC-009-04: Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong CTĐT của học kỳ đó; lưu sau khi bỏ bớt vẫn hợp lệ nếu còn ít nhất một môn.
 
 ### Tải tài liệu (FR-013, FR-014, FR-019)
 - [ ] AC-013-01: Khi tải tệp PDF/DOCX/PPTX hợp lệ kèm môn học thuộc hồ sơ, hệ thống tạo tài liệu và bắt đầu xử lý.

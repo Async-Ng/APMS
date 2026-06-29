@@ -34,7 +34,12 @@ endif
 |Sinh viên|
 :Chọn Ngành;
 :Chọn Học kỳ hiện tại;
-:Chọn ít nhất một Môn đang học;
+
+|Hệ thống APMS|
+:Mặc định chọn tất cả môn trong CTĐT của học kỳ;
+
+|Sinh viên|
+:Bỏ chọn môn không học (nếu cần);
 :Nhấn **Lưu hồ sơ**;
 
 |Hệ thống APMS|

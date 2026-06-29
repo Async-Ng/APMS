@@ -14,18 +14,37 @@ export interface CatalogSubject {
   name: string;
 }
 
+export interface CatalogSemester {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface CatalogMajorSemester {
+  id: string;
+  majorId: string;
+  semesterId: string;
+  sortOrder: number | null;
+  isActive: boolean;
+  semester: CatalogSemester | null;
+  effectiveSortOrder: number;
+}
+
 export interface CatalogCurriculumItem {
   id: string;
   majorId: string;
-  semesterNumber: number;
+  semesterId: string;
   subjectId: string;
   major: CatalogMajor | null;
   subject: CatalogSubject | null;
+  semester: CatalogSemester | null;
 }
 
 export interface AcademicProfile {
   major: CatalogMajor | null;
-  currentSemester: number | null;
+  currentSemester: CatalogSemester | null;
   currentSubjects: CatalogSubject[];
   isComplete: boolean;
 }
@@ -52,9 +71,22 @@ export function useCatalogMajors() {
   });
 }
 
+export function useCatalogMajorSemesters(majorId: string | undefined) {
+  return useQuery({
+    queryKey: ["catalog", "major-semesters", majorId],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: CatalogMajorSemester[] }>(
+        `/catalog/majors/${majorId}/semesters`,
+      );
+      return res.data.data;
+    },
+    enabled: !!majorId,
+  });
+}
+
 export interface UpdateAcademicProfileBody {
   majorId: string;
-  currentSemester: number;
+  currentSemesterId: string;
   currentSubjectIds: string[];
 }
 
@@ -75,13 +107,13 @@ export function useUpdateAcademicProfile() {
   });
 }
 
-export function useCatalogCurriculum(majorId?: string, semesterNumber?: number) {
+export function useCatalogCurriculum(majorId?: string, semesterId?: string) {
   return useQuery({
-    queryKey: ["catalog", "curriculum", majorId, semesterNumber],
+    queryKey: ["catalog", "curriculum", majorId, semesterId],
     queryFn: async () => {
       const res = await api.get<{ status: string; data: CatalogCurriculumItem[] }>(
         `/catalog/majors/${majorId}/curriculum`,
-        { params: semesterNumber !== undefined ? { semesterNumber } : undefined },
+        { params: semesterId !== undefined ? { semesterId } : undefined },
       );
       return res.data.data;
     },
@@ -95,7 +127,7 @@ export function useEnrolledCourses() {
   const profileQuery = useAcademicProfile();
   const curriculumQuery = useCatalogCurriculum(
     profileQuery.data?.major?.id,
-    profileQuery.data?.currentSemester ?? undefined,
+    profileQuery.data?.currentSemester?.id,
   );
 
   const profile = profileQuery.data;

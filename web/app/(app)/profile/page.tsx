@@ -8,6 +8,11 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
+import {
+  defaultSubjectIds,
+  MAX_ACADEMIC_SUBJECTS,
+  resolveSelectedSubjectIds,
+} from "@/lib/academic-profile";
 import { useAcademicProfile, useCatalogCurriculum, useCatalogMajorSemesters, useCatalogMajors, type CatalogCurriculumItem } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile, useUpdateDisplayName } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
@@ -40,7 +45,7 @@ export default function ProfilePage() {
 
   const [majorId, setMajorId] = useState("");
   const [semesterId, setSemesterId] = useState("");
-  const [subjectIds, setSubjectIds] = useState<string[]>([]);
+  const [subjectIds, setSubjectIds] = useState<string[] | null>(null);
   const [academicError, setAcademicError] = useState<string | null>(null);
   const [academicSuccess, setAcademicSuccess] = useState<string | null>(null);
 
@@ -77,12 +82,14 @@ export default function ProfilePage() {
     effectiveMajorId === majorFromProfile &&
     effectiveSemesterId === semesterFromProfile;
 
-  const selectedSubjectIds =
-    subjectIds.length > 0
-      ? subjectIds
-      : selectionMatchesProfile
-        ? subjectsFromProfile
-        : [];
+  const selectedSubjectIds = resolveSelectedSubjectIds({
+    subjectIds,
+    selectionMatchesProfile,
+    subjectsFromProfile,
+    availableSubjects,
+  });
+
+  const subjectsOverLimit = availableSubjects.length > MAX_ACADEMIC_SUBJECTS;
 
   const isAcademicComplete = Boolean(profile?.isComplete);
 
@@ -251,7 +258,7 @@ export default function ProfilePage() {
                     setAcademicSuccess(null);
                     setMajorId(e.target.value);
                     setSemesterId("");
-                    setSubjectIds([]);
+                    setSubjectIds(null);
                   }}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
                 >
@@ -272,7 +279,7 @@ export default function ProfilePage() {
                     setAcademicError(null);
                     setAcademicSuccess(null);
                     setSemesterId(e.target.value);
-                    setSubjectIds([]);
+                    setSubjectIds(null);
                   }}
                   disabled={!effectiveMajorId}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink disabled:opacity-50"
@@ -289,7 +296,52 @@ export default function ProfilePage() {
             )}
 
             <div>
-              <p className="text-xs font-bold text-brutal-muted">Môn đang học</p>
+              <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold text-brutal-muted">Môn đang học</p>
+                  <p className="mt-0.5 text-xs text-brutal-muted">
+                    Mặc định chọn tất cả môn trong học kỳ — bỏ tick môn bạn không học.
+                  </p>
+                </div>
+                {effectiveSemesterId && availableSubjects.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-brutal-muted">
+                      Đã chọn {selectedSubjectIds.length} / {availableSubjects.length} môn
+                    </span>
+                    <BrutalButton
+                      type="button"
+                      variant="ghost"
+                      className="!w-auto !px-2 !py-1 text-xs"
+                      onClick={() => {
+                        setAcademicError(null);
+                        setAcademicSuccess(null);
+                        setSubjectIds(defaultSubjectIds(availableSubjects));
+                      }}
+                    >
+                      Chọn tất cả
+                    </BrutalButton>
+                    <BrutalButton
+                      type="button"
+                      variant="ghost"
+                      className="!w-auto !px-2 !py-1 text-xs"
+                      onClick={() => {
+                        setAcademicError(null);
+                        setAcademicSuccess(null);
+                        setSubjectIds([]);
+                      }}
+                    >
+                      Bỏ chọn
+                    </BrutalButton>
+                  </div>
+                )}
+              </div>
+              {subjectsOverLimit && effectiveSemesterId && (
+                <ErrorAlert
+                  variant="inline"
+                  className="mb-2"
+                  message={`Học kỳ có ${availableSubjects.length} môn; hệ thống chọn tối đa ${MAX_ACADEMIC_SUBJECTS} môn theo mã môn. Bỏ tick môn không học trước khi lưu.`}
+                />
+              )}
               <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
                 {isProfileLoading || (effectiveMajorId && isCurriculumLoading) ? (
                   <p className="text-sm text-brutal-muted">Đang tải…</p>
@@ -378,7 +430,7 @@ export default function ProfilePage() {
                       onSuccess: () => {
                         setMajorId("");
                         setSemesterId("");
-                        setSubjectIds([]);
+                        setSubjectIds(null);
                         setAcademicSuccess("Đã lưu hồ sơ học thuật.");
                       },
                     },
