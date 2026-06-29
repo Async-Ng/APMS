@@ -42,14 +42,13 @@ type IncomingView = "grid" | "list";
 const TABS: { id: TabId; label: string; description: string }[] = [
   {
     id: "incoming",
-    label: "Chia sẻ với tôi",
-    description: "Mở thư mục và tệp mà người khác đã chia sẻ với bạn.",
+    label: "Nhận được",
+    description: "Thư mục và tệp người khác đã chia sẻ với bạn (chỉ đọc).",
   },
   {
     id: "outgoing",
-    label: "Tôi đã chia sẻ",
-    description:
-      "Xem ai đang có quyền truy cập và thu hồi hoặc thêm người nhận.",
+    label: "Đã gửi",
+    description: "Xem ai đang có quyền truy cập — lời mời hết hạn sau 7 ngày.",
   },
 ];
 
@@ -346,7 +345,7 @@ export default function SharedPage() {
 
   return (
     <>
-      <Topbar breadcrumbs={[{ label: "Đã chia sẻ" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Đã chia sẻ" }]} />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
         <div className="mb-6 flex items-start gap-3">

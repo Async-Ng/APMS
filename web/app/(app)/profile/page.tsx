@@ -107,7 +107,6 @@ export default function ProfilePage() {
     <div className="flex w-full min-w-0 flex-1 flex-col">
       <Topbar
         breadcrumbs={[{ label: "Hồ sơ" }]}
-        onMenuOpen={() => {}}
         showBreadcrumbRootIcon={false}
       />
 
@@ -124,7 +123,7 @@ export default function ProfilePage() {
               Hồ sơ của tôi
             </h1>
             <p className="text-sm text-brutal-muted">
-              Cập nhật tên hiển thị và hồ sơ học thuật để dùng Diễn đàn.
+              Cập nhật tên hiển thị và hồ sơ học thuật để Drive và Thư viện gợi ý đúng môn.
             </p>
           </div>
         </div>

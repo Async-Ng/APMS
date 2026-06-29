@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Star,
   Trash2,
+  User2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -48,13 +49,18 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Thư viện công khai",
-    href: "/forum",
+    href: "/library",
     icon: <Globe className="h-5 w-5 shrink-0" />,
   },
   {
     label: "Trò chuyện AI",
     href: "/chat",
     icon: <MessageSquare className="h-5 w-5 shrink-0" />,
+  },
+  {
+    label: "Hồ sơ của tôi",
+    href: "/profile",
+    icon: <User2 className="h-5 w-5 shrink-0" />,
   },
   {
     label: "Thùng rác",
@@ -106,10 +112,15 @@ export function Sidebar({
     (item) => !item.adminOnly || user?.role === "admin",
   );
 
-  const isActive = (href: string) =>
-    href === "/drive"
-      ? pathname === "/drive" || pathname.startsWith("/drive/")
-      : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === "/drive") {
+      return pathname === "/drive" || pathname.startsWith("/drive/");
+    }
+    if (href === "/library") {
+      return pathname.startsWith("/library") || pathname.startsWith("/forum");
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <>
@@ -128,7 +139,7 @@ export function Sidebar({
         id="sidebar"
         aria-label="Điều hướng chính"
         className={cn(
-          "fixed left-0 top-0 flex h-dvh flex-col overflow-x-hidden border-r-3 border-brutal-ink bg-brutal-surface transition-[width,transform] duration-200 ease-out",
+          "fixed left-0 top-0 flex h-dvh flex-col overflow-x-hidden border-r-2 border-brutal-ink bg-brutal-surface transition-[width,transform] duration-200 ease-out",
           isCollapsed
             ? "w-[var(--sidebar-collapsed-width)]"
             : "w-[var(--sidebar-width)]",
@@ -141,7 +152,7 @@ export function Sidebar({
         {/* Logo + collapse toggle */}
         <div
           className={cn(
-            "flex items-center border-b-3 border-brutal-ink px-3 py-3",
+            "flex items-center border-b-2 border-brutal-ink px-3 py-3",
             isCollapsed ? "justify-center" : "justify-between",
           )}
         >
@@ -226,7 +237,7 @@ export function Sidebar({
         {/* User section */}
         <div
           className={cn(
-            "mt-auto w-full min-w-0 border-t-3 border-brutal-ink p-3",
+            "mt-auto w-full min-w-0 border-t-2 border-brutal-ink p-3",
             isCollapsed && "flex justify-center",
           )}
         >

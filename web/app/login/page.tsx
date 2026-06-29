@@ -124,8 +124,8 @@ export default function LoginPage() {
                 <span className="text-brutal-primary">tài liệu của bạn</span>
               </h1>
               <p className="mx-auto max-w-lg text-base text-brutal-muted lg:mx-0">
-                Đăng nhập Google để quản lý tài liệu học tập và trò chuyện với trợ lý AI
-                dựa trên file của bạn.
+                Gom tài liệu theo môn, tìm nội dung bằng câu hỏi, và hỏi AI có trích dẫn nguồn —
+                dành cho sinh viên FPT.
               </p>
             </div>
             <ul className="mx-auto hidden max-w-md space-y-4 text-left lg:mx-0 lg:block">

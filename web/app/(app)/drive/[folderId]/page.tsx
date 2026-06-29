@@ -55,7 +55,6 @@ function FolderPageContent({ folderId }: { folderId: string }) {
     <>
       <Topbar
         breadcrumbs={breadcrumbs}
-        onMenuOpen={() => {}}
         onUploadClick={isShared ? undefined : () => setUploadOpen(true)}
         actions={
           isShared ? undefined : (

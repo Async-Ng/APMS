@@ -38,7 +38,7 @@ import { useDriveContents } from "@/lib/queries/drive";
 import { useDriveViewStore } from "@/stores/drive-view-store";
 
 export default function DrivePage() {
-  const { data, isLoading, isError } = useDriveContents();
+  const { data, isLoading, isError, refetch } = useDriveContents();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
   const storedViewSemesterId = useDriveViewStore((s) => s.driveViewSemesterId);
   const setDriveViewSemesterId = useDriveViewStore((s) => s.setDriveViewSemesterId);
@@ -174,7 +174,6 @@ export default function DrivePage() {
     <>
       <Topbar
         breadcrumbs={[{ label: "Drive của tôi" }]}
-        onMenuOpen={() => {}}
         onUploadClick={() => openUpload()}
         actions={
           <>
@@ -228,7 +227,7 @@ export default function DrivePage() {
             className="mb-4"
             message="Không tải được tài liệu. Kiểm tra kết nối mạng và thử lại."
             actionLabel="Tải lại"
-            onAction={() => window.location.reload()}
+            onAction={() => void refetch()}
           />
         )}
 
@@ -239,11 +238,11 @@ export default function DrivePage() {
         ) : isEmpty ? (
           <EmptyState
             title="Drive trống"
-            description="Tải lên tệp PDF, DOCX hoặc PPTX để bắt đầu, hoặc tạo thư mục để sắp xếp tài liệu."
+            description="Tải slide buổi học vừa rồi — PDF, DOCX hoặc PPTX, gắn đúng môn là xong."
             action={
               !uploadDisabledForView ? (
                 <BrutalButton variant="primary" onClick={() => openUpload()}>
-                  Tải lên tệp đầu tiên
+                  Tải slide ngay
                 </BrutalButton>
               ) : undefined
             }

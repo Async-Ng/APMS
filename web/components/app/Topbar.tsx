@@ -1,37 +1,38 @@
 "use client";
 
-import { Menu, Upload } from "lucide-react";
+import Link from "next/link";
+import { Menu, Search, Upload } from "lucide-react";
 
+import { useAppShell } from "@/components/app/AppShellContext";
 import { BreadcrumbNav, type BreadcrumbItem } from "@/components/ui/BreadcrumbNav";
 import { cn } from "@/lib/cn";
 
 interface TopbarProps {
   breadcrumbs: BreadcrumbItem[];
-  onMenuOpen: () => void;
   onUploadClick?: () => void;
   actions?: React.ReactNode;
   className?: string;
   showBreadcrumbRootIcon?: boolean;
+  showSearch?: boolean;
 }
 
 /**
- * Sticky topbar with:
- * - Hamburger (mobile) / breadcrumb (all sizes)
- * - Optional extra action slot (e.g. New Folder button)
- * - Upload button
+ * Sticky topbar with hamburger (mobile), breadcrumb, global search, and upload.
  */
 export function Topbar({
   breadcrumbs,
-  onMenuOpen,
   onUploadClick,
   actions,
   className,
   showBreadcrumbRootIcon = true,
+  showSearch = true,
 }: TopbarProps) {
+  const { openMobileMenu, isMobileOpen } = useAppShell();
+
   return (
     <header
       className={cn(
-        "sticky top-0 flex items-center gap-3 border-b-3 border-brutal-ink bg-brutal-surface px-4 py-0",
+        "sticky top-0 flex items-center gap-2 border-b-2 border-brutal-ink bg-brutal-surface px-3 py-0 sm:gap-3 sm:px-4",
         "transition-[padding-left] duration-200",
         className,
       )}
@@ -40,27 +41,42 @@ export function Topbar({
         zIndex: "var(--z-topbar)",
       }}
     >
-      {/* Mobile hamburger */}
       <button
-        onClick={onMenuOpen}
+        onClick={openMobileMenu}
         className="focus-brutal flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A] lg:hidden"
         aria-label="Mở menu điều hướng"
-        aria-expanded="false"
+        aria-expanded={isMobileOpen}
         aria-controls="sidebar"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Breadcrumb — fills remaining space */}
-      <div className="flex min-w-0 flex-1">
-        <BreadcrumbNav
-          items={breadcrumbs}
-          showRootIcon={showBreadcrumbRootIcon}
-        />
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <BreadcrumbNav items={breadcrumbs} showRootIcon={showBreadcrumbRootIcon} />
       </div>
 
-      {/* Action area */}
       <div className="flex shrink-0 items-center gap-2">
+        {showSearch && (
+          <Link
+            href="/search"
+            className="focus-brutal hidden items-center gap-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium text-brutal-muted shadow-brutal-sm transition-colors hover:bg-brutal-surface hover:text-brutal-ink md:inline-flex"
+            aria-label="Tìm kiếm tài liệu"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="max-w-[12rem] truncate">Tìm tài liệu…</span>
+          </Link>
+        )}
+
+        {showSearch && (
+          <Link
+            href="/search"
+            className="focus-brutal flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal md:hidden"
+            aria-label="Tìm kiếm tài liệu"
+          >
+            <Search className="h-4 w-4" />
+          </Link>
+        )}
+
         {actions}
 
         {onUploadClick && (
@@ -74,7 +90,6 @@ export function Topbar({
           </button>
         )}
 
-        {/* Mobile upload FAB */}
         {onUploadClick && (
           <button
             onClick={onUploadClick}

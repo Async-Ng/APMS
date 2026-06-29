@@ -1,7 +1,7 @@
 "use client";
 
 import { Layers, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
 import {
@@ -78,25 +78,24 @@ export function CurriculumPanel() {
   const semesterOptions =
     formMajorSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
 
+  const resolvedSemesterId = useMemo(() => {
+    if (!form.majorId || semesterOptions.length === 0) return form.semesterId;
+    if (semesterOptions.some((s) => s.id === form.semesterId)) return form.semesterId;
+    return semesterOptions[0]?.id ?? "";
+  }, [form.majorId, form.semesterId, semesterOptions]);
+
   const isFormValid = useMemo(
     () =>
       curriculumFormSchema.safeParse({
         majorId: form.majorId,
         subjectId: form.subjectId,
-        semesterId: form.semesterId,
+        semesterId: resolvedSemesterId,
       }).success &&
       activeMajors.length > 0 &&
       activeSubjects.length > 0 &&
       semesterOptions.length > 0,
-    [form, activeMajors.length, activeSubjects.length, semesterOptions.length],
+    [form, activeMajors.length, activeSubjects.length, semesterOptions.length, resolvedSemesterId],
   );
-
-  useEffect(() => {
-    if (!form.majorId || semesterOptions.length === 0) return;
-    if (!semesterOptions.some((s) => s.id === form.semesterId)) {
-      setForm((f) => ({ ...f, semesterId: semesterOptions[0]?.id ?? "" }));
-    }
-  }, [form.majorId, form.semesterId, semesterOptions]);
 
   function openCreate() {
     const defaultMajor = activeMajors[0]?.id ?? "";
@@ -127,7 +126,7 @@ export function CurriculumPanel() {
     const parsed = curriculumFormSchema.safeParse({
       majorId: form.majorId,
       subjectId: form.subjectId,
-      semesterId: form.semesterId,
+      semesterId: resolvedSemesterId,
     });
     if (!parsed.success) {
       setFieldErrors(formatZodFieldErrors(parsed.error));
@@ -393,7 +392,7 @@ export function CurriculumPanel() {
         <label className="block text-sm font-bold">
           Học kỳ
           <select
-            value={form.semesterId}
+            value={resolvedSemesterId}
             onChange={(e) => {
               setForm((f) => ({ ...f, semesterId: e.target.value }));
               setFieldErrors((fe) => ({ ...fe, semesterId: "" }));
