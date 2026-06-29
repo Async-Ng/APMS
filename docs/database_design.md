@@ -8,11 +8,11 @@ Business rules: see `docs/SRS.md` (FR/BR). APMS dùng MongoDB Atlas cho metadata
 | --- | --- |
 | `users` | User local profile, role, disabled state, quota, academic profile |
 | `access_emails` | Exact-email allowlist ngoài domain mặc định |
-| `majors` | Ngành học |
+| `curriculums` | Ngành học |
 | `semesters` | Học kỳ (entity: code, name, sortOrder) |
-| `majorsemesters` | Junction ngành ↔ học kỳ |
+| `curriculumsemesters` | Junction ngành ↔ học kỳ |
 | `subjects` | Môn học |
-| `curriculumcourses` | Mapping ngành + semesterId + môn |
+| `CourseSlots` | Mapping ngành + semesterId + môn |
 | `folders` | Cây thư mục cá nhân |
 | `documents` | Metadata tài liệu |
 | `document_chunks` | Text chunks + embeddings |
@@ -31,7 +31,7 @@ Important fields:
 | --- | --- | --- |
 | `ownerId` | ObjectId | Required, ref `users` |
 | `folderId` | ObjectId \| null | Folder chứa tài liệu |
-| `curriculumCourseId` | ObjectId \| null | Required for new uploads; legacy rows may still be null until assigned |
+| `courseSlotId` | ObjectId \| null | Required for new uploads; legacy rows may still be null until assigned |
 | `visibility` | `private | public` | Default `private` |
 | `title` | string | Display title |
 | `originalFilename` | string | Original upload name |
@@ -55,7 +55,7 @@ Indexes in source:
 { ownerId: 1, deletedAt: 1 }
 { ownerId: 1, isStarred: 1 }
 { status: 1 }
-{ visibility: 1, curriculumCourseId: 1, deletedAt: 1 }
+{ visibility: 1, courseSlotId: 1, deletedAt: 1 }
 ```
 
 ## Visibility Semantics
@@ -63,7 +63,7 @@ Indexes in source:
 - `private`: owner can read/mutate; shared recipients can read through `/api/shares` access.
 - `public`: active users can discover/read system-wide; only owner can mutate.
 - Public listing filters out deleted documents and pending uploads.
-- Public documents must have `curriculumCourseId` for normal discovery.
+- Public documents must have `courseSlotId` for normal discovery.
 
 Legacy enum values are handled by `pnpm migrate:document-visibility`: old `personal` becomes `private`; old `internal` becomes `public`.
 
@@ -78,32 +78,32 @@ Legacy enum values are handled by `pnpm migrate:document-visibility`: old `perso
 | `sortOrder` | Global sort in dropdowns |
 | `isActive` | Soft archive |
 
-### `majorsemesters`
+### `curriculumsemesters`
 
 Junction **Major ↔ Semester**. Admin assigns semesters to a major before curriculum mapping.
 
 | Field | Notes |
 | --- | --- |
-| `majorId`, `semesterId` | Unique pair (BR-018) |
+| `curriculumId`, `semesterId` | Unique pair (BR-018) |
 | `sortOrder` | Optional per-major order override |
 | `isActive` | Soft-archive: remove semester from major without deleting global semester (BR-020) |
 
-### `curriculumcourses`
+### `CourseSlots`
 
 | Field | Notes |
 | --- | --- |
-| `majorId` | Ref `majors` |
+| `curriculumId` | Ref `curriculums` |
 | `semesterId` | Ref `semesters` (replaces legacy `semesterNumber`) |
 | `subjectId` | Ref `subjects` |
 
-Unique index: `{ majorId, semesterId, subjectId }` (BR-019). `(majorId, semesterId)` must exist in active `majorsemesters` (BR-018). Catalog entries use soft-archive (`isActive`) and cannot be deactivated/changed while still referenced by users or documents (BR-020, BR-021).
+Unique index: `{ curriculumId, semesterId, subjectId }` (BR-019). `(curriculumId, semesterId)` must exist in active `curriculumsemesters` (BR-018). Catalog entries use soft-archive (`isActive`) and cannot be deactivated/changed while still referenced by users or documents (BR-020, BR-021).
 
 ### `users` academic profile
 
 | Field | Notes |
 | --- | --- |
-| `majorId` | Ref `majors` |
-| `currentSemesterId` | Ref `semesters`; must belong to `majorsemesters` for selected major |
+| `curriculumId` | Ref `curriculums` |
+| `currentSemesterId` | Ref `semesters`; must belong to `curriculumsemesters` for selected major |
 | `currentSubjectIds` | Ref `subjects` |
 | `storageUsedBytes` | Bytes currently used by the user's documents |
 | `storageQuotaBytes` | Storage quota, default 500 MB (`524_288_000`) |

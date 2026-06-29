@@ -51,7 +51,7 @@ Query:
 | `sort` | `newest | oldest | title` | `newest` | Document sort |
 | `page` | number | `1` | Used by public view pagination |
 | `limit` | number, max `100` | `20` | Used by public view pagination |
-| `majorId` | ObjectId | none | Public academic filter |
+| `curriculumId` | ObjectId | none | Public academic filter |
 | `semesterId` | ObjectId | none | Public academic filter |
 | `subjectId` | ObjectId | none | Public academic filter |
 | `match` | `auto | exact | related | all` | `auto` | Public matching behavior |
@@ -66,7 +66,7 @@ Response shape:
       "id": "documentId",
       "ownerId": "userId",
       "folderId": null,
-      "curriculumCourseId": "courseId",
+      "courseSlotId": "courseId",
       "visibility": "public",
       "title": "Lecture 01.pdf",
       "status": "ready",
@@ -77,7 +77,7 @@ Response shape:
         "email": "student@fpt.edu.vn",
         "avatarUrl": null
       },
-      "curriculumCourse": {
+      "CourseSlot": {
         "id": "courseId",
         "semesterId": "semesterObjectId",
         "semester": { "id": "semesterObjectId", "code": "HK1", "name": "Học kỳ 1" },
@@ -112,14 +112,14 @@ Creates a pending document and returns a presigned S3 PUT URL.
   "fileSizeBytes": 102400,
   "title": "Lecture 01",
   "folderId": null,
-  "curriculumCourseId": "courseObjectId",
+  "courseSlotId": "courseObjectId",
   "visibility": "private"
 }
 ```
 
 Rules:
 
-- `curriculumCourseId` is required for new uploads (FR-013). Uploading a document without a course is rejected (BR-006).
+- `courseSlotId` is required for new uploads (FR-013). Uploading a document without a course is rejected (BR-006).
 - The course must belong to the user's own academic profile (BR-007).
 - `mimeType` must be PDF, DOCX, or PPTX; other types are rejected (FR-013, BR-008).
 - `fileSizeBytes` must be ≤ 50 MB per file (`MAX_UPLOAD_BYTES`) and within the user's 500 MB storage quota (FR-014, BR-009).
@@ -136,7 +136,7 @@ The API verifies the S3 object, updates quota, and moves the document into proce
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/api/documents/:id` | Read metadata; `?download=true` adds a presigned download URL (expires after 15 minutes, `S3_PRESIGN_EXPIRES_SECONDS`) when allowed |
-| `PATCH` | `/api/documents/:id` | Owner updates `title`, `tags`, `folderId`, `curriculumCourseId`, `visibility` |
+| `PATCH` | `/api/documents/:id` | Owner updates `title`, `tags`, `folderId`, `courseSlotId`, `visibility` |
 | `DELETE` | `/api/documents/:id` | Owner soft delete |
 | `DELETE` | `/api/documents/:id/permanent` | Owner permanent delete from trash |
 | `POST` | `/api/documents/:id/restore` | Owner restore |
@@ -150,12 +150,12 @@ Patch example:
   "title": "Updated Lecture",
   "tags": ["oop", "week-1"],
   "folderId": null,
-  "curriculumCourseId": "courseObjectId",
+  "courseSlotId": "courseObjectId",
   "visibility": "public"
 }
 ```
 
-`curriculumCourseId = null` is not accepted in update payloads.
+`courseSlotId = null` is not accepted in update payloads.
 
 ## Folders
 
@@ -187,12 +187,12 @@ Patch example:
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/api/catalog/majors` | Active majors |
+| `GET` | `/api/catalog/curricula` | Active majors |
 | `GET` | `/api/catalog/semesters` | Active semesters |
-| `GET` | `/api/catalog/majors/:majorId/semesters` | Semesters assigned to a major |
-| `GET` | `/api/catalog/majors/:majorId/curriculum?semesterId=` | Subjects for major + semester |
+| `GET` | `/api/catalog/curricula/:curriculumId/semesters` | Semesters assigned to a major |
+| `GET` | `/api/catalog/curricula/:curriculumId/curriculum?semesterId=` | Subjects for major + semester |
 
-### `GET /api/catalog/majors`
+### `GET /api/catalog/curricula`
 
 Returns active majors sorted by code.
 
@@ -213,7 +213,7 @@ Returns active majors sorted by code.
 }
 ```
 
-### `GET /api/catalog/majors/{majorId}/curriculum`
+### `GET /api/catalog/curricula/{curriculumId}/curriculum`
 
 Returns active curriculum courses for the major. Optional query `semesterId` filters to one semester.
 
@@ -223,7 +223,7 @@ Returns active curriculum courses for the major. Optional query `semesterId` fil
   "data": [
     {
       "id": "507f1f77bcf86cd799439012",
-      "majorId": "507f1f77bcf86cd799439011",
+      "curriculumId": "507f1f77bcf86cd799439011",
       "semesterId": "507f1f77bcf86cd799439014",
       "subjectId": "507f1f77bcf86cd799439013",
       "isActive": true,
@@ -237,7 +237,7 @@ Returns active curriculum courses for the major. Optional query `semesterId` fil
 }
 ```
 
-Returns `404` when `majorId` is missing or inactive.
+Returns `404` when `curriculumId` is missing or inactive.
 
 ### `GET /api/users/me/academic-profile`
 
@@ -265,23 +265,23 @@ Updates the signed-in user's academic profile. Every subject must be active and 
 
 ```json
 {
-  "majorId": "507f1f77bcf86cd799439011",
+  "curriculumId": "507f1f77bcf86cd799439011",
   "currentSemesterId": "507f1f77bcf86cd799439014",
   "currentSubjectIds": ["507f1f77bcf86cd799439013"]
 }
 ```
 
-`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `CURRICULUM_NOT_ENROLLED` when a subject is outside the selected major/semester curriculum.
+`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `COURSE_SLOT_NOT_IN_PROFILE` when a subject is outside the selected major/semester curriculum.
 
 Admin academic CRUD under `/api/admin`:
 
 - `GET/POST/PATCH/DELETE /api/admin/semesters`
-- `GET/POST/DELETE /api/admin/majors/:majorId/semesters`
+- `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters`
 - Existing majors, subjects, and `curriculum-courses` (body uses `semesterId` instead of `semesterNumber`)
 
 `PATCH /api/admin/users/:id` accepts optional `role: user | admin` (syncs Cognito group `admin` + MongoDB `users.role`). Guards: cannot demote self, cannot demote last active admin, cannot promote disabled users.
 
-Documents reference `curriculumCourseId`, which links a subject to a major and semester entity. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
+Documents reference `courseSlotId`, which links a subject to a major and semester entity. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
 
 ## Search And Chat
 

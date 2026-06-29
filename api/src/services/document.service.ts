@@ -14,7 +14,7 @@ import { parseObjectId } from "../utils/objectId";
 import { processDocument } from "./processing.service";
 import * as s3Service from "./s3.service";
 import { findReadableDocument } from "./share.service";
-import { assertUserCanUseCurriculumCourse } from "./academic.service";
+import { assertUserCanUseCourseSlot } from "./academic.service";
 
 async function findActiveDocument(
   documentId: Types.ObjectId,
@@ -86,7 +86,7 @@ export async function createUploadIntent(
     originalFilename: string;
     mimeType: string;
     fileSizeBytes: number;
-    curriculumCourseId: string;
+    courseSlotId: string;
     visibility: "private" | "public";
     folderId?: string | null;
     title?: string;
@@ -100,9 +100,9 @@ export async function createUploadIntent(
 
   const folderId = input.folderId ? parseObjectId(input.folderId, "folderId") : null;
   await assertFolderValid(folderId, user._id);
-  const curriculumCourse = await assertUserCanUseCurriculumCourse(
+  const courseSlot = await assertUserCanUseCourseSlot(
     user,
-    input.curriculumCourseId,
+    input.courseSlotId,
   );
 
   const s3Key = s3Service.buildS3Key(user._id.toString(), input.originalFilename);
@@ -111,7 +111,7 @@ export async function createUploadIntent(
   const document = await Document.create({
     ownerId: user._id,
     folderId,
-    curriculumCourseId: curriculumCourse._id,
+    courseSlotId: courseSlot._id,
     visibility: input.visibility,
     title,
     originalFilename: input.originalFilename,
@@ -207,7 +207,7 @@ export async function updateDocument(
     title?: string;
     tags?: string[];
     folderId?: string | null;
-    curriculumCourseId?: string;
+    courseSlotId?: string;
     visibility?: "private" | "public";
   },
 ) {
@@ -227,18 +227,18 @@ export async function updateDocument(
     document.tags = input.tags;
   }
 
-  if (input.curriculumCourseId !== undefined) {
-    const curriculumCourse = await assertUserCanUseCurriculumCourse(
+  if (input.courseSlotId !== undefined) {
+    const courseSlot = await assertUserCanUseCourseSlot(
       user,
-      input.curriculumCourseId,
+      input.courseSlotId,
     );
-    document.curriculumCourseId = curriculumCourse._id;
+    document.courseSlotId = courseSlot._id;
   }
 
   if (input.visibility !== undefined) {
-    if (!document.curriculumCourseId) {
+    if (!document.courseSlotId) {
       throw createAppError(ErrorCode.VALIDATION_ERROR, 400, {
-        technicalDetail: "curriculumCourseId is required before changing visibility",
+        technicalDetail: "courseSlotId is required before changing visibility",
       });
     }
     document.visibility = input.visibility;

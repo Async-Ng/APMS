@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef } from "react";
 import { X } from "lucide-react";
@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useModalA11y } from "@/components/ui/useModalA11y";
 import { useAdminUser } from "@/lib/queries/admin";
-import { useAdminMajors, useAdminSemesters, useAdminSubjects } from "@/lib/queries/admin-academic";
+import { useAdminCurricula, useAdminSemesters, useAdminSubjects } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -36,14 +36,14 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
   useModalA11y(!!userId, onClose, dialogRef);
 
   const { data: user, isLoading, isError } = useAdminUser(userId);
-  const { data: majors } = useAdminMajors();
+  const { data: majors } = useAdminCurricula();
   const { data: subjects } = useAdminSubjects();
   const { data: semesters } = useAdminSemesters();
 
   const majorLabel = useMemo(() => {
-    if (!user?.majorId) return null;
-    const major = majors?.find((m) => m.id === user.majorId);
-    return major ? `${major.code} — ${major.name}` : user.majorId;
+    if (!user?.curriculumId) return null;
+    const major = majors?.find((m) => m.id === user.curriculumId);
+    return major ? `${major.code} — ${major.name}` : user.curriculumId;
   }, [user, majors]);
 
   const semesterLabel = useMemo(() => {

@@ -3,13 +3,13 @@ import { z } from "zod";
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const code = z.string().trim().min(1).max(30).transform((value) => value.toUpperCase());
 
-export const createMajorSchema = z.object({
+export const createCurriculumSchema = z.object({
   code,
   name: z.string().trim().min(1).max(150),
   description: z.string().trim().max(1000).optional(),
 });
 
-export const updateMajorSchema = z
+export const updateCurriculumSchema = z
   .object({
     code: code.optional(),
     name: z.string().trim().min(1).max(150).optional(),
@@ -48,27 +48,27 @@ export const updateSemesterSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
 
-export const assignMajorSemestersSchema = z.object({
+export const assignCurriculumSemestersSchema = z.object({
   semesterIds: z.array(objectId).min(1).max(50).transform((ids) => [...new Set(ids)]),
 });
 
-export const createCurriculumCourseSchema = z.object({
-  majorId: objectId,
+export const createCourseSlotSchema = z.object({
+  curriculumId: objectId,
   semesterId: objectId,
   subjectId: objectId,
 });
 
-export const updateCurriculumCourseSchema = z
+export const updateCourseSlotSchema = z
   .object({
-    majorId: objectId.optional(),
+    curriculumId: objectId.optional(),
     semesterId: objectId.optional(),
     subjectId: objectId.optional(),
     isActive: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
 
-export const listCurriculumQuerySchema = z.object({
-  majorId: objectId.optional(),
+export const listCourseSlotsQuerySchema = z.object({
+  curriculumId: objectId.optional(),
   semesterId: objectId.optional(),
   includeInactive: z
     .enum(["true", "false"])
@@ -76,12 +76,12 @@ export const listCurriculumQuerySchema = z.object({
     .default(false),
 });
 
-export const catalogCurriculumQuerySchema = z.object({
+export const catalogCourseSlotsQuerySchema = z.object({
   semesterId: objectId.optional(),
 });
 
 export const updateAcademicProfileSchema = z.object({
-  majorId: objectId,
+  curriculumId: objectId,
   currentSemesterId: objectId,
   currentSubjectIds: z.array(objectId).min(1).max(30).transform((ids) => [...new Set(ids)]),
 });

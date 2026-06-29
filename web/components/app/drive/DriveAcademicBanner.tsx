@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { GraduationCap } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +33,7 @@ export function DriveAcademicBanner({
     );
   }
 
-  if (!profile?.isComplete || !profile.major || !profile.currentSemester) {
+  if (!profile?.isComplete || !profile.curriculum || !profile.currentSemester) {
     return (
       <div className="mb-4 flex flex-col gap-3 rounded-xl border-2 border-brutal-ink bg-brutal-accent/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
@@ -71,7 +71,7 @@ export function DriveAcademicBanner({
             <GraduationCap className="h-4 w-4 shrink-0" aria-hidden />
             <span>
               <span className="text-brutal-muted">Học kỳ chính:</span>{" "}
-              <span className="font-mono font-extrabold">{profile.major.code}</span>
+              <span className="font-mono font-extrabold">{profile.curriculum.code}</span>
               <span className="text-brutal-muted"> · </span>
               {primarySemester.code} — {primarySemester.name}
               <span className="text-brutal-muted"> · </span>
@@ -105,7 +105,7 @@ export function DriveAcademicBanner({
 
       {advanceOpen && (
         <QuickSemesterAdvanceModal
-          majorId={profile.major.id}
+          curriculumId={profile.curriculum.id}
           currentSemester={primarySemester}
           availableSemesters={availableSemesters}
           onClose={() => setAdvanceOpen(false)}

@@ -2,17 +2,17 @@ import { Types } from "mongoose";
 
 import { createAppError, ErrorCode } from "../errors/error-codes";
 import {
-  CurriculumCourse,
-  toCurriculumCourseResponse,
-  type CurriculumCourseDocument,
-} from "../models/curriculum-course.model";
+  CourseSlot,
+  toCourseSlotResponse,
+  type CourseSlotDocument,
+} from "../models/course-slot.model";
 import { Document } from "../models/document.model";
 import {
-  MajorSemester,
-  toMajorSemesterResponse,
-  type MajorSemesterDocument,
-} from "../models/major-semester.model";
-import { Major, toMajorResponse } from "../models/major.model";
+  CurriculumSemester,
+  toCurriculumSemesterResponse,
+  type CurriculumSemesterDocument,
+} from "../models/curriculum-semester.model";
+import { Curriculum, toCurriculumResponse } from "../models/curriculum.model";
 import { Semester, toSemesterResponse, type SemesterDocument } from "../models/semester.model";
 import { Subject, toSubjectResponse } from "../models/subject.model";
 import { User, type UserDocument } from "../models/user.model";
@@ -23,18 +23,18 @@ function conflict(detail: string): never {
 }
 
 function notFound(
-  entity: "major" | "subject" | "semester" | "majorSemester" | "curriculum",
+  entity: "curriculum" | "subject" | "semester" | "curriculumSemester" | "courseSlot",
 ): never {
   const code =
-    entity === "major"
-      ? ErrorCode.MAJOR_NOT_FOUND
+    entity === "curriculum"
+      ? ErrorCode.CURRICULUM_NOT_FOUND
       : entity === "subject"
         ? ErrorCode.SUBJECT_NOT_FOUND
         : entity === "semester"
           ? ErrorCode.SEMESTER_NOT_FOUND
-          : entity === "majorSemester"
-            ? ErrorCode.MAJOR_SEMESTER_NOT_FOUND
-            : ErrorCode.CURRICULUM_NOT_FOUND;
+          : entity === "curriculumSemester"
+            ? ErrorCode.CURRICULUM_SEMESTER_NOT_FOUND
+            : ErrorCode.COURSE_SLOT_NOT_FOUND;
   throw createAppError(code, 404);
 }
 
@@ -42,49 +42,51 @@ function isDuplicateKey(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
-export async function createMajor(input: {
+export async function createCurriculum(input: {
   code: string;
   name: string;
   description?: string;
 }) {
   try {
-    const major = await Major.create(input);
-    return toMajorResponse(major);
+    const curriculum = await Curriculum.create(input);
+    return toCurriculumResponse(curriculum);
   } catch (error) {
-    if (isDuplicateKey(error)) conflict("Major code already exists");
+    if (isDuplicateKey(error)) conflict("Curriculum code already exists");
     throw error;
   }
 }
 
-export async function listMajors(includeInactive = true) {
-  const majors = await Major.find(includeInactive ? {} : { isActive: true }).sort({ code: 1 });
-  return majors.map(toMajorResponse);
+export async function listCurricula(includeInactive = true) {
+  const curricula = await Curriculum.find(includeInactive ? {} : { isActive: true }).sort({
+    code: 1,
+  });
+  return curricula.map(toCurriculumResponse);
 }
 
-export async function updateMajor(
-  majorId: string,
+export async function updateCurriculum(
+  curriculumId: string,
   input: { code?: string; name?: string; description?: string; isActive?: boolean },
 ) {
-  const major = await Major.findById(parseObjectId(majorId));
-  if (!major) notFound("major");
+  const curriculum = await Curriculum.findById(parseObjectId(curriculumId));
+  if (!curriculum) notFound("curriculum");
 
-  if (input.isActive === false && major.isActive) {
-    const assignedUsers = await User.countDocuments({ majorId: major._id });
-    if (assignedUsers > 0) conflict("Major is assigned to active student profiles");
+  if (input.isActive === false && curriculum.isActive) {
+    const assignedUsers = await User.countDocuments({ curriculumId: curriculum._id });
+    if (assignedUsers > 0) conflict("Curriculum is assigned to active student profiles");
   }
 
-  Object.assign(major, input);
+  Object.assign(curriculum, input);
   try {
-    await major.save();
+    await curriculum.save();
   } catch (error) {
-    if (isDuplicateKey(error)) conflict("Major code already exists");
+    if (isDuplicateKey(error)) conflict("Curriculum code already exists");
     throw error;
   }
-  return toMajorResponse(major);
+  return toCurriculumResponse(curriculum);
 }
 
-export async function archiveMajor(majorId: string) {
-  return updateMajor(majorId, { isActive: false });
+export async function archiveCurriculum(curriculumId: string) {
+  return updateCurriculum(curriculumId, { isActive: false });
 }
 
 export async function createSubject(input: {
@@ -167,10 +169,10 @@ export async function updateSemester(
   if (input.isActive === false && semester.isActive) {
     const [users, links] = await Promise.all([
       User.countDocuments({ currentSemesterId: semester._id }),
-      MajorSemester.countDocuments({ semesterId: semester._id, isActive: true }),
+      CurriculumSemester.countDocuments({ semesterId: semester._id, isActive: true }),
     ]);
     if (users > 0 || links > 0) {
-      conflict("Semester is in use by student profiles or major assignments");
+      conflict("Semester is in use by student profiles or curriculum assignments");
     }
   }
 
@@ -188,10 +190,10 @@ export async function archiveSemester(semesterId: string) {
   return updateSemester(semesterId, { isActive: false });
 }
 
-async function assertActiveMajor(majorId: Types.ObjectId) {
-  const major = await Major.findOne({ _id: majorId, isActive: true });
-  if (!major) notFound("major");
-  return major;
+async function assertActiveCurriculum(curriculumId: Types.ObjectId) {
+  const curriculum = await Curriculum.findOne({ _id: curriculumId, isActive: true });
+  if (!curriculum) notFound("curriculum");
+  return curriculum;
 }
 
 async function assertActiveSemester(semesterId: Types.ObjectId) {
@@ -200,23 +202,23 @@ async function assertActiveSemester(semesterId: Types.ObjectId) {
   return semester;
 }
 
-async function assertActiveMajorSemester(
-  majorId: Types.ObjectId,
+async function assertActiveCurriculumSemester(
+  curriculumId: Types.ObjectId,
   semesterId: Types.ObjectId,
-): Promise<MajorSemesterDocument> {
-  const link = await MajorSemester.findOne({ majorId, semesterId, isActive: true });
-  if (!link) notFound("majorSemester");
+): Promise<CurriculumSemesterDocument> {
+  const link = await CurriculumSemester.findOne({ curriculumId, semesterId, isActive: true });
+  if (!link) notFound("curriculumSemester");
   return link;
 }
 
-export async function listMajorSemesters(majorId: string, includeInactive = false) {
-  const majorObjectId = parseObjectId(majorId, "majorId");
-  await assertActiveMajor(majorObjectId);
+export async function listCurriculumSemesters(curriculumId: string, includeInactive = false) {
+  const curriculumObjectId = parseObjectId(curriculumId, "curriculumId");
+  await assertActiveCurriculum(curriculumObjectId);
 
-  const filter: Record<string, unknown> = { majorId: majorObjectId };
+  const filter: Record<string, unknown> = { curriculumId: curriculumObjectId };
   if (!includeInactive) filter.isActive = true;
 
-  const links = await MajorSemester.find(filter);
+  const links = await CurriculumSemester.find(filter);
   const semesterIds = links.map((link) => link.semesterId);
   const semesters = await Semester.find({ _id: { $in: semesterIds } });
   const semesterMap = new Map(
@@ -227,7 +229,7 @@ export async function listMajorSemesters(majorId: string, includeInactive = fals
     .map((link) => {
       const semester = semesterMap.get(link.semesterId.toString()) ?? null;
       return {
-        ...toMajorSemesterResponse(link),
+        ...toCurriculumSemesterResponse(link),
         semester,
         effectiveSortOrder: link.sortOrder ?? semester?.sortOrder ?? 0,
       };
@@ -236,12 +238,12 @@ export async function listMajorSemesters(majorId: string, includeInactive = fals
     .sort((a, b) => a.effectiveSortOrder - b.effectiveSortOrder);
 }
 
-export async function assignSemestersToMajor(
-  majorId: string,
+export async function assignSemestersToCurriculum(
+  curriculumId: string,
   semesterIds: string[],
 ) {
-  const majorObjectId = parseObjectId(majorId, "majorId");
-  await assertActiveMajor(majorObjectId);
+  const curriculumObjectId = parseObjectId(curriculumId, "curriculumId");
+  await assertActiveCurriculum(curriculumObjectId);
 
   const uniqueIds = [...new Set(semesterIds)];
   const objectIds = uniqueIds.map((id) => parseObjectId(id, "semesterId"));
@@ -251,271 +253,293 @@ export async function assignSemestersToMajor(
   });
   if (activeCount !== objectIds.length) notFound("semester");
 
-  const results = [];
   for (const semesterId of objectIds) {
     try {
-      const link = await MajorSemester.findOneAndUpdate(
-        { majorId: majorObjectId, semesterId },
-        { $set: { isActive: true }, $setOnInsert: { majorId: majorObjectId, semesterId } },
+      await CurriculumSemester.findOneAndUpdate(
+        { curriculumId: curriculumObjectId, semesterId },
+        {
+          $set: { isActive: true },
+          $setOnInsert: { curriculumId: curriculumObjectId, semesterId },
+        },
         { upsert: true, returnDocument: "after", runValidators: true },
       );
-      if (link) results.push(link);
     } catch (error) {
       if (!isDuplicateKey(error)) throw error;
     }
   }
 
-  return listMajorSemesters(majorId, true);
+  return listCurriculumSemesters(curriculumId, true);
 }
 
-export async function archiveMajorSemester(majorId: string, semesterId: string) {
-  const majorObjectId = parseObjectId(majorId, "majorId");
+export async function archiveCurriculumSemester(curriculumId: string, semesterId: string) {
+  const curriculumObjectId = parseObjectId(curriculumId, "curriculumId");
   const semesterObjectId = parseObjectId(semesterId, "semesterId");
-  const link = await MajorSemester.findOne({ majorId: majorObjectId, semesterId: semesterObjectId });
-  if (!link) notFound("majorSemester");
+  const link = await CurriculumSemester.findOne({
+    curriculumId: curriculumObjectId,
+    semesterId: semesterObjectId,
+  });
+  if (!link) notFound("curriculumSemester");
 
-  const [users, courses] = await Promise.all([
-    User.countDocuments({ majorId: majorObjectId, currentSemesterId: semesterObjectId }),
-    CurriculumCourse.countDocuments({
-      majorId: majorObjectId,
+  const [users, slots] = await Promise.all([
+    User.countDocuments({
+      curriculumId: curriculumObjectId,
+      currentSemesterId: semesterObjectId,
+    }),
+    CourseSlot.countDocuments({
+      curriculumId: curriculumObjectId,
       semesterId: semesterObjectId,
       isActive: true,
     }),
   ]);
-  if (users > 0 || courses > 0) {
-    conflict("Major semester is in use by student profiles or curriculum mappings");
+  if (users > 0 || slots > 0) {
+    conflict("Curriculum semester is in use by student profiles or course slots");
   }
 
   link.isActive = false;
   await link.save();
-  return toMajorSemesterResponse(link);
+  return toCurriculumSemesterResponse(link);
 }
 
-async function assertActiveMajorAndSubject(majorId: Types.ObjectId, subjectId: Types.ObjectId) {
-  const [major, subject] = await Promise.all([
-    Major.findOne({ _id: majorId, isActive: true }),
+async function assertActiveCurriculumAndSubject(
+  curriculumId: Types.ObjectId,
+  subjectId: Types.ObjectId,
+) {
+  const [curriculum, subject] = await Promise.all([
+    Curriculum.findOne({ _id: curriculumId, isActive: true }),
     Subject.findOne({ _id: subjectId, isActive: true }),
   ]);
-  if (!major) notFound("major");
+  if (!curriculum) notFound("curriculum");
   if (!subject) notFound("subject");
 }
 
-export async function createCurriculumCourse(input: {
-  majorId: string;
+export async function createCourseSlot(input: {
+  curriculumId: string;
   semesterId: string;
   subjectId: string;
 }) {
-  const majorId = parseObjectId(input.majorId, "majorId");
+  const curriculumId = parseObjectId(input.curriculumId, "curriculumId");
   const semesterId = parseObjectId(input.semesterId, "semesterId");
   const subjectId = parseObjectId(input.subjectId, "subjectId");
-  await assertActiveMajorAndSubject(majorId, subjectId);
-  await assertActiveMajorSemester(majorId, semesterId);
+  await assertActiveCurriculumAndSubject(curriculumId, subjectId);
+  await assertActiveCurriculumSemester(curriculumId, semesterId);
   try {
-    const course = await CurriculumCourse.create({ majorId, semesterId, subjectId });
-    return enrichCurriculum([course]).then((items) => items[0]!);
+    const slot = await CourseSlot.create({ curriculumId, semesterId, subjectId });
+    return enrichCourseSlots([slot]).then((items) => items[0]!);
   } catch (error) {
-    if (isDuplicateKey(error)) conflict("Curriculum mapping already exists");
+    if (isDuplicateKey(error)) conflict("Course slot already exists");
     throw error;
   }
 }
 
-async function assertCourseNotSelected(course: CurriculumCourseDocument): Promise<void> {
+async function assertSlotNotSelected(slot: CourseSlotDocument): Promise<void> {
   const selected = await User.countDocuments({
-    majorId: course.majorId,
-    currentSemesterId: course.semesterId,
-    currentSubjectIds: course.subjectId,
+    curriculumId: slot.curriculumId,
+    currentSemesterId: slot.semesterId,
+    currentSubjectIds: slot.subjectId,
   });
-  if (selected > 0) conflict("Curriculum course is selected by active student profiles");
+  if (selected > 0) conflict("Course slot is selected by active student profiles");
 }
 
-export async function updateCurriculumCourse(
-  courseId: string,
-  input: { majorId?: string; semesterId?: string; subjectId?: string; isActive?: boolean },
+export async function updateCourseSlot(
+  slotId: string,
+  input: { curriculumId?: string; semesterId?: string; subjectId?: string; isActive?: boolean },
 ) {
-  const course = await CurriculumCourse.findById(parseObjectId(courseId));
-  if (!course) notFound("curriculum");
+  const slot = await CourseSlot.findById(parseObjectId(slotId));
+  if (!slot) notFound("courseSlot");
 
   const changesIdentity =
-    input.majorId !== undefined ||
+    input.curriculumId !== undefined ||
     input.semesterId !== undefined ||
     input.subjectId !== undefined;
-  if (changesIdentity || (input.isActive === false && course.isActive)) {
-    await assertCourseNotSelected(course);
+  if (changesIdentity || (input.isActive === false && slot.isActive)) {
+    await assertSlotNotSelected(slot);
   }
   if (changesIdentity) {
-    const referencedDocuments = await Document.countDocuments({
-      curriculumCourseId: course._id,
-    });
+    const referencedDocuments = await Document.countDocuments({ courseSlotId: slot._id });
     if (referencedDocuments > 0) {
-      conflict("Curriculum identity is immutable after documents reference it");
+      conflict("Course slot identity is immutable after documents reference it");
     }
   }
 
-  const majorId = input.majorId ? parseObjectId(input.majorId, "majorId") : course.majorId;
+  const curriculumId = input.curriculumId
+    ? parseObjectId(input.curriculumId, "curriculumId")
+    : slot.curriculumId;
   const semesterId = input.semesterId
     ? parseObjectId(input.semesterId, "semesterId")
-    : course.semesterId;
+    : slot.semesterId;
   const subjectId = input.subjectId
     ? parseObjectId(input.subjectId, "subjectId")
-    : course.subjectId;
+    : slot.subjectId;
   if (changesIdentity || input.isActive === true) {
-    await assertActiveMajorAndSubject(majorId as Types.ObjectId, subjectId as Types.ObjectId);
-    await assertActiveMajorSemester(majorId as Types.ObjectId, semesterId as Types.ObjectId);
+    await assertActiveCurriculumAndSubject(
+      curriculumId as Types.ObjectId,
+      subjectId as Types.ObjectId,
+    );
+    await assertActiveCurriculumSemester(
+      curriculumId as Types.ObjectId,
+      semesterId as Types.ObjectId,
+    );
   }
 
-  course.majorId = majorId;
-  course.semesterId = semesterId;
-  course.subjectId = subjectId;
-  if (input.isActive !== undefined) course.isActive = input.isActive;
+  slot.curriculumId = curriculumId;
+  slot.semesterId = semesterId;
+  slot.subjectId = subjectId;
+  if (input.isActive !== undefined) slot.isActive = input.isActive;
 
   try {
-    await course.save();
+    await slot.save();
   } catch (error) {
-    if (isDuplicateKey(error)) conflict("Curriculum mapping already exists");
+    if (isDuplicateKey(error)) conflict("Course slot already exists");
     throw error;
   }
-  return enrichCurriculum([course]).then((items) => items[0]!);
+  return enrichCourseSlots([slot]).then((items) => items[0]!);
 }
 
-export async function archiveCurriculumCourse(courseId: string) {
-  return updateCurriculumCourse(courseId, { isActive: false });
+export async function archiveCourseSlot(slotId: string) {
+  return updateCourseSlot(slotId, { isActive: false });
 }
 
-export async function listCurriculum(options: {
-  majorId?: string | undefined;
+export async function listCourseSlots(options: {
+  curriculumId?: string | undefined;
   semesterId?: string | undefined;
   includeInactive?: boolean | undefined;
 }) {
   const filter: Record<string, unknown> = {};
-  if (options.majorId) filter.majorId = parseObjectId(options.majorId, "majorId");
+  if (options.curriculumId) filter.curriculumId = parseObjectId(options.curriculumId, "curriculumId");
   if (options.semesterId) filter.semesterId = parseObjectId(options.semesterId, "semesterId");
   if (!options.includeInactive) filter.isActive = true;
 
-  const courses = await CurriculumCourse.find(filter).sort({ semesterId: 1, subjectId: 1 });
-  return enrichCurriculum(courses);
+  const slots = await CourseSlot.find(filter).sort({ semesterId: 1, subjectId: 1 });
+  return enrichCourseSlots(slots);
 }
 
-async function enrichCurriculum(courses: CurriculumCourseDocument[]) {
-  const majorIds = [...new Set(courses.map((course) => course.majorId.toString()))];
-  const subjectIds = [...new Set(courses.map((course) => course.subjectId.toString()))];
-  const semesterIds = [...new Set(courses.map((course) => course.semesterId.toString()))];
-  const [majors, subjects, semesters] = await Promise.all([
-    Major.find({ _id: { $in: majorIds } }),
+async function enrichCourseSlots(slots: CourseSlotDocument[]) {
+  const curriculumIds = [...new Set(slots.map((slot) => slot.curriculumId.toString()))];
+  const subjectIds = [...new Set(slots.map((slot) => slot.subjectId.toString()))];
+  const semesterIds = [...new Set(slots.map((slot) => slot.semesterId.toString()))];
+  const [curricula, subjects, semesters] = await Promise.all([
+    Curriculum.find({ _id: { $in: curriculumIds } }),
     Subject.find({ _id: { $in: subjectIds } }),
     Semester.find({ _id: { $in: semesterIds } }),
   ]);
-  const majorMap = new Map(majors.map((major) => [major._id.toString(), toMajorResponse(major)]));
+  const curriculumMap = new Map(
+    curricula.map((curriculum) => [curriculum._id.toString(), toCurriculumResponse(curriculum)]),
+  );
   const subjectMap = new Map(
     subjects.map((subject) => [subject._id.toString(), toSubjectResponse(subject)]),
   );
   const semesterMap = new Map(
     semesters.map((semester) => [semester._id.toString(), toSemesterResponse(semester)]),
   );
-  return courses.map((course) => ({
-    ...toCurriculumCourseResponse(course),
-    major: majorMap.get(course.majorId.toString()) ?? null,
-    subject: subjectMap.get(course.subjectId.toString()) ?? null,
-    semester: semesterMap.get(course.semesterId.toString()) ?? null,
+  return slots.map((slot) => ({
+    ...toCourseSlotResponse(slot),
+    curriculum: curriculumMap.get(slot.curriculumId.toString()) ?? null,
+    subject: subjectMap.get(slot.subjectId.toString()) ?? null,
+    semester: semesterMap.get(slot.semesterId.toString()) ?? null,
   }));
 }
 
-export async function listCatalogMajors() {
-  return listMajors(false);
+export async function listCatalogCurricula() {
+  return listCurricula(false);
 }
 
 export async function listCatalogSemesters() {
   return listSemesters(false);
 }
 
-export async function listCatalogMajorSemesters(majorId: string) {
-  return listMajorSemesters(majorId, false);
+export async function listCatalogCurriculumSemesters(curriculumId: string) {
+  return listCurriculumSemesters(curriculumId, false);
 }
 
-export async function listCatalogCurriculum(majorId: string, semesterId?: string) {
-  const majorObjectId = parseObjectId(majorId, "majorId");
-  const major = await Major.findOne({ _id: majorObjectId, isActive: true });
-  if (!major) notFound("major");
+export async function listCatalogCourseSlots(curriculumId: string, semesterId?: string) {
+  const curriculumObjectId = parseObjectId(curriculumId, "curriculumId");
+  const curriculum = await Curriculum.findOne({ _id: curriculumObjectId, isActive: true });
+  if (!curriculum) notFound("curriculum");
 
-  const filter: Record<string, unknown> = { majorId: majorObjectId, isActive: true };
+  const filter: Record<string, unknown> = { curriculumId: curriculumObjectId, isActive: true };
   if (semesterId !== undefined) {
     filter.semesterId = parseObjectId(semesterId, "semesterId");
   }
-  const courses = await CurriculumCourse.find(filter).sort({ semesterId: 1, subjectId: 1 });
-  const subjectIds = courses.map((course) => course.subjectId);
+  const slots = await CourseSlot.find(filter).sort({ semesterId: 1, subjectId: 1 });
+  const subjectIds = slots.map((slot) => slot.subjectId);
   const activeSubjects = new Set(
     (await Subject.find({ _id: { $in: subjectIds }, isActive: true }).select("_id")).map(
       (subject) => subject._id.toString(),
     ),
   );
-  return enrichCurriculum(
-    courses.filter((course) => activeSubjects.has(course.subjectId.toString())),
+  return enrichCourseSlots(
+    slots.filter((slot) => activeSubjects.has(slot.subjectId.toString())),
   );
 }
 
-export async function assertUserCanUseCurriculumCourse(
+export async function assertUserCanUseCourseSlot(
   user: UserDocument,
-  curriculumCourseId: string,
-): Promise<CurriculumCourseDocument> {
-  if (!user.majorId || !user.currentSemesterId) {
+  courseSlotId: string,
+): Promise<CourseSlotDocument> {
+  if (!user.curriculumId || !user.currentSemesterId) {
     throw createAppError(ErrorCode.ACADEMIC_PROFILE_REQUIRED, 409);
   }
-  const course = await CurriculumCourse.findOne({
-    _id: parseObjectId(curriculumCourseId, "curriculumCourseId"),
-    majorId: user.majorId,
+  const slot = await CourseSlot.findOne({
+    _id: parseObjectId(courseSlotId, "courseSlotId"),
+    curriculumId: user.curriculumId,
     semesterId: user.currentSemesterId,
     subjectId: { $in: user.currentSubjectIds },
     isActive: true,
   });
-  if (!course) throw createAppError(ErrorCode.CURRICULUM_NOT_ENROLLED, 403);
-  await assertActiveMajorAndSubject(course.majorId as Types.ObjectId, course.subjectId as Types.ObjectId);
-  return course;
+  if (!slot) throw createAppError(ErrorCode.COURSE_SLOT_NOT_IN_PROFILE, 403);
+  await assertActiveCurriculumAndSubject(
+    slot.curriculumId as Types.ObjectId,
+    slot.subjectId as Types.ObjectId,
+  );
+  return slot;
 }
 
 export async function getAcademicProfile(user: UserDocument) {
-  const [major, subjects, semester] = await Promise.all([
-    user.majorId ? Major.findById(user.majorId) : null,
+  const [curriculum, subjects, semester] = await Promise.all([
+    user.curriculumId ? Curriculum.findById(user.curriculumId) : null,
     Subject.find({ _id: { $in: user.currentSubjectIds } }).sort({ code: 1 }),
     user.currentSemesterId ? Semester.findById(user.currentSemesterId) : null,
   ]);
   return {
-    major: major ? toMajorResponse(major) : null,
+    curriculum: curriculum ? toCurriculumResponse(curriculum) : null,
     currentSemester: semester ? toSemesterResponse(semester) : null,
     currentSubjects: subjects.map(toSubjectResponse),
-    isComplete: Boolean(major && semester && subjects.length > 0),
+    isComplete: Boolean(curriculum && semester && subjects.length > 0),
   };
 }
 
 export async function updateAcademicProfile(
   user: UserDocument,
-  input: { majorId: string; currentSemesterId: string; currentSubjectIds: string[] },
+  input: { curriculumId: string; currentSemesterId: string; currentSubjectIds: string[] },
 ) {
-  const majorId = parseObjectId(input.majorId, "majorId");
+  const curriculumId = parseObjectId(input.curriculumId, "curriculumId");
   const semesterId = parseObjectId(input.currentSemesterId, "currentSemesterId");
   const subjectIds = input.currentSubjectIds.map((id) => parseObjectId(id, "currentSubjectIds"));
-  const [major, , courses] = await Promise.all([
-    Major.findOne({ _id: majorId, isActive: true }),
-    assertActiveMajorSemester(majorId, semesterId),
-    CurriculumCourse.find({
-      majorId,
+  const [curriculum, , slots] = await Promise.all([
+    Curriculum.findOne({ _id: curriculumId, isActive: true }),
+    assertActiveCurriculumSemester(curriculumId, semesterId),
+    CourseSlot.find({
+      curriculumId,
       semesterId,
       subjectId: { $in: subjectIds },
       isActive: true,
     }),
   ]);
-  if (!major) notFound("major");
+  if (!curriculum) notFound("curriculum");
   const activeSubjects = await Subject.countDocuments({
     _id: { $in: subjectIds },
     isActive: true,
   });
-  if (courses.length !== subjectIds.length || activeSubjects !== subjectIds.length) {
-    throw createAppError(ErrorCode.CURRICULUM_NOT_ENROLLED, 400, {
-      technicalDetail: "Every subject must be active and belong to the selected major and semester",
+  if (slots.length !== subjectIds.length || activeSubjects !== subjectIds.length) {
+    throw createAppError(ErrorCode.COURSE_SLOT_NOT_IN_PROFILE, 400, {
+      technicalDetail:
+        "Every subject must be active and belong to the selected curriculum and semester",
     });
   }
 
   const updated = await User.findByIdAndUpdate(
     user._id,
-    { $set: { majorId, currentSemesterId: semesterId, currentSubjectIds: subjectIds } },
+    { $set: { curriculumId, currentSemesterId: semesterId, currentSubjectIds: subjectIds } },
     { returnDocument: "after", runValidators: true },
   );
   if (!updated) throw createAppError(ErrorCode.USER_NOT_FOUND, 404);

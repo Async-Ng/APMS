@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../lib/api-client";
 
-export interface CatalogMajor {
+export interface CatalogCurriculum {
   id: string;
   code: string;
   name: string;
@@ -22,9 +22,9 @@ export interface CatalogSemester {
   isActive: boolean;
 }
 
-export interface CatalogMajorSemester {
+export interface CatalogCurriculumSemester {
   id: string;
-  majorId: string;
+  curriculumId: string;
   semesterId: string;
   sortOrder: number | null;
   isActive: boolean;
@@ -32,18 +32,18 @@ export interface CatalogMajorSemester {
   effectiveSortOrder: number;
 }
 
-export interface CatalogCurriculumItem {
+export interface CatalogCourseSlot {
   id: string;
-  majorId: string;
+  curriculumId: string;
   semesterId: string;
   subjectId: string;
-  major: CatalogMajor | null;
+  curriculum: CatalogCurriculum | null;
   subject: CatalogSubject | null;
   semester: CatalogSemester | null;
 }
 
 export interface AcademicProfile {
-  major: CatalogMajor | null;
+  curriculum: CatalogCurriculum | null;
   currentSemester: CatalogSemester | null;
   currentSubjects: CatalogSubject[];
   isComplete: boolean;
@@ -61,31 +61,33 @@ export function useAcademicProfile() {
   });
 }
 
-export function useCatalogMajors() {
+export function useCatalogCurricula() {
   return useQuery({
-    queryKey: ["catalog", "majors"],
+    queryKey: ["catalog", "curricula"],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: CatalogMajor[] }>("/catalog/majors");
+      const res = await api.get<{ status: string; data: CatalogCurriculum[] }>(
+        "/catalog/curricula",
+      );
       return res.data.data;
     },
   });
 }
 
-export function useCatalogMajorSemesters(majorId: string | undefined) {
+export function useCatalogCurriculumSemesters(curriculumId: string | undefined) {
   return useQuery({
-    queryKey: ["catalog", "major-semesters", majorId],
+    queryKey: ["catalog", "curriculum-semesters", curriculumId],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: CatalogMajorSemester[] }>(
-        `/catalog/majors/${majorId}/semesters`,
+      const res = await api.get<{ status: string; data: CatalogCurriculumSemester[] }>(
+        `/catalog/curricula/${curriculumId}/semesters`,
       );
       return res.data.data;
     },
-    enabled: !!majorId,
+    enabled: !!curriculumId,
   });
 }
 
 export interface UpdateAcademicProfileBody {
-  majorId: string;
+  curriculumId: string;
   currentSemesterId: string;
   currentSubjectIds: string[];
 }
@@ -107,42 +109,41 @@ export function useUpdateAcademicProfile() {
   });
 }
 
-export function useCatalogCurriculum(majorId?: string, semesterId?: string) {
+export function useCatalogCourseSlots(curriculumId?: string, semesterId?: string) {
   return useQuery({
-    queryKey: ["catalog", "curriculum", majorId, semesterId],
+    queryKey: ["catalog", "course-slots", curriculumId, semesterId],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: CatalogCurriculumItem[] }>(
-        `/catalog/majors/${majorId}/curriculum`,
+      const res = await api.get<{ status: string; data: CatalogCourseSlot[] }>(
+        `/catalog/curricula/${curriculumId}/course-slots`,
         { params: semesterId !== undefined ? { semesterId } : undefined },
       );
       return res.data.data;
     },
-    enabled: !!majorId,
+    enabled: !!curriculumId,
   });
 }
 
-/** Courses the student is enrolled in for the current semester — the only
- *  mappings the upload API will accept. */
+/** Course slots the student is enrolled in for the current semester. */
 export function useEnrolledCourses() {
   const profileQuery = useAcademicProfile();
-  const curriculumQuery = useCatalogCurriculum(
-    profileQuery.data?.major?.id,
+  const slotsQuery = useCatalogCourseSlots(
+    profileQuery.data?.curriculum?.id,
     profileQuery.data?.currentSemester?.id,
   );
 
   const profile = profileQuery.data;
   const enrolledCourses =
-    profile?.isComplete && curriculumQuery.data
-      ? curriculumQuery.data.filter(
-          (course) =>
-            course.subject &&
-            profile.currentSubjects.some((s) => s.id === course.subject?.id),
+    profile?.isComplete && slotsQuery.data
+      ? slotsQuery.data.filter(
+          (slot) =>
+            slot.subject &&
+            profile.currentSubjects.some((s) => s.id === slot.subject?.id),
         )
       : [];
 
   return {
     profile,
     enrolledCourses,
-    isLoading: profileQuery.isLoading || curriculumQuery.isLoading,
+    isLoading: profileQuery.isLoading || slotsQuery.isLoading,
   };
 }

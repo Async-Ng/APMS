@@ -1,21 +1,21 @@
-import type {
+﻿import type {
   AcademicProfile,
-  CatalogCurriculumItem,
+  CatalogCourseSlot,
   CatalogSubject,
 } from "@/lib/queries/catalog";
 import type { DriveDocument } from "@/lib/queries/drive";
 
 export interface SubjectDocumentGroup {
   subject: CatalogSubject;
-  curriculumCourseId: string;
+  courseSlotId: string;
   documents: DriveDocument[];
 }
 
 /** Courses the student is enrolled in for the current semester. */
 export function getEnrolledCourses(
   profile: AcademicProfile | undefined,
-  curriculum: CatalogCurriculumItem[] | undefined,
-): CatalogCurriculumItem[] {
+  curriculum: CatalogCourseSlot[] | undefined,
+): CatalogCourseSlot[] {
   if (!profile?.isComplete || !curriculum) return [];
   const enrolledSubjectIds = new Set(profile.currentSubjects.map((s) => s.id));
   return curriculum
@@ -33,7 +33,7 @@ function matchesEnrolledCourse(
   enrolledSubjectIds: Set<string>,
   semesterId: string | null | undefined,
 ): boolean {
-  const course = doc.curriculumCourse;
+  const course = doc.courseSlot;
   if (!course?.subject) return false;
   if (course.id && enrolledCourseIds.has(course.id)) return true;
   if (semesterId) {
@@ -47,47 +47,47 @@ function matchesEnrolledCourse(
 
 /** Find an enrolled curriculum course by id. */
 export function findEnrolledCourse(
-  enrolledCourses: CatalogCurriculumItem[],
-  curriculumCourseId: string,
-): (CatalogCurriculumItem & { subject: CatalogSubject }) | undefined {
-  const course = enrolledCourses.find((c) => c.id === curriculumCourseId);
+  enrolledCourses: CatalogCourseSlot[],
+  courseSlotId: string,
+): (CatalogCourseSlot & { subject: CatalogSubject }) | undefined {
+  const course = enrolledCourses.find((c) => c.id === courseSlotId);
   if (!course?.subject) return undefined;
-  return course as CatalogCurriculumItem & { subject: CatalogSubject };
+  return course as CatalogCourseSlot & { subject: CatalogSubject };
 }
 
 /** Root-level documents for a specific curriculum course. */
-export function filterRootDocumentsByCourse(
+export function filterRootDocumentsBySlot(
   documents: DriveDocument[],
-  curriculumCourseId: string,
+  courseSlotId: string,
 ): DriveDocument[] {
   return documents.filter(
     (doc) =>
-      doc.folderId === null && doc.curriculumCourse?.id === curriculumCourseId,
+      doc.folderId === null && doc.courseSlot?.id === courseSlotId,
   );
 }
 
 /** Group root-level documents by curriculum course (exact course id). */
 export function groupRootDocumentsByCourse(
   documents: DriveDocument[],
-  courses: CatalogCurriculumItem[],
+  courses: CatalogCourseSlot[],
 ): SubjectDocumentGroup[] {
   const rootDocs = documents.filter((doc) => doc.folderId === null);
 
   return courses
-    .filter((course): course is CatalogCurriculumItem & { subject: CatalogSubject } =>
+    .filter((course): course is CatalogCourseSlot & { subject: CatalogSubject } =>
       course.subject !== null,
     )
     .map((course) => ({
       subject: course.subject,
-      curriculumCourseId: course.id,
-      documents: rootDocs.filter((doc) => doc.curriculumCourse?.id === course.id),
+      courseSlotId: course.id,
+      documents: rootDocs.filter((doc) => doc.courseSlot?.id === course.id),
     }));
 }
 
 /** Group root-level documents by enrolled subject (one section per subject). */
 export function groupRootDocumentsBySubject(
   documents: DriveDocument[],
-  enrolledCourses: CatalogCurriculumItem[],
+  enrolledCourses: CatalogCourseSlot[],
 ): SubjectDocumentGroup[] {
   return groupRootDocumentsByCourse(documents, enrolledCourses);
 }
@@ -95,7 +95,7 @@ export function groupRootDocumentsBySubject(
 /** Root documents that do not belong to any enrolled subject for the current semester. */
 export function getOtherRootDocuments(
   documents: DriveDocument[],
-  enrolledCourses: CatalogCurriculumItem[],
+  enrolledCourses: CatalogCourseSlot[],
   currentSemesterId: string | null | undefined,
 ): DriveDocument[] {
   const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));

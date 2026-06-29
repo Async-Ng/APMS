@@ -19,7 +19,7 @@ APMS is a student knowledge-management system for academic documents. It lets us
 ## Core Capabilities
 
 - Unified document API: `GET /api/documents` is the single list entrypoint for `my`, `shared`, `public`, `starred`, and `trash` views.
-- Course-bound uploads: every new document upload requires `curriculumCourseId`. Allowed types are PDF, DOCX, and PPTX, up to 50 MB per file within a 500 MB per-user quota.
+- Course-bound uploads: every new document upload requires `courseSlotId`. Allowed types are PDF, DOCX, and PPTX, up to 50 MB per file within a 500 MB per-user quota.
 - Visibility model: `private` documents are owner/share-only; `public` documents are discoverable by active users across the system.
 - Folder workspace: owned documents and folders keep a Drive-like hierarchy through `/api/folders` and `view=my`.
 - Sharing: `/api/shares` remains available for direct read-only sharing of documents and folders.

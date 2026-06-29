@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Layers, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,27 +14,27 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
-  useAdminCurriculum,
-  useAdminMajorSemesters,
-  useAdminMajors,
+  useAdminCourseSlots,
+  useAdminCurriculumSemesters,
+  useAdminCurricula,
   useAdminSemesters,
   useAdminSubjects,
-  useArchiveCurriculum,
-  useCreateCurriculum,
-  useUpdateCurriculum,
-  type EnrichedCurriculumCourse,
+  useArchiveCourseSlot,
+  useCreateCourseSlot,
+  useUpdateCourseSlot,
+  type EnrichedCourseSlot,
 } from "@/lib/queries/admin-academic";
-import { curriculumFormSchema, formatZodFieldErrors } from "@/lib/validation/admin";
+import { courseSlotFormSchema, formatZodFieldErrors } from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
-interface CurriculumFormState {
-  majorId: string;
+interface CourseSlotFormState {
+  curriculumId: string;
   subjectId: string;
   semesterId: string;
 }
 
-const EMPTY_FORM: CurriculumFormState = {
-  majorId: "",
+const EMPTY_FORM: CourseSlotFormState = {
+  curriculumId: "",
   subjectId: "",
   semesterId: "",
 };
@@ -44,68 +44,68 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1 text-xs font-medium text-brutal-danger">{message}</p>;
 }
 
-export function CurriculumPanel({
-  onNavigateToMajorSemesters,
+export function CourseSlotsPanel({
+  onNavigateToCurriculumSemesters,
 }: {
-  onNavigateToMajorSemesters?: (majorId: string) => void;
+  onNavigateToCurriculumSemesters?: (curriculumId: string) => void;
 } = {}) {
-  const [majorFilter, setMajorFilter] = useState("");
+  const [curriculumFilter, setCurriculumFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
 
-  const { data: majors } = useAdminMajors();
+  const { data: curricula } = useAdminCurricula();
   const { data: subjects } = useAdminSubjects();
   const { data: allSemesters } = useAdminSemesters();
 
-  const { data: courses, isLoading, isError } = useAdminCurriculum({
-    majorId: majorFilter || undefined,
+  const { data: courses, isLoading, isError } = useAdminCourseSlots({
+    curriculumId: curriculumFilter || undefined,
     semesterId: semesterFilter || undefined,
     includeInactive,
   });
 
-  const { mutate: createCourse, isPending: isCreating } = useCreateCurriculum();
-  const { mutate: updateCourse, isPending: isUpdating } = useUpdateCurriculum();
-  const { mutate: archiveCourse, isPending: isArchiving } = useArchiveCurriculum();
+  const { mutate: createCourse, isPending: isCreating } = useCreateCourseSlot();
+  const { mutate: updateCourse, isPending: isUpdating } = useUpdateCourseSlot();
+  const { mutate: archiveCourse, isPending: isArchiving } = useArchiveCourseSlot();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<EnrichedCurriculumCourse | null>(null);
-  const [form, setForm] = useState<CurriculumFormState>(EMPTY_FORM);
+  const [editing, setEditing] = useState<EnrichedCourseSlot | null>(null);
+  const [form, setForm] = useState<CourseSlotFormState>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [archiveTarget, setArchiveTarget] = useState<EnrichedCurriculumCourse | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<EnrichedCourseSlot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
-  const { data: formMajorSemesters } = useAdminMajorSemesters(form.majorId || undefined);
+  const { data: formMajorSemesters } = useAdminCurriculumSemesters(form.curriculumId || undefined);
 
-  const activeMajors = majors?.filter((m) => m.isActive) ?? [];
+  const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
   const semesterOptions =
     formMajorSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
 
   const resolvedSemesterId = useMemo(() => {
-    if (!form.majorId || semesterOptions.length === 0) return form.semesterId;
+    if (!form.curriculumId || semesterOptions.length === 0) return form.semesterId;
     if (semesterOptions.some((s) => s.id === form.semesterId)) return form.semesterId;
     return semesterOptions[0]?.id ?? "";
-  }, [form.majorId, form.semesterId, semesterOptions]);
+  }, [form.curriculumId, form.semesterId, semesterOptions]);
 
   const isFormValid = useMemo(
     () =>
-      curriculumFormSchema.safeParse({
-        majorId: form.majorId,
+      courseSlotFormSchema.safeParse({
+        curriculumId: form.curriculumId,
         subjectId: form.subjectId,
         semesterId: resolvedSemesterId,
       }).success &&
-      activeMajors.length > 0 &&
+      activeCurricula.length > 0 &&
       activeSubjects.length > 0 &&
       semesterOptions.length > 0,
-    [form, activeMajors.length, activeSubjects.length, semesterOptions.length, resolvedSemesterId],
+    [form, activeCurricula.length, activeSubjects.length, semesterOptions.length, resolvedSemesterId],
   );
 
   function openCreate() {
-    const defaultMajor = activeMajors[0]?.id ?? "";
+    const defaultCurriculum = activeCurricula[0]?.id ?? "";
     setEditing(null);
     setForm({
-      majorId: defaultMajor,
+      curriculumId: defaultCurriculum,
       subjectId: activeSubjects[0]?.id ?? "",
       semesterId: "",
     });
@@ -114,10 +114,10 @@ export function CurriculumPanel({
     setFormOpen(true);
   }
 
-  function openEdit(course: EnrichedCurriculumCourse) {
+  function openEdit(course: EnrichedCourseSlot) {
     setEditing(course);
     setForm({
-      majorId: course.majorId,
+      curriculumId: course.curriculumId,
       subjectId: course.subjectId,
       semesterId: course.semesterId,
     });
@@ -127,8 +127,8 @@ export function CurriculumPanel({
   }
 
   function handleSubmit() {
-    const parsed = curriculumFormSchema.safeParse({
-      majorId: form.majorId,
+    const parsed = courseSlotFormSchema.safeParse({
+      curriculumId: form.curriculumId,
       subjectId: form.subjectId,
       semesterId: resolvedSemesterId,
     });
@@ -144,7 +144,7 @@ export function CurriculumPanel({
         {
           id: editing.id,
           body: {
-            majorId: parsed.data.majorId,
+            curriculumId: parsed.data.curriculumId,
             subjectId: parsed.data.subjectId,
             semesterId: parsed.data.semesterId,
           },
@@ -157,7 +157,7 @@ export function CurriculumPanel({
     } else {
       createCourse(
         {
-          majorId: parsed.data.majorId,
+          curriculumId: parsed.data.curriculumId,
           subjectId: parsed.data.subjectId,
           semesterId: parsed.data.semesterId,
         },
@@ -169,7 +169,7 @@ export function CurriculumPanel({
     }
   }
 
-  function handleReactivate(course: EnrichedCurriculumCourse) {
+  function handleReactivate(course: EnrichedCourseSlot) {
     setError(null);
     setPendingCourseId(course.id);
     updateCourse(
@@ -209,13 +209,13 @@ export function CurriculumPanel({
             </label>
             <select
               id="curriculum-filter-major"
-              value={majorFilter}
-              onChange={(e) => setMajorFilter(e.target.value)}
+              value={curriculumFilter}
+              onChange={(e) => setCurriculumFilter(e.target.value)}
               className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
               aria-label="Lọc theo ngành"
             >
               <option value="">Tất cả ngành</option>
-              {majors?.map((m) => (
+              {curricula?.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.code} — {m.name}
                 </option>
@@ -255,7 +255,7 @@ export function CurriculumPanel({
         <BrutalButton
           variant="primary"
           onClick={openCreate}
-          disabled={activeMajors.length === 0 || activeSubjects.length === 0}
+          disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
         >
           <Plus className="mr-2 h-4 w-4" />
           Gán môn
@@ -303,8 +303,8 @@ export function CurriculumPanel({
                 )}
               >
                 <td className="px-4 py-3">
-                  <p className="font-mono text-xs font-bold">{course.major?.code ?? "—"}</p>
-                  <p className="text-sm">{course.major?.name ?? course.majorId}</p>
+                  <p className="font-mono text-xs font-bold">{course.curriculum?.code ?? "—"}</p>
+                  <p className="text-sm">{course.curriculum?.name ?? course.curriculumId}</p>
                 </td>
                 <td className="px-4 py-3 font-bold">
                   {course.semester?.code ?? "—"}
@@ -325,7 +325,7 @@ export function CurriculumPanel({
                       variant="ghost"
                       className="px-3 py-1 text-xs"
                       onClick={() => openEdit(course)}
-                      aria-label={`Sửa môn CTĐT ${course.major?.code ?? ""} ${course.semester?.code ?? ""}`}
+                      aria-label={`Sửa môn CTĐT ${course.curriculum?.code ?? ""} ${course.semester?.code ?? ""}`}
                     >
                       Sửa
                     </BrutalButton>
@@ -378,21 +378,21 @@ export function CurriculumPanel({
         <label className="block text-sm font-bold">
           Ngành học
           <select
-            value={form.majorId}
+            value={form.curriculumId}
             onChange={(e) => {
-              setForm((f) => ({ ...f, majorId: e.target.value, semesterId: "" }));
-              setFieldErrors((fe) => ({ ...fe, majorId: "" }));
+              setForm((f) => ({ ...f, curriculumId: e.target.value, semesterId: "" }));
+              setFieldErrors((fe) => ({ ...fe, curriculumId: "" }));
             }}
             className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
           >
-            {activeMajors.map((m) => (
+            {activeCurricula.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.code} — {m.name}
               </option>
             ))}
           </select>
-          <FieldError message={fieldErrors.majorId} />
-          {formOpen && form.majorId && (
+          <FieldError message={fieldErrors.curriculumId} />
+          {formOpen && form.curriculumId && (
             <p className="mt-1 text-xs text-brutal-muted">
               Đổi ngành sẽ cập nhật danh sách học kỳ khả dụng bên dưới.
             </p>
@@ -419,12 +419,12 @@ export function CurriculumPanel({
               ))
             )}
           </select>
-          {semesterOptions.length === 0 && form.majorId && onNavigateToMajorSemesters && (
+          {semesterOptions.length === 0 && form.curriculumId && onNavigateToCurriculumSemesters && (
             <button
               type="button"
               onClick={() => {
                 setFormOpen(false);
-                onNavigateToMajorSemesters(form.majorId);
+                onNavigateToCurriculumSemesters(form.curriculumId);
               }}
               className="focus-brutal mt-2 text-xs font-bold text-brutal-secondary underline-offset-2 hover:underline"
             >

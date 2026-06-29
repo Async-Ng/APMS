@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FileText } from "lucide-react";
 import Link from "next/link";
@@ -104,7 +104,7 @@ export function InternalDocumentList({
         </thead>
         <tbody>
           {documents.map((doc) => {
-            const course = doc.curriculumCourse;
+            const course = doc.courseSlot;
             return (
               <tr
                 key={doc.id}
@@ -128,7 +128,7 @@ export function InternalDocumentList({
                 <td className="hidden px-4 py-3 md:table-cell">
                   {course ? (
                     <div className="text-xs">
-                      <p className="font-bold">{course.major?.code ?? "—"}</p>
+                      <p className="font-bold">{course.curriculum?.code ?? "—"}</p>
                       <p className="text-brutal-muted">
                         {course.semester?.code ?? "—"} · {course.subject?.code ?? "—"}
                       </p>

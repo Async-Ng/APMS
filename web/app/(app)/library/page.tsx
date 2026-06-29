@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -42,7 +42,7 @@ function filtersFromParams(
 ): ForumFilterState {
   return {
     search: params.get("q") ?? "",
-    majorId: params.get("majorId") ?? "",
+    curriculumId: params.get("curriculumId") ?? "",
     semesterId: params.get("semester") ?? "",
     subjectId: params.get("subject") ?? "",
     sort: parseSort(params.get("sort"), tab),
@@ -73,7 +73,7 @@ function PublicLibraryContent() {
       if (nextTab === "library") params.set("tab", "library");
       if (nextFilters.search) params.set("q", nextFilters.search);
       if (nextTab === "library") {
-        if (nextFilters.majorId) params.set("majorId", nextFilters.majorId);
+        if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
         if (nextFilters.semesterId)
           params.set("semester", nextFilters.semesterId);
         if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
@@ -94,7 +94,7 @@ function PublicLibraryContent() {
       ...activeFilters,
       sort: nextTab === "library" ? "title" : "newest",
       ...(nextTab === "suggested"
-        ? { majorId: "", semesterId: "", subjectId: "" }
+        ? { curriculumId: "", semesterId: "", subjectId: "" }
         : {}),
     } as ForumFilterState;
     syncUrl(nextTab, nextFilters, 1);

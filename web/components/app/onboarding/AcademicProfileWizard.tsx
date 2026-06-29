@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 
@@ -14,17 +14,17 @@ import { cn } from "@/lib/cn";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
   useAcademicProfile,
-  useCatalogCurriculum,
-  useCatalogMajorSemesters,
-  useCatalogMajors,
+  useCatalogCourseSlots,
+  useCatalogCurriculumSemesters,
+  useCatalogCurricula,
   type AcademicProfile,
-  type CatalogCurriculumItem,
+  type CatalogCourseSlot,
 } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile } from "@/lib/queries/users";
 
 const ONBOARDING_SKIP_KEY = "apms-onboarding-skipped";
 
-function uniqueSubjects(curriculum: CatalogCurriculumItem[] | undefined) {
+function uniqueSubjects(curriculum: CatalogCourseSlot[] | undefined) {
   const subjects =
     curriculum
       ?.map((c) => c.subject)
@@ -42,7 +42,7 @@ const STEPS = [
 
 function profileSeed(profile: AcademicProfile | undefined) {
   return {
-    majorId: profile?.major?.id ?? "",
+    curriculumId: profile?.curriculum?.id ?? "",
     semesterId: profile?.currentSemester?.id ?? "",
     subjectIds:
       profile && profile.currentSubjects.length > 0
@@ -61,17 +61,17 @@ interface WizardFormProps {
 function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
   const seed = profileSeed(profile);
   const [step, setStep] = useState(1);
-  const [majorId, setMajorId] = useState(seed.majorId);
+  const [curriculumId, setCurriculumId] = useState(seed.curriculumId);
   const [semesterId, setSemesterId] = useState(seed.semesterId);
   const [subjectIds, setSubjectIds] = useState<string[] | null>(seed.subjectIds);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: majors, isLoading: isMajorsLoading } = useCatalogMajors();
-  const { data: curriculum, isLoading: isCurriculumLoading } = useCatalogCurriculum(
-    majorId || undefined,
+  const { data: majors, isLoading: isMajorsLoading } = useCatalogCurricula();
+  const { data: curriculum, isLoading: isCurriculumLoading } = useCatalogCourseSlots(
+    curriculumId || undefined,
     semesterId || undefined,
   );
-  const { data: majorSemesters } = useCatalogMajorSemesters(majorId || undefined);
+  const { data: majorSemesters } = useCatalogCurriculumSemesters(curriculumId || undefined);
   const updateAcademic = useUpdateAcademicProfile();
 
   const availableSemesters =
@@ -91,7 +91,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
 
   const handleSave = useCallback(() => {
     setError(null);
-    if (!majorId || !semesterId) {
+    if (!curriculumId || !semesterId) {
       setError("Chọn đủ ngành và học kỳ trước khi lưu.");
       return;
     }
@@ -100,7 +100,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
       return;
     }
     updateAcademic.mutate(
-      { majorId, currentSemesterId: semesterId, currentSubjectIds: selectedSubjectIds },
+      { curriculumId, currentSemesterId: semesterId, currentSubjectIds: selectedSubjectIds },
       {
         onSuccess: () => {
           sessionStorage.removeItem(ONBOARDING_SKIP_KEY);
@@ -111,7 +111,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
       },
     );
   }, [
-    majorId,
+    curriculumId,
     semesterId,
     selectedSubjectIds,
     updateAcademic,
@@ -144,9 +144,9 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
             <p className="text-sm text-brutal-muted">Đang tải…</p>
           ) : (
             <select
-              value={majorId}
+              value={curriculumId}
               onChange={(e) => {
-                setMajorId(e.target.value);
+                setCurriculumId(e.target.value);
                 setSemesterId("");
                 setSubjectIds(null);
               }}
@@ -173,7 +173,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
               setSemesterId(e.target.value);
               setSubjectIds(null);
             }}
-            disabled={!majorId}
+            disabled={!curriculumId}
             className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm disabled:opacity-50"
             data-initial-focus
           >
@@ -261,7 +261,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
             type="button"
             variant="primary"
             className="!w-auto"
-            disabled={(step === 1 && !majorId) || (step === 2 && !semesterId)}
+            disabled={(step === 1 && !curriculumId) || (step === 2 && !semesterId)}
             onClick={() => {
               if (step === 2 && semesterId && subjectIds === null && availableSubjects.length > 0) {
                 setSubjectIds(defaultSubjectIds(availableSubjects));
@@ -313,7 +313,7 @@ export function AcademicProfileWizard({
     >
       {open && (
         <WizardForm
-          key={profile?.major?.id ?? "new"}
+          key={profile?.curriculum?.id ?? "new"}
           profile={profile}
           onClose={onClose}
           onComplete={onComplete}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FolderPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -33,8 +33,8 @@ import {
 } from "@/lib/drive/semester-view";
 import {
   useAcademicProfile,
-  useCatalogCurriculum,
-  useCatalogMajorSemesters,
+  useCatalogCourseSlots,
+  useCatalogCurriculumSemesters,
 } from "@/lib/queries/catalog";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
@@ -73,16 +73,16 @@ export default function DrivePage() {
   const pastViewSemesterId =
     !isAllView && viewSemesterId !== primarySemesterId ? viewSemesterId : undefined;
 
-  const { data: primaryCurriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: primaryCurriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     primarySemesterId,
   );
-  const { data: pastSemesterCurriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: pastSemesterCurriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     pastViewSemesterId,
   );
 
-  const { data: majorSemesters } = useCatalogMajorSemesters(profile?.major?.id);
+  const { data: majorSemesters } = useCatalogCurriculumSemesters(profile?.curriculum?.id);
   const availableSemesters = useMemo(
     () =>
       (majorSemesters ?? [])
@@ -130,7 +130,7 @@ export default function DrivePage() {
     [documents, displayCourses],
   );
   const documentCountByCourseId = useMemo(
-    () => new Map(subjectGroups.map((g) => [g.curriculumCourseId, g.documents.length])),
+    () => new Map(subjectGroups.map((g) => [g.courseSlotId, g.documents.length])),
     [subjectGroups],
   );
   const otherDocuments = useMemo(
@@ -155,9 +155,9 @@ export default function DrivePage() {
   const uploadDisabledForView =
     !isAllView && viewSemesterId !== primarySemesterId;
 
-  function openUpload(curriculumCourseId?: string) {
+  function openUpload(courseSlotId?: string) {
     if (uploadDisabledForView) return;
-    setUploadCourseId(curriculumCourseId);
+    setUploadCourseId(courseSlotId);
     setUploadOpen(true);
   }
 
@@ -282,7 +282,7 @@ export default function DrivePage() {
                         <SubjectFolderCard
                           key={course.id}
                           subject={course.subject}
-                          curriculumCourseId={course.id}
+                          courseSlotId={course.id}
                           documentCount={documentCountByCourseId.get(course.id) ?? 0}
                         />
                       );
@@ -309,7 +309,7 @@ export default function DrivePage() {
                     subjects={displayCourses
                       .filter((course) => course.subject)
                       .map((course) => ({
-                        curriculumCourseId: course.id,
+                        courseSlotId: course.id,
                         label: `${course.subject!.code} — ${course.subject!.name}`,
                         documentCount: documentCountByCourseId.get(course.id) ?? 0,
                       }))}
@@ -414,7 +414,7 @@ export default function DrivePage() {
         <UploadModal
           key={uploadCourseId ?? "default"}
           folderId={null}
-          defaultCurriculumCourseId={uploadCourseId}
+          defaultCourseSlotId={uploadCourseId}
           onClose={closeUpload}
         />
       )}

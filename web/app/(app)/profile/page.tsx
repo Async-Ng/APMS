@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CheckCircle2, GraduationCap, IdCard, User2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -13,12 +13,12 @@ import {
   MAX_ACADEMIC_SUBJECTS,
   resolveSelectedSubjectIds,
 } from "@/lib/academic-profile";
-import { useAcademicProfile, useCatalogCurriculum, useCatalogMajorSemesters, useCatalogMajors, type CatalogCurriculumItem } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCourseSlots, useCatalogCurriculumSemesters, useCatalogCurricula, type CatalogCourseSlot } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile, useUpdateDisplayName } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/stores/auth-store";
 
-function uniqueSubjects(curriculum: CatalogCurriculumItem[] | undefined) {
+function uniqueSubjects(curriculum: CatalogCourseSlot[] | undefined) {
   const subjects =
     curriculum
       ?.map((c) => c.subject)
@@ -40,32 +40,32 @@ export default function ProfilePage() {
     data: majors,
     isLoading: isMajorsLoading,
     isError: isMajorsError,
-  } = useCatalogMajors();
+  } = useCatalogCurricula();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
-  const [majorId, setMajorId] = useState("");
+  const [curriculumId, setCurriculumId] = useState("");
   const [semesterId, setSemesterId] = useState("");
   const [subjectIds, setSubjectIds] = useState<string[] | null>(null);
   const [academicError, setAcademicError] = useState<string | null>(null);
   const [academicSuccess, setAcademicSuccess] = useState<string | null>(null);
 
-  const majorFromProfile = profile?.major?.id ?? "";
+  const curriculumFromProfile = profile?.curriculum?.id ?? "";
   const semesterFromProfile = profile?.currentSemester?.id ?? "";
   const subjectsFromProfile = profile?.currentSubjects?.map((s) => s.id) ?? [];
 
-  const effectiveMajorId = majorId || majorFromProfile;
+  const effectiveCurriculumId = curriculumId || curriculumFromProfile;
   const effectiveSemesterId = semesterId || semesterFromProfile;
 
   const {
     data: curriculum,
     isLoading: isCurriculumLoading,
     isError: isCurriculumError,
-  } = useCatalogCurriculum(
-    effectiveMajorId || undefined,
+  } = useCatalogCourseSlots(
+    effectiveCurriculumId || undefined,
     effectiveSemesterId || undefined,
   );
 
-  const { data: majorSemesters } = useCatalogMajorSemesters(effectiveMajorId || undefined);
+  const { data: majorSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId || undefined);
 
   const availableSemesters =
     majorSemesters
@@ -79,7 +79,7 @@ export default function ProfilePage() {
   );
 
   const selectionMatchesProfile =
-    effectiveMajorId === majorFromProfile &&
+    effectiveCurriculumId === curriculumFromProfile &&
     effectiveSemesterId === semesterFromProfile;
 
   const selectedSubjectIds = resolveSelectedSubjectIds({
@@ -226,7 +226,7 @@ export default function ProfilePage() {
               className="mb-3"
             />
           )}
-          {isCurriculumError && effectiveMajorId && (
+          {isCurriculumError && effectiveCurriculumId && (
             <ErrorAlert
               message="Không tải được chương trình đào tạo của ngành đã chọn."
               className="mb-3"
@@ -251,11 +251,11 @@ export default function ProfilePage() {
               <label className="text-xs font-bold text-brutal-muted">
                 Ngành
                 <select
-                  value={effectiveMajorId}
+                  value={effectiveCurriculumId}
                   onChange={(e) => {
                     setAcademicError(null);
                     setAcademicSuccess(null);
-                    setMajorId(e.target.value);
+                    setCurriculumId(e.target.value);
                     setSemesterId("");
                     setSubjectIds(null);
                   }}
@@ -280,7 +280,7 @@ export default function ProfilePage() {
                     setSemesterId(e.target.value);
                     setSubjectIds(null);
                   }}
-                  disabled={!effectiveMajorId}
+                  disabled={!effectiveCurriculumId}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink disabled:opacity-50"
                 >
                   <option value="">Chọn học kỳ</option>
@@ -342,9 +342,9 @@ export default function ProfilePage() {
                 />
               )}
               <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
-                {isProfileLoading || (effectiveMajorId && isCurriculumLoading) ? (
+                {isProfileLoading || (effectiveCurriculumId && isCurriculumLoading) ? (
                   <p className="text-sm text-brutal-muted">Đang tải…</p>
-                ) : !effectiveMajorId ? (
+                ) : !effectiveCurriculumId ? (
                   <p className="text-sm text-brutal-muted">
                     Chọn ngành để xem học kỳ và môn học.
                   </p>
@@ -403,7 +403,7 @@ export default function ProfilePage() {
                 onClick={() => {
                   setAcademicError(null);
                   setAcademicSuccess(null);
-                  if (!effectiveMajorId) {
+                  if (!effectiveCurriculumId) {
                     setAcademicError("Vui lòng chọn ngành.");
                     return;
                   }
@@ -421,13 +421,13 @@ export default function ProfilePage() {
                   }
                   updateAcademic.mutate(
                     {
-                      majorId: effectiveMajorId,
+                      curriculumId: effectiveCurriculumId,
                       currentSemesterId: effectiveSemesterId,
                       currentSubjectIds: subjectIdsToSave,
                     },
                     {
                       onSuccess: () => {
-                        setMajorId("");
+                        setCurriculumId("");
                         setSemesterId("");
                         setSubjectIds(null);
                         setAcademicSuccess("Đã lưu hồ sơ học thuật.");

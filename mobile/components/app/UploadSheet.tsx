@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+﻿import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -43,7 +43,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
 
   const [step, setStep] = useState<Step>("pick");
   const [file, setFile] = useState<PickedFile | null>(null);
-  const [curriculumCourseId, setCurriculumCourseId] = useState("");
+  const [courseSlotId, setcourseSlotId] = useState("");
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
     if (visible) {
       setStep("pick");
       setFile(null);
-      setCurriculumCourseId("");
+      setcourseSlotId("");
       setVisibility("private");
       setProgress(0);
       setErrorMsg(null);
@@ -93,7 +93,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
   }
 
   async function handleUpload() {
-    if (!file || !curriculumCourseId) return;
+    if (!file || !courseSlotId) return;
     setStep("uploading");
     setProgress(0);
     try {
@@ -103,7 +103,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
         mimeType: file.mimeType,
         size: file.size,
         folderId: folderId ?? null,
-        curriculumCourseId,
+        courseSlotId,
         visibility,
         onProgress: setProgress,
       });
@@ -119,13 +119,13 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
     onDismiss();
   }
 
-  const selectedCourse = enrolledCourses.find((c) => c.id === curriculumCourseId);
-  const canSubmit = Boolean(file && curriculumCourseId);
+  const selectedCourse = enrolledCourses.find((c) => c.id === courseSlotId);
+  const canSubmit = Boolean(file && courseSlotId);
 
   const courseActions: ActionItem[] = enrolledCourses.map((course) => ({
     label: `${course.subject?.code ?? ""} — ${course.subject?.name ?? ""}`,
     icon: "book-outline",
-    onPress: () => setCurriculumCourseId(course.id),
+    onPress: () => setcourseSlotId(course.id),
   }));
 
   return (
@@ -169,7 +169,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                           Cần hồ sơ học thuật
                         </Text>
                         <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
-                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật ngành, học kỳ và môn học trước khi tải
+                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật Chương trình đào tạo, học kỳ và môn học trước khi tải
                           lên.
                         </Text>
                         <BrutalButton

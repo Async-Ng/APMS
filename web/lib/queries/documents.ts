@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import type {
@@ -14,7 +14,7 @@ interface UploadIntentBody {
   originalFilename: string;
   mimeType: string;
   fileSizeBytes: number;
-  curriculumCourseId: string;
+  courseSlotId: string;
   visibility: DocumentVisibility;
   folderId?: string | null;
   title?: string;
@@ -67,7 +67,7 @@ export interface PublicDocumentsParams {
   limit: number;
   search?: string;
   sort?: "newest" | "oldest" | "title";
-  majorId?: string;
+  curriculumId?: string;
   semesterId?: string;
   subjectId?: string;
 }
@@ -87,7 +87,7 @@ export function usePublicDocuments(
       };
       if (listParams.search) query.search = listParams.search;
       if (listParams.sort) query.sort = listParams.sort;
-      if (listParams.majorId) query.majorId = listParams.majorId;
+      if (listParams.curriculumId) query.curriculumId = listParams.curriculumId;
       if (listParams.semesterId) query.semesterId = listParams.semesterId;
       if (listParams.subjectId) query.subjectId = listParams.subjectId;
 
@@ -108,7 +108,7 @@ export interface UpdateDocumentBody {
   title?: string;
   tags?: string[];
   folderId?: string | null;
-  curriculumCourseId?: string;
+  courseSlotId?: string;
   visibility?: DocumentVisibility;
 }
 

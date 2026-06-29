@@ -12,7 +12,7 @@ export const documentSchema = registry.register(
       id: z.string(),
       ownerId: z.string(),
       folderId: z.string().nullable(),
-      curriculumCourseId: z.string().nullable(),
+      courseSlotId: z.string().nullable(),
       visibility: z.enum(DOCUMENT_VISIBILITIES),
       title: z.string(),
       originalFilename: z.string(),
@@ -44,12 +44,12 @@ export const documentListItemSchema = registry.register(
         avatarUrl: z.string().nullable(),
       })
       .nullable(),
-    curriculumCourse: z
+    courseSlot: z
       .object({
         id: z.string(),
         semesterId: z.string(),
         semester: z.record(z.string(), z.unknown()).nullable(),
-        major: z.record(z.string(), z.unknown()).nullable(),
+        curriculum: z.record(z.string(), z.unknown()).nullable(),
         subject: z.record(z.string(), z.unknown()).nullable(),
       })
       .nullable(),

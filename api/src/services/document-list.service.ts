@@ -1,9 +1,9 @@
 import type { Types } from "mongoose";
 
-import { CurriculumCourse } from "../models/curriculum-course.model";
+import { CourseSlot } from "../models/course-slot.model";
 import { Document, toDocumentResponse, type DocumentDocument } from "../models/document.model";
 import { Folder, toFolderResponse, type FolderDocument } from "../models/folder.model";
-import { Major, toMajorResponse } from "../models/major.model";
+import { Curriculum, toCurriculumResponse } from "../models/curriculum.model";
 import { Semester, toSemesterResponse } from "../models/semester.model";
 import { Subject, toSubjectResponse } from "../models/subject.model";
 import { User, type UserDocument } from "../models/user.model";
@@ -21,7 +21,7 @@ export interface ListDocumentsOptions {
   limit: number;
   search?: string | undefined;
   sort: "newest" | "oldest" | "title";
-  majorId?: string | undefined;
+  curriculumId?: string | undefined;
   semesterId?: string | undefined;
   subjectId?: string | undefined;
   match: "auto" | "exact" | "related" | "all";
@@ -77,24 +77,26 @@ async function serializeDocuments(
   options: SerializeOptions,
 ) {
   const courseIds = documents
-    .map((document) => document.curriculumCourseId?.toString())
+    .map((document) => document.courseSlotId?.toString())
     .filter((id): id is string => Boolean(id));
   const ownerIds = [...new Set(documents.map((document) => document.ownerId.toString()))];
 
-  const courses = await CurriculumCourse.find({ _id: { $in: courseIds } });
-  const majorIds = [...new Set(courses.map((course) => course.majorId.toString()))];
-  const subjectIds = [...new Set(courses.map((course) => course.subjectId.toString()))];
-  const semesterIds = [...new Set(courses.map((course) => course.semesterId.toString()))];
+  const slots = await CourseSlot.find({ _id: { $in: courseIds } });
+  const curriculumIds = [...new Set(slots.map((slot) => slot.curriculumId.toString()))];
+  const subjectIds = [...new Set(slots.map((slot) => slot.subjectId.toString()))];
+  const semesterIds = [...new Set(slots.map((slot) => slot.semesterId.toString()))];
 
-  const [majors, subjects, semesters, owners] = await Promise.all([
-    Major.find({ _id: { $in: majorIds } }),
+  const [curricula, subjects, semesters, owners] = await Promise.all([
+    Curriculum.find({ _id: { $in: curriculumIds } }),
     Subject.find({ _id: { $in: subjectIds } }),
     Semester.find({ _id: { $in: semesterIds } }),
     User.find({ _id: { $in: ownerIds } }).select("_id displayName email avatarUrl"),
   ]);
 
-  const courseMap = new Map(courses.map((course) => [course._id.toString(), course]));
-  const majorMap = new Map(majors.map((major) => [major._id.toString(), toMajorResponse(major)]));
+  const slotMap = new Map(slots.map((slot) => [slot._id.toString(), slot]));
+  const curriculumMap = new Map(
+    curricula.map((curriculum) => [curriculum._id.toString(), toCurriculumResponse(curriculum)]),
+  );
   const subjectMap = new Map(
     subjects.map((subject) => [subject._id.toString(), toSubjectResponse(subject)]),
   );
@@ -114,20 +116,20 @@ async function serializeDocuments(
   );
 
   return documents.map((document) => {
-    const course = document.curriculumCourseId
-      ? courseMap.get(document.curriculumCourseId.toString())
+    const slot = document.courseSlotId
+      ? slotMap.get(document.courseSlotId.toString())
       : undefined;
     const base = {
       ...toDocumentResponse(document),
       source: options.source,
       owner: ownerMap.get(document.ownerId.toString()) ?? null,
-      curriculumCourse: course
+      courseSlot: slot
         ? {
-            id: course._id.toString(),
-            semesterId: course.semesterId.toString(),
-            semester: semesterMap.get(course.semesterId.toString()) ?? null,
-            major: majorMap.get(course.majorId.toString()) ?? null,
-            subject: subjectMap.get(course.subjectId.toString()) ?? null,
+            id: slot._id.toString(),
+            semesterId: slot.semesterId.toString(),
+            semester: semesterMap.get(slot.semesterId.toString()) ?? null,
+            curriculum: curriculumMap.get(slot.curriculumId.toString()) ?? null,
+            subject: subjectMap.get(slot.subjectId.toString()) ?? null,
           }
         : null,
       share: options.shareByDocumentId?.has(document._id.toString())
@@ -267,7 +269,7 @@ async function listTrashDocuments(user: UserDocument, options: ListDocumentsOpti
 
 async function getCourseIdsForFilter(options: ListDocumentsOptions): Promise<Types.ObjectId[] | null> {
   const filter: Record<string, unknown> = { isActive: true };
-  if (options.majorId) filter.majorId = parseObjectId(options.majorId, "majorId");
+  if (options.curriculumId) filter.curriculumId = parseObjectId(options.curriculumId, "curriculumId");
   if (options.semesterId) filter.semesterId = parseObjectId(options.semesterId, "semesterId");
   if (options.subjectId) filter.subjectId = parseObjectId(options.subjectId, "subjectId");
 
@@ -275,76 +277,76 @@ async function getCourseIdsForFilter(options: ListDocumentsOptions): Promise<Typ
     return null;
   }
 
-  return CurriculumCourse.find(filter).distinct("_id");
+  return CourseSlot.find(filter).distinct("_id");
 }
 
 async function getProfileCourseBuckets(user: UserDocument) {
-  if (!user.majorId || !user.currentSemesterId || user.currentSubjectIds.length === 0) {
-    return { exactCourseIds: [] as Types.ObjectId[], relatedCourseIds: [] as Types.ObjectId[] };
+  if (!user.curriculumId || !user.currentSemesterId || user.currentSubjectIds.length === 0) {
+    return { exactSlotIds: [] as Types.ObjectId[], relatedSlotIds: [] as Types.ObjectId[] };
   }
 
-  const exactCourses = await CurriculumCourse.find({
-    majorId: user.majorId,
+  const exactSlots = await CourseSlot.find({
+    curriculumId: user.curriculumId,
     semesterId: user.currentSemesterId,
     subjectId: { $in: user.currentSubjectIds },
     isActive: true,
   }).select("_id subjectId");
 
-  const exactCourseIds = exactCourses.map((course) => course._id);
-  const subjectIds = [...new Set(exactCourses.map((course) => course.subjectId.toString()))];
-  const relatedCourseIds =
+  const exactSlotIds = exactSlots.map((slot) => slot._id);
+  const subjectIds = [...new Set(exactSlots.map((slot) => slot.subjectId.toString()))];
+  const relatedSlotIds =
     subjectIds.length === 0
       ? []
-      : await CurriculumCourse.find({
-          majorId: user.majorId,
+      : await CourseSlot.find({
+          curriculumId: user.curriculumId,
           subjectId: { $in: subjectIds.map((id) => parseObjectId(id, "subjectId")) },
           semesterId: { $ne: user.currentSemesterId },
           isActive: true,
         }).distinct("_id");
 
-  return { exactCourseIds, relatedCourseIds };
+  return { exactSlotIds, relatedSlotIds };
 }
 
 function matchTypeForDocument(
   document: DocumentDocument,
-  exactCourseIds: Types.ObjectId[],
-  relatedCourseIds: Types.ObjectId[],
+  exactSlotIds: Types.ObjectId[],
+  relatedSlotIds: Types.ObjectId[],
 ): PublicMatchType {
-  const courseId = document.curriculumCourseId;
-  if (courseId && exactCourseIds.some((id) => id.equals(courseId as Types.ObjectId))) {
+  const slotId = document.courseSlotId;
+  if (slotId && exactSlotIds.some((id) => id.equals(slotId as Types.ObjectId))) {
     return "exact_course";
   }
-  if (courseId && relatedCourseIds.some((id) => id.equals(courseId as Types.ObjectId))) {
+  if (slotId && relatedSlotIds.some((id) => id.equals(slotId as Types.ObjectId))) {
     return "same_subject_other_semester";
   }
   return "global_public";
 }
 
 async function listPublicDocuments(user: UserDocument, options: ListDocumentsOptions) {
-  const { exactCourseIds, relatedCourseIds } = await getProfileCourseBuckets(user);
-  const filteredCourseIds = await getCourseIdsForFilter(options);
+  const { exactSlotIds, relatedSlotIds } = await getProfileCourseBuckets(user);
+  const filteredSlotIds = await getCourseIdsForFilter(options);
   const filter: Record<string, unknown> = {
     visibility: "public",
     deletedAt: null,
     status: { $ne: "pending" },
-    curriculumCourseId: { $ne: null },
+    courseSlotId: { $ne: null },
   };
   applySearch(filter, options.search);
 
-  if (filteredCourseIds) {
-    filter.curriculumCourseId = { $in: filteredCourseIds };
+  if (filteredSlotIds) {
+    filter.courseSlotId = { $in: filteredSlotIds };
   } else if (options.match === "exact") {
-    filter.curriculumCourseId = { $in: exactCourseIds };
+    filter.courseSlotId = { $in: exactSlotIds };
   } else if (options.match === "related") {
-    filter.curriculumCourseId = { $in: relatedCourseIds };
+    filter.courseSlotId = { $in: relatedSlotIds };
   }
 
   const allMatchingDocs = await Document.find(filter).sort(sortSpec(options.sort));
   const prioritized =
     options.match === "auto"
       ? allMatchingDocs.sort((a, b) => {
-          const aType = matchTypeForDocument(a, exactCourseIds, relatedCourseIds);
-          const bType = matchTypeForDocument(b, exactCourseIds, relatedCourseIds);
+          const aType = matchTypeForDocument(a, exactSlotIds, relatedSlotIds);
+          const bType = matchTypeForDocument(b, exactSlotIds, relatedSlotIds);
           const rank = {
             exact_course: 0,
             same_subject_other_semester: 1,
@@ -360,7 +362,7 @@ async function listPublicDocuments(user: UserDocument, options: ListDocumentsOpt
   for (const document of documents) {
     matchTypeByDocumentId.set(
       document._id.toString(),
-      matchTypeForDocument(document, exactCourseIds, relatedCourseIds),
+      matchTypeForDocument(document, exactSlotIds, relatedSlotIds),
     );
   }
 

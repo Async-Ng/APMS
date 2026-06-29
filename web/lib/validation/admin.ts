@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 const codeField = z
   .string()
@@ -11,7 +11,7 @@ const descriptionField = z
   .trim()
   .max(1000, "Mô tả tối đa 1000 ký tự");
 
-export const majorFormSchema = z.object({
+export const curriculumEntityFormSchema = z.object({
   code: codeField,
   name: z
     .string()
@@ -41,8 +41,8 @@ export const semesterFormSchema = z.object({
   sortOrder: z.coerce.number().int().min(0, "Thứ tự phải ≥ 0"),
 });
 
-export const curriculumFormSchema = z.object({
-  majorId: z.string().min(1, "Chọn ngành học"),
+export const courseSlotFormSchema = z.object({
+  curriculumId: z.string().min(1, "Chọn chương trình đào tạo"),
   subjectId: z.string().min(1, "Chọn môn học"),
   semesterId: z.string().min(1, "Chọn học kỳ"),
 });

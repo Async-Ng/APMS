@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FileText, Folder, Globe } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { formatBytes } from "@/lib/format";
 
 export interface DriveSubjectListEntry {
-  curriculumCourseId: string;
+  courseSlotId: string;
   label: string;
   documentCount?: number;
 }
@@ -41,9 +41,9 @@ export function DriveListView({
   return (
     <ul className={cn("divide-y-2 divide-brutal-ink/10 rounded-xl border-2 border-brutal-ink bg-brutal-surface", className)}>
       {subjects.map((subject) => (
-        <li key={subject.curriculumCourseId}>
+        <li key={subject.courseSlotId}>
           <Link
-            href={`/drive/subject/${subject.curriculumCourseId}`}
+            href={`/drive/subject/${subject.courseSlotId}`}
             className="focus-brutal flex items-center gap-3 px-4 py-3 transition-colors hover:bg-brutal-bg"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-primary">

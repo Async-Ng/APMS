@@ -1,4 +1,4 @@
-import { isAxiosError } from "axios";
+﻿import { isAxiosError } from "axios";
 
 /** Mirrors api/src/errors/error-codes.ts — user-facing Vietnamese messages */
 export const ErrorCode = {
@@ -45,11 +45,13 @@ export const ErrorCode = {
   ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
   ACCESS_EMAIL_NOT_FOUND: "ACCESS_EMAIL_NOT_FOUND",
   CANNOT_REVOKE_SELF_ACCESS: "CANNOT_REVOKE_SELF_ACCESS",
-  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
-  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
   CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  SEMESTER_NOT_FOUND: "SEMESTER_NOT_FOUND",
+  CURRICULUM_SEMESTER_NOT_FOUND: "CURRICULUM_SEMESTER_NOT_FOUND",
+  COURSE_SLOT_NOT_FOUND: "COURSE_SLOT_NOT_FOUND",
   ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
-  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
+  COURSE_SLOT_NOT_IN_PROFILE: "COURSE_SLOT_NOT_IN_PROFILE",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -101,13 +103,15 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   ACCESS_EMAIL_NOT_FOUND: "Không tìm thấy email truy cập.",
   CANNOT_REVOKE_SELF_ACCESS:
     "Bạn không thể thu hồi quyền truy cập của chính email mình.",
-  MAJOR_NOT_FOUND: "Không tìm thấy ngành học.",
+  CURRICULUM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
   SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
-  CURRICULUM_NOT_FOUND: "Không tìm thấy môn trong chương trình đào tạo.",
+  SEMESTER_NOT_FOUND: "Không tìm thấy học kỳ.",
+  CURRICULUM_SEMESTER_NOT_FOUND: "Học kỳ chưa được gán cho CTĐT này.",
+  COURSE_SLOT_NOT_FOUND: "Không tìm thấy môn trong CTĐT.",
   ACADEMIC_PROFILE_REQUIRED:
-    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
-  CURRICULUM_NOT_ENROLLED:
-    "Môn học không thuộc ngành, học kỳ hoặc danh sách môn đã chọn của bạn.",
+    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu.",
+  COURSE_SLOT_NOT_IN_PROFILE:
+    "Môn học không thuộc CTĐT, học kỳ hoặc danh sách môn đã chọn của bạn.",
 };
 
 const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";

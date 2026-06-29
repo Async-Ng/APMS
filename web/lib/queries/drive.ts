@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import type { Pagination } from "@/lib/queries/admin";
@@ -22,7 +22,7 @@ export interface DocumentOwnerRef {
   avatarUrl: string | null;
 }
 
-export interface DocumentMajorRef {
+export interface DocumentCurriculumEntityRef {
   id: string;
   code: string;
   name: string;
@@ -41,11 +41,11 @@ export interface DocumentSemesterRef {
   sortOrder: number;
 }
 
-export interface DocumentCurriculumRef {
+export interface DocumentCourseSlotRef {
   id: string;
   semesterId: string;
   semester: DocumentSemesterRef | null;
-  major: DocumentMajorRef | null;
+  curriculum: DocumentCurriculumEntityRef | null;
   subject: DocumentSubjectRef | null;
 }
 
@@ -83,13 +83,13 @@ export interface DriveDocument {
   chunkCount?: number;
   pageCount?: number | null;
   folderId: string | null;
-  curriculumCourseId?: string | null;
+  courseSlotId?: string | null;
   visibility?: DocumentVisibility;
   isStarred: boolean;
   tags: string[];
   source?: DocumentSource;
   owner?: DocumentOwnerRef | null;
-  curriculumCourse?: DocumentCurriculumRef | null;
+  courseSlot?: DocumentCourseSlotRef | null;
   share?: DocumentShareRef | null;
   matchType?: PublicMatchType | null;
   deletedAt?: string | null;
@@ -114,7 +114,7 @@ export interface ListDocumentsParams {
   page?: number;
   limit?: number;
   match?: "auto" | "exact" | "related" | "all";
-  majorId?: string;
+  curriculumId?: string;
   semesterId?: string;
   subjectId?: string;
 }
@@ -127,7 +127,7 @@ function buildListQuery(params: ListDocumentsParams): Record<string, string | nu
   if (params.page) query.page = params.page;
   if (params.limit) query.limit = params.limit;
   if (params.match) query.match = params.match;
-  if (params.majorId) query.majorId = params.majorId;
+  if (params.curriculumId) query.curriculumId = params.curriculumId;
   if (params.semesterId) query.semesterId = params.semesterId;
   if (params.subjectId) query.subjectId = params.subjectId;
   return query;

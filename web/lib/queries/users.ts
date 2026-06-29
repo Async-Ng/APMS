@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import type { AcademicProfile } from "@/lib/queries/catalog";
@@ -37,7 +37,7 @@ export function useUpdateAcademicProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      majorId: string;
+      curriculumId: string;
       currentSemesterId: string;
       currentSubjectIds: string[];
     }) => {

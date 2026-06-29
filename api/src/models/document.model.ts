@@ -11,9 +11,9 @@ const documentSchema = new Schema(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     folderId: { type: Schema.Types.ObjectId, ref: "Folder", default: null },
-    curriculumCourseId: {
+    courseSlotId: {
       type: Schema.Types.ObjectId,
-      ref: "CurriculumCourse",
+      ref: "CourseSlot",
       default: null,
       index: true,
     },
@@ -52,7 +52,7 @@ documentSchema.index({ ownerId: 1, folderId: 1 });
 documentSchema.index({ ownerId: 1, deletedAt: 1 });
 documentSchema.index({ ownerId: 1, isStarred: 1 });
 documentSchema.index({ status: 1 });
-documentSchema.index({ visibility: 1, curriculumCourseId: 1, deletedAt: 1 });
+documentSchema.index({ visibility: 1, courseSlotId: 1, deletedAt: 1 });
 
 export type DocumentDocument = HydratedDocument<InferSchemaType<typeof documentSchema>>;
 
@@ -63,9 +63,7 @@ export function toDocumentResponse(document: DocumentDocument, extras?: { downlo
     id: document._id.toString(),
     ownerId: document.ownerId.toString(),
     folderId: document.folderId ? document.folderId.toString() : null,
-    curriculumCourseId: document.curriculumCourseId
-      ? document.curriculumCourseId.toString()
-      : null,
+    courseSlotId: document.courseSlotId ? document.courseSlotId.toString() : null,
     visibility: document.visibility,
     title: document.title,
     originalFilename: document.originalFilename,

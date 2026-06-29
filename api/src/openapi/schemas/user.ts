@@ -13,7 +13,7 @@ export const userSchema = registry.register(
       avatarUrl: z.string().nullable(),
       role: z.enum(USER_ROLES),
       isDisabled: z.boolean(),
-      majorId: z.string().nullable(),
+      curriculumId: z.string().nullable(),
       currentSemesterId: z.string().nullable(),
       currentSubjectIds: z.array(z.string()),
       storageUsedBytes: z.number(),

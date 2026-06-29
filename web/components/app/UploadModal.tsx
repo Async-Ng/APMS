@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CheckCircle2, GraduationCap, Loader2, Upload, X } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
 import { getUserErrorMessage } from "@/lib/errors";
-import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
 import type { DocumentVisibility } from "@/lib/queries/drive";
 import {
   uploadToS3,
@@ -38,19 +38,19 @@ type FormStep = 1 | 2;
 interface UploadModalProps {
   folderId: string | null;
   onClose: () => void;
-  defaultCurriculumCourseId?: string;
+  defaultCourseSlotId?: string;
 }
 
 export function UploadModal({
   folderId,
   onClose,
-  defaultCurriculumCourseId,
+  defaultCourseSlotId,
 }: UploadModalProps) {
   const [step, setStep] = useState<Step>("pick");
   const [formStep, setFormStep] = useState<FormStep>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [curriculumCourseId, setCurriculumCourseId] = useState(
-    defaultCurriculumCourseId ?? "",
+  const [courseSlotId, setCourseSlotId] = useState(
+    defaultCourseSlotId ?? "",
   );
   const [visibility, setVisibility] = useState<DocumentVisibility>("private");
   const [progress, setProgress] = useState(0);
@@ -59,8 +59,8 @@ export function UploadModal({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
-  const { data: curriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: curriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     profile?.currentSemester?.id,
   );
 
@@ -107,7 +107,7 @@ export function UploadModal({
   }
 
   const startUpload = useCallback(async () => {
-    if (!selectedFile || !curriculumCourseId) return;
+    if (!selectedFile || !courseSlotId) return;
     setStep("uploading");
     setProgress(0);
 
@@ -116,7 +116,7 @@ export function UploadModal({
         originalFilename: selectedFile.name,
         mimeType: selectedFile.type,
         fileSizeBytes: selectedFile.size,
-        curriculumCourseId,
+        courseSlotId,
         visibility,
         folderId,
       });
@@ -136,7 +136,7 @@ export function UploadModal({
     }
   }, [
     selectedFile,
-    curriculumCourseId,
+    courseSlotId,
     visibility,
     folderId,
     uploadIntent,
@@ -155,7 +155,7 @@ export function UploadModal({
     onClose();
   }
 
-  const canContinueStep1 = Boolean(selectedFile && curriculumCourseId);
+  const canContinueStep1 = Boolean(selectedFile && courseSlotId);
   const canSubmit = canContinueStep1;
 
   return (
@@ -242,8 +242,8 @@ export function UploadModal({
                     </label>
                     <select
                       id="upload-course"
-                      value={curriculumCourseId}
-                      onChange={(e) => setCurriculumCourseId(e.target.value)}
+                      value={courseSlotId}
+                      onChange={(e) => setCourseSlotId(e.target.value)}
                       className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2.5 text-sm font-medium text-brutal-ink shadow-brutal-sm outline-none"
                     >
                       <option value="">Chọn môn học…</option>
@@ -342,7 +342,7 @@ export function UploadModal({
                           <span className="text-brutal-muted">
                             {" "}
                             —{" "}
-                            {enrolledCourses.find((c) => c.id === curriculumCourseId)
+                            {enrolledCourses.find((c) => c.id === courseSlotId)
                               ?.subject?.code ?? "Môn đã chọn"}
                           </span>
                         </p>

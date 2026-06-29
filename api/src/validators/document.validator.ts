@@ -7,7 +7,7 @@ export const createUploadIntentSchema = z.object({
   originalFilename: z.string().trim().min(1).max(255),
   mimeType: z.enum(ALLOWED_MIME_TYPES),
   fileSizeBytes: z.number().int().positive(),
-  curriculumCourseId: z.string().regex(/^[a-f\d]{24}$/i),
+  courseSlotId: z.string().regex(/^[a-f\d]{24}$/i),
   visibility: z.enum(DOCUMENT_VISIBILITIES).default("private"),
   folderId: z.string().regex(/^[a-f\d]{24}$/i).nullable().optional(),
   title: z.string().trim().min(1).max(255).optional(),
@@ -20,7 +20,7 @@ export const listDocumentsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().max(255).optional(),
   sort: z.enum(["newest", "oldest", "title"]).default("newest"),
-  majorId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  curriculumId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   semesterId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   subjectId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   match: z.enum(["auto", "exact", "related", "all"]).default("auto"),
@@ -33,7 +33,7 @@ export const updateDocumentSchema = z
     folderId: z
       .union([z.string().regex(/^[a-f\d]{24}$/i), z.null()])
       .optional(),
-    curriculumCourseId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+    courseSlotId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
     visibility: z.enum(DOCUMENT_VISIBILITIES).optional(),
   })
   .refine(
@@ -41,7 +41,7 @@ export const updateDocumentSchema = z
       data.title !== undefined ||
       data.tags !== undefined ||
       data.folderId !== undefined ||
-      data.curriculumCourseId !== undefined ||
+      data.courseSlotId !== undefined ||
       data.visibility !== undefined,
     { message: "At least one field must be provided" },
   );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { GraduationCap, Pencil, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,15 +14,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
-  useAdminMajors,
-  useArchiveMajor,
-  useCreateMajor,
-  useUpdateMajor,
-  type Major,
+  useAdminCurricula,
+  useArchiveCurriculum,
+  useCreateCurriculum,
+  useUpdateCurriculum,
+  type Curriculum,
 } from "@/lib/queries/admin-academic";
 import {
   formatZodFieldErrors,
-  majorFormSchema,
+  curriculumEntityFormSchema,
 } from "@/lib/validation/admin";
 import { cn } from "@/lib/cn";
 
@@ -39,23 +39,23 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1 text-xs font-medium text-brutal-danger">{message}</p>;
 }
 
-export function MajorsPanel() {
-  const { data: majors, isLoading, isError } = useAdminMajors();
-  const { mutate: createMajor, isPending: isCreating } = useCreateMajor();
-  const { mutate: updateMajor, isPending: isUpdating } = useUpdateMajor();
-  const { mutate: archiveMajor, isPending: isArchiving } = useArchiveMajor();
+export function CurriculaPanel() {
+  const { data: curricula, isLoading, isError } = useAdminCurricula();
+  const { mutate: createMajor, isPending: isCreating } = useCreateCurriculum();
+  const { mutate: updateMajor, isPending: isUpdating } = useUpdateCurriculum();
+  const { mutate: archiveMajor, isPending: isArchiving } = useArchiveCurriculum();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Major | null>(null);
+  const [editing, setEditing] = useState<Curriculum | null>(null);
   const [form, setForm] = useState<MajorFormState>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [archiveTarget, setArchiveTarget] = useState<Major | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Curriculum | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pendingMajorId, setPendingMajorId] = useState<string | null>(null);
+  const [pendingCurriculumId, setPendingCurriculumId] = useState<string | null>(null);
 
   const isFormValid = useMemo(
     () =>
-      majorFormSchema.safeParse({
+      curriculumEntityFormSchema.safeParse({
         code: form.code,
         name: form.name,
         description: form.description.trim() || undefined,
@@ -71,12 +71,12 @@ export function MajorsPanel() {
     setFormOpen(true);
   }
 
-  function openEdit(major: Major) {
-    setEditing(major);
+  function openEdit(curriculum: Curriculum) {
+    setEditing(curriculum);
     setForm({
-      code: major.code,
-      name: major.name,
-      description: major.description,
+      code: curriculum.code,
+      name: curriculum.name,
+      description: curriculum.description,
     });
     setFieldErrors({});
     setError(null);
@@ -84,7 +84,7 @@ export function MajorsPanel() {
   }
 
   function handleSubmit() {
-    const parsed = majorFormSchema.safeParse({
+    const parsed = curriculumEntityFormSchema.safeParse({
       code: form.code,
       name: form.name,
       description: form.description.trim() || undefined,
@@ -117,13 +117,13 @@ export function MajorsPanel() {
     }
   }
 
-  function handleReactivate(major: Major) {
+  function handleReactivate(curriculum: Curriculum) {
     setError(null);
-    setPendingMajorId(major.id);
+    setPendingCurriculumId(curriculum.id);
     updateMajor(
-      { id: major.id, body: { isActive: true } },
+      { id: curriculum.id, body: { isActive: true } },
       {
-        onSettled: () => setPendingMajorId(null),
+        onSettled: () => setPendingCurriculumId(null),
         onError: (err) => setError(getUserErrorMessage(err)),
       },
     );
@@ -154,7 +154,7 @@ export function MajorsPanel() {
         </BrutalButton>
       </div>
 
-      <AdminTableShell ariaLabel="Bảng ngành học">
+      <AdminTableShell ariaLabel="Bảng chương trình đào tạo">
         <thead>
           <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Mã</th>
@@ -169,54 +169,54 @@ export function MajorsPanel() {
           {isError && (
             <tr>
               <td colSpan={5} className="px-4 py-6 text-center text-sm text-brutal-danger">
-                Không tải được danh sách ngành.
+                Không tải được danh sách chương trình đào tạo.
               </td>
             </tr>
           )}
-          {!isLoading && !isError && majors?.length === 0 && (
+          {!isLoading && !isError && curricula?.length === 0 && (
             <tr>
               <td colSpan={5} className="px-4 py-10 text-center">
                 <GraduationCap className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có ngành học</p>
+                <p className="text-sm font-semibold text-brutal-ink">Chưa có chương trình đào tạo</p>
                 <p className="mt-1 text-xs text-brutal-muted">
-                  Thêm ngành đầu tiên để bắt đầu xây dựng chương trình đào tạo.
+                  Thêm CTĐT đầu tiên để bắt đầu xây dựng course slot.
                 </p>
               </td>
             </tr>
           )}
           {!isLoading &&
             !isError &&
-            majors?.map((major) => (
+            curricula?.map((curriculum) => (
               <tr
-                key={major.id}
+                key={curriculum.id}
                 className={cn(
                   "border-b border-brutal-ink/10 hover:bg-brutal-bg",
-                  !major.isActive && "opacity-60",
+                  !curriculum.isActive && "opacity-60",
                 )}
               >
-                <td className="px-4 py-3 font-mono text-sm font-bold">{major.code}</td>
-                <td className="px-4 py-3 font-semibold">{major.name}</td>
+                <td className="px-4 py-3 font-mono text-sm font-bold">{curriculum.code}</td>
+                <td className="px-4 py-3 font-semibold">{curriculum.name}</td>
                 <td className="max-w-xs truncate px-4 py-3 text-brutal-muted">
-                  {major.description || "—"}
+                  {curriculum.description || "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <AdminStatusBadge active={major.isActive} />
+                  <AdminStatusBadge active={curriculum.isActive} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
                     <BrutalButton
                       variant="ghost"
                       className="px-2 py-1 text-xs"
-                      onClick={() => openEdit(major)}
-                      aria-label={`Sửa ngành ${major.name}`}
+                      onClick={() => openEdit(curriculum)}
+                      aria-label={`Sửa CTĐT ${curriculum.name}`}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </BrutalButton>
-                    {major.isActive ? (
+                    {curriculum.isActive ? (
                       <BrutalButton
                         variant="ghost"
                         className="px-3 py-1 text-xs"
-                        onClick={() => setArchiveTarget(major)}
+                        onClick={() => setArchiveTarget(curriculum)}
                       >
                         Xóa
                       </BrutalButton>
@@ -224,8 +224,8 @@ export function MajorsPanel() {
                       <BrutalButton
                         variant="secondary"
                         className="px-3 py-1 text-xs"
-                        onClick={() => handleReactivate(major)}
-                        disabled={pendingMajorId === major.id}
+                        onClick={() => handleReactivate(curriculum)}
+                        disabled={pendingCurriculumId === curriculum.id}
                       >
                         Kích hoạt
                       </BrutalButton>
@@ -239,7 +239,7 @@ export function MajorsPanel() {
 
       <AdminFormModal
         open={formOpen}
-        title={editing ? "Sửa ngành học" : "Thêm ngành học"}
+        title={editing ? "Sửa chương trình đào tạo" : "Thêm chương trình đào tạo"}
         onClose={() => setFormOpen(false)}
         footer={
           <>
@@ -259,7 +259,7 @@ export function MajorsPanel() {
         }
       >
         <label className="block text-sm font-bold">
-          Mã ngành
+          Mã CTĐT
           <input
             value={form.code}
             onChange={(e) => {
@@ -277,7 +277,7 @@ export function MajorsPanel() {
           <FieldError message={fieldErrors.code} />
         </label>
         <label className="block text-sm font-bold">
-          Tên ngành
+          Tên CTĐT
           <input
             value={form.name}
             onChange={(e) => {
@@ -310,10 +310,10 @@ export function MajorsPanel() {
 
       <ConfirmDialog
         open={!!archiveTarget}
-        title="Xóa ngành học?"
+        title="Xóa chương trình đào tạo?"
         description={
           archiveTarget
-            ? `Ngành "${archiveTarget.name}" sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên đang chọn ngành này. Có thể kích hoạt lại sau.`
+            ? `CTĐT "${archiveTarget.name}" sẽ không hiển thị trong danh mục công khai. Không thể xóa nếu sinh viên đang chọn CTĐT này. Có thể kích hoạt lại sau.`
             : ""
         }
         confirmLabel="Xóa"
