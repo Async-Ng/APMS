@@ -45,6 +45,21 @@ Search / Chat
 
 `GET /api/documents` hỗ trợ `view=my|shared|public|starred|trash`, `search`, `sort`, `page`, `limit`, `parentId`, và các filter học vụ cho public view.
 
+## Giới Hạn & Chính Sách
+
+Nguồn nghiệp vụ đầy đủ: [docs/SRS.md](./docs/SRS.md) (FR/BR/NFR).
+
+| Hạng mục | Giá trị | Tham chiếu |
+| --- | --- | --- |
+| Dung lượng mỗi tệp | 50 MB | FR-014, BR-009 |
+| Quota lưu trữ mỗi người | 500 MB | BR-009 |
+| Loại tệp cho phép | PDF, DOCX, PPTX | FR-013, BR-008 |
+| Thùng rác tự xóa | sau 30 ngày | BR-027 |
+| Giới hạn chat AI | 50 lượt/người/ngày | FR-062, BR-025 |
+| Lời mời chia sẻ | hết hạn sau 7 ngày | BR-015 |
+| Link tải tệp | hết hạn sau 15 phút | — |
+| Allowlist đăng nhập | `fpt.edu.vn`, `fe.edu.vn` + access emails | BR-002 |
+
 ## Stack
 
 | Layer | Công nghệ |
@@ -74,6 +89,7 @@ Search / Chat
 
 ## Tài Liệu Liên Quan
 
+- [docs/SRS.md](./docs/SRS.md) — đặc tả nghiệp vụ (FR/BR/NFR), nguồn sự thật nghiệp vụ
 - [README.md](./README.md)
 - [docs/api_reference.md](./docs/api_reference.md)
 - [docs/system_overview.md](./docs/system_overview.md)

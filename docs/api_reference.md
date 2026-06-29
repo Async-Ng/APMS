@@ -2,7 +2,7 @@
 
 Base URL local: `http://localhost:4000/api`.
 
-Tài liệu này mô tả API hiện tại sau refactor Documents. Source of truth là `api/src/routes/index.ts`, validators trong `api/src/validators`, models trong `api/src/models`, và services trong `api/src/services`.
+Business rules: see `docs/SRS.md` (FR/BR). Technical source of truth is `api/src/routes/index.ts`, validators in `api/src/validators`, models in `api/src/models`, and services in `api/src/services`.
 
 ## Route Map
 
@@ -24,7 +24,7 @@ Removed routes: `/api/drive`, `/api/library`, and `/api/forum` are not mounted. 
 
 ## Auth And Access
 
-Most routes require Cognito JWT auth. Disabled users are blocked from protected product routes, while auth/me-style identity checks can still be used by the client to understand account state.
+Most routes require Cognito JWT auth. Login is allowed only for emails in an allowed domain (default `fpt.edu.vn`, `fe.edu.vn`, configurable via `ALLOWED_EMAIL_DOMAINS`) or an approved exception in `access_emails`; other emails are rejected (BR-002). Disabled users are blocked from protected product routes (BR-004), while auth/me-style identity checks can still be used by the client to understand account state.
 
 Document access rules:
 
@@ -119,10 +119,11 @@ Creates a pending document and returns a presigned S3 PUT URL.
 
 Rules:
 
-- `curriculumCourseId` is required for new uploads.
-- `visibility` is optional and defaults to `private`.
-- `visibility` must be `private` or `public`.
-- Uploading a document without a course is rejected.
+- `curriculumCourseId` is required for new uploads (FR-013). Uploading a document without a course is rejected (BR-006).
+- The course must belong to the user's own academic profile (BR-007).
+- `mimeType` must be PDF, DOCX, or PPTX; other types are rejected (FR-013, BR-008).
+- `fileSizeBytes` must be ≤ 50 MB per file (`MAX_UPLOAD_BYTES`) and within the user's 500 MB storage quota (FR-014, BR-009).
+- `visibility` is optional, must be `private` or `public`, and defaults to `private` (BR-010).
 
 After S3 upload, call:
 
@@ -134,7 +135,7 @@ The API verifies the S3 object, updates quota, and moves the document into proce
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/api/documents/:id` | Read metadata; `?download=true` adds presigned download URL when allowed |
+| `GET` | `/api/documents/:id` | Read metadata; `?download=true` adds a presigned download URL (expires after 15 minutes, `S3_PRESIGN_EXPIRES_SECONDS`) when allowed |
 | `PATCH` | `/api/documents/:id` | Owner updates `title`, `tags`, `folderId`, `curriculumCourseId`, `visibility` |
 | `DELETE` | `/api/documents/:id` | Owner soft delete |
 | `DELETE` | `/api/documents/:id/permanent` | Owner permanent delete from trash |
@@ -162,7 +163,23 @@ Patch example:
 
 ## Shares
 
-`/api/shares` remains active in this refactor. Shares grant read-only access to a document or folder. Shared recipients can read private documents through the share path and can use shared content in search/chat where the backend access rule allows it.
+`/api/shares` remains active in this refactor. Shares grant read-only access to a document or folder (BR-013). Shared recipients can read private documents through the share path and can use shared content in search/chat where the backend access rule allows it. A share may target existing users (`sharedWithUserIds`) and/or emails (`emails`), up to 50 each per request; duplicate grants for the same resource + recipient are ignored (BR-014).
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/api/shares` | Create read-only shares for a document/folder |
+| `DELETE` | `/api/shares/:id` | Owner revokes a share (BR-016) |
+| `GET` | `/api/shares/with-me` | Resources shared with the current user |
+| `GET` | `/api/shares/by-me` | Resources the current user has shared |
+
+## Invites
+
+`/api/invites` handles email-based share invites for recipients without an account yet. Invites expire 7 days after creation (BR-015) and move through `pending -> accepted | revoked`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/api/invites/:token` | Public preview of an invite (no auth) |
+| `POST` | `/api/invites/:token/accept` | Authenticated accept; grants the read-only share (FR-033) |
 
 ## Catalog And Academic Profile
 
@@ -268,13 +285,32 @@ Documents reference `curriculumCourseId`, which links a subject to a major and s
 
 ## Search And Chat
 
-Search and chat use the same access model as document detail:
+Search (`GET /api/search`) and chat use the same access model as document detail (BR-022):
 
 - Private scope includes owned and directly shared documents.
 - Public scope can retrieve public documents system-wide.
 - Chat context checks document readability before using any document as grounding context.
 
 Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions and stored in MongoDB Atlas Vector Search.
+
+### Chat sessions and messages
+
+`/api/chat` manages RAG chat sessions and messages.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/api/chat/sessions` | Create a session with a context (FR-040) |
+| `GET` | `/api/chat/sessions` | List the user's sessions |
+| `GET` | `/api/chat/sessions/:id` | Session detail with messages |
+| `PATCH` | `/api/chat/sessions/:id` | Rename or pin/unpin (`title`, `isPinned`) |
+| `DELETE` | `/api/chat/sessions/:id` | Delete a session |
+| `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations |
+| `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally (FR-045) |
+
+- `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
+- `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
+- Answers include `citations` referencing document, page, and section (FR-042, BR-023).
+- Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
 
 ## Migration Notes
 

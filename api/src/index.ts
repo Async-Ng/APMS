@@ -6,6 +6,7 @@ import { connectDatabase } from "./config/database";
 import { loadEnv } from "./config/env";
 import { initGcpCredentials } from "./config/gcp-credentials";
 import { startDocumentWorker } from "./workers/document.worker";
+import { startTrashPurgeWorker } from "./workers/trash-purge.worker";
 
 initGcpCredentials();
 
@@ -15,6 +16,7 @@ async function bootstrap(): Promise<void> {
   await connectDatabase(env);
 
   startDocumentWorker();
+  startTrashPurgeWorker();
 
   const app = createApp();
 

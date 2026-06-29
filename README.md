@@ -19,12 +19,12 @@ APMS is a student knowledge-management system for academic documents. It lets us
 ## Core Capabilities
 
 - Unified document API: `GET /api/documents` is the single list entrypoint for `my`, `shared`, `public`, `starred`, and `trash` views.
-- Course-bound uploads: every new document upload requires `curriculumCourseId`.
+- Course-bound uploads: every new document upload requires `curriculumCourseId`. Allowed types are PDF, DOCX, and PPTX, up to 50 MB per file within a 500 MB per-user quota.
 - Visibility model: `private` documents are owner/share-only; `public` documents are discoverable by active users across the system.
 - Folder workspace: owned documents and folders keep a Drive-like hierarchy through `/api/folders` and `view=my`.
 - Sharing: `/api/shares` remains available for direct read-only sharing of documents and folders.
 - Academic discovery: public document listing supports major, semester, subject, and match filters.
-- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search.
+- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search; chat is limited to 50 questions per user per day.
 - Admin access control: active/disabled users, email-domain allowlist, exact-email exceptions, and promote/demote admin role (Cognito group + MongoDB).
 
 Removed API surfaces: `/api/drive`, `/api/library`, and `/api/forum` are no longer mounted. They are replaced by the unified `/api/documents` API.
@@ -67,7 +67,12 @@ Create package-local env files from the corresponding examples when available. I
 | --- | --- |
 | `MONGODB_URI` | MongoDB Atlas connection string |
 | `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`, `COGNITO_REGION` | Cognito auth |
-| `ALLOWED_EMAIL_DOMAINS` | Comma-separated login domain allowlist |
+| `ALLOWED_EMAIL_DOMAINS` | Comma-separated login domain allowlist (default `fpt.edu.vn,fe.edu.vn`) |
+| `MAX_UPLOAD_BYTES` | Max file upload size, default 50 MB (`52428800`) |
+| `CHAT_DAILY_LIMIT_PER_USER` | Daily chat questions per user, default `50` (`0` disables) |
+| `TRASH_RETENTION_DAYS` | Days before trashed items are purged, default `30` |
+| `TRASH_PURGE_INTERVAL_MS` | How often the auto-purge worker runs, default `86400000` (24h) |
+| `S3_PRESIGN_EXPIRES_SECONDS` | Presigned URL lifetime, default `900` (15 min) |
 | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS SDK access for S3/SES |
 | `S3_BUCKET_NAME` | Document object bucket |
 | `SES_FROM_EMAIL` | Verified sender email |
@@ -103,6 +108,7 @@ pnpm build
 
 ## Documentation
 
+- [Software Requirements Specification (business spec)](./docs/SRS.md)
 - [Project overview](./PROJECT.md)
 - [API reference](./docs/api_reference.md)
 - [System overview](./docs/system_overview.md)
