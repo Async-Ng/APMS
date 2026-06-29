@@ -4,6 +4,7 @@ import { Send } from "lucide-react";
 import { useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { useChatDailyUsage } from "@/lib/chat-daily-usage";
 import { cn } from "@/lib/cn";
 import {
   CHAT_PRESET_CONTENT,
@@ -28,6 +29,7 @@ export function ChatComposer({
   isPending = false,
 }: ChatComposerProps) {
   const [content, setContent] = useState("");
+  const { limit, remaining, isNearLimit } = useChatDailyUsage();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +49,8 @@ export function ChatComposer({
       onSubmit={handleSubmit}
       className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3 sm:p-4"
     >
-      <div className="mb-2 flex flex-wrap gap-1.5">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
         {PRESET_MODES.map((mode) => (
           <button
             key={mode}
@@ -62,6 +65,16 @@ export function ChatComposer({
             {CHAT_PRESET_LABELS[mode]}
           </button>
         ))}
+        </div>
+        <span
+          className={cn(
+            "text-xs font-semibold tabular-nums",
+            isNearLimit ? "text-brutal-danger" : "text-brutal-muted",
+          )}
+          title="Giới hạn hỏi đáp AI mỗi ngày"
+        >
+          Còn {remaining}/{limit} lượt hôm nay
+        </span>
       </div>
 
       <div className="flex items-end gap-2">

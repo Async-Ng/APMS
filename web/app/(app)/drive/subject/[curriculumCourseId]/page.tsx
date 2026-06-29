@@ -111,7 +111,6 @@ export default function SubjectDrivePage({ params }: PageProps) {
           { label: "Drive của tôi", href: "/drive" },
           { label: isLoading || !course ? "…" : course.subject?.code ?? "…" },
         ]}
-        onMenuOpen={() => {}}
         onUploadClick={() => canUpload && setUploadOpen(true)}
         actions={
           course && canUpload ? (

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+import { LoadingScreen } from "@/components/ui/Spinner";
 import { useAuthStore } from "@/stores/auth-store";
 
 interface RequireAuthProps {
@@ -30,13 +31,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
   if (isLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-brutal-bg">
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-brutal-muted">Đang xác thực...</p>
-        </div>
+        <LoadingScreen message="Đang xác thực..." />
       </div>
     );
   }

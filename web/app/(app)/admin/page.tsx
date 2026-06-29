@@ -28,9 +28,9 @@ export default function AdminPage() {
 
   return (
     <>
-      <Topbar breadcrumbs={[{ label: "Quản trị" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Quản trị" }]} />
 
-      <main className="flex-1 p-4 sm:p-6" id="main-content">
+      <main className="admin-density flex-1 p-4 sm:p-6" id="main-content">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-secondary shadow-brutal-sm">
             <ShieldCheck className="h-5 w-5 text-white" />

@@ -29,6 +29,7 @@ const ALLOWED_EXT = ".pdf,.docx,.pptx";
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
 type Step = "pick" | "uploading" | "done" | "error";
+type FormStep = 1 | 2;
 
 /* ── Component ─────────────────────────────────────────────── */
 
@@ -44,6 +45,7 @@ export function UploadModal({
   defaultCurriculumCourseId,
 }: UploadModalProps) {
   const [step, setStep] = useState<Step>("pick");
+  const [formStep, setFormStep] = useState<FormStep>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [curriculumCourseId, setCurriculumCourseId] = useState(
     defaultCurriculumCourseId ?? "",
@@ -146,7 +148,8 @@ export function UploadModal({
     onClose();
   }
 
-  const canSubmit = Boolean(selectedFile && curriculumCourseId);
+  const canContinueStep1 = Boolean(selectedFile && curriculumCourseId);
+  const canSubmit = canContinueStep1;
 
   return (
     <div
@@ -206,7 +209,12 @@ export function UploadModal({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Course selector */}
+                  <p className="text-xs font-bold text-brutal-muted">
+                    Bước {formStep}/2 — {formStep === 1 ? "Tệp và môn học" : "Quyền hiển thị"}
+                  </p>
+
+                  {formStep === 1 && (
+                    <>
                   <div className="space-y-1.5">
                     <label
                       htmlFor="upload-course"
@@ -237,54 +245,6 @@ export function UploadModal({
                       </p>
                     )}
                   </div>
-
-                  {/* Visibility selector */}
-                  <fieldset className="space-y-1.5">
-                    <legend className="text-sm font-semibold text-brutal-ink">
-                      Quyền hiển thị
-                    </legend>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(
-                        [
-                          {
-                            value: "private" as const,
-                            label: "Riêng tư",
-                            hint: "Chỉ bạn và người được chia sẻ",
-                          },
-                          {
-                            value: "public" as const,
-                            label: "Công khai",
-                            hint: "Mọi sinh viên có thể tìm thấy",
-                          },
-                        ]
-                      ).map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setVisibility(option.value)}
-                          aria-pressed={visibility === option.value}
-                          className={cn(
-                            "focus-brutal rounded-xl border-2 border-brutal-ink px-3 py-2 text-left text-sm transition-all",
-                            visibility === option.value
-                              ? "bg-brutal-primary text-brutal-on-brand shadow-brutal-sm"
-                              : "bg-brutal-surface hover:bg-brutal-bg",
-                          )}
-                        >
-                          <span className="block font-bold">{option.label}</span>
-                          <span
-                            className={cn(
-                              "mt-0.5 block text-xs",
-                              visibility === option.value
-                                ? "text-brutal-on-brand/80"
-                                : "text-brutal-muted",
-                            )}
-                          >
-                            {option.hint}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
 
                   {/* Drop zone */}
                   <div
@@ -351,12 +311,95 @@ export function UploadModal({
                   <BrutalButton
                     variant="primary"
                     className="w-full"
-                    disabled={!canSubmit}
-                    onClick={() => void startUpload()}
+                    disabled={!canContinueStep1}
+                    onClick={() => setFormStep(2)}
                   >
-                    <Upload className="h-4 w-4" />
-                    Tải lên
+                    Tiếp tục
                   </BrutalButton>
+                    </>
+                  )}
+
+                  {formStep === 2 && (
+                    <>
+                      {selectedFile && (
+                        <p className="rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm">
+                          <span className="font-bold">{selectedFile.name}</span>
+                          <span className="text-brutal-muted">
+                            {" "}
+                            —{" "}
+                            {enrolledCourses.find((c) => c.id === curriculumCourseId)
+                              ?.subject?.code ?? "Môn đã chọn"}
+                          </span>
+                        </p>
+                      )}
+
+                      <fieldset className="space-y-1.5">
+                        <legend className="text-sm font-semibold text-brutal-ink">
+                          Quyền hiển thị
+                        </legend>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(
+                            [
+                              {
+                                value: "private" as const,
+                                label: "Riêng tư",
+                                hint: "Chỉ bạn và người được chia sẻ",
+                              },
+                              {
+                                value: "public" as const,
+                                label: "Công khai",
+                                hint: "Mọi sinh viên có thể tìm thấy",
+                              },
+                            ]
+                          ).map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setVisibility(option.value)}
+                              aria-pressed={visibility === option.value}
+                              className={cn(
+                                "focus-brutal rounded-xl border-2 border-brutal-ink px-3 py-2 text-left text-sm transition-all",
+                                visibility === option.value
+                                  ? "bg-brutal-primary text-brutal-on-brand shadow-brutal-sm"
+                                  : "bg-brutal-surface hover:bg-brutal-bg",
+                              )}
+                            >
+                              <span className="block font-bold">{option.label}</span>
+                              <span
+                                className={cn(
+                                  "mt-0.5 block text-xs",
+                                  visibility === option.value
+                                    ? "text-brutal-on-brand/80"
+                                    : "text-brutal-muted",
+                                )}
+                              >
+                                {option.hint}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+
+                      <div className="flex gap-2">
+                        <BrutalButton
+                          variant="ghost"
+                          className="flex-1"
+                          onClick={() => setFormStep(1)}
+                        >
+                          Quay lại
+                        </BrutalButton>
+                        <BrutalButton
+                          variant="primary"
+                          className="flex-1"
+                          disabled={!canSubmit}
+                          onClick={() => void startUpload()}
+                        >
+                          <Upload className="h-4 w-4" />
+                          Tải lên
+                        </BrutalButton>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </>

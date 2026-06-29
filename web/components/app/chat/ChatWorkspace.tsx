@@ -3,8 +3,11 @@
 import { useCallback, useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
+import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { LoadingScreen } from "@/components/ui/Spinner";
 import { cn } from "@/lib/cn";
+import { useCreateSession } from "@/lib/queries/chat";
 import { getUserErrorMessage } from "@/lib/errors";
 import type { ChatCitation, ChatMessage, SendMessageInput } from "@/lib/queries/chat";
 import { useChatContextStatus, useChatSession, useSendMessage } from "@/lib/queries/chat";
@@ -44,6 +47,7 @@ export function ChatWorkspace({
   );
   const [activeMessage, setActiveMessage] = useState<ChatMessage | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const createSession = useCreateSession();
 
   const { data: session, isLoading, isError } = useChatSession(
     isNewChat ? undefined : sessionId,
@@ -126,7 +130,7 @@ export function ChatWorkspace({
         onSessionCreated={onSessionCreated}
       />
 
-      <Topbar breadcrumbs={[{ label: "Trò chuyện AI" }]} onMenuOpen={() => {}} />
+      <Topbar breadcrumbs={[{ label: "Trò chuyện AI" }]} />
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex gap-1 border-b-2 border-brutal-ink bg-brutal-surface p-2 lg:hidden">
@@ -185,17 +189,40 @@ export function ChatWorkspace({
             )}
           >
             {isNewChat ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-                <p className="font-heading text-lg font-extrabold">
-                  Nhấn + để chọn nguồn tài liệu
-                </p>
-                <p className="text-sm text-brutal-muted">
-                  Chọn tài liệu hoặc thư mục từ Drive của tôi, xem lại rồi bắt đầu trò chuyện.
-                </p>
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+                <div className="space-y-2">
+                  <p className="font-heading text-lg font-extrabold">
+                    Hỏi ngay với toàn bộ tài liệu
+                  </p>
+                  <p className="text-sm text-brutal-muted">
+                    Bắt đầu nhanh với mọi tài liệu bạn có quyền đọc — hoặc chọn nguồn cụ thể.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <BrutalButton
+                    variant="primary"
+                    className="!w-auto"
+                    loading={createSession.isPending}
+                    onClick={() => {
+                      void createSession
+                        .mutateAsync({ contextType: "all" })
+                        .then((s) => onSessionCreated(s.id));
+                    }}
+                  >
+                    Hỏi ngay
+                  </BrutalButton>
+                  <BrutalButton
+                    variant="ghost"
+                    className="!w-auto"
+                    onClick={() => setPickerOpen(true)}
+                  >
+                    Chọn nguồn cụ thể
+                  </BrutalButton>
+                </div>
               </div>
             ) : isLoading ? (
               <div className="flex flex-1 items-center justify-center p-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
+                <LoadingScreen message="Đang tải cuộc trò chuyện…" />
               </div>
             ) : isError || !session ? (
               <div className="p-4">
