@@ -44,7 +44,11 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1 text-xs font-medium text-brutal-danger">{message}</p>;
 }
 
-export function CurriculumPanel() {
+export function CurriculumPanel({
+  onNavigateToMajorSemesters,
+}: {
+  onNavigateToMajorSemesters?: (majorId: string) => void;
+} = {}) {
   const [majorFilter, setMajorFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
@@ -388,6 +392,11 @@ export function CurriculumPanel() {
             ))}
           </select>
           <FieldError message={fieldErrors.majorId} />
+          {formOpen && form.majorId && (
+            <p className="mt-1 text-xs text-brutal-muted">
+              Đổi ngành sẽ cập nhật danh sách học kỳ khả dụng bên dưới.
+            </p>
+          )}
         </label>
         <label className="block text-sm font-bold">
           Học kỳ
@@ -410,6 +419,18 @@ export function CurriculumPanel() {
               ))
             )}
           </select>
+          {semesterOptions.length === 0 && form.majorId && onNavigateToMajorSemesters && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormOpen(false);
+                onNavigateToMajorSemesters(form.majorId);
+              }}
+              className="focus-brutal mt-2 text-xs font-bold text-brutal-secondary underline-offset-2 hover:underline"
+            >
+              Gán học kỳ cho ngành này →
+            </button>
+          )}
           <FieldError message={fieldErrors.semesterId} />
         </label>
         <label className="block text-sm font-bold">

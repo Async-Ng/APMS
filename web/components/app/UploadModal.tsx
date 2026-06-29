@@ -7,7 +7,9 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/cn";
+import { formatBytes } from "@/lib/format";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
 import type { DocumentVisibility } from "@/lib/queries/drive";
@@ -64,6 +66,11 @@ export function UploadModal({
 
   const uploadIntent = useUploadIntent();
   const completeUpload = useCompleteUpload();
+  const authUser = useAuthStore((s) => s.user);
+
+  const remainingBytes = authUser
+    ? Math.max(0, authUser.storageQuotaBytes - authUser.storageUsedBytes)
+    : null;
 
   const profileComplete = Boolean(profile?.isComplete);
 
@@ -209,6 +216,14 @@ export function UploadModal({
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {remainingBytes !== null && (
+                    <p className="text-xs text-brutal-muted">
+                      Dung lượng còn lại:{" "}
+                      <span className="font-bold text-brutal-ink">
+                        {formatBytes(remainingBytes)}
+                      </span>
+                    </p>
+                  )}
                   <p className="text-xs font-bold text-brutal-muted">
                     Bước {formStep}/2 — {formStep === 1 ? "Tệp và môn học" : "Quyền hiển thị"}
                   </p>

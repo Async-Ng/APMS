@@ -338,7 +338,7 @@ export default function ProfilePage() {
                 <ErrorAlert
                   variant="inline"
                   className="mb-2"
-                  message={`Học kỳ có ${availableSubjects.length} môn; hệ thống chọn tối đa ${MAX_ACADEMIC_SUBJECTS} môn theo mã môn. Bỏ tick môn không học trước khi lưu.`}
+                  message={`Học kỳ này có ${availableSubjects.length} môn, vượt giới hạn tối đa ${MAX_ACADEMIC_SUBJECTS} môn mà hệ thống cho phép chọn. Vui lòng bỏ chọn các môn bạn không học trước khi lưu hồ sơ.`}
                 />
               )}
               <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">

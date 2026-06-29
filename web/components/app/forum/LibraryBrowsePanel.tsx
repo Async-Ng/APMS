@@ -1,6 +1,5 @@
 "use client";
 
-import { LayoutGrid, List } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -12,14 +11,12 @@ import {
 } from "@/components/app/forum/ForumFiltersBar";
 import { InternalDocumentGrid } from "@/components/app/forum/InternalDocumentGrid";
 import { InternalDocumentList } from "@/components/app/forum/InternalDocumentList";
-import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
 import { usePublicDocuments } from "@/lib/queries/documents";
 
 const PAGE_LIMIT = 20;
-
-type ViewMode = "grid" | "list";
 
 interface LibraryBrowsePanelProps {
   filters: ForumFilterState;
@@ -75,24 +72,7 @@ export function LibraryBrowsePanel({
         />
       )}
 
-      <div className="flex items-center justify-end gap-2">
-        <BrutalButton
-          variant={view === "grid" ? "secondary" : "ghost"}
-          className="px-2 py-1"
-          onClick={() => setView("grid")}
-          aria-label="Xem dạng lưới"
-        >
-          <LayoutGrid className="h-4 w-4" />
-        </BrutalButton>
-        <BrutalButton
-          variant={view === "list" ? "secondary" : "ghost"}
-          className="px-2 py-1"
-          onClick={() => setView("list")}
-          aria-label="Xem dạng danh sách"
-        >
-          <List className="h-4 w-4" />
-        </BrutalButton>
-      </div>
+      <ViewToggle view={view} onChange={setView} />
 
       {view === "grid" ? (
         <InternalDocumentGrid

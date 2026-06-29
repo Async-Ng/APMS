@@ -59,7 +59,7 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
   AUTH_EMAIL_DOMAIN:
-    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ.",
+    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ. Hãy dùng email @fpt.edu.vn/@fe.edu.vn, hoặc liên hệ quản trị viên để được cấp quyền truy cập ngoại lệ.",
   VALIDATION_ERROR: "Dữ liệu không hợp lệ. Vui lòng kiểm tra và thử lại.",
   NOT_FOUND: "Không tìm thấy nội dung yêu cầu.",
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",

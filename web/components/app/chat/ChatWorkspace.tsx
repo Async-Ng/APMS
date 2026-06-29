@@ -123,7 +123,7 @@ export function ChatWorkspace({
     );
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ChatSourcePickerModal
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
@@ -132,8 +132,8 @@ export function ChatWorkspace({
 
       <Topbar breadcrumbs={[{ label: "Trò chuyện AI" }]} />
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex gap-1 border-b-2 border-brutal-ink bg-brutal-surface p-2 lg:hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex shrink-0 gap-1 border-b-2 border-brutal-ink bg-brutal-surface p-2 lg:hidden">
           <button
             type="button"
             className={tabClass("sources")}
@@ -157,7 +157,7 @@ export function ChatWorkspace({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-0 p-2 sm:p-3 lg:flex-row lg:gap-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-2 sm:p-3 lg:flex-row lg:gap-3">
           {/* Left — sources & sessions */}
           <aside
             className={cn(
@@ -287,6 +287,6 @@ export function ChatWorkspace({
           </aside>
         </div>
       </div>
-    </>
+    </div>
   );
 }

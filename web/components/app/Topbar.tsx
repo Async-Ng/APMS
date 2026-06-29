@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 interface TopbarProps {
   breadcrumbs: BreadcrumbItem[];
   onUploadClick?: () => void;
+  suppressMobileUpload?: boolean;
   actions?: React.ReactNode;
   className?: string;
   showBreadcrumbRootIcon?: boolean;
@@ -22,6 +23,7 @@ interface TopbarProps {
 export function Topbar({
   breadcrumbs,
   onUploadClick,
+  suppressMobileUpload = false,
   actions,
   className,
   showBreadcrumbRootIcon = true,
@@ -90,7 +92,7 @@ export function Topbar({
           </button>
         )}
 
-        {onUploadClick && (
+        {onUploadClick && !suppressMobileUpload && (
           <button
             onClick={onUploadClick}
             className="focus-brutal flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-primary text-white shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A] sm:hidden"

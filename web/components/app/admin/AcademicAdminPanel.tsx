@@ -35,7 +35,16 @@ const SUB_TABS: { id: AcademicSubTab; label: string }[] = [
 
 export function AcademicAdminPanel() {
   const [subTab, setSubTab] = useState<AcademicSubTab>("majors");
+  const [majorSemestersSeed, setMajorSemestersSeed] = useState<{
+    majorId: string;
+    nonce: number;
+  } | null>(null);
   const handleKeyDown = useTabArrowNav(SUB_TAB_IDS, setSubTab);
+
+  function navigateToMajorSemesters(majorId: string) {
+    setMajorSemestersSeed({ majorId, nonce: Date.now() });
+    setSubTab("major-semesters");
+  }
 
   return (
     <div className="space-y-4">
@@ -95,7 +104,12 @@ export function AcademicAdminPanel() {
         hidden={subTab !== "major-semesters"}
         className="outline-none"
       >
-        {subTab === "major-semesters" && <MajorSemestersPanel />}
+        {subTab === "major-semesters" && (
+          <MajorSemestersPanel
+            key={majorSemestersSeed?.nonce ?? "default"}
+            initialMajorId={majorSemestersSeed?.majorId}
+          />
+        )}
       </div>
       <div
         id="panel-academic-subjects"
@@ -115,7 +129,9 @@ export function AcademicAdminPanel() {
         hidden={subTab !== "curriculum"}
         className="outline-none"
       >
-        {subTab === "curriculum" && <CurriculumPanel />}
+        {subTab === "curriculum" && (
+          <CurriculumPanel onNavigateToMajorSemesters={navigateToMajorSemesters} />
+        )}
       </div>
     </div>
   );

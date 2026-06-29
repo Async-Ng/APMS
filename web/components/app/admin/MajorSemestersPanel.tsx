@@ -21,8 +21,8 @@ import {
 } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
-export function MajorSemestersPanel() {
-  const [majorId, setMajorId] = useState("");
+export function MajorSemestersPanel({ initialMajorId }: { initialMajorId?: string } = {}) {
+  const [majorId, setMajorId] = useState(initialMajorId ?? "");
   const [selectedSemesterIds, setSelectedSemesterIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{ majorId: string; semesterId: string } | null>(
