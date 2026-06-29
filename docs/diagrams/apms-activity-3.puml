@@ -1,0 +1,53 @@
+@startuml APMS_Activity3_Knowledge
+skinparam swimlane {
+  WrapTitle false
+}
+
+|#E8F4FD|Sinh viên|
+start
+:Chọn kênh sử dụng;
+
+|#E8FDE8|Hệ thống APMS|
+:Lọc chỉ tài liệu được phép đọc:\ncủa mình · được chia sẻ · công khai;
+
+|Sinh viên|
+if (Kênh?) then (Thư viện công khai)
+  if (Chế độ?) then (Gợi ý)
+    |Hệ thống APMS|
+    :Ưu tiên: đúng môn học kỳ →\ncùng môn khác HK → công khai khác;
+    |Sinh viên|
+  else (Duyệt toàn bộ)
+    :Lọc theo Ngành, Học kỳ, Môn;
+    |Hệ thống APMS|
+    :Trả danh sách tài liệu công khai;
+    |Sinh viên|
+  endif
+elseif (Tìm kiếm) then
+  :Nhập câu hỏi hoặc từ khóa;
+  |Hệ thống APMS|
+  :Tìm kiếm ngữ nghĩa trong phạm vi quyền;
+  |Sinh viên|
+else (Trò chuyện AI)
+  :Chọn ngữ cảnh: toàn bộ / thư mục / tài liệu;
+  :Chọn chế độ: Hỏi đáp · Tóm tắt · FAQ · Ôn tập;
+  :Đặt câu hỏi;
+  |Hệ thống APMS|
+  if (Còn lượt hỏi hôm nay?\nmax 50/ngày) then (hết)
+    :Thông báo: thử lại ngày mai;
+    |Sinh viên|
+  else (còn)
+    :Trả lời kèm **trích dẫn** tài liệu nguồn;
+    |Sinh viên|
+  endif
+endif
+
+:Xem chi tiết / tải xuống / đọc câu trả lời\n(chỉ đọc — không sửa tài liệu người khác);
+
+if (Tiếp tục tra cứu?) then (có)
+  :Quay lại chọn kênh;
+  detach
+else (không)
+  stop
+endif
+
+@enduml
