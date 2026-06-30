@@ -83,6 +83,13 @@ cd api
 pnpm migrate:semester-entities
 ```
 
+Sau khi deploy academic refactor (`major` → `curriculum`, `course-slots`):
+
+```bash
+cd api
+pnpm migrate:major-to-curriculum
+```
+
 Migration document visibility idempotent:
 
 - Legacy `personal` -> `private`.
@@ -109,6 +116,9 @@ Migration semester entities idempotent:
 | 7 | `GET /api/documents?view=public&match=auto` | Public documents prioritized by academic profile |
 | 8 | `GET /api/search?q=...` | Results only from readable documents |
 | 9 | Chat request | Answer includes grounded citations when context exists |
+| 10 | `GET /api/catalog/curricula` (with JWT) | `200`, active curricula list |
+| 11 | `GET /api/users/me/academic-profile` (with JWT) | `200`, `{ curriculum, currentSemester, currentSubjects, isComplete }` |
+| 12 | `GET /api/openapi.json` | Paths use `/api/catalog/curricula` and `/course-slots`, not `/catalog/majors` |
 
 Removed routes such as `/api/drive`, `/api/library`, and `/api/forum` should not be mounted.
 

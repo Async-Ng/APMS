@@ -346,7 +346,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh. |
 | FR-042 | Hệ thống phải đính kèm trích dẫn nguồn (tài liệu, trang, đoạn) vào câu trả lời. |
 | FR-043 | Hệ thống phải hỗ trợ các chế độ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập. |
-| FR-044 | Hệ thống phải cho phép người dùng xem danh sách phiên, đổi tên, ghim/bỏ ghim và xóa phiên trò chuyện. |
+| FR-044 | Hệ thống phải cho phép người dùng xem danh sách phiên, đổi tên, ghim/bỏ ghim và xóa phiên trò chuyện. Phiên có ngữ cảnh tài liệu hoặc thư mục đã xóa (thùng rác) hoặc không còn tồn tại không hiển thị trong danh sách. |
 | FR-045 | Hệ thống phải hỗ trợ trả lời theo luồng (hiển thị dần) cho trải nghiệm trò chuyện. |
 | FR-062 | Hệ thống phải giới hạn mỗi người dùng tối đa 50 lượt hỏi trợ lý AI mỗi ngày và từ chối khi vượt giới hạn. |
 
@@ -750,6 +750,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 | BR-023 | Câu trả lời phải kèm trích dẫn nguồn khi có. | — |
 | BR-024 | Ở chế độ hỏi đáp, câu hỏi không được để trống. | Từ chối gửi. |
 | BR-025 | Mỗi người dùng tối đa 50 lượt hỏi trợ lý AI mỗi ngày. | Từ chối khi vượt giới hạn trong ngày. |
+| BR-026 | Phiên trò chuyện gắn ngữ cảnh tài liệu/thư mục đã xóa hoặc không còn tồn tại không hiển thị trong danh sách; truy cập trực tiếp hoặc gửi tin mới bị từ chối. | Ẩn khỏi danh sách; từ chối mở/gửi tin. |
 
 ---
 
@@ -916,7 +917,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-009-03: Khi chưa chọn môn nào, hệ thống yêu cầu chọn ít nhất một môn.
 - [ ] AC-009-04: Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong CTĐT của học kỳ đó; lưu sau khi bỏ bớt vẫn hợp lệ nếu còn ít nhất một môn.
 - [ ] AC-063-01: Khi chọn tab học kỳ trên Drive, hệ thống nhóm tài liệu theo học kỳ đó mà không thay đổi hồ sơ đã lưu trên server.
-- [ ] AC-064-01: Khi dùng lối tắt「Lên học kỳ」từ Drive, hệ thống cập nhật học kỳ chính và môn mặc định theo CTĐT trong một lần lưu.
+- [ ] AC-064-01: Khi dùng lối tắt「Chọn học kỳ」từ Drive, hệ thống cập nhật học kỳ chính và môn mặc định theo CTĐT trong một lần lưu.
 
 ### Tải tài liệu (FR-013, FR-014, FR-019)
 - [ ] AC-013-01: Khi tải tệp PDF/DOCX/PPTX hợp lệ kèm môn học thuộc hồ sơ, hệ thống tạo tài liệu và bắt đầu xử lý.
@@ -933,9 +934,10 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-058-02: Khi lưu trữ Ngành/Học kỳ/Môn đang được tham chiếu, hệ thống từ chối với thông báo xung đột.
 - [ ] AC-058-03: Khi đổi định danh Chương trình đào tạo đã có tài liệu tham chiếu, hệ thống từ chối.
 
-### Trò chuyện AI (FR-041, FR-042)
+### Trò chuyện AI (FR-041, FR-042, FR-044)
 - [ ] AC-041-01: Khi người dùng đặt câu hỏi trong ngữ cảnh có tài liệu, hệ thống trả lời kèm trích dẫn nguồn.
 - [ ] AC-041-02: Khi gửi câu hỏi trống ở chế độ hỏi đáp, hệ thống không gửi.
+- [ ] AC-044-01: Khi tài liệu hoặc thư mục ngữ cảnh của phiên đã vào thùng rác hoặc bị xóa vĩnh viễn, phiên không còn trong danh sách; mở URL trực tiếp hoặc gửi tin mới bị từ chối.
 
 ---
 

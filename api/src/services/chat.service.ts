@@ -116,6 +116,102 @@ async function resolveContextLabels(
   return labelMap;
 }
 
+type ContextDeletionInfo = {
+  deletedDocIds: Set<string>;
+  missingDocIds: Set<string>;
+  deletedFolderIds: Set<string>;
+  missingFolderIds: Set<string>;
+};
+
+async function resolveContextDeletionInfo(
+  sessions: SessionLike[],
+): Promise<ContextDeletionInfo> {
+  const docIds: Types.ObjectId[] = [];
+  const folderIds: Types.ObjectId[] = [];
+
+  for (const s of sessions) {
+    if (s.contextType === "document" && s.contextId) docIds.push(s.contextId);
+    else if (s.contextType === "folder" && s.contextId) folderIds.push(s.contextId);
+    else if (s.contextType === "documents" && s.contextIds?.length) {
+      docIds.push(...s.contextIds);
+    }
+  }
+
+  const deletedDocIds = new Set<string>();
+  const missingDocIds = new Set<string>();
+  const deletedFolderIds = new Set<string>();
+  const missingFolderIds = new Set<string>();
+
+  if (docIds.length > 0) {
+    const requestedDocIds = new Set(docIds.map((id) => id.toString()));
+    const docs = await Document.find({ _id: { $in: docIds } })
+      .select("_id deletedAt")
+      .lean();
+    const foundDocIds = new Set<string>();
+    for (const d of docs) {
+      const id = d._id.toString();
+      foundDocIds.add(id);
+      if (d.deletedAt) deletedDocIds.add(id);
+    }
+    for (const id of requestedDocIds) {
+      if (!foundDocIds.has(id)) missingDocIds.add(id);
+    }
+  }
+
+  if (folderIds.length > 0) {
+    const requestedFolderIds = new Set(folderIds.map((id) => id.toString()));
+    const folders = await Folder.find({ _id: { $in: folderIds } })
+      .select("_id deletedAt")
+      .lean();
+    const foundFolderIds = new Set<string>();
+    for (const f of folders) {
+      const id = f._id.toString();
+      foundFolderIds.add(id);
+      if (f.deletedAt) deletedFolderIds.add(id);
+    }
+    for (const id of requestedFolderIds) {
+      if (!foundFolderIds.has(id)) missingFolderIds.add(id);
+    }
+  }
+
+  return { deletedDocIds, missingDocIds, deletedFolderIds, missingFolderIds };
+}
+
+function isSessionContextUnavailable(
+  session: SessionLike,
+  info: ContextDeletionInfo,
+): boolean {
+  if (session.contextType === "all") return false;
+
+  if (session.contextType === "folder" && session.contextId) {
+    const id = session.contextId.toString();
+    return info.deletedFolderIds.has(id) || info.missingFolderIds.has(id);
+  }
+
+  if (session.contextType === "document" && session.contextId) {
+    const id = session.contextId.toString();
+    return info.deletedDocIds.has(id) || info.missingDocIds.has(id);
+  }
+
+  if (session.contextType === "documents" && session.contextIds?.length) {
+    return session.contextIds.every((contextId) => {
+      const id = contextId.toString();
+      return info.deletedDocIds.has(id) || info.missingDocIds.has(id);
+    });
+  }
+
+  return false;
+}
+
+async function assertSessionContextAvailable(session: SessionLike): Promise<void> {
+  const deletionInfo = await resolveContextDeletionInfo([session]);
+  if (isSessionContextUnavailable(session, deletionInfo)) {
+    throw createAppError(ErrorCode.CHAT_ACCESS_DENIED, 404, {
+      message: "Ngữ cảnh trò chuyện không còn khả dụng.",
+    });
+  }
+}
+
 type SessionWithId = SessionLike & { _id: Types.ObjectId };
 
 async function enrichContextLabelsFromCitations(
@@ -416,10 +512,15 @@ export async function listSessions(user: UserDocument) {
     .sort({ isPinned: -1, pinnedAt: -1, updatedAt: -1 })
     .lean();
 
-  const labelMap = await resolveContextLabels(sessions);
-  await enrichContextLabelsFromCitations(sessions, labelMap);
+  const deletionInfo = await resolveContextDeletionInfo(sessions);
+  const visibleSessions = sessions.filter(
+    (s) => !isSessionContextUnavailable(s, deletionInfo),
+  );
 
-  return sessions.map((s) => {
+  const labelMap = await resolveContextLabels(visibleSessions);
+  await enrichContextLabelsFromCitations(visibleSessions, labelMap);
+
+  return visibleSessions.map((s) => {
     const ctx = withContextFields(s, labelMap, s.title);
     return {
       id: s._id.toString(),
@@ -441,6 +542,7 @@ export async function listSessions(user: UserDocument) {
 export async function getSession(user: UserDocument, sessionId: string) {
   const id = parseObjectId(sessionId);
   const session = await findSession(id, user._id);
+  await assertSessionContextAvailable(session);
 
   const messages = await ChatMessage.find({ sessionId: session._id })
     .sort({ createdAt: 1 })
@@ -632,6 +734,7 @@ async function prepareChatContext(
   mode: ChatMode,
 ): Promise<PreparedChatContext> {
   const session = await findSession(sessionId, user._id);
+  await assertSessionContextAvailable(session);
 
   await assertChatDailyLimit(user._id);
 

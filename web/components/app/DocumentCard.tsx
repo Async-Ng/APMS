@@ -23,6 +23,7 @@ import {
   useDeleteDocument,
   useDocumentDownloadUrl,
   useToggleDocumentStar,
+  useUpdateDocument,
 } from "@/lib/queries/documents";
 import { formatSharedAt } from "@/lib/queries/shares";
 
@@ -69,7 +70,13 @@ export function DocumentCard({
 
   const { mutate: toggleStar } = useToggleDocumentStar(parentId);
   const { mutate: deleteDoc } = useDeleteDocument(doc.id, parentId);
+  const { mutate: updateDoc, isPending: isUpdatingVisibility } = useUpdateDocument(
+    doc.id,
+    parentId,
+  );
   const { data: downloadData } = useDocumentDownloadUrl(doc.id, triggerDownload);
+
+  const canManageLibrary = doc.status === "ready" && !!doc.courseSlotId;
 
   if (triggerDownload && downloadData?.downloadUrl) {
     window.open(downloadData.downloadUrl, "_blank", "noopener,noreferrer");
@@ -99,6 +106,22 @@ export function DocumentCard({
               },
             ]
           : []),
+        ...(canManageLibrary
+          ? [
+              {
+                label:
+                  doc.visibility === "public"
+                    ? "Thu hồi khỏi thư viện"
+                    : "Đăng lên thư viện",
+                icon: <Globe className="h-4 w-4" />,
+                onClick: () =>
+                  updateDoc({
+                    visibility: doc.visibility === "public" ? "private" : "public",
+                  }),
+                disabled: isUpdatingVisibility,
+              },
+            ]
+          : []),
         {
           label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
           icon: (
@@ -117,7 +140,7 @@ export function DocumentCard({
             }),
         },
         {
-          label: "Đổi tên",
+          label: "Chỉnh sửa",
           icon: <span className="text-base leading-none">✏️</span>,
           onClick: () => onRename(doc),
         },

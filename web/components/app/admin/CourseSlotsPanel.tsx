@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import { Layers, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { AdminClientPagination } from "@/components/app/admin/AdminClientPagination";
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
+import { AdminSearchBar } from "@/components/app/admin/AdminSearchBar";
 import {
   AdminStatusBadge,
   AdminTableShell,
@@ -13,11 +15,11 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
+import { filterBySearchFn, paginateItems } from "@/lib/admin/client-table";
 import {
   useAdminCourseSlots,
   useAdminCurriculumSemesters,
   useAdminCurricula,
-  useAdminSemesters,
   useAdminSubjects,
   useArchiveCourseSlot,
   useCreateCourseSlot,
@@ -45,17 +47,25 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export function CourseSlotsPanel({
-  onNavigateToCurriculumSemesters,
+  curriculumId: lockedCurriculumId,
+  showCurriculumHeader = true,
 }: {
-  onNavigateToCurriculumSemesters?: (curriculumId: string) => void;
+  curriculumId?: string | null;
+  showCurriculumHeader?: boolean;
 } = {}) {
-  const [curriculumFilter, setCurriculumFilter] = useState("");
+  const [localCurriculumFilter, setLocalCurriculumFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const curriculumFilter = lockedCurriculumId ?? localCurriculumFilter;
 
   const { data: curricula } = useAdminCurricula();
   const { data: subjects } = useAdminSubjects();
-  const { data: allSemesters } = useAdminSemesters();
+  const { data: curriculumSemesterLinks } = useAdminCurriculumSemesters(
+    curriculumFilter || undefined,
+  );
 
   const { data: courses, isLoading, isError } = useAdminCourseSlots({
     curriculumId: curriculumFilter || undefined,
@@ -75,7 +85,41 @@ export function CourseSlotsPanel({
   const [error, setError] = useState<string | null>(null);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
-  const { data: formCurriculumSemesters } = useAdminCurriculumSemesters(form.curriculumId || undefined);
+  const lockedCurriculum = curricula?.find((m) => m.id === lockedCurriculumId);
+
+  const { data: formCurriculumSemesters } = useAdminCurriculumSemesters(
+    form.curriculumId || undefined,
+  );
+
+  const filterSemesters = useMemo(
+    () =>
+      curriculumSemesterLinks
+        ?.filter((link) => link.isActive && link.semester)
+        .map((link) => link.semester!)
+        .sort((a, b) => a.sortOrder - b.sortOrder) ?? [],
+    [curriculumSemesterLinks],
+  );
+
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const filteredCourses = useMemo(() => {
+    const list = courses ?? [];
+    return filterBySearchFn(list, search, (course) => [
+      course.subject?.code,
+      course.subject?.name,
+    ]);
+  }, [courses, search]);
+
+  const { items: pagedCourses, pagination } = useMemo(
+    () => paginateItems(filteredCourses, page),
+    [filteredCourses, page],
+  );
+
+  const hideCurriculumColumn = Boolean(lockedCurriculumId);
+  const colCount = hideCurriculumColumn ? 4 : 5;
 
   const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
@@ -102,7 +146,7 @@ export function CourseSlotsPanel({
   );
 
   function openCreate() {
-    const defaultCurriculum = activeCurricula[0]?.id ?? "";
+    const defaultCurriculum = lockedCurriculumId ?? activeCurricula[0]?.id ?? "";
     setEditing(null);
     setForm({
       curriculumId: defaultCurriculum,
@@ -193,79 +237,110 @@ export function CourseSlotsPanel({
     });
   }
 
-  const filterSemesters = allSemesters?.filter((s) => s.isActive) ?? [];
-
   return (
     <div className="space-y-4">
       {error && (
         <ErrorAlert message={error} actionLabel="Đóng" onAction={() => setError(null)} />
       )}
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap gap-3">
-          <div>
-            <label htmlFor="curriculum-filter" className="sr-only">
-              Lọc theo ngành
-            </label>
-            <select
-              id="curriculum-filter"
-              value={curriculumFilter}
-              onChange={(e) => setCurriculumFilter(e.target.value)}
-              className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
-              aria-label="Lọc theo ngành"
-            >
-              <option value="">Tất cả ngành</option>
-              {curricula?.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.code} — {m.name}
+      <div className="flex flex-col gap-3">
+        <AdminSearchBar
+          value={search}
+          onChange={handleSearch}
+          placeholder="Tìm theo mã hoặc tên môn…"
+          id="course-slots-search"
+          className="w-full sm:max-w-xs"
+        />
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-wrap gap-3">
+            {!lockedCurriculumId && (
+            <div>
+              <label htmlFor="curriculum-filter" className="sr-only">
+                Lọc theo ngành
+              </label>
+              <select
+                id="curriculum-filter"
+                value={curriculumFilter}
+                onChange={(e) => {
+                  setLocalCurriculumFilter(e.target.value);
+                  setSemesterFilter("");
+                  setPage(1);
+                }}
+                className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
+                aria-label="Lọc theo ngành"
+              >
+                <option value="">Tất cả ngành</option>
+                {curricula?.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.code} — {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            )}
+            {showCurriculumHeader && lockedCurriculum && (
+              <p className="self-center text-sm font-bold text-brutal-ink">
+                CTĐT: {lockedCurriculum.code} — {lockedCurriculum.name}
+              </p>
+            )}
+            <div>
+              <label htmlFor="curriculum-filter-semester" className="sr-only">
+                Lọc theo học kỳ
+              </label>
+              <select
+                id="curriculum-filter-semester"
+                value={semesterFilter}
+                onChange={(e) => {
+                  setSemesterFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
+                aria-label="Lọc theo học kỳ"
+                disabled={!curriculumFilter}
+              >
+                <option value="">
+                  {curriculumFilter ? "Tất cả học kỳ" : "Chọn CTĐT trước"}
                 </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="curriculum-filter-semester" className="sr-only">
-              Lọc theo học kỳ
+                {filterSemesters.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-bold">
+              <input
+                id="curriculum-filter-inactive"
+                type="checkbox"
+                checked={includeInactive}
+                onChange={(e) => {
+                  setIncludeInactive(e.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 rounded border-2 border-brutal-ink"
+              />
+              Hiện đã xóa
             </label>
-            <select
-              id="curriculum-filter-semester"
-              value={semesterFilter}
-              onChange={(e) => setSemesterFilter(e.target.value)}
-              className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
-              aria-label="Lọc theo học kỳ"
-            >
-              <option value="">Tất cả học kỳ</option>
-              {filterSemesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </select>
           </div>
-          <label className="flex items-center gap-2 text-sm font-bold">
-            <input
-              id="curriculum-filter-inactive"
-              type="checkbox"
-              checked={includeInactive}
-              onChange={(e) => setIncludeInactive(e.target.checked)}
-              className="h-4 w-4 rounded border-2 border-brutal-ink"
-            />
-            Hiện đã xóa
-          </label>
+          <BrutalButton
+            variant="primary"
+            onClick={openCreate}
+            disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
+            className="w-auto shrink-0"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Gán môn
+          </BrutalButton>
         </div>
-        <BrutalButton
-          variant="primary"
-          onClick={openCreate}
-          disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Gán môn
-        </BrutalButton>
       </div>
 
-      <AdminTableShell ariaLabel="Bảng chương trình đào tạo">
+      <AdminTableShell ariaLabel="Bảng môn trong CTĐT">
         <thead>
           <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">CTĐT</th>
+            {!hideCurriculumColumn && (
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">CTĐT</th>
+            )}
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Học kỳ</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Môn học</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Trạng thái</th>
@@ -273,28 +348,32 @@ export function CourseSlotsPanel({
           </tr>
         </thead>
         <tbody>
-          {isLoading && <AdminTableSkeleton cols={5} />}
+          {isLoading && <AdminTableSkeleton cols={colCount} />}
           {isError && (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-sm text-brutal-danger">
+              <td colSpan={colCount} className="px-4 py-6 text-center text-sm text-brutal-danger">
                 Không tải được chương trình đào tạo.
               </td>
             </tr>
           )}
-          {!isLoading && !isError && courses?.length === 0 && (
+          {!isLoading && !isError && filteredCourses.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-4 py-10 text-center">
+              <td colSpan={colCount} className="px-4 py-10 text-center">
                 <Layers className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có môn trong CTĐT</p>
-                <p className="mt-1 text-xs text-brutal-muted">
-                  Gán môn học vào ngành và học kỳ cụ thể.
+                <p className="text-sm font-semibold text-brutal-ink">
+                  {search ? "Không tìm thấy môn" : "Chưa có môn trong CTĐT"}
                 </p>
+                {!search && (
+                  <p className="mt-1 text-xs text-brutal-muted">
+                    Gán môn học vào ngành và học kỳ cụ thể.
+                  </p>
+                )}
               </td>
             </tr>
           )}
           {!isLoading &&
             !isError &&
-            courses?.map((course) => (
+            pagedCourses.map((course) => (
               <tr
                 key={course.id}
                 className={cn(
@@ -302,10 +381,12 @@ export function CourseSlotsPanel({
                   !course.isActive && "opacity-60",
                 )}
               >
+                {!hideCurriculumColumn && (
                 <td className="px-4 py-3">
                   <p className="font-mono text-xs font-bold">{course.curriculum?.code ?? "—"}</p>
                   <p className="text-sm">{course.curriculum?.name ?? course.curriculumId}</p>
                 </td>
+                )}
                 <td className="px-4 py-3 font-bold">
                   {course.semester?.code ?? "—"}
                   <p className="text-xs font-normal text-brutal-muted">
@@ -354,6 +435,12 @@ export function CourseSlotsPanel({
         </tbody>
       </AdminTableShell>
 
+      <AdminClientPagination
+        pagination={pagination}
+        onPageChange={setPage}
+        itemLabel="môn"
+      />
+
       <AdminFormModal
         open={formOpen}
         title={editing ? "Sửa môn trong CTĐT" : "Gán môn vào CTĐT"}
@@ -377,6 +464,11 @@ export function CourseSlotsPanel({
       >
         <label className="block text-sm font-bold">
           Chương trình đào tạo
+          {lockedCurriculumId ? (
+            <p className="mt-1 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium">
+              {lockedCurriculum?.code} — {lockedCurriculum?.name}
+            </p>
+          ) : (
           <select
             value={form.curriculumId}
             onChange={(e) => {
@@ -391,8 +483,9 @@ export function CourseSlotsPanel({
               </option>
             ))}
           </select>
+          )}
           <FieldError message={fieldErrors.curriculumId} />
-          {formOpen && form.curriculumId && (
+          {formOpen && form.curriculumId && !lockedCurriculumId && (
             <p className="mt-1 text-xs text-brutal-muted">
               Đổi ngành sẽ cập nhật danh sách học kỳ khả dụng bên dưới.
             </p>
@@ -419,17 +512,10 @@ export function CourseSlotsPanel({
               ))
             )}
           </select>
-          {semesterOptions.length === 0 && form.curriculumId && onNavigateToCurriculumSemesters && (
-            <button
-              type="button"
-              onClick={() => {
-                setFormOpen(false);
-                onNavigateToCurriculumSemesters(form.curriculumId);
-              }}
-              className="focus-brutal mt-2 text-xs font-bold text-brutal-secondary underline-offset-2 hover:underline"
-            >
-              Gán học kỳ cho ngành này →
-            </button>
+          {semesterOptions.length === 0 && form.curriculumId && (
+            <p className="mt-2 text-xs text-brutal-muted">
+              Chưa gán học kỳ cho CTĐT này. Sửa CTĐT ở tab Chương trình đào tạo để chọn học kỳ.
+            </p>
           )}
           <FieldError message={fieldErrors.semesterId} />
         </label>

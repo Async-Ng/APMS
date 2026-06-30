@@ -154,13 +154,17 @@ export function DocumentSettingsModal({
 
           <fieldset className="space-y-1.5">
             <legend className="text-sm font-semibold text-brutal-ink">
-              Quyền hiển thị
+              Hiển thị
             </legend>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
                   { value: "private" as const, label: "Riêng tư", Icon: Lock },
-                  { value: "public" as const, label: "Công khai", Icon: Globe },
+                  {
+                    value: "public" as const,
+                    label: "Công khai (Thư viện)",
+                    Icon: Globe,
+                  },
                 ]
               ).map(({ value, label, Icon }) => (
                 <button
@@ -182,7 +186,7 @@ export function DocumentSettingsModal({
             </div>
             {visibility === "public" && doc.visibility !== "public" && (
               <p className="text-xs text-brutal-muted">
-                Tài liệu công khai sẽ hiển thị cho mọi sinh viên trong hệ thống.
+                Tài liệu sẽ xuất hiện trên Thư viện công khai cho mọi sinh viên.
               </p>
             )}
           </fieldset>

@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL local: `http://localhost:4000/api`.
+Base URL production: `https://apms-bscq.onrender.com/api` ([Swagger UI](https://apms-bscq.onrender.com/api/docs/#/)). Local dev: `http://localhost:4000/api`.
 
 Business rules: see `docs/SRS.md` (FR/BR). Technical source of truth is `api/src/routes/index.ts`, validators in `api/src/validators`, models in `api/src/models`, and services in `api/src/services`.
 
@@ -12,7 +12,7 @@ Business rules: see `docs/SRS.md` (FR/BR). Technical source of truth is `api/src
 | `/api/auth` | Auth callback, current user, profile setup |
 | `/api/admin` | Admin users (quota, disable, role), stats, access emails, academic catalog |
 | `/api/users` | User profile |
-| `/api/catalog` | Majors, semesters, major-semester links, curriculum courses |
+| `/api/catalog` | Curricula (CTĐT), semesters, curriculum-semester links, course slots |
 | `/api/folders` | Folder operations |
 | `/api/documents` | Unified document list and document operations |
 | `/api/shares` | Direct read-only sharing |
@@ -77,11 +77,11 @@ Response shape:
         "email": "student@fpt.edu.vn",
         "avatarUrl": null
       },
-      "CourseSlot": {
+      "courseSlot": {
         "id": "courseId",
         "semesterId": "semesterObjectId",
         "semester": { "id": "semesterObjectId", "code": "HK1", "name": "Học kỳ 1" },
-        "major": {},
+        "curriculum": {},
         "subject": {}
       },
       "share": null,
@@ -183,18 +183,18 @@ Patch example:
 
 ## Catalog And Academic Profile
 
-`/api/catalog` exposes majors, semesters, major-semester assignments, and curriculum-course mappings.
+`/api/catalog` exposes active curricula, semesters, curriculum-semester assignments, and course slots.
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/api/catalog/curricula` | Active majors |
+| `GET` | `/api/catalog/curricula` | Active curricula (CTĐT) |
 | `GET` | `/api/catalog/semesters` | Active semesters |
-| `GET` | `/api/catalog/curricula/:curriculumId/semesters` | Semesters assigned to a major |
-| `GET` | `/api/catalog/curricula/:curriculumId/curriculum?semesterId=` | Subjects for major + semester |
+| `GET` | `/api/catalog/curricula/:curriculumId/semesters` | Semesters assigned to a curriculum |
+| `GET` | `/api/catalog/curricula/:curriculumId/course-slots?semesterId=` | Course slots for curriculum + optional semester filter |
 
 ### `GET /api/catalog/curricula`
 
-Returns active majors sorted by code.
+Returns active curricula sorted by code.
 
 ```json
 {
@@ -213,9 +213,9 @@ Returns active majors sorted by code.
 }
 ```
 
-### `GET /api/catalog/curricula/{curriculumId}/curriculum`
+### `GET /api/catalog/curricula/{curriculumId}/course-slots`
 
-Returns active curriculum courses for the major. Optional query `semesterId` filters to one semester.
+Returns active course slots for the curriculum. Optional query `semesterId` filters to one semester.
 
 ```json
 {
@@ -229,7 +229,7 @@ Returns active curriculum courses for the major. Optional query `semesterId` fil
       "isActive": true,
       "createdAt": "2026-01-01T00:00:00.000Z",
       "updatedAt": "2026-01-01T00:00:00.000Z",
-      "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+      "curriculum": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
       "semester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
       "subject": { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
     }
@@ -247,7 +247,7 @@ Returns the signed-in user's academic profile.
 {
   "status": "success",
   "data": {
-    "major": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    "curriculum": { "id": "...", "code": "SE", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." },
     "currentSemester": { "id": "...", "code": "HK1", "name": "Học kỳ 1", "sortOrder": 1, "isActive": true },
     "currentSubjects": [
       { "id": "...", "code": "PRF192", "name": "...", "description": "", "isActive": true, "createdAt": "...", "updatedAt": "..." }
@@ -257,11 +257,11 @@ Returns the signed-in user's academic profile.
 }
 ```
 
-`isComplete` is `true` when major, semester, and at least one subject are set.
+`isComplete` is `true` when curriculum, semester, and at least one subject are set.
 
 ### `PATCH /api/users/me/academic-profile`
 
-Updates the signed-in user's academic profile. Every subject must be active and belong to the selected major and semester in the curriculum catalog.
+Updates the signed-in user's academic profile. Every subject must be active and belong to the selected curriculum and semester in the course-slot catalog.
 
 ```json
 {
@@ -271,17 +271,19 @@ Updates the signed-in user's academic profile. Every subject must be active and 
 }
 ```
 
-`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `COURSE_SLOT_NOT_IN_PROFILE` when a subject is outside the selected major/semester curriculum.
+`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `COURSE_SLOT_NOT_IN_PROFILE` when a subject is outside the selected curriculum/semester course slots.
 
 Admin academic CRUD under `/api/admin`:
 
+- `GET/POST/PATCH/DELETE /api/admin/curricula`
 - `GET/POST/PATCH/DELETE /api/admin/semesters`
 - `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters`
-- Existing majors, subjects, and `curriculum-courses` (body uses `semesterId` instead of `semesterNumber`)
+- `GET/POST/PATCH/DELETE /api/admin/subjects`
+- `GET/POST/PATCH/DELETE /api/admin/course-slots` (body uses `curriculumId`, `semesterId`, `subjectId`)
 
 `PATCH /api/admin/users/:id` accepts optional `role: user | admin` (syncs Cognito group `admin` + MongoDB `users.role`). Guards: cannot demote self, cannot demote last active admin, cannot promote disabled users.
 
-Documents reference `courseSlotId`, which links a subject to a major and semester entity. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
+Documents reference `courseSlotId`, which links a subject to a curriculum and semester entity. Public document discovery uses this mapping for `match=auto`, exact-course matches, related same-subject matches, and global public results.
 
 ## Search And Chat
 
@@ -300,8 +302,8 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 | Method | Path | Notes |
 | --- | --- | --- |
 | `POST` | `/api/chat/sessions` | Create a session with a context (FR-040) |
-| `GET` | `/api/chat/sessions` | List the user's sessions |
-| `GET` | `/api/chat/sessions/:id` | Session detail with messages |
+| `GET` | `/api/chat/sessions` | List the user's sessions (excludes sessions whose document/folder context is deleted or missing — FR-044, BR-026) |
+| `GET` | `/api/chat/sessions/:id` | Session detail with messages (404 if context unavailable) |
 | `PATCH` | `/api/chat/sessions/:id` | Rename or pin/unpin (`title`, `isPinned`) |
 | `DELETE` | `/api/chat/sessions/:id` | Delete a session |
 | `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations |
@@ -328,6 +330,13 @@ cd api
 pnpm migrate:semester-entities
 ```
 
-The semester migration upserts `HK1..HK9` semester records, maps existing curriculum courses and user profiles to `semesterId`, and creates `major_semesters` links. It is idempotent.
+The semester migration upserts `HK1..HK9` semester records, maps existing course slots and user profiles to `semesterId`, and creates `curriculum_semesters` links. It is idempotent.
+
+Run after deploying the major-to-curriculum rename:
+
+```bash
+cd api
+pnpm migrate:major-to-curriculum
+```
 
 The visibility migration maps legacy `personal` values to `private` and legacy `internal` values to `public`. It does not modify S3 objects, chunks, shares, folders, or assign missing courses to old records.

@@ -16,27 +16,21 @@ export function AdminPagination({
   onPageChange,
   itemLabel = "mục",
 }: AdminPaginationProps) {
-  const { page, totalPages, total } = pagination;
+  const { page, totalPages, total, limit } = pagination;
 
-  if (totalPages <= 1) {
-    if (total > 0) {
-      return (
-        <p className="text-sm text-brutal-muted">
-          {total} {itemLabel}
-        </p>
-      );
-    }
+  if (total === 0) {
     return null;
   }
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-brutal-muted">
         Trang {page} / {totalPages}
         <span className="hidden sm:inline">
           {" "}
           — {total} {itemLabel}
         </span>
+        <span className="ml-1 text-xs text-brutal-muted/80">({limit}/trang)</span>
       </p>
       <div className="flex gap-2">
         <BrutalButton

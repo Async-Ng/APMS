@@ -104,14 +104,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
       <Topbar
         breadcrumbs={[{ label: "Hồ sơ" }]}
         showBreadcrumbRootIcon={false}
       />
 
       <main
-        className="mx-auto w-full min-w-0 max-w-3xl flex-1 space-y-6 overflow-x-hidden p-4 pb-8 sm:p-6 sm:pb-10"
+        className="mx-auto min-h-0 w-full min-w-0 max-w-3xl flex-1 space-y-6 overflow-x-hidden p-4 pb-8 sm:p-6 sm:pb-10"
         id="main-content"
       >
         <div className="flex items-center gap-3">

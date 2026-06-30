@@ -12,6 +12,7 @@ import { MobileQuickActionsMenu } from "@/components/app/drive/MobileQuickAction
 import { SubjectFolderCard } from "@/components/app/drive/SubjectFolderCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
+import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
 import { FolderModal } from "@/components/app/FolderModal";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
@@ -96,7 +97,7 @@ export default function DrivePage() {
   const [uploadCourseId, setUploadCourseId] = useState<string | undefined>();
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
-  const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [settingsDoc, setSettingsDoc] = useState<DriveDocument | null>(null);
   const [shareTarget, setShareTarget] = useState<{
     resourceType: "folder" | "document";
     resourceId: string;
@@ -336,7 +337,7 @@ export default function DrivePage() {
                         key={doc.id}
                         document={doc}
                         parentId={undefined}
-                        onRename={setRenameDoc}
+                        onRename={setSettingsDoc}
                         onShare={shareDocument}
                       />
                     ))}
@@ -396,7 +397,7 @@ export default function DrivePage() {
                         key={doc.id}
                         document={doc}
                         parentId={undefined}
-                        onRename={setRenameDoc}
+                        onRename={setSettingsDoc}
                         onShare={shareDocument}
                       />
                     ))}
@@ -430,11 +431,10 @@ export default function DrivePage() {
         />
       )}
 
-      {renameDoc && (
-        <FolderModal
-          parentId={null}
-          documentToRename={renameDoc}
-          onClose={() => setRenameDoc(null)}
+      {settingsDoc && (
+        <DocumentSettingsModal
+          document={settingsDoc}
+          onClose={() => setSettingsDoc(null)}
         />
       )}
 
