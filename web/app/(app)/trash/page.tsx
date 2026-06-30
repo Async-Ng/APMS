@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatRelativeDaysUntil } from "@/lib/format";
+import { formatTrashPurgeLabel } from "@/lib/format";
 import { getUserErrorMessage } from "@/lib/errors";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import {
@@ -64,11 +64,7 @@ function TrashFolderCard({
 
       <p className="truncate text-sm font-bold text-brutal-ink">{folder.name}</p>
       <p className="text-xs text-brutal-muted">Thư mục</p>
-      <p className="text-xs text-brutal-muted">
-        {folder.deletedAt
-          ? `Còn ${formatRelativeDaysUntil(folder.deletedAt, 30)} ngày trước khi xóa vĩnh viễn`
-          : "Tự xóa sau 30 ngày"}
-      </p>
+      <p className="text-xs text-brutal-muted">{formatTrashPurgeLabel(folder)}</p>
     </div>
   );
 }
@@ -109,11 +105,7 @@ function TrashDocumentCard({
 
       <p className="truncate text-sm font-bold text-brutal-ink">{doc.title}</p>
       <StatusBadge status={doc.status} />
-      <p className="text-xs text-brutal-muted">
-        {doc.deletedAt
-          ? `Còn ${formatRelativeDaysUntil(doc.deletedAt, 30)} ngày trước khi xóa vĩnh viễn`
-          : "Tự xóa sau 30 ngày"}
-      </p>
+      <p className="text-xs text-brutal-muted">{formatTrashPurgeLabel(doc)}</p>
     </div>
   );
 }

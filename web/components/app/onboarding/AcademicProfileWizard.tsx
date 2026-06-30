@@ -35,7 +35,7 @@ function uniqueSubjects(curriculum: CatalogCourseSlot[] | undefined) {
 }
 
 const STEPS = [
-  { id: 1, label: "Ngành" },
+  { id: 1, label: "Chương trình đào tạo" },
   { id: 2, label: "Học kỳ" },
   { id: 3, label: "Môn học" },
 ] as const;
@@ -92,7 +92,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
   const handleSave = useCallback(() => {
     setError(null);
     if (!curriculumId || !semesterId) {
-      setError("Chọn đủ ngành và học kỳ trước khi lưu.");
+      setError("Chọn đủ CTĐT và học kỳ trước khi lưu.");
       return;
     }
     if (selectedSubjectIds.length === 0) {
@@ -139,7 +139,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
 
       {step === 1 && (
         <div className="space-y-3">
-          <p className="text-sm text-brutal-muted">Bạn đang theo ngành nào?</p>
+          <p className="text-sm text-brutal-muted">Bạn đang theo CTĐT nào?</p>
           {isCurriculaLoading ? (
             <p className="text-sm text-brutal-muted">Đang tải…</p>
           ) : (
@@ -153,7 +153,7 @@ function WizardForm({ profile, onClose, onComplete, onSkip }: WizardFormProps) {
               className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm"
               data-initial-focus
             >
-              <option value="">Chọn ngành</option>
+              <option value="">Chọn CTĐT</option>
               {curricula?.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.code} — {m.name}

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, X } from "lucide-react";
 import { useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
@@ -34,9 +35,9 @@ export function ConfirmDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   useModalA11y(open, onClose, dialogRef, { preventClose: isPending });
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
@@ -54,7 +55,7 @@ export function ConfirmDialog({
       aria-describedby="confirm-dialog-description"
     >
       <BrutalCard
-        className="w-full max-w-sm"
+        className="w-full max-w-md"
         style={{ zIndex: "var(--z-modal)" }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -119,6 +120,7 @@ export function ConfirmDialog({
           </BrutalButton>
         </div>
       </BrutalCard>
-    </div>
+    </div>,
+    document.body,
   );
 }

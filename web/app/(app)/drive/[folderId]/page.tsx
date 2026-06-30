@@ -8,6 +8,7 @@ import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
+import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
 import { FolderModal } from "@/components/app/FolderModal";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
@@ -34,7 +35,7 @@ function FolderPageContent({ folderId }: { folderId: string }) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
-  const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [settingsDoc, setSettingsDoc] = useState<DriveDocument | null>(null);
   const [shareTarget, setShareTarget] = useState<{
     resourceType: "folder" | "document";
     resourceId: string;
@@ -169,7 +170,7 @@ function FolderPageContent({ folderId }: { folderId: string }) {
                       document={doc}
                       parentId={folderId}
                       variant={isShared ? "shared" : "default"}
-                      onRename={setRenameDoc}
+                      onRename={setSettingsDoc}
                       onShare={
                         isShared
                           ? undefined
@@ -204,11 +205,10 @@ function FolderPageContent({ folderId }: { folderId: string }) {
         />
       )}
 
-      {renameDoc && (
-        <FolderModal
-          parentId={folderId}
-          documentToRename={renameDoc}
-          onClose={() => setRenameDoc(null)}
+      {settingsDoc && (
+        <DocumentSettingsModal
+          document={settingsDoc}
+          onClose={() => setSettingsDoc(null)}
         />
       )}
 

@@ -2,15 +2,15 @@
 
 import { FileText } from "lucide-react";
 
-import { InternalDocumentCard } from "@/components/app/forum/InternalDocumentCard";
+import { PublicDocumentCard } from "@/components/app/library/PublicDocumentCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
-import type { InternalDocument, InternalSource } from "@/lib/queries/internal-documents";
+import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
 
-interface InternalDocumentGridProps {
-  documents: InternalDocument[];
-  source: InternalSource;
+interface PublicDocumentGridProps {
+  documents: PublicDocument[];
+  source: PublicLibrarySource;
   variant?: "feed" | "browse";
   isLoading?: boolean;
   isError?: boolean;
@@ -18,7 +18,7 @@ interface InternalDocumentGridProps {
   emptyDescription?: string;
 }
 
-export function InternalDocumentGrid({
+export function PublicDocumentGrid({
   documents,
   source,
   variant = "feed",
@@ -26,7 +26,7 @@ export function InternalDocumentGrid({
   isError,
   onRetry,
   emptyDescription = "Thử nới bộ lọc hoặc quay lại sau khi có tài liệu mới được chia sẻ.",
-}: InternalDocumentGridProps) {
+}: PublicDocumentGridProps) {
   if (isLoading) {
     return <SkeletonGrid count={6} />;
   }
@@ -61,7 +61,7 @@ export function InternalDocumentGrid({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {documents.map((doc) => (
-        <InternalDocumentCard
+        <PublicDocumentCard
           key={doc.id}
           doc={doc}
           source={source}

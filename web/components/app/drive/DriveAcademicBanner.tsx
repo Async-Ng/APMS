@@ -91,14 +91,13 @@ export function DriveAcademicBanner({
               className="w-full sm:w-auto"
               onClick={() => setAdvanceOpen(true)}
             >
-              Lên học kỳ
+              Chọn học kỳ
             </BrutalButton>
           )}
-          <Link
-            href="/profile"
-            className="text-xs font-bold text-brutal-primary underline-offset-2 hover:underline"
-          >
-            Sửa hồ sơ
+          <Link href="/profile" className="shrink-0">
+            <BrutalButton variant="primary" className="w-full sm:w-auto">
+              Sửa hồ sơ
+            </BrutalButton>
           </Link>
         </div>
       </div>

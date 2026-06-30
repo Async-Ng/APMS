@@ -5,7 +5,7 @@ import { use, useMemo, useState } from "react";
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
-import { FolderModal } from "@/components/app/FolderModal";
+import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { UploadModal } from "@/components/app/UploadModal";
@@ -84,7 +84,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [settingsDoc, setSettingsDoc] = useState<DriveDocument | null>(null);
   const [shareTarget, setShareTarget] = useState<{
     resourceType: "folder" | "document";
     resourceId: string;
@@ -142,7 +142,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
           <ErrorAlert
             variant="inline"
             className="mb-4"
-            message={`Chỉ upload vào học kỳ chính (${profile?.currentSemester?.code ?? ""}). Dùng「Lên học kỳ」trên Drive hoặc sửa Hồ sơ để đổi học kỳ chính.`}
+            message={`Chỉ upload vào học kỳ chính (${profile?.currentSemester?.code ?? ""}). Dùng「Chọn học kỳ」trên Drive hoặc sửa Hồ sơ để đổi học kỳ chính.`}
           />
         )}
 
@@ -189,7 +189,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
                   key={doc.id}
                   document={doc}
                   parentId={undefined}
-                  onRename={setRenameDoc}
+                  onRename={setSettingsDoc}
                   onShare={shareDocument}
                 />
               ))}
@@ -207,11 +207,10 @@ export default function SubjectDrivePage({ params }: PageProps) {
         />
       )}
 
-      {renameDoc && (
-        <FolderModal
-          parentId={null}
-          documentToRename={renameDoc}
-          onClose={() => setRenameDoc(null)}
+      {settingsDoc && (
+        <DocumentSettingsModal
+          document={settingsDoc}
+          onClose={() => setSettingsDoc(null)}
         />
       )}
 
