@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/cn";
+import {
+  filterVisibleContextDocuments,
+  isDeletedContextTitle,
+  MISSING_DOC_TITLE,
+} from "@/lib/chat-visibility";
 import type { ChatMessage, ChatSession } from "@/lib/queries/chat";
 import { useContextDocumentDetails } from "@/lib/queries/chat";
 
@@ -12,8 +17,6 @@ interface ChatContextBadgeProps {
   session: ChatSession;
   messages?: ChatMessage[];
 }
-
-const MISSING_DOC_TITLE = "Tài liệu không còn tồn tại";
 
 function resolveDocumentLabel(
   session: ChatSession,
@@ -79,6 +82,16 @@ function mergeContextDocuments(
   }));
 }
 
+function visibleContextDocuments(
+  session: ChatSession,
+  messages: ChatMessage[] | undefined,
+  fetched: Array<{ id: string; title: string }> | undefined,
+): Array<{ id: string; title: string }> {
+  return filterVisibleContextDocuments(
+    mergeContextDocuments(session, messages, fetched),
+  );
+}
+
 function ContextTypeLabel({ type }: { type: ChatSession["contextType"] }) {
   if (type === "all") return <>Toàn bộ tài liệu</>;
   if (type === "folder") return <>Một folder</>;
@@ -140,11 +153,13 @@ function ExpandableDocumentsBadge({
   );
 
   const documents = useMemo(
-    () => mergeContextDocuments(session, messages, fetchedDocs),
+    () => visibleContextDocuments(session, messages, fetchedDocs),
     [session, messages, fetchedDocs],
   );
 
   const count = documents.length;
+
+  if (count === 0) return null;
 
   return (
     <div className="overflow-hidden rounded-xl border-2 border-brutal-ink bg-brutal-bg text-sm">
@@ -191,6 +206,13 @@ export function ChatContextBadge({ session, messages }: ChatContextBadgeProps) {
   const documentLabel = resolveDocumentLabel(session, messages);
   const folderLabel = contextLabel;
 
+  if (
+    (contextType === "document" && isDeletedContextTitle(documentLabel ?? contextLabel)) ||
+    (contextType === "folder" && isDeletedContextTitle(folderLabel))
+  ) {
+    return null;
+  }
+
   if (contextType === "all") {
     return (
       <div className="flex items-center gap-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm">
@@ -220,6 +242,10 @@ export function ChatContextBadge({ session, messages }: ChatContextBadgeProps) {
   }
 
   if (contextType === "documents") {
+    const docs = session.contextDocuments ?? [];
+    if (docs.length > 0 && docs.every((doc) => isDeletedContextTitle(doc.title))) {
+      return null;
+    }
     return <ExpandableDocumentsBadge session={session} messages={messages} />;
   }
 

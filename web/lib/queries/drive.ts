@@ -1,6 +1,10 @@
 ﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
+import {
+  evictChatSessionsForTrashedFolder,
+  invalidateChatSessions,
+} from "@/lib/queries/chat";
 import type { Pagination } from "@/lib/queries/admin";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -223,6 +227,8 @@ export function useDeleteFolder(folderId: string, parentId?: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: driveKey(parentId) });
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
+      evictChatSessionsForTrashedFolder(qc, folderId);
+      invalidateChatSessions(qc);
     },
   });
 }
@@ -235,6 +241,7 @@ export function useRestoreFolder(parentId?: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void qc.invalidateQueries({ queryKey: driveKey(parentId) });
+      invalidateChatSessions(qc);
     },
   });
 }

@@ -5,8 +5,15 @@ import { useMemo, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
+import {
+  isPublishingToLibrary,
+  PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION,
+  PUBLISH_TO_LIBRARY_CONFIRM_TITLE,
+  PUBLISH_TO_LIBRARY_PENDING_HINT,
+} from "@/lib/document-visibility";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
 import type { DocumentVisibility, DriveDocument } from "@/lib/queries/drive";
@@ -29,6 +36,7 @@ export function DocumentSettingsModal({
     doc.visibility ?? "private",
   );
   const [error, setError] = useState<string | null>(null);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
 
   const { data: profile } = useAcademicProfile();
   const { data: curriculum } = useCatalogCourseSlots(
@@ -51,7 +59,7 @@ export function DocumentSettingsModal({
     !!courseSlotId &&
     !enrolledCourses.some((course) => course.id === courseSlotId);
 
-  async function handleSubmit() {
+  async function saveDocument() {
     const trimmed = title.trim();
     if (!trimmed) {
       setError("Tiêu đề không được để trống.");
@@ -72,6 +80,14 @@ export function DocumentSettingsModal({
     } catch (err) {
       setError(getUserErrorMessage(err));
     }
+  }
+
+  function handleSubmit() {
+    if (isPublishingToLibrary(doc.visibility, visibility)) {
+      setPublishConfirmOpen(true);
+      return;
+    }
+    void saveDocument();
   }
 
   return (
@@ -186,9 +202,18 @@ export function DocumentSettingsModal({
             </div>
             {visibility === "public" && doc.visibility !== "public" && (
               <p className="text-xs text-brutal-muted">
-                Tài liệu sẽ xuất hiện trên Thư viện công khai cho mọi sinh viên.
+                {PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION}
               </p>
             )}
+            {visibility === "public" && doc.status !== "ready" && (
+              <p className="text-xs font-semibold text-brutal-primary">
+                {PUBLISH_TO_LIBRARY_PENDING_HINT}
+              </p>
+            )}
+            <p className="text-xs text-brutal-muted">
+              Chia sẻ (menu trên thẻ tài liệu) chỉ gửi cho người bạn chọn — khác
+              với đăng lên Thư viện công khai.
+            </p>
           </fieldset>
 
           {error && <ErrorAlert message={error} variant="inline" />}
@@ -205,7 +230,7 @@ export function DocumentSettingsModal({
             <BrutalButton
               variant="primary"
               className="flex-1"
-              onClick={() => void handleSubmit()}
+              onClick={() => handleSubmit()}
               loading={updateDocument.isPending}
             >
               Lưu
@@ -213,6 +238,19 @@ export function DocumentSettingsModal({
           </div>
         </div>
       </BrutalCard>
+
+      <ConfirmDialog
+        open={publishConfirmOpen}
+        title={PUBLISH_TO_LIBRARY_CONFIRM_TITLE}
+        description={PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION}
+        confirmLabel="Đăng lên thư viện"
+        isPending={updateDocument.isPending}
+        onConfirm={() => {
+          setPublishConfirmOpen(false);
+          void saveDocument();
+        }}
+        onClose={() => setPublishConfirmOpen(false)}
+      />
     </div>
   );
 }

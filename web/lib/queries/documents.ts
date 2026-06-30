@@ -7,6 +7,10 @@ import type {
   DriveDocument,
 } from "@/lib/queries/drive";
 import { useAuthStore } from "@/stores/auth-store";
+import {
+  evictChatSessionsForTrashedDocument,
+  invalidateChatSessions,
+} from "@/lib/queries/chat";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -131,6 +135,7 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
     mutationFn: () => api.delete(`/documents/${documentId}`),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["drive"] });
+      evictChatSessionsForTrashedDocument(qc, documentId);
 
       qc.setQueriesData(
         { queryKey: ["drive"] },
@@ -151,6 +156,8 @@ export function useDeleteDocument(documentId: string, parentId?: string) {
       void qc.invalidateQueries({ queryKey: ["drive", parentId ?? "root"] });
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void qc.invalidateQueries({ queryKey: ["documents", documentId] });
+      evictChatSessionsForTrashedDocument(qc, documentId);
+      invalidateChatSessions(qc);
     },
   });
 }
@@ -163,6 +170,7 @@ export function useRestoreDocument() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void qc.invalidateQueries({ queryKey: ["drive", "root"] });
+      invalidateChatSessions(qc);
     },
   });
 }
@@ -174,9 +182,11 @@ export function usePermanentDeleteDocument() {
   return useMutation({
     mutationFn: (documentId: string) =>
       api.delete(`/documents/${documentId}/permanent`),
-    onSuccess: () => {
+    onSuccess: (_data, documentId) => {
       void qc.invalidateQueries({ queryKey: ["drive", "trash"] });
       void fetchMe();
+      evictChatSessionsForTrashedDocument(qc, documentId);
+      invalidateChatSessions(qc);
     },
   });
 }

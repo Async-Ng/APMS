@@ -14,9 +14,14 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useStarPulse } from "@/components/ui/useStarPulse";
 import { cn } from "@/lib/cn";
+import {
+  PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION,
+  PUBLISH_TO_LIBRARY_CONFIRM_TITLE,
+} from "@/lib/document-visibility";
 import { formatBytes } from "@/lib/format";
 import type { DriveDocument } from "@/lib/queries/drive";
 import {
@@ -64,6 +69,7 @@ export function DocumentCard({
 }: DocumentCardProps) {
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [triggerDownload, setTriggerDownload] = useState(false);
   const starPulse = useStarPulse(doc.isStarred);
@@ -77,6 +83,22 @@ export function DocumentCard({
   const { data: downloadData } = useDocumentDownloadUrl(doc.id, triggerDownload);
 
   const canManageLibrary = doc.status === "ready" && !!doc.courseSlotId;
+
+  function revokeFromLibrary() {
+    updateDoc({ visibility: "private" });
+  }
+
+  function requestPublishToLibrary() {
+    setMenuOpen(false);
+    setPublishConfirmOpen(true);
+  }
+
+  function confirmPublishToLibrary() {
+    updateDoc(
+      { visibility: "public" },
+      { onSuccess: () => setPublishConfirmOpen(false) },
+    );
+  }
 
   if (triggerDownload && downloadData?.downloadUrl) {
     window.open(downloadData.downloadUrl, "_blank", "noopener,noreferrer");
@@ -115,9 +137,9 @@ export function DocumentCard({
                     : "Đăng lên thư viện",
                 icon: <Globe className="h-4 w-4" />,
                 onClick: () =>
-                  updateDoc({
-                    visibility: doc.visibility === "public" ? "private" : "public",
-                  }),
+                  doc.visibility === "public"
+                    ? revokeFromLibrary()
+                    : requestPublishToLibrary(),
                 disabled: isUpdatingVisibility,
               },
             ]
@@ -243,7 +265,7 @@ export function DocumentCard({
           {doc.visibility === "public" && (
             <span
               className="inline-flex items-center gap-0.5 rounded-md border-2 border-brutal-ink bg-brutal-bg px-1.5 py-0.5 text-xs font-bold"
-              title="Tài liệu công khai"
+              title="Công khai (Thư viện)"
             >
               <Globe className="h-3 w-3" />
             </span>
@@ -258,6 +280,16 @@ export function DocumentCard({
           Chia sẻ {formatSharedAt(sharedAt)}
         </p>
       )}
+
+      <ConfirmDialog
+        open={publishConfirmOpen}
+        title={PUBLISH_TO_LIBRARY_CONFIRM_TITLE}
+        description={PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION}
+        confirmLabel="Đăng lên thư viện"
+        isPending={isUpdatingVisibility}
+        onConfirm={confirmPublishToLibrary}
+        onClose={() => setPublishConfirmOpen(false)}
+      />
     </div>
   );
 }

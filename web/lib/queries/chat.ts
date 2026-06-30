@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
+import {
+  filterVisibleChatSessions,
+  isDeletedContextTitle,
+  MISSING_DOC_TITLE,
+} from "@/lib/chat-visibility";
 import { parseFetchErrorBody } from "@/lib/errors";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -86,6 +92,80 @@ export const chatKeys = {
   session: (id: string) => ["chat", "sessions", id] as const,
 };
 
+export function invalidateChatSessions(qc: QueryClient) {
+  void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+}
+
+export function evictChatSessionsForTrashedDocument(
+  qc: QueryClient,
+  documentId: string,
+) {
+  qc.setQueryData<ChatSession[]>(chatKeys.sessions, (old) => {
+    if (!old) return old;
+    return old
+      .map((session) => {
+        if (session.contextType !== "documents") return session;
+        const contextIds = session.contextIds ?? [];
+        if (!contextIds.includes(documentId)) return session;
+        const nextIds = contextIds.filter((id) => id !== documentId);
+        const nextDocs = (session.contextDocuments ?? []).filter(
+          (doc) => doc.id !== documentId,
+        );
+        return {
+          ...session,
+          contextIds: nextIds,
+          contextDocuments: nextDocs,
+        };
+      })
+      .filter((session) => {
+        if (session.contextType === "document" && session.contextId === documentId) {
+          return false;
+        }
+        if (session.contextType === "documents") {
+          const docs = session.contextDocuments ?? [];
+          if (docs.length === 0) return !isDeletedContextTitle(session.contextLabel);
+          return docs.some((doc) => !isDeletedContextTitle(doc.title));
+        }
+        return true;
+      });
+  });
+
+  for (const [key, data] of qc.getQueriesData<ChatSessionDetail>({
+    queryKey: ["chat", "sessions"],
+  })) {
+    if (!data || typeof key[2] !== "string") continue;
+    const sessionId = key[2];
+    const usesDocument =
+      (data.contextType === "document" && data.contextId === documentId) ||
+      (data.contextType === "documents" &&
+        (data.contextIds ?? []).includes(documentId));
+    if (usesDocument) {
+      qc.removeQueries({ queryKey: chatKeys.session(sessionId) });
+    }
+  }
+}
+
+export function evictChatSessionsForTrashedFolder(
+  qc: QueryClient,
+  folderId: string,
+) {
+  qc.setQueryData<ChatSession[]>(chatKeys.sessions, (old) =>
+    old?.filter(
+      (session) =>
+        !(session.contextType === "folder" && session.contextId === folderId),
+    ),
+  );
+
+  for (const [key, data] of qc.getQueriesData<ChatSessionDetail>({
+    queryKey: ["chat", "sessions"],
+  })) {
+    if (!data || typeof key[2] !== "string") continue;
+    if (data.contextType === "folder" && data.contextId === folderId) {
+      qc.removeQueries({ queryKey: chatKeys.session(key[2]) });
+    }
+  }
+}
+
 /* ── Queries ───────────────────────────────────────────────── */
 
 export function useChatSessions() {
@@ -95,8 +175,9 @@ export function useChatSessions() {
       const res = await api.get<{ status: string; data: ChatSession[] }>(
         "/chat/sessions",
       );
-      return res.data.data;
+      return filterVisibleChatSessions(res.data.data);
     },
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -173,8 +254,6 @@ export function useUpdateSession(sessionId: string) {
     },
   });
 }
-
-const MISSING_DOC_TITLE = "Tài liệu không còn tồn tại";
 
 /** Fetch document titles for chat context IDs (when session snapshot is incomplete). */
 export function useContextDocumentDetails(
