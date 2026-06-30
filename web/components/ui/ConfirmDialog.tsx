@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -33,14 +33,9 @@ export function ConfirmDialog({
   onClose,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
   useModalA11y(open, onClose, dialogRef, { preventClose: isPending });
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!open || !mounted) return null;
+  if (!open || typeof document === "undefined") return null;
 
   return createPortal(
     <div
