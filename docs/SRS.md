@@ -945,7 +945,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 
 | Loại | Dải ID |
 |------|--------|
-| Yêu cầu chức năng | FR-001 đến FR-062 |
+| Yêu cầu chức năng | FR-001 đến FR-064 |
 | Yêu cầu phi chức năng | NFR-P/S/A/SC/R |
 | Quy tắc nghiệp vụ | BR-001 đến BR-027 |
 | Tình huống sử dụng | UC-001 đến UC-008 |

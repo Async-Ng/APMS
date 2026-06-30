@@ -10,7 +10,7 @@ import { colors } from "../../constants/colors";
 import {
   useAcademicProfile,
   useCatalogCourseSlots,
-  useCatalogCurriculaemesters,
+  useCatalogCurriculumSemesters,
   useCatalogCurricula,
   useUpdateAcademicProfile,
 } from "../../hooks/useCatalog";
@@ -27,10 +27,10 @@ export default function AcademicProfileScreen() {
   const { data: curricula } = useCatalogCurricula();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
-  const [curriculumId, setcurriculumId] = useState<string | null>(null);
+  const [curriculumId, setCurriculumId] = useState<string | null>(null);
   const [semesterId, setSemesterId] = useState<string | null>(null);
   const [subjectIds, setSubjectIds] = useState<string[] | null>(null);
-  const [showCurriculumPicker, setshowCurriculumPicker] = useState(false);
+  const [showCurriculumPicker, setShowCurriculumPicker] = useState(false);
   const [showSemesterPicker, setShowSemesterPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,12 +38,12 @@ export default function AcademicProfileScreen() {
   const semesterFromProfile = profile?.currentSemester?.id ?? null;
   const subjectsFromProfile = profile?.currentSubjects.map((s) => s.id) ?? [];
 
-  const effectivecurriculumId = curriculumId ?? curriculumFromProfile;
+  const effectiveCurriculumId = curriculumId ?? curriculumFromProfile;
   const effectiveSemesterId = semesterId ?? semesterFromProfile;
 
-  const { data: curriculumSemesters } = useCatalogCurriculaemesters(effectivecurriculumId ?? undefined);
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId ?? undefined);
   const { data: curriculum } = useCatalogCourseSlots(
-    effectivecurriculumId ?? undefined,
+    effectiveCurriculumId ?? undefined,
     effectiveSemesterId ?? undefined,
   );
 
@@ -66,7 +66,7 @@ export default function AcademicProfileScreen() {
   }, [curriculum]);
 
   const selectionMatchesProfile =
-    effectivecurriculumId === curriculumFromProfile && effectiveSemesterId === semesterFromProfile;
+    effectiveCurriculumId === curriculumFromProfile && effectiveSemesterId === semesterFromProfile;
 
   const selectedSubjectIds = resolveSelectedSubjectIds({
     subjectIds,
@@ -77,7 +77,7 @@ export default function AcademicProfileScreen() {
 
   const subjectsOverLimit = availableSubjects.length > MAX_ACADEMIC_SUBJECTS;
 
-  const selectedCurriculum = curricula?.find((m) => m.id === effectivecurriculumId);
+  const selectedCurriculum = curricula?.find((m) => m.id === effectiveCurriculumId);
   const selectedSemester = availableSemesters.find((s) => s.id === effectiveSemesterId);
   const isComplete = Boolean(profile?.isComplete);
 
@@ -92,7 +92,7 @@ export default function AcademicProfileScreen() {
   }
 
   function handleSave() {
-    if (!effectivecurriculumId) {
+    if (!effectiveCurriculumId) {
       setError("Vui lòng chọn Chương trình đào tạo.");
       return;
     }
@@ -109,13 +109,13 @@ export default function AcademicProfileScreen() {
     setError(null);
     updateProfile.mutate(
       {
-        curriculumId: effectivecurriculumId,
+        curriculumId: effectiveCurriculumId,
         currentSemesterId: effectiveSemesterId,
         currentSubjectIds: subjectIdsToSave,
       },
       {
         onSuccess: () => {
-          setcurriculumId(null);
+          setCurriculumId(null);
           setSemesterId(null);
           setSubjectIds(null);
           useToastStore.getState().show("Đã lưu hồ sơ học thuật.", "success");
@@ -131,7 +131,7 @@ export default function AcademicProfileScreen() {
     icon: "school-outline",
     onPress: () => {
       setError(null);
-      setcurriculumId(m.id);
+      setCurriculumId(m.id);
       setSemesterId(null);
       setSubjectIds(null);
     },
@@ -161,11 +161,10 @@ export default function AcademicProfileScreen() {
           gắn với một môn trong chương trình đào tạo.
         </Text>
 
-        {/* Major */}
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>Chương trình đào tạo</Text>
           <Pressable
-            onPress={() => (curricula?.length ?? 0) > 0 && setshowCurriculumPicker(true)}
+            onPress={() => (curricula?.length ?? 0) > 0 && setShowCurriculumPicker(true)}
             style={{
               borderWidth: 2,
               borderColor: colors.ink,
@@ -199,8 +198,8 @@ export default function AcademicProfileScreen() {
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>Học kỳ</Text>
           <Pressable
-            onPress={() => effectivecurriculumId && availableSemesters.length > 0 && setShowSemesterPicker(true)}
-            disabled={!effectivecurriculumId || availableSemesters.length === 0}
+            onPress={() => effectiveCurriculumId && availableSemesters.length > 0 && setShowSemesterPicker(true)}
+            disabled={!effectiveCurriculumId || availableSemesters.length === 0}
             style={{
               borderWidth: 2,
               borderColor: colors.ink,
@@ -211,7 +210,7 @@ export default function AcademicProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              opacity: effectivecurriculumId && availableSemesters.length > 0 ? 1 : 0.5,
+              opacity: effectiveCurriculumId && availableSemesters.length > 0 ? 1 : 0.5,
             }}
             accessibilityRole="button"
             accessibilityLabel="Chọn học kỳ"
@@ -227,7 +226,7 @@ export default function AcademicProfileScreen() {
             >
               {selectedSemester
                 ? `${selectedSemester.code} — ${selectedSemester.name}`
-                : effectivecurriculumId && availableSemesters.length === 0
+                : effectiveCurriculumId && availableSemesters.length === 0
                   ? "Chương trình đào tạo chưa có học kỳ"
                   : "Chọn học kỳ…"}
             </Text>
@@ -290,7 +289,7 @@ export default function AcademicProfileScreen() {
           <View style={{ borderWidth: 2, borderColor: colors.ink, borderRadius: 12, backgroundColor: colors.bg, padding: 10, gap: 8 }}>
             {isProfileLoading ? (
               <ActivityIndicator color={colors.fptBlue} />
-            ) : !effectivecurriculumId || !effectiveSemesterId ? (
+            ) : !effectiveCurriculumId || !effectiveSemesterId ? (
               <Text style={{ fontSize: 13, color: colors.muted, padding: 4 }}>
                 Chọn Chương trình đào tạo và học kỳ để hiển thị danh sách môn.
               </Text>
@@ -346,7 +345,7 @@ export default function AcademicProfileScreen() {
         visible={showCurriculumPicker}
         title="Chọn Chương trình đào tạo"
         actions={curriculumActions}
-        onDismiss={() => setshowCurriculumPicker(false)}
+        onDismiss={() => setShowCurriculumPicker(false)}
       />
       <ActionSheet
         visible={showSemesterPicker}

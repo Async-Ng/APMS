@@ -21,10 +21,10 @@ Document APIs phải dùng surface thống nhất `/api/documents`. Không thêm
 
 Document upload/update rules:
 
-- Upload mới bắt buộc có `curriculumCourseId`.
+- Upload mới bắt buộc có `courseSlotId`.
 - `visibility` chỉ là `private | public`.
 - Default upload visibility là `private`.
-- Không cho update `curriculumCourseId` về `null`.
+- Không cho update `courseSlotId` về `null`.
 - Chỉ owner được mutate title, tags, folder, course, visibility, delete, restore, star.
 
 ## Search / Chat / AI
