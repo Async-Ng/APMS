@@ -191,14 +191,14 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
 
   const backRoot =
     from === "public"
-      ? { label: "Thư viện công khai", href: "/forum" }
+      ? { label: "Thư viện công khai", href: "/library" }
       : from === "shared"
         ? { label: "Đã chia sẻ", href: "/shared" }
         : { label: "Drive của tôi", href: "/drive" };
 
   const backHref =
     from === "public"
-      ? "/forum"
+      ? "/library"
       : from === "shared"
         ? "/shared"
         : doc?.folderId

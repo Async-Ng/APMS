@@ -30,7 +30,7 @@ const TABS: {
   {
     id: "academic",
     label: "Học thuật",
-    description: "Ngành, môn, CTĐT",
+    description: "CTĐT, học kỳ, môn học",
   },
 ];
 

@@ -5,12 +5,12 @@ import { useState } from "react";
 
 import { AdminPagination } from "@/components/app/admin/AdminPagination";
 import {
-  libraryFiltersToQueryParams,
-  ForumFiltersBar,
-  type ForumFilterState,
-} from "@/components/app/forum/ForumFiltersBar";
-import { InternalDocumentGrid } from "@/components/app/forum/InternalDocumentGrid";
-import { InternalDocumentList } from "@/components/app/forum/InternalDocumentList";
+  browseFiltersToQueryParams,
+  LibraryFiltersBar,
+  type LibraryFilterState,
+} from "@/components/app/library/LibraryFiltersBar";
+import { PublicDocumentGrid } from "@/components/app/library/PublicDocumentGrid";
+import { PublicDocumentList } from "@/components/app/library/PublicDocumentList";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
@@ -19,8 +19,8 @@ import { usePublicDocuments } from "@/lib/queries/documents";
 const PAGE_LIMIT = 20;
 
 interface LibraryBrowsePanelProps {
-  filters: ForumFilterState;
-  onFiltersChange: (filters: ForumFilterState) => void;
+  filters: LibraryFilterState;
+  onFiltersChange: (filters: LibraryFilterState) => void;
   page: number;
   onPageChange: (page: number) => void;
 }
@@ -38,7 +38,7 @@ export function LibraryBrowsePanel({
     match: "all",
     page,
     limit: PAGE_LIMIT,
-    ...libraryFiltersToQueryParams(filters),
+    ...browseFiltersToQueryParams(filters),
   });
 
   const errorCode = getUserErrorCode(error);
@@ -54,8 +54,8 @@ export function LibraryBrowsePanel({
 
   return (
     <div className="space-y-4">
-      <ForumFiltersBar
-        mode="library"
+      <LibraryFiltersBar
+        mode="browse"
         filters={filters}
         onChange={(next) => {
           onFiltersChange(next);
@@ -75,18 +75,18 @@ export function LibraryBrowsePanel({
       <ViewToggle view={view} onChange={setView} />
 
       {view === "grid" ? (
-        <InternalDocumentGrid
+        <PublicDocumentGrid
           documents={data?.documents ?? []}
-          source="library"
+          source="browse"
           variant="browse"
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
         />
       ) : (
-        <InternalDocumentList
+        <PublicDocumentList
           documents={data?.documents ?? []}
-          source="library"
+          source="browse"
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}

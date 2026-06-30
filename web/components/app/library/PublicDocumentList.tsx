@@ -1,14 +1,14 @@
-﻿"use client";
+"use client";
 
 import { FileText } from "lucide-react";
 import Link from "next/link";
 
-import { internalDocumentHref } from "@/components/app/forum/InternalDocumentCard";
-import { MatchTypeBadge, isForumDocument } from "@/components/app/forum/MatchTypeBadge";
+import { publicDocumentHref } from "@/components/app/library/PublicDocumentCard";
+import { MatchTypeBadge, isSuggestedDocument } from "@/components/app/library/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import type { InternalDocument, InternalSource } from "@/lib/queries/internal-documents";
+import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -24,23 +24,23 @@ function formatDate(iso: string): string {
   });
 }
 
-interface InternalDocumentListProps {
-  documents: InternalDocument[];
-  source: InternalSource;
+interface PublicDocumentListProps {
+  documents: PublicDocument[];
+  source: PublicLibrarySource;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
   emptyDescription?: string;
 }
 
-export function InternalDocumentList({
+export function PublicDocumentList({
   documents,
   source,
   isLoading,
   isError,
   onRetry,
   emptyDescription = "Thử nới bộ lọc hoặc quay lại sau.",
-}: InternalDocumentListProps) {
+}: PublicDocumentListProps) {
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -80,16 +80,16 @@ export function InternalDocumentList({
 
   return (
     <div className="overflow-x-auto rounded-xl border-2 border-brutal-ink shadow-brutal">
-      <table className="min-w-full text-sm" aria-label="Danh sách tài liệu nội bộ">
+      <table className="min-w-full text-sm" aria-label="Danh sách tài liệu công khai">
         <thead>
           <tr className="border-b-2 border-brutal-ink bg-brutal-bg text-left">
             <th scope="col" className="px-4 py-3 font-heading font-bold">
               Tài liệu
             </th>
             <th scope="col" className="hidden px-4 py-3 font-heading font-bold md:table-cell">
-              Ngành / Môn
+              CTĐT / Môn
             </th>
-            {source === "forum" && (
+            {source === "suggested" && (
               <th scope="col" className="hidden px-4 py-3 font-heading font-bold lg:table-cell">
                 Khớp
               </th>
@@ -114,7 +114,7 @@ export function InternalDocumentList({
               >
                 <td className="px-4 py-3">
                   <Link
-                    href={internalDocumentHref(doc.id)}
+                    href={publicDocumentHref(doc.id)}
                     className="focus-brutal block min-w-[200px]"
                   >
                     <p className="font-semibold text-brutal-ink hover:text-brutal-primary">
@@ -137,9 +137,9 @@ export function InternalDocumentList({
                     "—"
                   )}
                 </td>
-                {source === "forum" && (
+                {source === "suggested" && (
                   <td className="hidden px-4 py-3 lg:table-cell">
-                    {isForumDocument(doc) ? (
+                    {isSuggestedDocument(doc) ? (
                       <MatchTypeBadge matchType={doc.matchType} />
                     ) : (
                       "—"

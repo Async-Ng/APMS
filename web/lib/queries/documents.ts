@@ -59,7 +59,7 @@ export function useDocumentDownloadUrl(documentId: string, enabled: boolean) {
   });
 }
 
-/* ── Public documents (Diễn đàn / Thư viện) ─────────────────── */
+/* ── Public documents (Thư viện công khai) ───────────────────── */
 
 export interface PublicDocumentsParams {
   match: "auto" | "all";

@@ -14,6 +14,8 @@ export interface ChatCitation {
   documentId: string;
   documentTitle: string;
   pageNumber: number | null;
+  sectionPath?: string[];
+  heading?: string | null;
   excerpt: string;
 }
 

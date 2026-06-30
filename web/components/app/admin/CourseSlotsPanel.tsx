@@ -204,11 +204,11 @@ export function CourseSlotsPanel({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-wrap gap-3">
           <div>
-            <label htmlFor="curriculum-filter-major" className="sr-only">
+            <label htmlFor="curriculum-filter" className="sr-only">
               Lọc theo ngành
             </label>
             <select
-              id="curriculum-filter-major"
+              id="curriculum-filter"
               value={curriculumFilter}
               onChange={(e) => setCurriculumFilter(e.target.value)}
               className="focus-brutal rounded-lg border-2 border-brutal-ink bg-brutal-surface px-2 py-1.5 text-sm font-bold"
@@ -265,7 +265,7 @@ export function CourseSlotsPanel({
       <AdminTableShell ariaLabel="Bảng chương trình đào tạo">
         <thead>
           <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Ngành</th>
+            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">CTĐT</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Học kỳ</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Môn học</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Trạng thái</th>
@@ -376,7 +376,7 @@ export function CourseSlotsPanel({
         }
       >
         <label className="block text-sm font-bold">
-          Ngành học
+          Chương trình đào tạo
           <select
             value={form.curriculumId}
             onChange={(e) => {

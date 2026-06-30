@@ -2,29 +2,29 @@
 
 import { BrutalTabs } from "@/components/ui/BrutalTabs";
 
-export type ForumLibraryTabId = "suggested" | "library";
+export type LibraryTabId = "suggested" | "browse";
 
 const TABS = [
   {
     id: "suggested" as const,
     label: "Gợi ý",
     description:
-      "Phù hợp môn bạn đang học — ưu tiên đúng ngành và học kỳ trong hồ sơ.",
+      "Phù hợp môn bạn đang học — ưu tiên đúng CTĐT và học kỳ trong hồ sơ.",
   },
   {
-    id: "library" as const,
+    id: "browse" as const,
     label: "Duyệt toàn bộ",
-    description: "Duyệt toàn bộ tài liệu công khai theo ngành, học kỳ và môn học.",
+    description: "Duyệt toàn bộ tài liệu công khai theo CTĐT, học kỳ và môn học.",
   },
 ];
 
-export function ForumLibraryTabs({
+export function LibraryTabs({
   active,
   onChange,
   count,
 }: {
-  active: ForumLibraryTabId;
-  onChange: (tab: ForumLibraryTabId) => void;
+  active: LibraryTabId;
+  onChange: (tab: LibraryTabId) => void;
   count?: number;
 }) {
   return (

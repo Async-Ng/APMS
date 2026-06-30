@@ -6,12 +6,12 @@ import { useState } from "react";
 
 import { AdminPagination } from "@/components/app/admin/AdminPagination";
 import {
-  forumFiltersToQueryParams,
-  ForumFiltersBar,
-  type ForumFilterState,
-} from "@/components/app/forum/ForumFiltersBar";
-import { InternalDocumentGrid } from "@/components/app/forum/InternalDocumentGrid";
-import { InternalDocumentList } from "@/components/app/forum/InternalDocumentList";
+  suggestedFiltersToQueryParams,
+  LibraryFiltersBar,
+  type LibraryFilterState,
+} from "@/components/app/library/LibraryFiltersBar";
+import { PublicDocumentGrid } from "@/components/app/library/PublicDocumentGrid";
+import { PublicDocumentList } from "@/components/app/library/PublicDocumentList";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { usePublicDocuments } from "@/lib/queries/documents";
@@ -21,19 +21,19 @@ const PAGE_LIMIT = 20;
 
 type ViewMode = "grid" | "list";
 
-interface ForumFeedPanelProps {
-  filters: ForumFilterState;
-  onFiltersChange: (filters: ForumFilterState) => void;
+interface LibrarySuggestedPanelProps {
+  filters: LibraryFilterState;
+  onFiltersChange: (filters: LibraryFilterState) => void;
   page: number;
   onPageChange: (page: number) => void;
 }
 
-export function ForumFeedPanel({
+export function LibrarySuggestedPanel({
   filters,
   onFiltersChange,
   page,
   onPageChange,
-}: ForumFeedPanelProps) {
+}: LibrarySuggestedPanelProps) {
   const [view, setView] = useState<ViewMode>("grid");
   const router = useRouter();
 
@@ -41,7 +41,7 @@ export function ForumFeedPanel({
     match: "auto",
     page,
     limit: PAGE_LIMIT,
-    ...forumFiltersToQueryParams(filters),
+    ...suggestedFiltersToQueryParams(filters),
   });
 
   const errorCode = getUserErrorCode(error);
@@ -57,8 +57,8 @@ export function ForumFeedPanel({
 
   return (
     <div className="space-y-4">
-      <ForumFiltersBar
-        mode="forum"
+      <LibraryFiltersBar
+        mode="suggested"
         filters={filters}
         onChange={(next) => {
           onFiltersChange(next);
@@ -95,9 +95,9 @@ export function ForumFeedPanel({
       </div>
 
       {view === "grid" ? (
-        <InternalDocumentGrid
+        <PublicDocumentGrid
           documents={data?.documents ?? []}
-          source="forum"
+          source="suggested"
           variant="feed"
           isLoading={isLoading}
           isError={isError}
@@ -105,9 +105,9 @@ export function ForumFeedPanel({
           emptyDescription="Chưa có tài liệu phù hợp với hồ sơ học thuật của bạn."
         />
       ) : (
-        <InternalDocumentList
+        <PublicDocumentList
           documents={data?.documents ?? []}
-          source="forum"
+          source="suggested"
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}

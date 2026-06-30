@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,18 +10,18 @@ import {
   useCatalogCurriculumSemesters,
   useCatalogCurricula,
 } from "@/lib/queries/catalog";
-import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
+import type { PublicDocumentSort } from "@/lib/queries/public-documents";
 import { cn } from "@/lib/cn";
 
-export interface ForumFilterState {
+export interface LibraryFilterState {
   search: string;
   curriculumId: string;
   semesterId: string;
   subjectId: string;
-  sort: InternalDocumentSort;
+  sort: PublicDocumentSort;
 }
 
-export const DEFAULT_FORUM_FILTERS: ForumFilterState = {
+export const DEFAULT_LIBRARY_FILTERS: LibraryFilterState = {
   search: "",
   curriculumId: "",
   semesterId: "",
@@ -29,26 +29,28 @@ export const DEFAULT_FORUM_FILTERS: ForumFilterState = {
   sort: "newest",
 };
 
-interface ForumFiltersBarProps {
-  filters: ForumFilterState;
-  onChange: (filters: ForumFilterState) => void;
-  defaultSort?: InternalDocumentSort;
-  mode: "forum" | "library";
+export type LibraryFilterMode = "suggested" | "browse";
+
+interface LibraryFiltersBarProps {
+  filters: LibraryFilterState;
+  onChange: (filters: LibraryFilterState) => void;
+  defaultSort?: PublicDocumentSort;
+  mode: LibraryFilterMode;
 }
 
-const SORT_OPTIONS: { value: InternalDocumentSort; label: string }[] = [
+const SORT_OPTIONS: { value: PublicDocumentSort; label: string }[] = [
   { value: "newest", label: "Mới nhất" },
   { value: "oldest", label: "Cũ nhất" },
   { value: "title", label: "Tên A–Z" },
 ];
 
-export function ForumFiltersBar({
+export function LibraryFiltersBar({
   filters,
   onChange,
   defaultSort = "newest",
   mode,
-}: ForumFiltersBarProps) {
-  const isLibrary = mode === "library";
+}: LibraryFiltersBarProps) {
+  const isBrowse = mode === "browse";
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [prevSearch, setPrevSearch] = useState(filters.search);
 
@@ -90,7 +92,7 @@ export function ForumFiltersBar({
     new Map(subjects.map((s) => [s.id, s])).values(),
   );
 
-  function patch(partial: Partial<ForumFilterState>) {
+  function patch(partial: Partial<LibraryFilterState>) {
     onChange({ ...filters, ...partial });
   }
 
@@ -108,11 +110,11 @@ export function ForumFiltersBar({
   }
 
   function clearFilters() {
-    onChange({ ...DEFAULT_FORUM_FILTERS, sort: defaultSort });
+    onChange({ ...DEFAULT_LIBRARY_FILTERS, sort: defaultSort });
     setLocalSearch("");
   }
 
-  const hasActiveFilters = isLibrary
+  const hasActiveFilters = isBrowse
     ? filters.search ||
       filters.curriculumId ||
       filters.semesterId ||
@@ -122,9 +124,9 @@ export function ForumFiltersBar({
 
   return (
     <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
-      {!isLibrary && (
+      {!isBrowse && (
         <p className="text-xs text-brutal-muted">
-          Diễn đàn hiển thị tài liệu theo hồ sơ học thuật của bạn.
+          Gợi ý hiển thị tài liệu theo hồ sơ học thuật của bạn.
         </p>
       )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -143,10 +145,10 @@ export function ForumFiltersBar({
           />
         </div>
 
-        {isLibrary && (
+        {isBrowse && (
           <>
             <label className="text-xs font-bold text-brutal-muted">
-              Ngành
+              CTĐT
               <select
                 value={filters.curriculumId}
                 onChange={(e) =>
@@ -158,7 +160,7 @@ export function ForumFiltersBar({
                 }
                 className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
               >
-                <option value="">Tất cả ngành</option>
+                <option value="">Tất cả CTĐT</option>
                 {curricula?.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.code} — {m.name}
@@ -207,7 +209,7 @@ export function ForumFiltersBar({
           Sắp xếp
           <select
             value={filters.sort}
-            onChange={(e) => patch({ sort: e.target.value as InternalDocumentSort })}
+            onChange={(e) => patch({ sort: e.target.value as PublicDocumentSort })}
             className="focus-brutal mt-1 block w-full min-w-[120px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
           >
             {SORT_OPTIONS.map((o) => (
@@ -220,7 +222,7 @@ export function ForumFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {isLibrary && (
+        {isBrowse && (
           <BrutalButton
             variant="secondary"
             className="px-3 py-1.5 text-xs"
@@ -247,9 +249,9 @@ export function ForumFiltersBar({
             Xóa bộ lọc
           </button>
         )}
-        {isLibrary && profile && !profile.isComplete && (
+        {isBrowse && profile && !profile.isComplete && (
           <p className="text-xs text-brutal-muted">
-            Cập nhật hồ sơ học thuật để lọc nhanh theo ngành và học kỳ của bạn.
+            Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT và học kỳ của bạn.
           </p>
         )}
       </div>
@@ -257,14 +259,14 @@ export function ForumFiltersBar({
   );
 }
 
-export function forumFiltersToQueryParams(filters: ForumFilterState) {
+export function suggestedFiltersToQueryParams(filters: LibraryFilterState) {
   return {
     search: filters.search || undefined,
     sort: filters.sort,
   };
 }
 
-export function libraryFiltersToQueryParams(filters: ForumFilterState) {
+export function browseFiltersToQueryParams(filters: LibraryFilterState) {
   return {
     search: filters.search || undefined,
     curriculumId: filters.curriculumId || undefined,
@@ -274,5 +276,7 @@ export function libraryFiltersToQueryParams(filters: ForumFilterState) {
   };
 }
 
-/** @deprecated Use libraryFiltersToQueryParams or forumFiltersToQueryParams */
-export const filtersToQueryParams = libraryFiltersToQueryParams;
+/** @deprecated Use suggestedFiltersToQueryParams */
+export const forumFiltersToQueryParams = suggestedFiltersToQueryParams;
+/** @deprecated Use browseFiltersToQueryParams */
+export const libraryFiltersToQueryParams = browseFiltersToQueryParams;
