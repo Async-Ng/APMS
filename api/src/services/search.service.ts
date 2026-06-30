@@ -27,7 +27,7 @@ export async function semanticSearch(
     getSharedDocumentIds(userId),
     Document.find({
       visibility: "public",
-      curriculumCourseId: { $ne: null },
+      courseSlotId: { $ne: null },
       deletedAt: null,
       status: { $ne: "pending" },
     }).distinct("_id"),

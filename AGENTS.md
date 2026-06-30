@@ -20,10 +20,10 @@ Read these **before** changing any business behavior, in this order of authority
 ### Core invariants (must not break)
 
 - Document `visibility` is exactly `private | public`; default on upload is `private`.
-- Uploads **require** `curriculumCourseId`.
+- Uploads **require** `courseSlotId`.
 - Backend flow is strictly `Router -> Controller -> Service -> Model`.
 - Validate all external input with Zod; validators are the input contract.
-- Academic catalog (majors, subjects, semesters, major-semesters, curriculum-courses) uses **soft-archive (`isActive`)**, never hard delete.
+- Academic catalog (curricula, subjects, semesters, curriculum-semesters, course-slots) uses **soft-archive (`isActive`)**, never hard delete.
 - Referential-integrity guards block deactivating/changing catalog entries that are still referenced — see `api/AGENTS.md`.
 - Keep authorization middleware ordering intact (`authenticate -> resolveUser -> requireActiveUser -> [requireAdmin]`).
 - Unified document listing is `GET /api/documents`. Do **not** add compatibility wrappers for the removed `/api/drive`, `/api/library`, or `/api/forum` routes.

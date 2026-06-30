@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
 
@@ -6,13 +6,13 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { defaultSubjectIds } from "@/lib/academic-profile";
 import type { CatalogSemester } from "@/lib/queries/catalog";
-import { useCatalogCurriculum } from "@/lib/queries/catalog";
+import { useCatalogCourseSlots } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useDriveViewStore } from "@/stores/drive-view-store";
 
 interface QuickSemesterAdvanceModalProps {
-  majorId: string;
+  curriculumId: string;
   currentSemester: CatalogSemester;
   availableSemesters: CatalogSemester[];
   onClose: () => void;
@@ -20,7 +20,7 @@ interface QuickSemesterAdvanceModalProps {
 }
 
 export function QuickSemesterAdvanceModal({
-  majorId,
+  curriculumId,
   currentSemester,
   availableSemesters,
   onClose,
@@ -36,8 +36,8 @@ export function QuickSemesterAdvanceModal({
     return sorted[idx + 1] ?? null;
   }, [availableSemesters, currentSemester.id]);
 
-  const { data: nextCurriculum } = useCatalogCurriculum(
-    majorId,
+  const { data: nextCurriculum } = useCatalogCourseSlots(
+    curriculumId,
     nextSemester?.id,
   );
 
@@ -50,7 +50,7 @@ export function QuickSemesterAdvanceModal({
 
     updateProfile.mutate(
       {
-        majorId,
+        curriculumId,
         currentSemesterId: semester.id,
         currentSubjectIds: defaultSubjectIds(uniqueSubjects),
       },
@@ -115,7 +115,7 @@ export function QuickSemesterAdvanceModal({
               .map((semester) => (
                 <SemesterPickRow
                   key={semester.id}
-                  majorId={majorId}
+                  curriculumId={curriculumId}
                   semester={semester}
                   loading={updateProfile.isPending}
                   onPick={(curriculum) => advanceTo(semester, curriculum)}
@@ -133,17 +133,17 @@ export function QuickSemesterAdvanceModal({
 }
 
 function SemesterPickRow({
-  majorId,
+  curriculumId,
   semester,
   loading,
   onPick,
 }: {
-  majorId: string;
+  curriculumId: string;
   semester: CatalogSemester;
   loading: boolean;
-  onPick: (curriculum: NonNullable<ReturnType<typeof useCatalogCurriculum>["data"]>) => void;
+  onPick: (curriculum: NonNullable<ReturnType<typeof useCatalogCourseSlots>["data"]>) => void;
 }) {
-  const { data: curriculum, isLoading } = useCatalogCurriculum(majorId, semester.id);
+  const { data: curriculum, isLoading } = useCatalogCourseSlots(curriculumId, semester.id);
 
   return (
     <button

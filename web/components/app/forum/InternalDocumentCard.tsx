@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FileText, Presentation } from "lucide-react";
 import Link from "next/link";
@@ -49,7 +49,7 @@ export function InternalDocumentCard({
   source,
   variant = "feed",
 }: InternalDocumentCardProps) {
-  const course = doc.curriculumCourse;
+  const course = doc.courseSlot;
 
   return (
     <Link
@@ -82,9 +82,9 @@ export function InternalDocumentCard({
           {source === "forum" && isForumDocument(doc) && (
             <MatchTypeBadge matchType={doc.matchType} />
           )}
-          {course.major && (
+          {course.curriculum && (
             <span className="rounded-md border border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-bold">
-              {course.major.code}
+              {course.curriculum.code}
             </span>
           )}
           <span className="rounded-md border border-brutal-ink bg-brutal-accent/20 px-2 py-0.5 text-xs font-bold">

@@ -1,4 +1,4 @@
-import { isAxiosError } from "axios";
+﻿import { isAxiosError } from "axios";
 
 /** Mirrors api/src/errors/error-codes.ts — user-facing Vietnamese messages */
 export const ErrorCode = {
@@ -6,6 +6,7 @@ export const ErrorCode = {
   AUTH_TOKEN_INVALID: "AUTH_TOKEN_INVALID",
   AUTH_DISABLED: "AUTH_DISABLED",
   AUTH_EMAIL_DOMAIN: "AUTH_EMAIL_DOMAIN",
+  AUTH_ACCESS_CHECK_FAILED: "AUTH_ACCESS_CHECK_FAILED",
   VALIDATION_ERROR: "VALIDATION_ERROR",
   NOT_FOUND: "NOT_FOUND",
   FORBIDDEN: "FORBIDDEN",
@@ -36,6 +37,7 @@ export const ErrorCode = {
   CHAT_AI_UNAVAILABLE: "CHAT_AI_UNAVAILABLE",
   CHAT_SESSION_NOT_FOUND: "CHAT_SESSION_NOT_FOUND",
   CHAT_ACCESS_DENIED: "CHAT_ACCESS_DENIED",
+  CHAT_ANSWER_BLOCKED: "CHAT_ANSWER_BLOCKED",
   USER_NOT_FOUND: "USER_NOT_FOUND",
   CANNOT_DISABLE_SELF: "CANNOT_DISABLE_SELF",
   CANNOT_DEMOTE_SELF: "CANNOT_DEMOTE_SELF",
@@ -45,11 +47,13 @@ export const ErrorCode = {
   ACADEMIC_CONFLICT: "ACADEMIC_CONFLICT",
   ACCESS_EMAIL_NOT_FOUND: "ACCESS_EMAIL_NOT_FOUND",
   CANNOT_REVOKE_SELF_ACCESS: "CANNOT_REVOKE_SELF_ACCESS",
-  MAJOR_NOT_FOUND: "MAJOR_NOT_FOUND",
-  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
   CURRICULUM_NOT_FOUND: "CURRICULUM_NOT_FOUND",
+  SUBJECT_NOT_FOUND: "SUBJECT_NOT_FOUND",
+  SEMESTER_NOT_FOUND: "SEMESTER_NOT_FOUND",
+  CURRICULUM_SEMESTER_NOT_FOUND: "CURRICULUM_SEMESTER_NOT_FOUND",
+  COURSE_SLOT_NOT_FOUND: "COURSE_SLOT_NOT_FOUND",
   ACADEMIC_PROFILE_REQUIRED: "ACADEMIC_PROFILE_REQUIRED",
-  CURRICULUM_NOT_ENROLLED: "CURRICULUM_NOT_ENROLLED",
+  COURSE_SLOT_NOT_IN_PROFILE: "COURSE_SLOT_NOT_IN_PROFILE",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -59,7 +63,8 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   AUTH_TOKEN_INVALID: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_DISABLED: "Tài khoản của bạn đã bị vô hiệu hóa. Liên hệ quản trị viên.",
   AUTH_EMAIL_DOMAIN:
-    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ.",
+    "Email của bạn chưa được cấp quyền truy cập hệ thống nội bộ. Hãy dùng email @fpt.edu.vn/@fe.edu.vn, hoặc liên hệ quản trị viên để được cấp quyền truy cập ngoại lệ.",
+  AUTH_ACCESS_CHECK_FAILED: "Không thể xác minh quyền truy cập email. Vui lòng thử lại sau.",
   VALIDATION_ERROR: "Dữ liệu không hợp lệ. Vui lòng kiểm tra và thử lại.",
   NOT_FOUND: "Không tìm thấy nội dung yêu cầu.",
   FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",
@@ -90,6 +95,7 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   CHAT_AI_UNAVAILABLE: "Không thể trả lời ngay lúc này. Vui lòng thử lại sau.",
   CHAT_SESSION_NOT_FOUND: "Không tìm thấy cuộc trò chuyện.",
   CHAT_ACCESS_DENIED: "Bạn không có quyền truy cập nội dung này.",
+  CHAT_ANSWER_BLOCKED: "Câu trả lời bị dừng giữa chừng do trùng nội dung bản quyền. Vui lòng thử diễn đạt lại câu hỏi.",
   USER_NOT_FOUND: "Không tìm thấy người dùng.",
   CANNOT_DISABLE_SELF: "Bạn không thể vô hiệu hóa tài khoản của chính mình.",
   CANNOT_DEMOTE_SELF: "Bạn không thể thu hồi quyền quản trị của chính mình.",
@@ -101,13 +107,15 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   ACCESS_EMAIL_NOT_FOUND: "Không tìm thấy email truy cập.",
   CANNOT_REVOKE_SELF_ACCESS:
     "Bạn không thể thu hồi quyền truy cập của chính email mình.",
-  MAJOR_NOT_FOUND: "Không tìm thấy ngành học.",
+  CURRICULUM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
   SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
-  CURRICULUM_NOT_FOUND: "Không tìm thấy môn trong chương trình đào tạo.",
+  SEMESTER_NOT_FOUND: "Không tìm thấy học kỳ.",
+  CURRICULUM_SEMESTER_NOT_FOUND: "Học kỳ chưa được gán cho CTĐT này.",
+  COURSE_SLOT_NOT_FOUND: "Không tìm thấy môn trong CTĐT.",
   ACADEMIC_PROFILE_REQUIRED:
-    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
-  CURRICULUM_NOT_ENROLLED:
-    "Môn học không thuộc ngành, học kỳ hoặc danh sách môn đã chọn của bạn.",
+    "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu.",
+  COURSE_SLOT_NOT_IN_PROFILE:
+    "Môn học không thuộc CTĐT, học kỳ hoặc danh sách môn đã chọn của bạn.",
 };
 
 const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";

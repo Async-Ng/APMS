@@ -1,4 +1,4 @@
-import type { AcademicProfile, CatalogCurriculumItem } from "@/lib/queries/catalog";
+﻿import type { AcademicProfile, CatalogCourseSlot } from "@/lib/queries/catalog";
 import type { DriveDocument, DocumentSemesterRef } from "@/lib/queries/drive";
 
 import type { DriveViewSemesterId } from "@/stores/drive-view-store";
@@ -21,7 +21,7 @@ export function collectDriveSemesterTabs(
   }
 
   for (const doc of documents) {
-    const semester = doc.curriculumCourse?.semester;
+    const semester = doc.courseSlot?.semester;
     if (semester?.id) {
       byId.set(semester.id, semester);
     }
@@ -56,12 +56,12 @@ export function resolveDriveViewSemesterId(
 
 export function getCoursesWithRootDocuments(
   documents: DriveDocument[],
-  curriculum: CatalogCurriculumItem[],
-): CatalogCurriculumItem[] {
+  curriculum: CatalogCourseSlot[],
+): CatalogCourseSlot[] {
   const rootDocs = documents.filter((doc) => doc.folderId === null);
   const courseIdsWithDocs = new Set(
     rootDocs
-      .map((doc) => doc.curriculumCourse?.id)
+      .map((doc) => doc.courseSlot?.id)
       .filter((id): id is string => Boolean(id)),
   );
 
@@ -70,15 +70,15 @@ export function getCoursesWithRootDocuments(
     .sort((a, b) => (a.subject?.code ?? "").localeCompare(b.subject?.code ?? ""));
 }
 
-export function findCourseInCurriculum(
-  curriculum: CatalogCurriculumItem[] | undefined,
-  curriculumCourseId: string,
-): CatalogCurriculumItem | undefined {
-  return curriculum?.find((course) => course.id === curriculumCourseId);
+export function findSlotInCatalog(
+  curriculum: CatalogCourseSlot[] | undefined,
+  courseSlotId: string,
+): CatalogCourseSlot | undefined {
+  return curriculum?.find((course) => course.id === courseSlotId);
 }
 
 export function canOpenSubjectCourse(options: {
-  course: CatalogCurriculumItem | undefined;
+  course: CatalogCourseSlot | undefined;
   documents: DriveDocument[];
   enrolledCourseIds: Set<string>;
 }): boolean {
@@ -86,12 +86,12 @@ export function canOpenSubjectCourse(options: {
   if (!course?.subject) return false;
   if (enrolledCourseIds.has(course.id)) return true;
   return documents.some(
-    (doc) => doc.folderId === null && doc.curriculumCourse?.id === course.id,
+    (doc) => doc.folderId === null && doc.courseSlot?.id === course.id,
   );
 }
 
 export function isPrimarySemesterCourse(
-  course: CatalogCurriculumItem | undefined,
+  course: CatalogCourseSlot | undefined,
   primarySemesterId: string | undefined,
   enrolledCourseIds: Set<string>,
 ): boolean {

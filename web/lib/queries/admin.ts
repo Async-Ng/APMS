@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 
@@ -38,7 +38,7 @@ export interface AdminUser {
   avatarUrl: string | null;
   role: "user" | "admin";
   isDisabled: boolean;
-  majorId: string | null;
+  curriculumId: string | null;
   currentSemesterId: string | null;
   currentSubjectIds: string[];
   storageUsedBytes: number;

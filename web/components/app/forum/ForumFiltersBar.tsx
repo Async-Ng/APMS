@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -6,16 +6,16 @@ import { useEffect, useState } from "react";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import {
   useAcademicProfile,
-  useCatalogCurriculum,
-  useCatalogMajorSemesters,
-  useCatalogMajors,
+  useCatalogCourseSlots,
+  useCatalogCurriculumSemesters,
+  useCatalogCurricula,
 } from "@/lib/queries/catalog";
 import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
 import { cn } from "@/lib/cn";
 
 export interface ForumFilterState {
   search: string;
-  majorId: string;
+  curriculumId: string;
   semesterId: string;
   subjectId: string;
   sort: InternalDocumentSort;
@@ -23,7 +23,7 @@ export interface ForumFilterState {
 
 export const DEFAULT_FORUM_FILTERS: ForumFilterState = {
   search: "",
-  majorId: "",
+  curriculumId: "",
   semesterId: "",
   subjectId: "",
   sort: "newest",
@@ -57,11 +57,11 @@ export function ForumFiltersBar({
     setLocalSearch(filters.search);
   }
 
-  const { data: majors } = useCatalogMajors();
+  const { data: curricula } = useCatalogCurricula();
   const { data: profile } = useAcademicProfile();
-  const { data: majorSemesters } = useCatalogMajorSemesters(filters.majorId || undefined);
-  const { data: curriculum } = useCatalogCurriculum(
-    filters.majorId || undefined,
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(filters.curriculumId || undefined);
+  const { data: curriculum } = useCatalogCourseSlots(
+    filters.curriculumId || undefined,
     filters.semesterId || undefined,
   );
 
@@ -76,7 +76,7 @@ export function ForumFiltersBar({
   }, [localSearch]);
 
   const semesterOptions =
-    majorSemesters
+    curriculumSemesters
       ?.filter((link) => link.isActive && link.semester)
       .map((link) => link.semester!)
       .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
@@ -95,13 +95,13 @@ export function ForumFiltersBar({
   }
 
   function applyMyProfile() {
-    if (!profile?.isComplete || !profile.major || !profile.currentSemester) {
+    if (!profile?.isComplete || !profile.curriculum || !profile.currentSemester) {
       return;
     }
     const firstSubject = profile.currentSubjects[0];
     onChange({
       ...filters,
-      majorId: profile.major.id,
+      curriculumId: profile.curriculum.id,
       semesterId: profile.currentSemester.id,
       subjectId: firstSubject?.id ?? "",
     });
@@ -114,7 +114,7 @@ export function ForumFiltersBar({
 
   const hasActiveFilters = isLibrary
     ? filters.search ||
-      filters.majorId ||
+      filters.curriculumId ||
       filters.semesterId ||
       filters.subjectId ||
       filters.sort !== defaultSort
@@ -148,10 +148,10 @@ export function ForumFiltersBar({
             <label className="text-xs font-bold text-brutal-muted">
               Ngành
               <select
-                value={filters.majorId}
+                value={filters.curriculumId}
                 onChange={(e) =>
                   patch({
-                    majorId: e.target.value,
+                    curriculumId: e.target.value,
                     semesterId: "",
                     subjectId: "",
                   })
@@ -159,7 +159,7 @@ export function ForumFiltersBar({
                 className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
               >
                 <option value="">Tất cả ngành</option>
-                {majors?.map((m) => (
+                {curricula?.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.code} — {m.name}
                   </option>
@@ -172,7 +172,7 @@ export function ForumFiltersBar({
               <select
                 value={filters.semesterId}
                 onChange={(e) => patch({ semesterId: e.target.value, subjectId: "" })}
-                disabled={!filters.majorId}
+                disabled={!filters.curriculumId}
                 className="focus-brutal mt-1 block w-full min-w-[100px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
               >
                 <option value="">Tất cả</option>
@@ -189,7 +189,7 @@ export function ForumFiltersBar({
               <select
                 value={filters.subjectId}
                 onChange={(e) => patch({ subjectId: e.target.value })}
-                disabled={!filters.majorId}
+                disabled={!filters.curriculumId}
                 className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
               >
                 <option value="">Tất cả môn</option>
@@ -267,7 +267,7 @@ export function forumFiltersToQueryParams(filters: ForumFilterState) {
 export function libraryFiltersToQueryParams(filters: ForumFilterState) {
   return {
     search: filters.search || undefined,
-    majorId: filters.majorId || undefined,
+    curriculumId: filters.curriculumId || undefined,
     semesterId: filters.semesterId || undefined,
     subjectId: filters.subjectId || undefined,
     sort: filters.sort,

@@ -8,7 +8,7 @@ APMS addresses a practical educational knowledge-management problem: students co
 - **Generation:** Gemini chat model with grounded context and citations.
 - **Retrieval:** MongoDB Atlas Vector Search over extracted document chunks.
 - **Access control:** Retrieval must respect owner, direct share, and public-document rules.
-- **Document model:** Uploads are course-bound through `curriculumCourseId`; documents are `private` or `public`.
+- **Document model:** Uploads are course-bound through `courseSlotId`; documents are `private` or `public`.
 
 ## Research Objectives
 

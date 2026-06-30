@@ -47,7 +47,7 @@ export function ChatComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3 sm:p-4"
+      className="shrink-0 border-t-2 border-brutal-ink bg-brutal-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">

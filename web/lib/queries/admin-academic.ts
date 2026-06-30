@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 
-export interface Major {
+export interface Curriculum {
   id: string;
   code: string;
   name: string;
@@ -33,9 +33,9 @@ export interface Semester {
   updatedAt: string;
 }
 
-export interface MajorSemesterLink {
+export interface CurriculumSemesterLink {
   id: string;
-  majorId: string;
+  curriculumId: string;
   semesterId: string;
   sortOrder: number | null;
   isActive: boolean;
@@ -45,9 +45,9 @@ export interface MajorSemesterLink {
   updatedAt: string;
 }
 
-export interface CurriculumCourse {
+export interface CourseSlot {
   id: string;
-  majorId: string;
+  curriculumId: string;
   semesterId: string;
   subjectId: string;
   isActive: boolean;
@@ -55,17 +55,17 @@ export interface CurriculumCourse {
   updatedAt: string;
 }
 
-export interface EnrichedCurriculumCourse extends CurriculumCourse {
-  major: Major | null;
+export interface EnrichedCourseSlot extends CourseSlot {
+  curriculum: Curriculum | null;
   subject: Subject | null;
   semester: Semester | null;
 }
 
 function invalidateAcademicCatalog(qc: QueryClient) {
-  void qc.invalidateQueries({ queryKey: ["catalog", "majors"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "curricula"] });
   void qc.invalidateQueries({ queryKey: ["catalog", "semesters"] });
-  void qc.invalidateQueries({ queryKey: ["catalog", "major-semesters"] });
-  void qc.invalidateQueries({ queryKey: ["catalog", "curriculum"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "curriculum-semesters"] });
+  void qc.invalidateQueries({ queryKey: ["catalog", "course-slots"] });
   void qc.invalidateQueries({ queryKey: ["users", "me", "academic-profile"] });
   void qc.invalidateQueries({ queryKey: ["documents", "public"] });
 }
@@ -74,19 +74,19 @@ function invalidateAdminAcademic(qc: QueryClient) {
   invalidateAcademicCatalog(qc);
 }
 
-export function useAdminMajors() {
+export function useAdminCurricula() {
   return useQuery({
-    queryKey: ["admin", "majors"],
+    queryKey: ["admin", "curricula"],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: Major[] }>(
-        "/admin/majors",
+      const res = await api.get<{ status: string; data: Curriculum[] }>(
+        "/admin/curricula",
       );
       return res.data.data;
     },
   });
 }
 
-export function useCreateMajor() {
+export function useCreateCurriculum() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: {
@@ -94,21 +94,21 @@ export function useCreateMajor() {
       name: string;
       description?: string;
     }) => {
-      const res = await api.post<{ status: string; data: Major }>(
-        "/admin/majors",
+      const res = await api.post<{ status: string; data: Curriculum }>(
+        "/admin/curricula",
         body,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "curricula"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useUpdateMajor() {
+export function useUpdateCurriculum() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -123,32 +123,32 @@ export function useUpdateMajor() {
         isActive: boolean;
       }>;
     }) => {
-      const res = await api.patch<{ status: string; data: Major }>(
-        `/admin/majors/${id}`,
+      const res = await api.patch<{ status: string; data: Curriculum }>(
+        `/admin/curricula/${id}`,
         body,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "curricula"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useArchiveMajor() {
+export function useArchiveCurriculum() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await api.delete<{ status: string; data: Major }>(
-        `/admin/majors/${id}`,
+      const res = await api.delete<{ status: string; data: Curriculum }>(
+        `/admin/curricula/${id}`,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "majors"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "curricula"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
@@ -231,59 +231,59 @@ export function useArchiveSemester() {
   });
 }
 
-export function useAdminMajorSemesters(majorId: string | undefined) {
+export function useAdminCurriculumSemesters(curriculumId: string | undefined) {
   return useQuery({
-    queryKey: ["admin", "major-semesters", majorId],
+    queryKey: ["admin", "curriculum-semesters", curriculumId],
     queryFn: async () => {
-      const res = await api.get<{ status: string; data: MajorSemesterLink[] }>(
-        `/admin/majors/${majorId}/semesters`,
+      const res = await api.get<{ status: string; data: CurriculumSemesterLink[] }>(
+        `/admin/curricula/${curriculumId}/semesters`,
       );
       return res.data.data;
     },
-    enabled: !!majorId,
+    enabled: !!curriculumId,
   });
 }
 
-export function useAssignMajorSemesters() {
+export function useAssignCurriculumSemesters() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      majorId,
+      curriculumId,
       semesterIds,
     }: {
-      majorId: string;
+      curriculumId: string;
       semesterIds: string[];
     }) => {
-      const res = await api.post<{ status: string; data: MajorSemesterLink[] }>(
-        `/admin/majors/${majorId}/semesters`,
+      const res = await api.post<{ status: string; data: CurriculumSemesterLink[] }>(
+        `/admin/curricula/${curriculumId}/semesters`,
         { semesterIds },
       );
       return res.data.data;
     },
-    onSuccess: (_data, { majorId }) => {
-      void qc.invalidateQueries({ queryKey: ["admin", "major-semesters", majorId] });
+    onSuccess: (_data, { curriculumId }) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "curriculum-semesters", curriculumId] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useArchiveMajorSemester() {
+export function useArchiveCurriculumSemester() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      majorId,
+      curriculumId,
       semesterId,
     }: {
-      majorId: string;
+      curriculumId: string;
       semesterId: string;
     }) => {
-      const res = await api.delete<{ status: string; data: MajorSemesterLink }>(
-        `/admin/majors/${majorId}/semesters/${semesterId}`,
+      const res = await api.delete<{ status: string; data: CurriculumSemesterLink }>(
+        `/admin/curricula/${curriculumId}/semesters/${semesterId}`,
       );
       return res.data.data;
     },
-    onSuccess: (_data, { majorId }) => {
-      void qc.invalidateQueries({ queryKey: ["admin", "major-semesters", majorId] });
+    onSuccess: (_data, { curriculumId }) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "curriculum-semesters", curriculumId] });
       invalidateAdminAcademic(qc);
     },
   });
@@ -317,7 +317,7 @@ export function useCreateSubject() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
@@ -346,7 +346,7 @@ export function useUpdateSubject() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
@@ -363,56 +363,56 @@ export function useArchiveSubject() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "subjects"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useAdminCurriculum(params: {
-  majorId?: string;
+export function useAdminCourseSlots(params: {
+  curriculumId?: string;
   semesterId?: string;
   includeInactive?: boolean;
 }) {
   return useQuery({
-    queryKey: ["admin", "curriculum", params],
+    queryKey: ["admin", "course-slots", params],
     queryFn: async () => {
       const queryParams: Record<string, string> = {};
-      if (params.majorId) queryParams.majorId = params.majorId;
+      if (params.curriculumId) queryParams.curriculumId = params.curriculumId;
       if (params.semesterId) queryParams.semesterId = params.semesterId;
       if (params.includeInactive) queryParams.includeInactive = "true";
 
       const res = await api.get<{
         status: string;
-        data: EnrichedCurriculumCourse[];
-      }>("/admin/curriculum-courses", { params: queryParams });
+        data: EnrichedCourseSlot[];
+      }>("/admin/course-slots", { params: queryParams });
       return res.data.data;
     },
   });
 }
 
-export function useCreateCurriculum() {
+export function useCreateCourseSlot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: {
-      majorId: string;
+      curriculumId: string;
       semesterId: string;
       subjectId: string;
     }) => {
-      const res = await api.post<{ status: string; data: CurriculumCourse }>(
-        "/admin/curriculum-courses",
+      const res = await api.post<{ status: string; data: CourseSlot }>(
+        "/admin/course-slots",
         body,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useUpdateCurriculum() {
+export function useUpdateCourseSlot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -421,36 +421,36 @@ export function useUpdateCurriculum() {
     }: {
       id: string;
       body: Partial<{
-        majorId: string;
+        curriculumId: string;
         semesterId: string;
         subjectId: string;
         isActive: boolean;
       }>;
     }) => {
-      const res = await api.patch<{ status: string; data: CurriculumCourse }>(
-        `/admin/curriculum-courses/${id}`,
+      const res = await api.patch<{ status: string; data: CourseSlot }>(
+        `/admin/course-slots/${id}`,
         body,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });
 }
 
-export function useArchiveCurriculum() {
+export function useArchiveCourseSlot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await api.delete<{ status: string; data: CurriculumCourse }>(
-        `/admin/curriculum-courses/${id}`,
+      const res = await api.delete<{ status: string; data: CourseSlot }>(
+        `/admin/course-slots/${id}`,
       );
       return res.data.data;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "curriculum"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
       invalidateAdminAcademic(qc);
     },
   });

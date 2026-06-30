@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { useStarPulse } from "@/components/ui/useStarPulse";
 import { cn } from "@/lib/cn";
 import { useDeleteFolder, useToggleFolderStar } from "@/lib/queries/drive";
 import type { DriveFolder } from "@/lib/queries/drive";
@@ -37,6 +38,7 @@ export function FolderCard({
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const starPulse = useStarPulse(folder.isStarred);
   const { mutate: toggleStar } = useToggleFolderStar(parentId);
   const { mutate: deleteFolder } = useDeleteFolder(folder.id, parentId);
 
@@ -126,6 +128,7 @@ export function FolderCard({
                   "h-4 w-4 text-brutal-muted",
                   folder.isStarred &&
                     "fill-brutal-primary text-brutal-primary",
+                  starPulse && "star-pulse",
                 )}
               />
             </button>

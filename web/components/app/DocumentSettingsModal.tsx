@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Globe, Lock, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
 import { getUserErrorMessage } from "@/lib/errors";
-import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
 import type { DocumentVisibility, DriveDocument } from "@/lib/queries/drive";
 import { useUpdateDocument } from "@/lib/queries/documents";
 
@@ -22,8 +22,8 @@ export function DocumentSettingsModal({
   onClose,
 }: DocumentSettingsModalProps) {
   const [title, setTitle] = useState(doc.title);
-  const [curriculumCourseId, setCurriculumCourseId] = useState(
-    doc.curriculumCourseId ?? "",
+  const [courseSlotId, setCourseSlotId] = useState(
+    doc.courseSlotId ?? "",
   );
   const [visibility, setVisibility] = useState<DocumentVisibility>(
     doc.visibility ?? "private",
@@ -31,8 +31,8 @@ export function DocumentSettingsModal({
   const [error, setError] = useState<string | null>(null);
 
   const { data: profile } = useAcademicProfile();
-  const { data: curriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: curriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     profile?.currentSemester?.id,
   );
   const updateDocument = useUpdateDocument(doc.id, doc.folderId ?? undefined);
@@ -48,8 +48,8 @@ export function DocumentSettingsModal({
   /** The current course may not be in the enrolled list (e.g. profile changed);
    *  keep it selectable so we never silently drop it. */
   const showsCurrentCourse =
-    !!curriculumCourseId &&
-    !enrolledCourses.some((course) => course.id === curriculumCourseId);
+    !!courseSlotId &&
+    !enrolledCourses.some((course) => course.id === courseSlotId);
 
   async function handleSubmit() {
     const trimmed = title.trim();
@@ -57,7 +57,7 @@ export function DocumentSettingsModal({
       setError("Tiêu đề không được để trống.");
       return;
     }
-    if (!curriculumCourseId) {
+    if (!courseSlotId) {
       setError("Vui lòng chọn môn học cho tài liệu.");
       return;
     }
@@ -65,7 +65,7 @@ export function DocumentSettingsModal({
     try {
       await updateDocument.mutateAsync({
         title: trimmed,
-        curriculumCourseId,
+        courseSlotId,
         visibility,
       });
       onClose();
@@ -133,16 +133,16 @@ export function DocumentSettingsModal({
             </label>
             <select
               id="doc-settings-course"
-              value={curriculumCourseId}
+              value={courseSlotId}
               onChange={(e) => {
-                setCurriculumCourseId(e.target.value);
+                setCourseSlotId(e.target.value);
                 setError(null);
               }}
               className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2.5 text-sm font-medium text-brutal-ink shadow-brutal-sm outline-none"
             >
               <option value="">Chọn môn học…</option>
               {showsCurrentCourse && (
-                <option value={curriculumCourseId}>Môn hiện tại</option>
+                <option value={courseSlotId}>Môn hiện tại</option>
               )}
               {enrolledCourses.map((course) => (
                 <option key={course.id} value={course.id}>

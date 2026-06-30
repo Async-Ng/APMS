@@ -13,7 +13,7 @@ const userSchema = new Schema(
     avatarUrl: { type: String },
     role: { type: String, enum: USER_ROLES, default: "user", index: true },
     isDisabled: { type: Boolean, default: false, index: true },
-    majorId: { type: Schema.Types.ObjectId, ref: "Major", default: null, index: true },
+    curriculumId: { type: Schema.Types.ObjectId, ref: "Curriculum", default: null, index: true },
     currentSemesterId: {
       type: Schema.Types.ObjectId,
       ref: "Semester",

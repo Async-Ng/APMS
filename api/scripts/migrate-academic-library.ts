@@ -13,11 +13,11 @@ async function migrate(): Promise<void> {
   const [documents, users] = await Promise.all([
     Document.updateMany(
       { visibility: { $exists: false } },
-      { $set: { visibility: "private", curriculumCourseId: null } },
+      { $set: { visibility: "private", courseSlotId: null } },
     ),
     User.updateMany(
-      { majorId: { $exists: false } },
-      { $set: { majorId: null, currentSemester: null, currentSubjectIds: [] } },
+      { curriculumId: { $exists: false } },
+      { $set: { curriculumId: null, currentSemester: null, currentSubjectIds: [] } },
     ),
   ]);
 

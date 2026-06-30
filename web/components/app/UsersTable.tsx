@@ -14,19 +14,13 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
+import { formatBytes } from "@/lib/format";
 import type { AdminUser } from "@/lib/queries/admin";
 import { useAdminUsers, useUpdateAdminUser } from "@/lib/queries/admin";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/cn";
 
 const PAGE_LIMIT = 10;
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_073_741_824)
-    return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(0)} MB`;
-  return `${bytes} B`;
-}
 
 function QuotaCell({
   user,
@@ -104,13 +98,303 @@ function QuotaCell({
   );
 }
 
+interface UserRowActionsProps {
+  user: AdminUser;
+  isSelf: boolean;
+  isRowPending: boolean;
+  onToggleDisable: (user: AdminUser) => void;
+  onViewDetail: (userId: string) => void;
+}
+
+function UserRowActions({
+  user,
+  isSelf,
+  isRowPending,
+  onToggleDisable,
+  onViewDetail,
+}: UserRowActionsProps) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <BrutalButton
+        variant="ghost"
+        onClick={() => onViewDetail(user.id)}
+        className="px-2 py-1 text-xs"
+        aria-label={`Chi tiết ${user.displayName}`}
+      >
+        <Eye className="h-3.5 w-3.5" />
+      </BrutalButton>
+      {!isSelf && (
+        <BrutalButton
+          variant={user.isDisabled ? "secondary" : "ghost"}
+          onClick={() => onToggleDisable(user)}
+          disabled={isRowPending}
+          className="px-3 py-1 text-xs"
+          aria-label={
+            user.isDisabled
+              ? `Kích hoạt ${user.displayName}`
+              : `Vô hiệu ${user.displayName}`
+          }
+        >
+          {user.isDisabled ? "Kích hoạt" : "Vô hiệu"}
+        </BrutalButton>
+      )}
+    </div>
+  );
+}
+
+interface UserRoleCellProps {
+  user: AdminUser;
+  isSelf: boolean;
+  isRowPending: boolean;
+  onToggleRole: (user: AdminUser) => void;
+}
+
+function UserRoleCell({ user, isSelf, isRowPending, onToggleRole }: UserRoleCellProps) {
+  if (isSelf) {
+    return (
+      <span
+        className={cn(
+          "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
+          user.role === "admin"
+            ? "border-brutal-secondary bg-brutal-secondary/10 text-brutal-secondary"
+            : "border-brutal-ink/20 bg-brutal-bg text-brutal-muted",
+        )}
+      >
+        {user.role === "admin" ? "quản trị" : "người dùng"}
+      </span>
+    );
+  }
+
+  return (
+    <BrutalButton
+      variant={user.role === "admin" ? "secondary" : "ghost"}
+      className="px-3 py-1 text-xs"
+      onClick={() => onToggleRole(user)}
+      disabled={isRowPending || user.isDisabled}
+      title={
+        user.isDisabled
+          ? "Không thể đổi vai trò tài khoản đã vô hiệu"
+          : undefined
+      }
+    >
+      {user.role === "admin" ? "Thu hồi quản trị" : "Cấp quản trị"}
+    </BrutalButton>
+  );
+}
+
+interface UserTableRowProps {
+  user: AdminUser;
+  isSelf: boolean;
+  isRowPending: boolean;
+  isSavingQuota: boolean;
+  onUpdateQuota: (userId: string, quota: number) => void;
+  onToggleRole: (user: AdminUser) => void;
+  onToggleDisable: (user: AdminUser) => void;
+  onViewDetail: (userId: string) => void;
+}
+
+function UserTableRow({
+  user,
+  isSelf,
+  isRowPending,
+  isSavingQuota,
+  onUpdateQuota,
+  onToggleRole,
+  onToggleDisable,
+  onViewDetail,
+}: UserTableRowProps) {
+  return (
+    <tr
+      className={cn(
+        "border-b border-brutal-ink/10 transition-colors hover:bg-brutal-bg",
+        user.isDisabled && "opacity-60",
+      )}
+    >
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          {user.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.avatarUrl}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg border-2 border-brutal-ink object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-secondary text-xs font-bold text-white">
+              {user.displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-brutal-ink">
+              {user.displayName}
+              {isSelf && (
+                <span className="ml-1 text-xs text-brutal-muted">(bạn)</span>
+              )}
+            </p>
+            <p className="truncate text-xs text-brutal-muted">{user.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <UserRoleCell
+          user={user}
+          isSelf={isSelf}
+          isRowPending={isRowPending}
+          onToggleRole={onToggleRole}
+        />
+      </td>
+      <td className="px-4 py-3 tabular-nums text-brutal-muted">
+        {formatBytes(user.storageUsedBytes)}
+      </td>
+      <td className="px-4 py-3">
+        <QuotaCell
+          user={user}
+          onUpdate={onUpdateQuota}
+          isSaving={isSavingQuota}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={cn(
+            "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
+            user.isDisabled
+              ? "border-brutal-danger bg-brutal-danger/10 text-brutal-danger"
+              : "status-ready",
+          )}
+        >
+          {user.isDisabled ? "Vô hiệu" : "Hoạt động"}
+        </span>
+      </td>
+      <td className="px-4 py-3">
+        <UserRowActions
+          user={user}
+          isSelf={isSelf}
+          isRowPending={isRowPending}
+          onToggleDisable={onToggleDisable}
+          onViewDetail={onViewDetail}
+        />
+      </td>
+    </tr>
+  );
+}
+
+interface UserCardProps {
+  user: AdminUser;
+  isSelf: boolean;
+  isRowPending: boolean;
+  isSavingQuota: boolean;
+  onUpdateQuota: (userId: string, quota: number) => void;
+  onToggleRole: (user: AdminUser) => void;
+  onToggleDisable: (user: AdminUser) => void;
+  onViewDetail: (userId: string) => void;
+}
+
+function UserCard({
+  user,
+  isSelf,
+  isRowPending,
+  isSavingQuota,
+  onUpdateQuota,
+  onToggleRole,
+  onToggleDisable,
+  onViewDetail,
+}: UserCardProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm",
+        user.isDisabled && "opacity-60",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatarUrl}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded-lg border-2 border-brutal-ink object-cover"
+          />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-secondary text-sm font-bold text-white">
+            {user.displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-brutal-ink">
+            {user.displayName}
+            {isSelf && (
+              <span className="ml-1 text-xs text-brutal-muted">(bạn)</span>
+            )}
+          </p>
+          <p className="truncate text-xs text-brutal-muted">{user.email}</p>
+        </div>
+        <span
+          className={cn(
+            "shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold",
+            user.isDisabled
+              ? "border-brutal-danger bg-brutal-danger/10 text-brutal-danger"
+              : "status-ready",
+          )}
+        >
+          {user.isDisabled ? "Vô hiệu" : "Hoạt động"}
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <p className="text-xs font-bold text-brutal-muted">Vai trò</p>
+          <div className="mt-1">
+            <UserRoleCell
+              user={user}
+              isSelf={isSelf}
+              isRowPending={isRowPending}
+              onToggleRole={onToggleRole}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-bold text-brutal-muted">Đã dùng</p>
+          <p className="mt-1 tabular-nums text-brutal-ink">
+            {formatBytes(user.storageUsedBytes)}
+          </p>
+        </div>
+        <div className="col-span-2">
+          <p className="text-xs font-bold text-brutal-muted">Hạn mức</p>
+          <div className="mt-1">
+            <QuotaCell
+              user={user}
+              onUpdate={onUpdateQuota}
+              isSaving={isSavingQuota}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 border-t border-brutal-ink/10 pt-3">
+        <UserRowActions
+          user={user}
+          isSelf={isSelf}
+          isRowPending={isRowPending}
+          onToggleDisable={onToggleDisable}
+          onViewDetail={onViewDetail}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function UsersTable() {
   const currentUser = useAuthStore((s) => s.user);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [confirmDisable, setConfirmDisable] = useState<AdminUser | null>(null);
-  const [confirmRole, setConfirmRole] = useState<AdminUser | null>(null);
+  const [confirmDemote, setConfirmDemote] = useState<AdminUser | null>(null);
+  const [confirmGrant, setConfirmGrant] = useState<AdminUser | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [savingQuotaId, setSavingQuotaId] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
@@ -186,32 +470,41 @@ export function UsersTable() {
 
   const handleToggleRole = useCallback((user: AdminUser) => {
     if (user.role === "admin") {
-      setConfirmRole(user);
+      setConfirmDemote(user);
       return;
     }
-    setMutationError(null);
-    setPendingUserId(user.id);
-    updateUser(
-      { userId: user.id, body: { role: "admin" } },
-      {
-        onSettled: () => setPendingUserId(null),
-        onError: (err) => setMutationError(getUserErrorMessage(err)),
-      },
-    );
-  }, [updateUser]);
+    setConfirmGrant(user);
+  }, []);
 
   const confirmDemoteUser = () => {
-    if (!confirmRole) return;
+    if (!confirmDemote) return;
     setMutationError(null);
-    setPendingUserId(confirmRole.id);
+    setPendingUserId(confirmDemote.id);
     updateUser(
-      { userId: confirmRole.id, body: { role: "user" } },
+      { userId: confirmDemote.id, body: { role: "user" } },
       {
-        onSuccess: () => setConfirmRole(null),
+        onSuccess: () => setConfirmDemote(null),
         onSettled: () => setPendingUserId(null),
         onError: (err) => {
           setMutationError(getUserErrorMessage(err));
-          setConfirmRole(null);
+          setConfirmDemote(null);
+        },
+      },
+    );
+  };
+
+  const confirmGrantUser = () => {
+    if (!confirmGrant) return;
+    setMutationError(null);
+    setPendingUserId(confirmGrant.id);
+    updateUser(
+      { userId: confirmGrant.id, body: { role: "admin" } },
+      {
+        onSuccess: () => setConfirmGrant(null),
+        onSettled: () => setPendingUserId(null),
+        onError: (err) => {
+          setMutationError(getUserErrorMessage(err));
+          setConfirmGrant(null);
         },
       },
     );
@@ -224,6 +517,13 @@ export function UsersTable() {
     limit: PAGE_LIMIT,
     total: 0,
     totalPages: 1,
+  };
+
+  const rowProps = {
+    onUpdateQuota: handleUpdateQuota,
+    onToggleRole: handleToggleRole,
+    onToggleDisable: handleToggleDisable,
+    onViewDetail: setDetailUserId,
   };
 
   return (
@@ -243,171 +543,102 @@ export function UsersTable() {
         id="admin-user-search"
       />
 
-      <AdminTableShell ariaLabel="Bảng quản lý người dùng">
-        <thead>
-          <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Người dùng
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Vai trò
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Đã dùng
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Hạn mức
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Trạng thái
-            </th>
-            <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
-              Thao tác
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {isLoading && <AdminTableSkeleton cols={6} />}
-
-          {isError && (
-            <tr>
-              <td colSpan={6} className="px-4 py-6 text-center text-sm text-brutal-danger">
-                Không tải được danh sách người dùng. Vui lòng thử lại.
-              </td>
+      <div className="hidden sm:block">
+        <AdminTableShell ariaLabel="Bảng quản lý người dùng">
+          <thead>
+            <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Người dùng
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Vai trò
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Đã dùng
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Hạn mức
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Trạng thái
+              </th>
+              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">
+                Thao tác
+              </th>
             </tr>
-          )}
+          </thead>
+          <tbody>
+            {isLoading && <AdminTableSkeleton cols={6} />}
 
-          {!isLoading &&
-            !isError &&
-            users.map((user) => {
-              const isSelf = currentUser?.id === user.id;
-              return (
-                <tr
+            {isError && (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-brutal-danger">
+                  Không tải được danh sách người dùng. Vui lòng thử lại.
+                </td>
+              </tr>
+            )}
+
+            {!isLoading &&
+              !isError &&
+              users.map((user) => (
+                <UserTableRow
                   key={user.id}
-                  className={cn(
-                    "border-b border-brutal-ink/10 transition-colors hover:bg-brutal-bg",
-                    user.isDisabled && "opacity-60",
-                  )}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      {user.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={user.avatarUrl}
-                          alt=""
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 rounded-lg border-2 border-brutal-ink object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink bg-brutal-secondary text-xs font-bold text-white">
-                          {user.displayName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-brutal-ink">
-                          {user.displayName}
-                          {isSelf && (
-                            <span className="ml-1 text-xs text-brutal-muted">(bạn)</span>
-                          )}
-                        </p>
-                        <p className="truncate text-xs text-brutal-muted">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {isSelf ? (
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
-                          user.role === "admin"
-                            ? "border-brutal-secondary bg-brutal-secondary/10 text-brutal-secondary"
-                            : "border-brutal-ink/20 bg-brutal-bg text-brutal-muted",
-                        )}
-                      >
-                        {user.role === "admin" ? "quản trị" : "người dùng"}
-                      </span>
-                    ) : (
-                      <BrutalButton
-                        variant={user.role === "admin" ? "secondary" : "ghost"}
-                        className="px-3 py-1 text-xs"
-                        onClick={() => handleToggleRole(user)}
-                        disabled={isRowPending(user.id) || user.isDisabled}
-                        title={
-                          user.isDisabled
-                            ? "Không thể đổi vai trò tài khoản đã vô hiệu"
-                            : undefined
-                        }
-                      >
-                        {user.role === "admin" ? "Thu hồi quản trị" : "Cấp quản trị"}
-                      </BrutalButton>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-brutal-muted">
-                    {formatBytes(user.storageUsedBytes)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <QuotaCell
-                      user={user}
-                      onUpdate={handleUpdateQuota}
-                      isSaving={savingQuotaId === user.id}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
-                        user.isDisabled
-                          ? "border-brutal-danger bg-brutal-danger/10 text-brutal-danger"
-                          : "status-ready",
-                      )}
-                    >
-                      {user.isDisabled ? "Vô hiệu" : "Hoạt động"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      <BrutalButton
-                        variant="ghost"
-                        onClick={() => setDetailUserId(user.id)}
-                        className="px-2 py-1 text-xs"
-                        aria-label={`Chi tiết ${user.displayName}`}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </BrutalButton>
-                      {!isSelf && (
-                        <BrutalButton
-                          variant={user.isDisabled ? "secondary" : "ghost"}
-                          onClick={() => handleToggleDisable(user)}
-                          disabled={isRowPending(user.id)}
-                          className="px-3 py-1 text-xs"
-                          aria-label={
-                            user.isDisabled
-                              ? `Kích hoạt ${user.displayName}`
-                              : `Vô hiệu ${user.displayName}`
-                          }
-                        >
-                          {user.isDisabled ? "Kích hoạt" : "Vô hiệu"}
-                        </BrutalButton>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                  user={user}
+                  isSelf={currentUser?.id === user.id}
+                  isRowPending={isRowPending(user.id)}
+                  isSavingQuota={savingQuotaId === user.id}
+                  {...rowProps}
+                />
+              ))}
 
-          {!isLoading && !isError && users.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-sm text-brutal-muted">
-                Không tìm thấy người dùng.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </AdminTableShell>
+            {!isLoading && !isError && users.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-brutal-muted">
+                  Không tìm thấy người dùng.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </AdminTableShell>
+      </div>
+
+      <div className="block space-y-3 sm:hidden">
+        {isLoading && (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-40 animate-pulse rounded-xl border-2 border-brutal-ink/20 bg-brutal-bg"
+              />
+            ))}
+          </div>
+        )}
+
+        {isError && (
+          <p className="py-6 text-center text-sm text-brutal-danger">
+            Không tải được danh sách người dùng. Vui lòng thử lại.
+          </p>
+        )}
+
+        {!isLoading &&
+          !isError &&
+          users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              isSelf={currentUser?.id === user.id}
+              isRowPending={isRowPending(user.id)}
+              isSavingQuota={savingQuotaId === user.id}
+              {...rowProps}
+            />
+          ))}
+
+        {!isLoading && !isError && users.length === 0 && (
+          <p className="py-10 text-center text-sm text-brutal-muted">
+            Không tìm thấy người dùng.
+          </p>
+        )}
+      </div>
 
       <AdminPagination
         pagination={pagination}
@@ -421,18 +652,33 @@ export function UsersTable() {
       />
 
       <ConfirmDialog
-        open={!!confirmRole}
+        open={!!confirmDemote}
         title="Thu hồi quyền quản trị?"
         description={
-          confirmRole
-            ? `${confirmRole.displayName} sẽ mất quyền truy cập trang Quản trị. Thay đổi được đồng bộ với Cognito.`
+          confirmDemote
+            ? `${confirmDemote.displayName} sẽ mất quyền truy cập trang Quản trị. Thay đổi được đồng bộ với Cognito.`
             : ""
         }
         confirmLabel="Thu hồi"
         tone="danger"
         isPending={isPending}
         onConfirm={confirmDemoteUser}
-        onClose={() => setConfirmRole(null)}
+        onClose={() => setConfirmDemote(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmGrant}
+        title="Cấp quyền quản trị?"
+        description={
+          confirmGrant
+            ? `${confirmGrant.displayName} sẽ có quyền truy cập trang Quản trị và quản lý người dùng, danh mục học thuật. Thay đổi được đồng bộ với Cognito.`
+            : ""
+        }
+        confirmLabel="Cấp quyền"
+        tone="default"
+        isPending={isPending}
+        onConfirm={confirmGrantUser}
+        onClose={() => setConfirmGrant(null)}
       />
 
       <ConfirmDialog

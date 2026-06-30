@@ -301,7 +301,7 @@ async function assertContextAccess(
     const publicDocument = await Document.exists({
       _id: contextId,
       visibility: "public",
-      curriculumCourseId: { $ne: null },
+      courseSlotId: { $ne: null },
       status: { $ne: "pending" },
       deletedAt: null,
     });
@@ -343,7 +343,7 @@ async function buildVectorSearchFilter(
     getSharedDocumentIds(user._id),
     Document.find({
       visibility: "public",
-      curriculumCourseId: { $ne: null },
+      courseSlotId: { $ne: null },
       deletedAt: null,
       status: { $ne: "pending" },
     }).distinct("_id"),

@@ -14,31 +14,31 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import {
-  filterRootDocumentsByCourse,
+  filterRootDocumentsBySlot,
   findEnrolledCourse,
   getEnrolledCourses,
 } from "@/lib/drive/academic-grouping";
 import {
   canOpenSubjectCourse,
-  findCourseInCurriculum,
+  findSlotInCatalog,
   isPrimarySemesterCourse,
 } from "@/lib/drive/semester-view";
-import { useAcademicProfile, useCatalogCurriculum } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
 import type { DriveDocument } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
 
 interface PageProps {
-  params: Promise<{ curriculumCourseId: string }>;
+  params: Promise<{ courseSlotId: string }>;
 }
 
 export default function SubjectDrivePage({ params }: PageProps) {
-  const { curriculumCourseId } = use(params);
+  const { courseSlotId } = use(params);
 
   const { data, isLoading, isError } = useDriveContents();
   const { data: profile } = useAcademicProfile();
-  const { data: allCurriculum } = useCatalogCurriculum(profile?.major?.id);
-  const { data: primaryCurriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: allCurriculum } = useCatalogCourseSlots(profile?.curriculum?.id);
+  const { data: primaryCurriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     profile?.currentSemester?.id,
   );
 
@@ -53,10 +53,10 @@ export default function SubjectDrivePage({ params }: PageProps) {
   );
 
   const course = useMemo(() => {
-    const enrolled = findEnrolledCourse(enrolledCourses, curriculumCourseId);
+    const enrolled = findEnrolledCourse(enrolledCourses, courseSlotId);
     if (enrolled) return enrolled;
-    return findCourseInCurriculum(allCurriculum, curriculumCourseId);
-  }, [enrolledCourses, allCurriculum, curriculumCourseId]);
+    return findSlotInCatalog(allCurriculum, courseSlotId);
+  }, [enrolledCourses, allCurriculum, courseSlotId]);
 
   const canAccess = useMemo(
     () =>
@@ -79,8 +79,8 @@ export default function SubjectDrivePage({ params }: PageProps) {
   );
 
   const subjectDocuments = useMemo(
-    () => filterRootDocumentsByCourse(documents, curriculumCourseId),
-    [documents, curriculumCourseId],
+    () => filterRootDocumentsBySlot(documents, courseSlotId),
+    [documents, courseSlotId],
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -115,7 +115,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
         actions={
           course && canUpload ? (
             <AskAiLink
-              id={`subject-${curriculumCourseId}-ask-ai-btn`}
+              id={`subject-${courseSlotId}-ask-ai-btn`}
               href="/chat"
             />
           ) : undefined
@@ -200,9 +200,9 @@ export default function SubjectDrivePage({ params }: PageProps) {
 
       {uploadOpen && canUpload && course?.subject && (
         <UploadModal
-          key={curriculumCourseId}
+          key={courseSlotId}
           folderId={null}
-          defaultCurriculumCourseId={curriculumCourseId}
+          defaultCourseSlotId={courseSlotId}
           onClose={() => setUploadOpen(false)}
         />
       )}

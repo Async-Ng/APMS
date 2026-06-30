@@ -15,7 +15,9 @@ import { useRef, useState } from "react";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useStarPulse } from "@/components/ui/useStarPulse";
 import { cn } from "@/lib/cn";
+import { formatBytes } from "@/lib/format";
 import type { DriveDocument } from "@/lib/queries/drive";
 import {
   useDeleteDocument,
@@ -42,12 +44,6 @@ function fileIconBg(mimeType: string): string {
   return "#dbeafe";
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
-  if (bytes >= 1_024) return `${(bytes / 1_024).toFixed(0)} KB`;
-  return `${bytes} B`;
-}
-
 interface DocumentCardProps {
   document: DriveDocument;
   parentId?: string;
@@ -69,6 +65,7 @@ export function DocumentCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [triggerDownload, setTriggerDownload] = useState(false);
+  const starPulse = useStarPulse(doc.isStarred);
 
   const { mutate: toggleStar } = useToggleDocumentStar(parentId);
   const { mutate: deleteDoc } = useDeleteDocument(doc.id, parentId);
@@ -176,6 +173,7 @@ export function DocumentCard({
                   "h-4 w-4 text-brutal-muted",
                   doc.isStarred &&
                     "fill-brutal-primary text-brutal-primary",
+                  starPulse && "star-pulse",
                 )}
               />
             </button>

@@ -1,41 +1,50 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
-import { CurriculumPanel } from "@/components/app/admin/CurriculumPanel";
-import { MajorSemestersPanel } from "@/components/app/admin/MajorSemestersPanel";
-import { MajorsPanel } from "@/components/app/admin/MajorsPanel";
+import { CourseSlotsPanel } from "@/components/app/admin/CourseSlotsPanel";
+import { CurriculaPanel } from "@/components/app/admin/CurriculaPanel";
+import { CurriculumSemestersPanel } from "@/components/app/admin/CurriculumSemestersPanel";
 import { SemestersPanel } from "@/components/app/admin/SemestersPanel";
 import { SubjectsPanel } from "@/components/app/admin/SubjectsPanel";
 import { useTabArrowNav } from "@/components/ui/useTabArrowNav";
 import { cn } from "@/lib/cn";
 
 type AcademicSubTab =
-  | "majors"
+  | "curricula"
   | "semesters"
-  | "major-semesters"
+  | "curriculum-semesters"
   | "subjects"
-  | "curriculum";
+  | "course-slots";
 
 const SUB_TAB_IDS: AcademicSubTab[] = [
-  "majors",
+  "curricula",
   "semesters",
-  "major-semesters",
+  "curriculum-semesters",
   "subjects",
-  "curriculum",
+  "course-slots",
 ];
 
 const SUB_TABS: { id: AcademicSubTab; label: string }[] = [
-  { id: "majors", label: "Ngành học" },
+  { id: "curricula", label: "Chương trình đào tạo" },
   { id: "semesters", label: "Học kỳ" },
-  { id: "major-semesters", label: "Kỳ theo ngành" },
+  { id: "curriculum-semesters", label: "Kỳ theo CTĐT" },
   { id: "subjects", label: "Môn học" },
-  { id: "curriculum", label: "Chương trình đào tạo" },
+  { id: "course-slots", label: "Môn trong CTĐT" },
 ];
 
 export function AcademicAdminPanel() {
-  const [subTab, setSubTab] = useState<AcademicSubTab>("majors");
+  const [subTab, setSubTab] = useState<AcademicSubTab>("curricula");
+  const [curriculumSemestersSeed, setCurriculumSemestersSeed] = useState<{
+    curriculumId: string;
+    nonce: number;
+  } | null>(null);
   const handleKeyDown = useTabArrowNav(SUB_TAB_IDS, setSubTab);
+
+  function navigateToCurriculumSemesters(curriculumId: string) {
+    setCurriculumSemestersSeed({ curriculumId, nonce: Date.now() });
+    setSubTab("curriculum-semesters");
+  }
 
   return (
     <div className="space-y-4">
@@ -68,14 +77,14 @@ export function AcademicAdminPanel() {
       </div>
 
       <div
-        id="panel-academic-majors"
+        id="panel-academic-curricula"
         role="tabpanel"
-        aria-labelledby="tab-academic-majors"
+        aria-labelledby="tab-academic-curricula"
         tabIndex={0}
-        hidden={subTab !== "majors"}
+        hidden={subTab !== "curricula"}
         className="outline-none"
       >
-        {subTab === "majors" && <MajorsPanel />}
+        {subTab === "curricula" && <CurriculaPanel />}
       </div>
       <div
         id="panel-academic-semesters"
@@ -88,14 +97,19 @@ export function AcademicAdminPanel() {
         {subTab === "semesters" && <SemestersPanel />}
       </div>
       <div
-        id="panel-academic-major-semesters"
+        id="panel-academic-curriculum-semesters"
         role="tabpanel"
-        aria-labelledby="tab-academic-major-semesters"
+        aria-labelledby="tab-academic-curriculum-semesters"
         tabIndex={0}
-        hidden={subTab !== "major-semesters"}
+        hidden={subTab !== "curriculum-semesters"}
         className="outline-none"
       >
-        {subTab === "major-semesters" && <MajorSemestersPanel />}
+        {subTab === "curriculum-semesters" && (
+          <CurriculumSemestersPanel
+            key={curriculumSemestersSeed?.nonce ?? "default"}
+            initialCurriculumId={curriculumSemestersSeed?.curriculumId}
+          />
+        )}
       </div>
       <div
         id="panel-academic-subjects"
@@ -108,14 +122,16 @@ export function AcademicAdminPanel() {
         {subTab === "subjects" && <SubjectsPanel />}
       </div>
       <div
-        id="panel-academic-curriculum"
+        id="panel-academic-course-slots"
         role="tabpanel"
-        aria-labelledby="tab-academic-curriculum"
+        aria-labelledby="tab-academic-course-slots"
         tabIndex={0}
-        hidden={subTab !== "curriculum"}
+        hidden={subTab !== "course-slots"}
         className="outline-none"
       >
-        {subTab === "curriculum" && <CurriculumPanel />}
+        {subTab === "course-slots" && (
+          <CourseSlotsPanel onNavigateToCurriculumSemesters={navigateToCurriculumSemesters} />
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Link2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -13,32 +13,32 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
-  useAdminMajorSemesters,
-  useAdminMajors,
+  useAdminCurriculumSemesters,
+  useAdminCurricula,
   useAdminSemesters,
-  useArchiveMajorSemester,
-  useAssignMajorSemesters,
+  useArchiveCurriculumSemester,
+  useAssignCurriculumSemesters,
 } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
-export function MajorSemestersPanel() {
-  const [majorId, setMajorId] = useState("");
+export function CurriculumSemestersPanel({ initialCurriculumId }: { initialCurriculumId?: string } = {}) {
+  const [curriculumId, setCurriculumId] = useState(initialCurriculumId ?? "");
   const [selectedSemesterIds, setSelectedSemesterIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [revokeTarget, setRevokeTarget] = useState<{ majorId: string; semesterId: string } | null>(
+  const [revokeTarget, setRevokeTarget] = useState<{ curriculumId: string; semesterId: string } | null>(
     null,
   );
 
-  const { data: majors } = useAdminMajors();
+  const { data: curricula } = useAdminCurricula();
   const { data: allSemesters } = useAdminSemesters();
-  const effectiveMajorId = majorId || majors?.find((m) => m.isActive)?.id || "";
-  const { data: links, isLoading, isError } = useAdminMajorSemesters(
-    effectiveMajorId || undefined,
+  const effectiveCurriculumId = curriculumId || curricula?.find((m) => m.isActive)?.id || "";
+  const { data: links, isLoading, isError } = useAdminCurriculumSemesters(
+    effectiveCurriculumId || undefined,
   );
-  const { mutate: assign, isPending: isAssigning } = useAssignMajorSemesters();
-  const { mutate: revoke, isPending: isRevoking } = useArchiveMajorSemester();
+  const { mutate: assign, isPending: isAssigning } = useAssignCurriculumSemesters();
+  const { mutate: revoke, isPending: isRevoking } = useArchiveCurriculumSemester();
 
-  const activeMajors = majors?.filter((m) => m.isActive) ?? [];
+  const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
   const activeSemesters = allSemesters?.filter((s) => s.isActive) ?? [];
   const linkedIds = useMemo(
     () => new Set(links?.filter((l) => l.isActive).map((l) => l.semesterId) ?? []),
@@ -53,10 +53,10 @@ export function MajorSemestersPanel() {
   }
 
   function handleAssign() {
-    if (!effectiveMajorId || selectedSemesterIds.length === 0) return;
+    if (!effectiveCurriculumId || selectedSemesterIds.length === 0) return;
     setError(null);
     assign(
-      { majorId: effectiveMajorId, semesterIds: selectedSemesterIds },
+      { curriculumId: effectiveCurriculumId, semesterIds: selectedSemesterIds },
       {
         onSuccess: () => setSelectedSemesterIds([]),
         onError: (err) => setError(getUserErrorMessage(err)),
@@ -73,14 +73,14 @@ export function MajorSemestersPanel() {
       <label className="block text-sm font-bold text-brutal-muted">
         Chọn ngành
         <select
-          value={effectiveMajorId}
+          value={effectiveCurriculumId}
           onChange={(e) => {
-            setMajorId(e.target.value);
+            setCurriculumId(e.target.value);
             setSelectedSemesterIds([]);
           }}
           className="focus-brutal mt-1 block w-full max-w-md rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm font-medium"
         >
-          {activeMajors.map((m) => (
+          {activeCurricula.map((m) => (
             <option key={m.id} value={m.id}>
               {m.code} — {m.name}
             </option>
@@ -170,7 +170,7 @@ export function MajorSemestersPanel() {
                       className="px-3 py-1 text-xs"
                       onClick={() =>
                         setRevokeTarget({
-                          majorId: effectiveMajorId,
+                          curriculumId: effectiveCurriculumId,
                           semesterId: link.semesterId,
                         })
                       }

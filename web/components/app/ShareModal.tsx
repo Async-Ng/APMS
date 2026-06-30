@@ -14,8 +14,10 @@ import {
   type ShareUser,
 } from "@/lib/queries/shares";
 import { useAuthStore } from "@/stores/auth-store";
+import { cn } from "@/lib/cn";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_SHARE_RECIPIENTS = 50;
 
 export interface ShareModalProps {
   resourceType: "folder" | "document";
@@ -116,6 +118,8 @@ export function ShareModal({
 
   const trimmedQuery = debouncedQuery.trim().toLowerCase();
   const isEmailQuery = EMAIL_REGEX.test(trimmedQuery);
+  const pendingRecipientCount = selectedUsers.length + pendingEmails.length;
+  const isOverRecipientLimit = pendingRecipientCount > MAX_SHARE_RECIPIENTS;
   const showInviteSuggestion =
     isEmailQuery &&
     !isSearching &&
@@ -123,6 +127,7 @@ export function ShareModal({
     !existingEmails.has(trimmedQuery);
 
   function addUser(user: ShareUser) {
+    if (pendingRecipientCount >= MAX_SHARE_RECIPIENTS) return;
     setSelectedUsers((prev) =>
       prev.some((u) => u.id === user.id) ? prev : [...prev, user],
     );
@@ -136,6 +141,7 @@ export function ShareModal({
   }
 
   function addPendingEmail(email: string) {
+    if (pendingRecipientCount >= MAX_SHARE_RECIPIENTS) return;
     setPendingEmails((prev) => (prev.includes(email) ? prev : [...prev, email]));
     setQuery("");
     setDebouncedQuery("");
@@ -303,6 +309,14 @@ export function ShareModal({
                   ? "Khớp chính xác email"
                   : "Khớp một phần tên (tối thiểu 2 ký tự)"}
               </p>
+              <p
+                className={cn(
+                  "text-xs font-semibold tabular-nums",
+                  isOverRecipientLimit ? "text-brutal-danger" : "text-brutal-muted",
+                )}
+              >
+                {pendingRecipientCount}/{MAX_SHARE_RECIPIENTS} người nhận mới
+              </p>
             </div>
 
             {/* Search results */}
@@ -318,7 +332,8 @@ export function ShareModal({
                   <button
                     type="button"
                     onClick={() => addPendingEmail(trimmedQuery)}
-                    className="focus-brutal flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-brutal-bg"
+                    disabled={pendingRecipientCount >= MAX_SHARE_RECIPIENTS}
+                    className="focus-brutal flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-brutal-bg disabled:opacity-50"
                   >
                     <div
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-brutal-ink bg-brutal-bg text-brutal-muted"
@@ -341,7 +356,8 @@ export function ShareModal({
                         <button
                           type="button"
                           onClick={() => addUser(user)}
-                          className="focus-brutal flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-brutal-bg"
+                          disabled={pendingRecipientCount >= MAX_SHARE_RECIPIENTS}
+                          className="focus-brutal flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-brutal-bg disabled:opacity-50"
                         >
                           <UserAvatar user={user} />
                           <div className="min-w-0">
@@ -427,6 +443,7 @@ export function ShareModal({
                 className="flex-1"
                 disabled={
                   isPending ||
+                  isOverRecipientLimit ||
                   (selectedUsers.length === 0 && pendingEmails.length === 0)
                 }
               >

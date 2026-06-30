@@ -23,7 +23,7 @@ Search / Chat
 
 ## Document Model Hiện Tại
 
-- Mọi upload mới bắt buộc có `curriculumCourseId`.
+- Mọi upload mới bắt buộc có `courseSlotId`.
 - `visibility = "private" | "public"`.
 - `private`: chỉ owner và người được share trực tiếp đọc được.
 - `public`: active users trong hệ thống có thể tìm thấy; list mặc định vẫn ưu tiên môn/hồ sơ học vụ.
@@ -35,8 +35,8 @@ Search / Chat
 | Nhóm | Route | Ghi chú |
 | --- | --- | --- |
 | Auth | `/api/auth` | Cognito JWT, sync user local |
-| Admin | `/api/admin` | Users, stats, access emails, academic catalog (majors, semesters, CTĐT) |
-| Catalog | `/api/catalog` | Majors, semesters, curriculum mappings (read) |
+| Admin | `/api/admin` | Users, stats, access emails, academic catalog (curricula, semesters, course slots) |
+| Catalog | `/api/catalog` | Curricula, semesters, course slots (read) |
 | Folders | `/api/folders` | Folder CRUD cho workspace cá nhân/share |
 | Documents | `/api/documents` | List unified, upload, detail, update, delete, restore, star |
 | Shares | `/api/shares` | Chia sẻ read-only document/folder |
@@ -79,9 +79,9 @@ Nguồn nghiệp vụ đầy đủ: [docs/SRS.md](./docs/SRS.md) (FR/BR/NFR).
 | Collection | Mục đích |
 | --- | --- |
 | `users` | Local profile, role, academic profile, storage quota |
-| `majors`, `subjects`, `semesters`, `majorsemesters`, `curriculumcourses` | Catalog học vụ |
+| `curriculums`, `subjects`, `semesters`, `curriculumsemesters`, `courseslots` | Catalog học vụ |
 | `folders` | Cây thư mục cá nhân |
-| `documents` | Metadata tài liệu, `visibility`, `curriculumCourseId`, trạng thái xử lý |
+| `documents` | Metadata tài liệu, `visibility`, `courseSlotId`, trạng thái xử lý |
 | `document_chunks` | Text chunks + embedding 1024 chiều |
 | `shares` | Quyền read-only trực tiếp cho folder/document |
 | `chat_sessions`, `chat_messages` | Lịch sử RAG chat |

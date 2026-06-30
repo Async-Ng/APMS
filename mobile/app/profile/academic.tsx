@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+﻿import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, SafeAreaView, Text, View } from "react-native";
@@ -9,9 +9,9 @@ import { HeaderBar } from "../../components/ui/HeaderBar";
 import { colors } from "../../constants/colors";
 import {
   useAcademicProfile,
-  useCatalogCurriculum,
-  useCatalogMajorSemesters,
-  useCatalogMajors,
+  useCatalogCourseSlots,
+  useCatalogCurriculumSemesters,
+  useCatalogCurricula,
   useUpdateAcademicProfile,
 } from "../../hooks/useCatalog";
 import {
@@ -24,36 +24,36 @@ import { useToastStore } from "../../stores/toast-store";
 
 export default function AcademicProfileScreen() {
   const router = useRouter();
-  const { data: majors } = useCatalogMajors();
+  const { data: curricula } = useCatalogCurricula();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
-  const [majorId, setMajorId] = useState<string | null>(null);
+  const [curriculumId, setCurriculumId] = useState<string | null>(null);
   const [semesterId, setSemesterId] = useState<string | null>(null);
   const [subjectIds, setSubjectIds] = useState<string[] | null>(null);
-  const [showMajorPicker, setShowMajorPicker] = useState(false);
+  const [showCurriculumPicker, setShowCurriculumPicker] = useState(false);
   const [showSemesterPicker, setShowSemesterPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const majorFromProfile = profile?.major?.id ?? null;
+  const curriculumFromProfile = profile?.curriculum?.id ?? null;
   const semesterFromProfile = profile?.currentSemester?.id ?? null;
   const subjectsFromProfile = profile?.currentSubjects.map((s) => s.id) ?? [];
 
-  const effectiveMajorId = majorId ?? majorFromProfile;
+  const effectiveCurriculumId = curriculumId ?? curriculumFromProfile;
   const effectiveSemesterId = semesterId ?? semesterFromProfile;
 
-  const { data: majorSemesters } = useCatalogMajorSemesters(effectiveMajorId ?? undefined);
-  const { data: curriculum } = useCatalogCurriculum(
-    effectiveMajorId ?? undefined,
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId ?? undefined);
+  const { data: curriculum } = useCatalogCourseSlots(
+    effectiveCurriculumId ?? undefined,
     effectiveSemesterId ?? undefined,
   );
 
   const availableSemesters = useMemo(
     () =>
-      (majorSemesters ?? [])
+      (curriculumSemesters ?? [])
         .filter((link) => link.isActive && link.semester)
         .map((link) => link.semester!)
         .sort((a, b) => a.sortOrder - b.sortOrder),
-    [majorSemesters],
+    [curriculumSemesters],
   );
 
   const availableSubjects = useMemo(() => {
@@ -66,7 +66,7 @@ export default function AcademicProfileScreen() {
   }, [curriculum]);
 
   const selectionMatchesProfile =
-    effectiveMajorId === majorFromProfile && effectiveSemesterId === semesterFromProfile;
+    effectiveCurriculumId === curriculumFromProfile && effectiveSemesterId === semesterFromProfile;
 
   const selectedSubjectIds = resolveSelectedSubjectIds({
     subjectIds,
@@ -77,7 +77,7 @@ export default function AcademicProfileScreen() {
 
   const subjectsOverLimit = availableSubjects.length > MAX_ACADEMIC_SUBJECTS;
 
-  const selectedMajor = majors?.find((m) => m.id === effectiveMajorId);
+  const selectedCurriculum = curricula?.find((m) => m.id === effectiveCurriculumId);
   const selectedSemester = availableSemesters.find((s) => s.id === effectiveSemesterId);
   const isComplete = Boolean(profile?.isComplete);
 
@@ -92,8 +92,8 @@ export default function AcademicProfileScreen() {
   }
 
   function handleSave() {
-    if (!effectiveMajorId) {
-      setError("Vui lòng chọn ngành.");
+    if (!effectiveCurriculumId) {
+      setError("Vui lòng chọn Chương trình đào tạo.");
       return;
     }
     if (!effectiveSemesterId) {
@@ -109,13 +109,13 @@ export default function AcademicProfileScreen() {
     setError(null);
     updateProfile.mutate(
       {
-        majorId: effectiveMajorId,
+        curriculumId: effectiveCurriculumId,
         currentSemesterId: effectiveSemesterId,
         currentSubjectIds: subjectIdsToSave,
       },
       {
         onSuccess: () => {
-          setMajorId(null);
+          setCurriculumId(null);
           setSemesterId(null);
           setSubjectIds(null);
           useToastStore.getState().show("Đã lưu hồ sơ học thuật.", "success");
@@ -126,12 +126,12 @@ export default function AcademicProfileScreen() {
     );
   }
 
-  const majorActions: ActionItem[] = (majors ?? []).map((m) => ({
+  const curriculumActions: ActionItem[] = (curricula ?? []).map((m) => ({
     label: `${m.code} — ${m.name}`,
     icon: "school-outline",
     onPress: () => {
       setError(null);
-      setMajorId(m.id);
+      setCurriculumId(m.id);
       setSemesterId(null);
       setSubjectIds(null);
     },
@@ -161,11 +161,10 @@ export default function AcademicProfileScreen() {
           gắn với một môn trong chương trình đào tạo.
         </Text>
 
-        {/* Major */}
         <View>
-          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>Ngành</Text>
+          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>Chương trình đào tạo</Text>
           <Pressable
-            onPress={() => (majors?.length ?? 0) > 0 && setShowMajorPicker(true)}
+            onPress={() => (curricula?.length ?? 0) > 0 && setShowCurriculumPicker(true)}
             style={{
               borderWidth: 2,
               borderColor: colors.ink,
@@ -178,18 +177,18 @@ export default function AcademicProfileScreen() {
               justifyContent: "space-between",
             }}
             accessibilityRole="button"
-            accessibilityLabel="Chọn ngành"
+            accessibilityLabel="Chọn Chương trình đào tạo"
           >
             <Text
               style={{
                 fontSize: 14,
                 flex: 1,
-                color: selectedMajor ? colors.ink : colors.muted,
-                fontWeight: selectedMajor ? "700" : "400",
+                color: selectedCurriculum ? colors.ink : colors.muted,
+                fontWeight: selectedCurriculum ? "700" : "400",
               }}
               numberOfLines={1}
             >
-              {selectedMajor ? `${selectedMajor.code} — ${selectedMajor.name}` : "Chọn ngành…"}
+              {selectedCurriculum ? `${selectedCurriculum.code} — ${selectedCurriculum.name}` : "Chọn Chương trình đào tạo…"}
             </Text>
             <Ionicons name="chevron-down" size={18} color={colors.muted} />
           </Pressable>
@@ -199,8 +198,8 @@ export default function AcademicProfileScreen() {
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>Học kỳ</Text>
           <Pressable
-            onPress={() => effectiveMajorId && availableSemesters.length > 0 && setShowSemesterPicker(true)}
-            disabled={!effectiveMajorId || availableSemesters.length === 0}
+            onPress={() => effectiveCurriculumId && availableSemesters.length > 0 && setShowSemesterPicker(true)}
+            disabled={!effectiveCurriculumId || availableSemesters.length === 0}
             style={{
               borderWidth: 2,
               borderColor: colors.ink,
@@ -211,7 +210,7 @@ export default function AcademicProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              opacity: effectiveMajorId && availableSemesters.length > 0 ? 1 : 0.5,
+              opacity: effectiveCurriculumId && availableSemesters.length > 0 ? 1 : 0.5,
             }}
             accessibilityRole="button"
             accessibilityLabel="Chọn học kỳ"
@@ -227,8 +226,8 @@ export default function AcademicProfileScreen() {
             >
               {selectedSemester
                 ? `${selectedSemester.code} — ${selectedSemester.name}`
-                : effectiveMajorId && availableSemesters.length === 0
-                  ? "Ngành chưa có học kỳ"
+                : effectiveCurriculumId && availableSemesters.length === 0
+                  ? "Chương trình đào tạo chưa có học kỳ"
                   : "Chọn học kỳ…"}
             </Text>
             <Ionicons name="chevron-down" size={18} color={colors.muted} />
@@ -290,13 +289,13 @@ export default function AcademicProfileScreen() {
           <View style={{ borderWidth: 2, borderColor: colors.ink, borderRadius: 12, backgroundColor: colors.bg, padding: 10, gap: 8 }}>
             {isProfileLoading ? (
               <ActivityIndicator color={colors.fptBlue} />
-            ) : !effectiveMajorId || !effectiveSemesterId ? (
+            ) : !effectiveCurriculumId || !effectiveSemesterId ? (
               <Text style={{ fontSize: 13, color: colors.muted, padding: 4 }}>
-                Chọn ngành và học kỳ để hiển thị danh sách môn.
+                Chọn Chương trình đào tạo và học kỳ để hiển thị danh sách môn.
               </Text>
             ) : availableSubjects.length === 0 ? (
               <Text style={{ fontSize: 13, color: colors.muted, padding: 4 }}>
-                Không có môn phù hợp với ngành và học kỳ đã chọn.
+                Không có môn phù hợp với Chương trình đào tạo và học kỳ đã chọn.
               </Text>
             ) : (
               availableSubjects.map((s) => {
@@ -343,10 +342,10 @@ export default function AcademicProfileScreen() {
       </ScrollView>
 
       <ActionSheet
-        visible={showMajorPicker}
-        title="Chọn ngành"
-        actions={majorActions}
-        onDismiss={() => setShowMajorPicker(false)}
+        visible={showCurriculumPicker}
+        title="Chọn Chương trình đào tạo"
+        actions={curriculumActions}
+        onDismiss={() => setShowCurriculumPicker(false)}
       />
       <ActionSheet
         visible={showSemesterPicker}

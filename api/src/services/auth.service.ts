@@ -52,7 +52,7 @@ export function toUserResponse(user: UserDocument) {
     avatarUrl: user.avatarUrl ?? null,
     role: user.role,
     isDisabled: user.isDisabled,
-    majorId: user.majorId ? user.majorId.toString() : null,
+    curriculumId: user.curriculumId ? user.curriculumId.toString() : null,
     currentSemesterId: user.currentSemesterId ? user.currentSemesterId.toString() : null,
     currentSubjectIds: user.currentSubjectIds.map((id) => id.toString()),
     storageUsedBytes: user.storageUsedBytes,

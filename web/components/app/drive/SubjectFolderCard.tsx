@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Folder } from "lucide-react";
 import Link from "next/link";
@@ -24,13 +24,13 @@ function subjectIconColor(subjectId: string): string {
 
 interface SubjectFolderCardProps {
   subject: CatalogSubject;
-  curriculumCourseId: string;
+  courseSlotId: string;
   documentCount?: number;
 }
 
 export function SubjectFolderCard({
   subject,
-  curriculumCourseId,
+  courseSlotId,
   documentCount = 0,
 }: SubjectFolderCardProps) {
   const label = `${subject.code} — ${subject.name}`;
@@ -43,7 +43,7 @@ export function SubjectFolderCard({
       )}
     >
       <Link
-        href={`/drive/subject/${curriculumCourseId}`}
+        href={`/drive/subject/${courseSlotId}`}
         className="focus-brutal absolute inset-0 rounded-2xl"
         aria-label={`Mở môn ${label}`}
         title={label}

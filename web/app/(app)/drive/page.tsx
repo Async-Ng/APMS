@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FolderPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -6,7 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { DriveAcademicBanner } from "@/components/app/drive/DriveAcademicBanner";
+import { DriveListView } from "@/components/app/drive/DriveListView";
 import { DriveSemesterTabs } from "@/components/app/drive/DriveSemesterTabs";
+import { MobileQuickActionsMenu } from "@/components/app/drive/MobileQuickActionsMenu";
 import { SubjectFolderCard } from "@/components/app/drive/SubjectFolderCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
@@ -18,6 +20,7 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
+import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import {
   getEnrolledCourses,
   getOtherRootDocuments,
@@ -30,8 +33,8 @@ import {
 } from "@/lib/drive/semester-view";
 import {
   useAcademicProfile,
-  useCatalogCurriculum,
-  useCatalogMajorSemesters,
+  useCatalogCourseSlots,
+  useCatalogCurriculumSemesters,
 } from "@/lib/queries/catalog";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
@@ -70,23 +73,23 @@ export default function DrivePage() {
   const pastViewSemesterId =
     !isAllView && viewSemesterId !== primarySemesterId ? viewSemesterId : undefined;
 
-  const { data: primaryCurriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: primaryCurriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     primarySemesterId,
   );
-  const { data: pastSemesterCurriculum } = useCatalogCurriculum(
-    profile?.major?.id,
+  const { data: pastSemesterCurriculum } = useCatalogCourseSlots(
+    profile?.curriculum?.id,
     pastViewSemesterId,
   );
 
-  const { data: majorSemesters } = useCatalogMajorSemesters(profile?.major?.id);
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(profile?.curriculum?.id);
   const availableSemesters = useMemo(
     () =>
-      (majorSemesters ?? [])
+      (curriculumSemesters ?? [])
         .filter((link) => link.isActive && link.semester)
         .map((link) => link.semester!)
         .sort((a, b) => a.sortOrder - b.sortOrder),
-    [majorSemesters],
+    [curriculumSemesters],
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -99,6 +102,7 @@ export default function DrivePage() {
     resourceId: string;
     resourceName: string;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const profileComplete = Boolean(profile?.isComplete);
   const enrolledCourses = useMemo(
@@ -126,7 +130,7 @@ export default function DrivePage() {
     [documents, displayCourses],
   );
   const documentCountByCourseId = useMemo(
-    () => new Map(subjectGroups.map((g) => [g.curriculumCourseId, g.documents.length])),
+    () => new Map(subjectGroups.map((g) => [g.courseSlotId, g.documents.length])),
     [subjectGroups],
   );
   const otherDocuments = useMemo(
@@ -151,9 +155,9 @@ export default function DrivePage() {
   const uploadDisabledForView =
     !isAllView && viewSemesterId !== primarySemesterId;
 
-  function openUpload(curriculumCourseId?: string) {
+  function openUpload(courseSlotId?: string) {
     if (uploadDisabledForView) return;
-    setUploadCourseId(curriculumCourseId);
+    setUploadCourseId(courseSlotId);
     setUploadOpen(true);
   }
 
@@ -161,6 +165,10 @@ export default function DrivePage() {
     setUploadOpen(false);
     setUploadCourseId(undefined);
   }
+
+  const uploadDisabledTitle = uploadDisabledForView
+    ? "Chỉ tải lên khi xem học kỳ chính hoặc Tất cả"
+    : undefined;
 
   function shareDocument(doc: DriveDocument) {
     setShareTarget({
@@ -175,20 +183,25 @@ export default function DrivePage() {
       <Topbar
         breadcrumbs={[{ label: "Drive của tôi" }]}
         onUploadClick={() => openUpload()}
+        suppressMobileUpload
         actions={
           <>
             <AskAiLink id="drive-ask-ai-btn" href="/chat" />
+            <MobileQuickActionsMenu
+              onUpload={() => openUpload()}
+              onNewFolder={() => setFolderModalOpen(true)}
+              uploadDisabled={uploadDisabledForView}
+              newFolderDisabled={uploadDisabledForView}
+              uploadDisabledReason={uploadDisabledTitle}
+              newFolderDisabledReason={uploadDisabledTitle}
+            />
             <BrutalButton
               id="new-folder-btn"
               variant="ghost"
               onClick={() => setFolderModalOpen(true)}
               className="hidden w-auto! shrink-0 whitespace-nowrap sm:inline-flex"
               disabled={uploadDisabledForView}
-              title={
-                uploadDisabledForView
-                  ? "Chỉ tạo thư mục khi xem học kỳ chính hoặc Tất cả"
-                  : undefined
-              }
+              title={uploadDisabledTitle}
             >
               <FolderPlus className="h-4 w-4" aria-hidden="true" />
               Thư mục mới
@@ -220,6 +233,10 @@ export default function DrivePage() {
             className="mb-4"
             message={`Đang xem học kỳ khác — chỉ xem/tải tài liệu. Upload và thư mục mới dùng học kỳ chính (${profile?.currentSemester?.code ?? ""}).`}
           />
+        )}
+
+        {!isLoading && !isEmpty && (
+          <ViewToggle view={viewMode} onChange={setViewMode} className="mb-4" />
         )}
 
         {isError && (
@@ -257,20 +274,92 @@ export default function DrivePage() {
                 >
                   Thư mục
                 </h2>
-                <FileGrid>
-                  {displayCourses.map((course) => {
-                    if (!course.subject) return null;
-                    return (
-                      <SubjectFolderCard
-                        key={course.id}
-                        subject={course.subject}
-                        curriculumCourseId={course.id}
-                        documentCount={documentCountByCourseId.get(course.id) ?? 0}
+                {viewMode === "grid" ? (
+                  <FileGrid>
+                    {displayCourses.map((course) => {
+                      if (!course.subject) return null;
+                      return (
+                        <SubjectFolderCard
+                          key={course.id}
+                          subject={course.subject}
+                          courseSlotId={course.id}
+                          documentCount={documentCountByCourseId.get(course.id) ?? 0}
+                        />
+                      );
+                    })}
+                    {isAllView &&
+                      folders.map((folder) => (
+                        <FolderCard
+                          key={folder.id}
+                          folder={folder}
+                          parentId={undefined}
+                          onRename={setRenameFolder}
+                          onShare={(f) =>
+                            setShareTarget({
+                              resourceType: "folder",
+                              resourceId: f.id,
+                              resourceName: f.name,
+                            })
+                          }
+                        />
+                      ))}
+                  </FileGrid>
+                ) : (
+                  <DriveListView
+                    subjects={displayCourses
+                      .filter((course) => course.subject)
+                      .map((course) => ({
+                        courseSlotId: course.id,
+                        label: `${course.subject!.code} — ${course.subject!.name}`,
+                        documentCount: documentCountByCourseId.get(course.id) ?? 0,
+                      }))}
+                    folders={
+                      isAllView ? folders.map((folder) => ({ folder })) : []
+                    }
+                  />
+                )}
+              </section>
+            )}
+
+            {otherDocuments.length > 0 && (
+              <section aria-labelledby="other-docs-heading">
+                <h2
+                  id="other-docs-heading"
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Tài liệu khác
+                </h2>
+                {viewMode === "grid" ? (
+                  <FileGrid>
+                    {otherDocuments.map((doc) => (
+                      <DocumentCard
+                        key={doc.id}
+                        document={doc}
+                        parentId={undefined}
+                        onRename={setRenameDoc}
+                        onShare={shareDocument}
                       />
-                    );
-                  })}
-                  {isAllView &&
-                    folders.map((folder) => (
+                    ))}
+                  </FileGrid>
+                ) : (
+                  <DriveListView documents={otherDocuments} />
+                )}
+              </section>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {folders.length > 0 && (
+              <section aria-labelledby="folders-heading">
+                <h2
+                  id="folders-heading"
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Thư mục
+                </h2>
+                {viewMode === "grid" ? (
+                  <FileGrid>
+                    {folders.map((folder) => (
                       <FolderCard
                         key={folder.id}
                         folder={folder}
@@ -285,59 +374,10 @@ export default function DrivePage() {
                         }
                       />
                     ))}
-                </FileGrid>
-              </section>
-            )}
-
-            {otherDocuments.length > 0 && (
-              <section aria-labelledby="other-docs-heading">
-                <h2
-                  id="other-docs-heading"
-                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-                >
-                  Tài liệu khác
-                </h2>
-                <FileGrid>
-                  {otherDocuments.map((doc) => (
-                    <DocumentCard
-                      key={doc.id}
-                      document={doc}
-                      parentId={undefined}
-                      onRename={setRenameDoc}
-                      onShare={shareDocument}
-                    />
-                  ))}
-                </FileGrid>
-              </section>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {folders.length > 0 && (
-              <section aria-labelledby="folders-heading">
-                <h2
-                  id="folders-heading"
-                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-                >
-                  Thư mục
-                </h2>
-                <FileGrid>
-                  {folders.map((folder) => (
-                    <FolderCard
-                      key={folder.id}
-                      folder={folder}
-                      parentId={undefined}
-                      onRename={setRenameFolder}
-                      onShare={(f) =>
-                        setShareTarget({
-                          resourceType: "folder",
-                          resourceId: f.id,
-                          resourceName: f.name,
-                        })
-                      }
-                    />
-                  ))}
-                </FileGrid>
+                  </FileGrid>
+                ) : (
+                  <DriveListView folders={folders.map((folder) => ({ folder }))} />
+                )}
               </section>
             )}
 
@@ -349,17 +389,21 @@ export default function DrivePage() {
                 >
                   Tệp
                 </h2>
-                <FileGrid>
-                  {documents.map((doc) => (
-                    <DocumentCard
-                      key={doc.id}
-                      document={doc}
-                      parentId={undefined}
-                      onRename={setRenameDoc}
-                      onShare={shareDocument}
-                    />
-                  ))}
-                </FileGrid>
+                {viewMode === "grid" ? (
+                  <FileGrid>
+                    {documents.map((doc) => (
+                      <DocumentCard
+                        key={doc.id}
+                        document={doc}
+                        parentId={undefined}
+                        onRename={setRenameDoc}
+                        onShare={shareDocument}
+                      />
+                    ))}
+                  </FileGrid>
+                ) : (
+                  <DriveListView documents={documents} />
+                )}
               </section>
             )}
           </div>
@@ -370,7 +414,7 @@ export default function DrivePage() {
         <UploadModal
           key={uploadCourseId ?? "default"}
           folderId={null}
-          defaultCurriculumCourseId={uploadCourseId}
+          defaultCourseSlotId={uploadCourseId}
           onClose={closeUpload}
         />
       )}

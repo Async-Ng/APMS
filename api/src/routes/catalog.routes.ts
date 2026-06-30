@@ -6,27 +6,27 @@ import { authenticate } from "../middleware/authenticate";
 import { requireActiveUser } from "../middleware/requireActiveUser";
 import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
-import { catalogCurriculumQuerySchema } from "../validators/academic.validator";
+import { catalogCourseSlotsQuerySchema } from "../validators/academic.validator";
 
 const catalogRouter = Router();
 catalogRouter.use(authenticate, resolveUser, requireActiveUser);
 
-catalogRouter.get("/majors", academicController.listCatalogMajors);
+catalogRouter.get("/curricula", academicController.listCatalogCurricula);
 catalogRouter.get("/semesters", academicController.listCatalogSemesters);
 catalogRouter.get(
-  "/majors/:majorId/semesters",
+  "/curricula/:curriculumId/semesters",
   validate({
-    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
+    params: z.object({ curriculumId: z.string().regex(/^[a-f\d]{24}$/i) }),
   }),
-  academicController.listCatalogMajorSemesters,
+  academicController.listCatalogCurriculumSemesters,
 );
 catalogRouter.get(
-  "/majors/:majorId/curriculum",
+  "/curricula/:curriculumId/course-slots",
   validate({
-    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
-    query: catalogCurriculumQuerySchema,
+    params: z.object({ curriculumId: z.string().regex(/^[a-f\d]{24}$/i) }),
+    query: catalogCourseSlotsQuerySchema,
   }),
-  academicController.listCatalogCurriculum,
+  academicController.listCatalogCourseSlots,
 );
 
 export { catalogRouter };

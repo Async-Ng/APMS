@@ -1,22 +1,22 @@
 import { objectIdParamSchema } from "../../validators/common.validator";
 import {
-  assignMajorSemestersSchema,
-  catalogCurriculumQuerySchema,
-  createCurriculumCourseSchema,
-  createMajorSchema,
+  assignCurriculumSemestersSchema,
+  catalogCourseSlotsQuerySchema,
+  createCourseSlotSchema,
+  createCurriculumSchema,
   createSemesterSchema,
   createSubjectSchema,
-  listCurriculumQuerySchema,
+  listCourseSlotsQuerySchema,
   updateAcademicProfileSchema,
-  updateCurriculumCourseSchema,
-  updateMajorSchema,
+  updateCourseSlotSchema,
+  updateCurriculumSchema,
   updateSemesterSchema,
   updateSubjectSchema,
 } from "../../validators/academic.validator";
 import {
   academicProfileSuccessResponseSchema,
+  courseSlotListSuccessResponseSchema,
   curriculumListSuccessResponseSchema,
-  majorListSuccessResponseSchema,
 } from "../schemas/academic";
 import { registry, z } from "../setup";
 import { bearerSecurity, error400, error401, error403, error404, jsonResponse } from "./helpers";
@@ -24,7 +24,7 @@ import { bearerSecurity, error400, error401, error403, error404, jsonResponse } 
 const entitySchema = z.record(z.string(), z.unknown());
 const entityResponse = z.object({ status: z.literal("success"), data: entitySchema });
 const listResponse = z.object({ status: z.literal("success"), data: z.array(entitySchema) });
-const majorParam = z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) });
+const curriculumParam = z.object({ curriculumId: z.string().regex(/^[a-f\d]{24}$/i) });
 
 function body(schema: z.ZodType) {
   return { content: { "application/json": { schema } } };
@@ -33,9 +33,9 @@ function body(schema: z.ZodType) {
 export function registerAcademicPaths(): void {
   const adminEntities = [
     {
-      segment: "majors",
-      create: createMajorSchema,
-      update: updateMajorSchema,
+      segment: "curricula",
+      create: createCurriculumSchema,
+      update: updateCurriculumSchema,
     },
     {
       segment: "semesters",
@@ -85,31 +85,31 @@ export function registerAcademicPaths(): void {
 
   registry.registerPath({
     method: "get",
-    path: "/api/admin/curriculum-courses",
+    path: "/api/admin/course-slots",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
-    request: { query: listCurriculumQuerySchema },
-    responses: { 200: jsonResponse(listResponse, "Curriculum"), 401: error401, 403: error403 },
+    request: { query: listCourseSlotsQuerySchema },
+    responses: { 200: jsonResponse(listResponse, "Course slots"), 401: error401, 403: error403 },
   });
   registry.registerPath({
     method: "post",
-    path: "/api/admin/curriculum-courses",
+    path: "/api/admin/course-slots",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
-    request: { body: body(createCurriculumCourseSchema) },
+    request: { body: body(createCourseSlotSchema) },
     responses: { 201: jsonResponse(entityResponse, "Created"), 400: error400(), 401: error401, 403: error403 },
   });
   registry.registerPath({
     method: "patch",
-    path: "/api/admin/curriculum-courses/{id}",
+    path: "/api/admin/course-slots/{id}",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
-    request: { params: objectIdParamSchema, body: body(updateCurriculumCourseSchema) },
+    request: { params: objectIdParamSchema, body: body(updateCourseSlotSchema) },
     responses: { 200: jsonResponse(entityResponse, "Updated"), 400: error400(), 401: error401, 403: error403, 404: error404 },
   });
   registry.registerPath({
     method: "delete",
-    path: "/api/admin/curriculum-courses/{id}",
+    path: "/api/admin/course-slots/{id}",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
     request: { params: objectIdParamSchema },
@@ -118,28 +118,28 @@ export function registerAcademicPaths(): void {
 
   registry.registerPath({
     method: "get",
-    path: "/api/admin/majors/{majorId}/semesters",
+    path: "/api/admin/curricula/{curriculumId}/semesters",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
-    request: { params: majorParam },
-    responses: { 200: jsonResponse(listResponse, "Major semesters"), 401: error401, 403: error403, 404: error404 },
+    request: { params: curriculumParam },
+    responses: { 200: jsonResponse(listResponse, "Curriculum semesters"), 401: error401, 403: error403, 404: error404 },
   });
   registry.registerPath({
     method: "post",
-    path: "/api/admin/majors/{majorId}/semesters",
+    path: "/api/admin/curricula/{curriculumId}/semesters",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
-    request: { params: majorParam, body: body(assignMajorSemestersSchema) },
+    request: { params: curriculumParam, body: body(assignCurriculumSemestersSchema) },
     responses: { 200: jsonResponse(listResponse, "Assigned"), 400: error400(), 401: error401, 403: error403, 404: error404 },
   });
   registry.registerPath({
     method: "delete",
-    path: "/api/admin/majors/{majorId}/semesters/{semesterId}",
+    path: "/api/admin/curricula/{curriculumId}/semesters/{semesterId}",
     tags: ["Admin", "Academic Catalog"],
     security: [...bearerSecurity],
     request: {
       params: z.object({
-        majorId: z.string().regex(/^[a-f\d]{24}$/i),
+        curriculumId: z.string().regex(/^[a-f\d]{24}$/i),
         semesterId: z.string().regex(/^[a-f\d]{24}$/i),
       }),
     },
@@ -155,26 +155,26 @@ export function registerAcademicPaths(): void {
   });
   registry.registerPath({
     method: "get",
-    path: "/api/catalog/majors/{majorId}/semesters",
+    path: "/api/catalog/curricula/{curriculumId}/semesters",
     tags: ["Academic Catalog"],
     security: [...bearerSecurity],
-    request: { params: majorParam },
-    responses: { 200: jsonResponse(listResponse, "Major semesters"), 401: error401, 403: error403, 404: error404 },
+    request: { params: curriculumParam },
+    responses: { 200: jsonResponse(listResponse, "Curriculum semesters"), 401: error401, 403: error403, 404: error404 },
   });
   registry.registerPath({
     method: "get",
-    path: "/api/catalog/majors",
+    path: "/api/catalog/curricula",
     tags: ["Academic Catalog"],
     security: [...bearerSecurity],
-    responses: { 200: jsonResponse(majorListSuccessResponseSchema, "Active majors"), 401: error401, 403: error403 },
+    responses: { 200: jsonResponse(curriculumListSuccessResponseSchema, "Active curricula"), 401: error401, 403: error403 },
   });
   registry.registerPath({
     method: "get",
-    path: "/api/catalog/majors/{majorId}/curriculum",
+    path: "/api/catalog/curricula/{curriculumId}/course-slots",
     tags: ["Academic Catalog"],
     security: [...bearerSecurity],
-    request: { params: majorParam, query: catalogCurriculumQuerySchema },
-    responses: { 200: jsonResponse(curriculumListSuccessResponseSchema, "Active curriculum"), 401: error401, 403: error403, 404: error404 },
+    request: { params: curriculumParam, query: catalogCourseSlotsQuerySchema },
+    responses: { 200: jsonResponse(courseSlotListSuccessResponseSchema, "Active course slots"), 401: error401, 403: error403, 404: error404 },
   });
 
   registry.registerPath({

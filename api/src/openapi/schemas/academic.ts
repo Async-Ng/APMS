@@ -1,8 +1,8 @@
 ﻿import { registry, z } from "../setup";
 import { objectIdSchema, successEnvelope } from "./common";
 
-export const majorSchema = registry.register(
-  "Major",
+export const curriculumSchema = registry.register(
+  "Curriculum",
   z
     .object({
       id: objectIdSchema,
@@ -13,7 +13,7 @@ export const majorSchema = registry.register(
       createdAt: z.coerce.date(),
       updatedAt: z.coerce.date(),
     })
-    .openapi("Major"),
+    .openapi("Curriculum"),
 );
 
 export const subjectSchema = registry.register(
@@ -31,43 +31,44 @@ export const subjectSchema = registry.register(
     .openapi("Subject"),
 );
 
-export const curriculumCourseSchema = registry.register(
-  "CurriculumCourse",
+export const courseSlotSchema = registry.register(
+  "CourseSlot",
   z
     .object({
       id: objectIdSchema,
-      majorId: objectIdSchema,
-      semesterNumber: z.number().int().min(1).max(9),
+      curriculumId: objectIdSchema,
+      semesterId: objectIdSchema,
       subjectId: objectIdSchema,
       isActive: z.boolean(),
       createdAt: z.coerce.date(),
       updatedAt: z.coerce.date(),
-      major: majorSchema.nullable(),
+      curriculum: curriculumSchema.nullable(),
       subject: subjectSchema.nullable(),
+      semester: z.record(z.string(), z.unknown()).nullable(),
     })
-    .openapi("CurriculumCourse"),
+    .openapi("CourseSlot"),
 );
 
 export const academicProfileSchema = registry.register(
   "AcademicProfile",
   z
     .object({
-      major: majorSchema.nullable(),
-      currentSemester: z.number().int().min(1).max(9).nullable(),
+      curriculum: curriculumSchema.nullable(),
+      currentSemester: z.record(z.string(), z.unknown()).nullable(),
       currentSubjects: z.array(subjectSchema),
       isComplete: z.boolean(),
     })
     .openapi("AcademicProfile"),
 );
 
-export const majorListSuccessResponseSchema = successEnvelope(
-  z.array(majorSchema),
-  "MajorList",
+export const curriculumListSuccessResponseSchema = successEnvelope(
+  z.array(curriculumSchema),
+  "CurriculumList",
 );
 
-export const curriculumListSuccessResponseSchema = successEnvelope(
-  z.array(curriculumCourseSchema),
-  "CurriculumList",
+export const courseSlotListSuccessResponseSchema = successEnvelope(
+  z.array(courseSlotSchema),
+  "CourseSlotList",
 );
 
 export const academicProfileSuccessResponseSchema = successEnvelope(

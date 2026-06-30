@@ -16,16 +16,16 @@ Backend-specific rules for the `api/` package. Read the root `AGENTS.md` and `do
 
 These live in `src/services/academic.service.ts` and enforce SRS rules BR-017..BR-021:
 
-- Do **not** deactivate a Major / Subject / Semester / MajorSemester / CurriculumCourse while any user or document/curriculum still references it — return a conflict instead.
-- Do **not** change the identity (major/semester/subject) of a CurriculumCourse that already has documents pointing to it.
-- Creating a CurriculumCourse requires the major, semester, and subject to be active **and** the major–semester pair to already be linked.
+- Do **not** deactivate a Curriculum / Subject / Semester / CurriculumSemester / CourseSlot while any user or document still references it — return a conflict instead.
+- Do **not** change the identity (curriculum/semester/subject) of a CourseSlot that already has documents pointing to it.
+- Creating a CourseSlot requires the curriculum, semester, and subject to be active **and** the curriculum–semester pair to already be linked.
 - Academic catalog deletes are **soft-archive** (`isActive: false`), never hard deletes.
 
 ## Document lifecycle (do not change without an FR)
 
 - Processing status flow: `pending -> processing -> ready -> failed`, with bounded retries (`MAX_PROCESSING_ATTEMPTS`).
 - Deletion is soft (`deletedAt`); trash auto-purges after `TRASH_RETENTION_DAYS` (30). Restoring a document inside a deleted folder requires restoring the parent first.
-- Uploads require `curriculumCourseId` and a user may only attach a course within their own academic profile (`assertUserCanUseCurriculumCourse`).
+- Uploads require `courseSlotId` and a user may only attach a course within their own academic profile (`assertUserCanUseCourseSlot`).
 - Storage quota and per-file size are enforced in `document.service.ts` (`assertQuota`); keep the rollback-on-overflow behavior intact.
 
 ## Error handling convention

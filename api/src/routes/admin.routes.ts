@@ -17,14 +17,14 @@ import {
   updateAdminUserSchema,
 } from "../validators/admin.validator";
 import {
-  assignMajorSemestersSchema,
-  createCurriculumCourseSchema,
-  createMajorSchema,
+  assignCurriculumSemestersSchema,
+  createCourseSlotSchema,
+  createCurriculumSchema,
   createSemesterSchema,
   createSubjectSchema,
-  listCurriculumQuerySchema,
-  updateCurriculumCourseSchema,
-  updateMajorSchema,
+  listCourseSlotsQuerySchema,
+  updateCourseSlotSchema,
+  updateCurriculumSchema,
   updateSemesterSchema,
   updateSubjectSchema,
 } from "../validators/academic.validator";
@@ -67,47 +67,47 @@ adminRouter.delete(
   adminController.deactivateAccessEmail,
 );
 
-adminRouter.get("/majors", academicController.listAdminMajors);
+adminRouter.get("/curricula", academicController.listAdminCurricula);
 adminRouter.post(
-  "/majors",
-  validate({ body: createMajorSchema }),
-  academicController.createMajor,
+  "/curricula",
+  validate({ body: createCurriculumSchema }),
+  academicController.createCurriculum,
 );
 adminRouter.patch(
-  "/majors/:id",
-  validate({ params: objectIdParamSchema, body: updateMajorSchema }),
-  academicController.updateMajor,
+  "/curricula/:id",
+  validate({ params: objectIdParamSchema, body: updateCurriculumSchema }),
+  academicController.updateCurriculum,
 );
 adminRouter.delete(
-  "/majors/:id",
+  "/curricula/:id",
   validate({ params: objectIdParamSchema }),
-  academicController.archiveMajor,
+  academicController.archiveCurriculum,
 );
 
 adminRouter.get(
-  "/majors/:majorId/semesters",
+  "/curricula/:curriculumId/semesters",
   validate({
-    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
+    params: z.object({ curriculumId: z.string().regex(/^[a-f\d]{24}$/i) }),
   }),
-  academicController.listAdminMajorSemesters,
+  academicController.listAdminCurriculumSemesters,
 );
 adminRouter.post(
-  "/majors/:majorId/semesters",
+  "/curricula/:curriculumId/semesters",
   validate({
-    params: z.object({ majorId: z.string().regex(/^[a-f\d]{24}$/i) }),
-    body: assignMajorSemestersSchema,
+    params: z.object({ curriculumId: z.string().regex(/^[a-f\d]{24}$/i) }),
+    body: assignCurriculumSemestersSchema,
   }),
-  academicController.assignMajorSemesters,
+  academicController.assignCurriculumSemesters,
 );
 adminRouter.delete(
-  "/majors/:majorId/semesters/:semesterId",
+  "/curricula/:curriculumId/semesters/:semesterId",
   validate({
     params: z.object({
-      majorId: z.string().regex(/^[a-f\d]{24}$/i),
+      curriculumId: z.string().regex(/^[a-f\d]{24}$/i),
       semesterId: z.string().regex(/^[a-f\d]{24}$/i),
     }),
   }),
-  academicController.archiveMajorSemester,
+  academicController.archiveCurriculumSemester,
 );
 
 adminRouter.get("/semesters", academicController.listAdminSemesters);
@@ -145,24 +145,24 @@ adminRouter.delete(
 );
 
 adminRouter.get(
-  "/curriculum-courses",
-  validate({ query: listCurriculumQuerySchema }),
-  academicController.listAdminCurriculum,
+  "/course-slots",
+  validate({ query: listCourseSlotsQuerySchema }),
+  academicController.listAdminCourseSlots,
 );
 adminRouter.post(
-  "/curriculum-courses",
-  validate({ body: createCurriculumCourseSchema }),
-  academicController.createCurriculumCourse,
+  "/course-slots",
+  validate({ body: createCourseSlotSchema }),
+  academicController.createCourseSlot,
 );
 adminRouter.patch(
-  "/curriculum-courses/:id",
-  validate({ params: objectIdParamSchema, body: updateCurriculumCourseSchema }),
-  academicController.updateCurriculumCourse,
+  "/course-slots/:id",
+  validate({ params: objectIdParamSchema, body: updateCourseSlotSchema }),
+  academicController.updateCourseSlot,
 );
 adminRouter.delete(
-  "/curriculum-courses/:id",
+  "/course-slots/:id",
   validate({ params: objectIdParamSchema }),
-  academicController.archiveCurriculumCourse,
+  academicController.archiveCourseSlot,
 );
 
 export { adminRouter };

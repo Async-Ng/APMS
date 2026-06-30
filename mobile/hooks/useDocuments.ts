@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 import { api } from "../lib/api-client";
@@ -116,7 +116,7 @@ export function useUploadDocument() {
       mimeType,
       size,
       folderId,
-      curriculumCourseId,
+      courseSlotId,
       visibility,
       onProgress,
     }: {
@@ -125,7 +125,7 @@ export function useUploadDocument() {
       mimeType: string;
       size: number;
       folderId?: string | null;
-      curriculumCourseId: string;
+      courseSlotId: string;
       visibility: "private" | "public";
       onProgress?: (pct: number) => void;
     }) => {
@@ -134,7 +134,7 @@ export function useUploadDocument() {
         mimeType,
         fileSizeBytes: size,
         folderId: folderId ?? null,
-        curriculumCourseId,
+        courseSlotId,
         visibility,
         title: name.replace(/\.[^.]+$/, ""),
       });
