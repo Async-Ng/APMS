@@ -158,7 +158,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 **Trò chuyện AI**
 - Tạo và quản lý các phiên trò chuyện (đổi tên, ghim, xóa).
-- Đặt câu hỏi và nhận câu trả lời tổng quan kèm trích dẫn từ tài liệu, sau đó có gợi ý câu hỏi tiếp theo để người dùng khai thác sâu hơn.
+- Đặt câu hỏi và nhận câu trả lời ngắn gọn theo kiểu hội thoại kèm trích dẫn từ tài liệu, sau đó có thể hỏi tiếp để khai thác sâu hơn.
 - Chọn ngữ cảnh trò chuyện: toàn bộ tài liệu, một thư mục, một hoặc nhiều tài liệu.
 - Các chế độ hỗ trợ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập.
 
@@ -343,7 +343,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-040 | Hệ thống phải cho phép người dùng tạo phiên trò chuyện với ngữ cảnh: toàn bộ tài liệu, một thư mục, một tài liệu, hoặc nhiều tài liệu. |
-| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh; ở chế độ hỏi đáp, câu trả lời ưu tiên tổng quan ngắn gọn và kèm gợi ý câu hỏi tiếp theo. |
+| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh; các câu trả lời ưu tiên ngắn gọn, tự nhiên như hội thoại và kèm gợi ý câu hỏi tiếp theo ở chế độ hỏi đáp. |
 | FR-042 | Hệ thống phải đính kèm trích dẫn nguồn (tài liệu, trang, đoạn) vào câu trả lời. |
 | FR-043 | Hệ thống phải hỗ trợ các chế độ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập. |
 | FR-044 | Hệ thống phải cho phép người dùng xem danh sách phiên, đổi tên, ghim/bỏ ghim và xóa phiên trò chuyện. Phiên có ngữ cảnh tài liệu hoặc thư mục đã xóa (thùng rác) hoặc không còn tồn tại không hiển thị trong danh sách. |
@@ -805,7 +805,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 **Actor:** Người dùng — **Mục tiêu:** Nhận câu trả lời dựa trên tài liệu.
 1. Người dùng mở Trò chuyện AI, tạo phiên với ngữ cảnh mong muốn.
 2. Nhập câu hỏi và gửi.
-3. Hệ thống trả lời (hiển thị dần) theo dạng tổng quan trước, kèm trích dẫn nguồn và gợi ý câu hỏi tiếp theo.
+3. Hệ thống trả lời (hiển thị dần) theo dạng ngắn gọn, tự nhiên như hội thoại, kèm trích dẫn nguồn và gợi ý câu hỏi tiếp theo ở chế độ hỏi đáp.
 - **E1** Câu hỏi để trống ở chế độ hỏi đáp: hệ thống không gửi.
 
 ### UC-006: Quản trị viên quản lý chương trình đào tạo
@@ -939,7 +939,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-041-01: Khi người dùng đặt câu hỏi trong ngữ cảnh có tài liệu, hệ thống trả lời kèm trích dẫn nguồn.
 - [ ] AC-041-02: Khi gửi câu hỏi trống ở chế độ hỏi đáp, hệ thống không gửi.
 - [ ] AC-044-01: Khi tài liệu hoặc thư mục ngữ cảnh của phiên đã vào thùng rác hoặc bị xóa vĩnh viễn, phiên không còn trong danh sách; mở URL trực tiếp hoặc gửi tin mới bị từ chối.
-- [ ] AC-041-03: Khi người dùng hỏi ở chế độ hỏi đáp, phản hồi ưu tiên tổng quan ngắn gọn và trả tối đa 3 gợi ý câu hỏi tiếp theo.
+- [ ] AC-041-03: Khi người dùng hỏi ở chế độ hỏi đáp, phản hồi ưu tiên ngắn gọn, tự nhiên như hội thoại và trả tối đa 3 gợi ý câu hỏi tiếp theo.
 
 ---
 

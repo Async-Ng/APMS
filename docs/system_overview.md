@@ -79,7 +79,7 @@ Search hoặc Chat
   -> Trả citations theo document/page/chunk và suggestedQuestions
 ```
 
-Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Ở mode `chat`, câu trả lời ưu tiên tổng quan ngắn gọn và backend trả thêm tối đa 3 `suggestedQuestions`; các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
+Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Câu trả lời ở mọi mode ưu tiên ngắn gọn, tự nhiên như hội thoại và dựa trên tài liệu được truy xuất; mode `chat` trả thêm tối đa 3 `suggestedQuestions`, còn các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
 
 ## Non-Functional Notes
 

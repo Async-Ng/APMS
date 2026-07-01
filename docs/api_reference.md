@@ -311,6 +311,7 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 
 - `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
 - `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
+- Answers prioritize concise, conversational first-pass responses across all modes; users can ask follow-up questions for deeper detail (FR-041).
 - Answers include `citations` referencing document, page, and section (FR-042, BR-023).
 - Assistant messages include `suggestedQuestions: string[]`; chat mode may return up to 3 follow-up questions, while `summary`, `faq`, and `study_guide` return an empty array.
 - Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
