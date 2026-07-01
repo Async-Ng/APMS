@@ -1,7 +1,7 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AccessEmailsPanel } from "@/components/app/admin/AccessEmailsPanel";
@@ -16,7 +16,15 @@ import { useAuthStore } from "@/stores/auth-store";
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
+  const searchParams = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<AdminTabId>(() => {
+    const initial = searchParams.get("tab");
+    if (initial === "overview" || initial === "users" || initial === "access-emails" || initial === "academic") {
+      return initial;
+    }
+    return "overview";
+  });
   const { data: stats } = useAdminStats();
 
   if (!isLoading && user && user.role !== "admin") {

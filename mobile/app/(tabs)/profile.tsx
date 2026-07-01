@@ -96,7 +96,7 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="school-outline"
               label="Hồ sơ học thuật"
-              subtitle="Ngành, học kỳ và môn học hiện tại"
+              subtitle="Chương trình đào tạo"
               onPress={() => router.push("/profile/academic")}
             />
           </View>

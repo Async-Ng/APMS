@@ -28,19 +28,10 @@ export function getEnrolledCourses(
 function matchesEnrolledCourse(
   doc: DriveDocument,
   enrolledCourseIds: Set<string>,
-  enrolledSubjectIds: Set<string>,
-  semesterId: string | null | undefined,
 ): boolean {
   const course = doc.courseSlot;
   if (!course?.subject) return false;
-  if (course.id && enrolledCourseIds.has(course.id)) return true;
-  if (semesterId) {
-    return (
-      course.semesterId === semesterId &&
-      enrolledSubjectIds.has(course.subject.id)
-    );
-  }
-  return enrolledSubjectIds.has(course.subject.id);
+  return Boolean(course.id && enrolledCourseIds.has(course.id));
 }
 
 /** Find an enrolled curriculum course by id. */
@@ -90,27 +81,16 @@ export function groupRootDocumentsBySubject(
   return groupRootDocumentsByCourse(documents, enrolledCourses);
 }
 
-/** Root documents that do not belong to any enrolled subject for the current semester. */
+/** Root documents that do not belong to any course slot in the student's curriculum. */
 export function getOtherRootDocuments(
   documents: DriveDocument[],
   enrolledCourses: CatalogCourseSlot[],
-  currentSemesterId: string | null | undefined,
 ): DriveDocument[] {
   const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));
-  const enrolledSubjectIds = new Set(
-    enrolledCourses
-      .map((c) => c.subject?.id)
-      .filter((id): id is string => Boolean(id)),
-  );
 
   return documents.filter(
     (doc) =>
       doc.folderId === null &&
-      !matchesEnrolledCourse(
-        doc,
-        enrolledCourseIds,
-        enrolledSubjectIds,
-        currentSemesterId,
-      ),
+      !matchesEnrolledCourse(doc, enrolledCourseIds),
   );
 }

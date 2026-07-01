@@ -36,11 +36,7 @@ export function useUpdateDisplayName() {
 export function useUpdateAcademicProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      curriculumId: string;
-      currentSemesterId?: string;
-      currentSubjectIds?: string[];
-    }) => {
+    mutationFn: async (input: { curriculumId: string }) => {
       const res = await api.patch<{ status: string; data: AcademicProfile }>(
         "/users/me/academic-profile",
         input,

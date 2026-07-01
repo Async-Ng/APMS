@@ -213,7 +213,12 @@ async function assertActiveCurriculumSemester(
 
 export async function listCurriculumSemesters(curriculumId: string, includeInactive = false) {
   const curriculumObjectId = parseObjectId(curriculumId, "curriculumId");
-  await assertActiveCurriculum(curriculumObjectId);
+  if (includeInactive) {
+    const curriculum = await Curriculum.findById(curriculumObjectId);
+    if (!curriculum) notFound("curriculum");
+  } else {
+    await assertActiveCurriculum(curriculumObjectId);
+  }
 
   const filter: Record<string, unknown> = { curriculumId: curriculumObjectId };
   if (!includeInactive) filter.isActive = true;
