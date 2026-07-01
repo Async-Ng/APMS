@@ -28,23 +28,16 @@ if (Hồ sơ học thuật đã hoàn thành?) then (có)
   #PaleGreen:Trạng thái Đã hoàn thành;
   stop
 else (chưa)
-  :Cung cấp danh mục Ngành / Học kỳ / Môn\n(từ chương trình đào tạo);
+  :Cung cấp danh mục CTĐT/Curriculum\nđang hoạt động;
 endif
 
 |Sinh viên|
-:Chọn Ngành;
-:Chọn Học kỳ hiện tại;
-
-|Hệ thống APMS|
-:Mặc định chọn tất cả môn trong CTĐT của học kỳ;
-
-|Sinh viên|
-:Bỏ chọn môn không học (nếu cần);
+:Chọn CTĐT/Curriculum;
 :Nhấn **Lưu hồ sơ**;
 
 |Hệ thống APMS|
-if (Môn thuộc đúng Ngành – Học kỳ trong CTĐT?) then (không)
-  :Thông báo lỗi — yêu cầu chọn lại;
+if (Curriculum đang hoạt động?) then (không)
+  :Thông báo lỗi — yêu cầu chọn CTĐT hợp lệ;
   detach
 else (có)
   :Lưu hồ sơ học thuật;
