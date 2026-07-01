@@ -55,7 +55,7 @@ Học vụ dùng entity `Semester` (không còn số học kỳ cứng 1–9):
 - `curriculumsemesters`: junction curriculum ↔ học kỳ
 - `courseslots`: mapping curriculum + `semesterId` + môn
 
-Admin quản lý qua `/api/admin` (curricula, semesters, gán kỳ theo curriculum, course slots). User đọc catalog qua `/api/catalog`. Hồ sơ học vụ (`PATCH /api/users/me/academic-profile`) dùng `curriculumId` + `currentSemesterId`.
+Admin quản lý qua `/api/admin` (curricula, semesters, gán kỳ theo curriculum, course slots). User đọc catalog qua `/api/catalog`. Hồ sơ học vụ (`PATCH /api/users/me/academic-profile`) chỉ cần `curriculumId`; khi upload/chỉnh tài liệu, `courseSlotId` phải thuộc curriculum đó.
 
 Admin có thể promote/demote user qua `PATCH /api/admin/users/:id` với `role`; API đồng bộ Cognito group `admin` và `users.role`.
 

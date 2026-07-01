@@ -50,7 +50,7 @@ APMS là một ứng dụng (web và di động) giúp sinh viên gom toàn bộ
 
 **Hệ thống bao gồm:**
 - Đăng nhập và quản lý phiên làm việc bằng tài khoản Google.
-- Quản lý hồ sơ cá nhân và hồ sơ học thuật (ngành, học kỳ, môn đang học).
+- Quản lý hồ sơ cá nhân và hồ sơ học thuật (chương trình đào tạo).
 - Quản lý tài liệu cá nhân (tải lên, xem, sửa, gắn sao, chuyển thùng rác, khôi phục, xóa vĩnh viễn).
 - Sắp xếp tài liệu trong cây thư mục cá nhân.
 - Chia sẻ tài liệu/thư mục cho người khác (chỉ đọc), kể cả mời qua email.
@@ -78,7 +78,7 @@ APMS là một ứng dụng (web và di động) giúp sinh viên gom toàn bộ
 | Học kỳ | Một kỳ học trong chương trình đào tạo. |
 | Môn học | Một môn trong chương trình đào tạo. |
 | Course slot | Bản ghi học vụ 3 chiều gồm Curriculum – Học kỳ – Môn học; là điểm neo bắt buộc của tài liệu. |
-| Hồ sơ học thuật | Lựa chọn của người dùng về curriculum, học kỳ hiện tại và các môn đang học. |
+| Hồ sơ học thuật | Lựa chọn chương trình đào tạo của người dùng. |
 | Drive của tôi | Không gian tài liệu và thư mục cá nhân của người dùng. |
 | Thư viện công khai | Nơi xem các tài liệu được đặt ở chế độ công khai. |
 | Đã gắn sao | Nhóm tài liệu/thư mục được người dùng đánh dấu sao để truy cập nhanh. |
@@ -129,7 +129,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 **Hồ sơ cá nhân**
 - Xem và cập nhật tên hiển thị.
-- Thiết lập hồ sơ học thuật: chọn ngành, học kỳ hiện tại và các môn đang học.
+- Thiết lập hồ sơ học thuật: chọn chương trình đào tạo.
 - Xem trạng thái hoàn thành hồ sơ học thuật.
 
 **Drive của tôi (tài liệu và thư mục cá nhân)**
@@ -194,7 +194,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 **Ràng buộc nghiệp vụ:**
 - Mỗi tài liệu tải lên bắt buộc gắn với một môn học trong chương trình đào tạo.
-- Người dùng chỉ được gắn tài liệu vào môn học thuộc đúng ngành và học kỳ đã chọn trong hồ sơ học thuật của mình.
+- Người dùng chỉ được gắn tài liệu vào môn học thuộc đúng chương trình đào tạo đã chọn trong hồ sơ học thuật của mình.
 - Chỉ định dạng PDF, DOCX và PPTX được chấp nhận.
 - Tài liệu mặc định ở chế độ riêng tư khi tải lên.
 - Quyền chia sẻ chỉ ở mức chỉ đọc.
@@ -253,12 +253,10 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 |----|------------------|
 | FR-007 | Hệ thống phải hiển thị email và tên hiển thị của người dùng. |
 | FR-008 | Hệ thống phải cho phép người dùng cập nhật tên hiển thị (tối đa 100 ký tự, không để trống). |
-| FR-009 | Hệ thống phải cho phép người dùng chọn curriculum, học kỳ hiện tại và các môn đang học để tạo hồ sơ học thuật. |
-| FR-010 | Hệ thống phải chỉ cho phép chọn học kỳ thuộc curriculum đã chọn và môn học thuộc đúng cặp curriculum – học kỳ trong danh mục course slot. |
-| FR-011 | Hệ thống phải yêu cầu chọn ít nhất một môn học khi lưu hồ sơ học thuật. |
+| FR-009 | Hệ thống phải cho phép người dùng chọn curriculum để tạo hồ sơ học thuật. |
+| FR-010 | Hệ thống phải chỉ cho phép lưu hồ sơ học thuật với curriculum đang hoạt động trong danh mục. |
+| FR-011 | Hệ thống phải đánh dấu hồ sơ học thuật hoàn thành khi người dùng đã chọn curriculum hợp lệ. |
 | FR-012 | Hệ thống phải hiển thị trạng thái hồ sơ học thuật là "Đã hoàn thành" hoặc "Chưa hoàn thành". |
-| FR-063 | Hệ thống phải cho phép người dùng chọn học kỳ **hiển thị** trên Drive (độc lập học kỳ chính trong hồ sơ); chỉ ảnh hưởng bố cục xem tài liệu, không đổi quyền upload hay gợi ý Thư viện. |
-| FR-064 | Hệ thống phải cung cấp lối tắt **đổi học kỳ chính** từ Drive: một thao tác đặt học kỳ mới và mặc định chọn tất cả môn trong CTĐT của học kỳ đó (người dùng có thể chỉnh trong Hồ sơ sau). |
 
 **Chi tiết FR-009 — Thiết lập hồ sơ học thuật:**
 
@@ -267,11 +265,11 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Actor | Người dùng |
 | Màn hình | Hồ sơ của tôi |
 | Điều kiện thực hiện | Đã đăng nhập; danh mục học thuật đã được thiết lập. |
-| Người dùng thực hiện | Chọn Curriculum → chọn Học kỳ → điều chỉnh danh sách Môn đang học (mặc định đã chọn tất cả môn trong course slots của học kỳ) → nhấn "Lưu hồ sơ". |
-| Dữ liệu cần nhập | Curriculum, Học kỳ, danh sách Môn đang học. |
-| Hành vi mặc định | Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong chương trình đào tạo của học kỳ đó (tối đa 30); người dùng có thể bỏ chọn trước khi lưu. |
+| Người dùng thực hiện | Chọn Curriculum → nhấn "Lưu hồ sơ". |
+| Dữ liệu cần nhập | Curriculum. |
+| Hành vi mặc định | Hồ sơ học thuật không yêu cầu chọn học kỳ hoặc môn đang học; các thao tác tải lên sẽ chọn môn cụ thể trong CTĐT khi cần. |
 | Kết quả thành công | Hệ thống lưu hồ sơ và hiển thị thông báo "Đã lưu hồ sơ học thuật"; trạng thái chuyển sang "Đã hoàn thành". |
-| Ngoại lệ | Nếu chưa chọn ngành/học kỳ hoặc chưa chọn môn nào, hệ thống hiển thị thông báo yêu cầu bổ sung và không lưu. |
+| Ngoại lệ | Nếu chưa chọn curriculum hoặc curriculum không hoạt động, hệ thống hiển thị thông báo yêu cầu bổ sung và không lưu. |
 
 ### 3.3 Quản lý tài liệu (Drive của tôi)
 
@@ -280,7 +278,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | FR-013 | Hệ thống phải cho phép người dùng tải lên tài liệu định dạng PDF, DOCX hoặc PPTX, gắn bắt buộc với một môn học. |
 | FR-014 | Hệ thống phải từ chối tải lên nếu định dạng tệp không được hỗ trợ hoặc dung lượng vượt quá giới hạn cho phép/hạn mức còn lại. |
 | FR-015 | Hệ thống phải xử lý tài liệu sau khi tải lên (trích xuất nội dung, phân tích) và phản ánh trạng thái xử lý: đang chờ, đang xử lý, sẵn sàng, hoặc thất bại. |
-| FR-016 | Hệ thống phải hiển thị danh sách tài liệu của người dùng, nhóm theo môn học dựa trên hồ sơ học thuật khi hồ sơ đã hoàn thành. |
+| FR-016 | Hệ thống phải hiển thị danh sách tài liệu của người dùng, nhóm theo môn học trong curriculum của hồ sơ học thuật khi hồ sơ đã hoàn thành. |
 | FR-017 | Hệ thống phải cho phép người dùng xem chi tiết và tải xuống tài liệu của mình hoặc tài liệu được phép xem. |
 | FR-018 | Hệ thống phải cho phép người dùng cập nhật tiêu đề, thẻ, thư mục, môn học và chế độ hiển thị của tài liệu. |
 | FR-019 | Hệ thống phải yêu cầu tài liệu đã gắn với một môn học trước khi cho phép đặt chế độ công khai. |
@@ -300,7 +298,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Người dùng thực hiện | Chọn tệp, chọn môn học, (tùy chọn) đặt tiêu đề/thư mục/chế độ hiển thị, xác nhận tải lên. |
 | Dữ liệu cần nhập | Tệp tài liệu, môn học (bắt buộc), tiêu đề (tùy chọn), chế độ hiển thị (mặc định: riêng tư). |
 | Kết quả thành công | Tệp được lưu, tài liệu được tạo và đưa vào hàng xử lý; danh sách tài liệu cập nhật. |
-| Ngoại lệ | Định dạng không hỗ trợ, vượt hạn mức, môn học không thuộc hồ sơ học thuật → hệ thống từ chối và thông báo lý do. |
+| Ngoại lệ | Định dạng không hỗ trợ, vượt hạn mức, môn học không thuộc CTĐT trong hồ sơ học thuật → hệ thống từ chối và thông báo lý do. |
 
 ### 3.4 Thư mục cá nhân
 
@@ -513,7 +511,7 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Trạng thái hoạt động | Còn hoạt động hay đã bị vô hiệu hóa | ✅ | Mặc định: hoạt động |
 | Curriculum | Curriculum đã chọn | ❌ | Tham chiếu Curriculum |
 | Học kỳ hiện tại | Học kỳ đang theo học | ❌ | Tham chiếu Học kỳ |
-| Môn đang học | Các môn đang theo học | ❌ | Tham chiếu Môn học |
+| Môn đang học | Legacy danh sách môn từng chọn | ❌ | Có thể rỗng; không bắt buộc cho hồ sơ học thuật |
 | Dung lượng đã dùng / Hạn mức | Mức lưu trữ đã dùng so với hạn mức | ✅ | Hạn mức mặc định 500 MB |
 
 #### Đối tượng: Tài liệu
@@ -682,10 +680,9 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 | Màn hình / Đối tượng | Trường | Quy tắc |
 |----------------------|--------|---------|
 | Hồ sơ | Tên hiển thị | Bắt buộc, tối đa 100 ký tự |
-| Hồ sơ học thuật | Curriculum, Học kỳ | Bắt buộc; học kỳ phải thuộc curriculum đã chọn |
-| Hồ sơ học thuật | Môn đang học | Ít nhất 1, tối đa 30; phải thuộc đúng curriculum–học kỳ |
+| Hồ sơ học thuật | Curriculum | Bắt buộc; curriculum phải đang hoạt động |
 | Tải lên | Tệp | Định dạng PDF/DOCX/PPTX; trong giới hạn dung lượng và hạn mức |
-| Tải lên | Môn học | Bắt buộc; phải thuộc hồ sơ học thuật của người dùng |
+| Tải lên | Môn học | Bắt buộc; phải thuộc CTĐT trong hồ sơ học thuật của người dùng |
 | Tài liệu | Tiêu đề | Tối đa 255 ký tự |
 | Tài liệu | Thẻ | Tối đa 20 thẻ, mỗi thẻ tối đa 50 ký tự |
 | Tài liệu | Chế độ công khai | Chỉ đặt được khi đã gắn môn học |
@@ -716,7 +713,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 | ID | Quy tắc | Hệ quả khi vi phạm |
 |----|---------|-------------------|
 | BR-006 | Mỗi tài liệu tải lên phải gắn với một môn học trong chương trình đào tạo. | Không cho tải lên. |
-| BR-007 | Người dùng chỉ gắn tài liệu vào môn học thuộc đúng ngành – học kỳ trong hồ sơ học thuật của mình. | Từ chối với thông báo lý do. |
+| BR-007 | Người dùng chỉ gắn tài liệu vào môn học thuộc đúng curriculum trong hồ sơ học thuật của mình. | Từ chối với thông báo lý do. |
 | BR-008 | Chỉ chấp nhận tệp PDF, DOCX, PPTX. | Từ chối tải lên. |
 | BR-009 | Tổng dung lượng không được vượt hạn mức của người dùng; mỗi tệp không vượt giới hạn hệ thống. | Từ chối tải lên; hoàn tác nếu vượt sau khi ghi nhận. |
 | BR-010 | Tài liệu mặc định ở chế độ riêng tư; chỉ đặt công khai khi đã gắn môn học. | Từ chối đổi chế độ. |
@@ -776,12 +773,12 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - **E2** Kiểm tra quyền gặp sự cố: hệ thống báo lỗi tạm thời, yêu cầu thử lại.
 
 ### UC-002: Thiết lập hồ sơ học thuật
-**Actor:** Người dùng — **Mục tiêu:** Chọn curriculum, học kỳ, môn đang học.
+**Actor:** Người dùng — **Mục tiêu:** Chọn curriculum.
 1. Người dùng mở Hồ sơ của tôi.
-2. Chọn Curriculum → Học kỳ → các Môn đang học.
+2. Chọn Curriculum.
 3. Nhấn "Lưu hồ sơ".
 4. Hệ thống lưu và hiển thị "Đã lưu hồ sơ học thuật"; trạng thái "Đã hoàn thành".
-- **E1** Thiếu curriculum/học kỳ/môn: hệ thống yêu cầu bổ sung, không lưu.
+- **E1** Thiếu curriculum hoặc curriculum không hoạt động: hệ thống yêu cầu bổ sung, không lưu.
 
 ### UC-003: Tải tài liệu lên và xử lý
 **Actor:** Người dùng — **Mục tiêu:** Đưa tài liệu vào hệ thống.
@@ -858,7 +855,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 |----|------------|-----------|
 | ERR-001 | Không tải được danh sách tài liệu | "Không tải được tài liệu. Kiểm tra kết nối mạng và thử lại." |
 | ERR-002 | Không tải được danh sách ngành | "Không tải được danh sách ngành. Vui lòng thử lại sau." |
-| ERR-003 | Chưa chọn ngành/học kỳ/môn khi lưu hồ sơ | "Vui lòng chọn ngành / học kỳ / ít nhất 1 môn." |
+| ERR-003 | Chưa chọn curriculum khi lưu hồ sơ | "Vui lòng chọn CTĐT." |
 | ERR-004 | Tên hiển thị trống/quá dài | "Vui lòng nhập tên hiển thị." / "Tên hiển thị tối đa 100 ký tự." |
 | ERR-005 | Email không được phép truy cập | Thông báo không có quyền truy cập hệ thống. |
 | ERR-006 | Vượt hạn mức lưu trữ / tệp quá lớn | Thông báo vượt hạn mức hoặc tệp vượt giới hạn (tối đa 50 MB/tệp, 500 MB/người). |
@@ -913,15 +910,12 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-001-03: Khi tài khoản bị vô hiệu hóa, hệ thống từ chối mọi thao tác nghiệp vụ.
 
 ### Hồ sơ học thuật (FR-009, FR-010, FR-011)
-- [ ] AC-009-01: Khi chọn đủ ngành, học kỳ và ít nhất một môn hợp lệ, hệ thống lưu và đánh dấu hồ sơ "Đã hoàn thành".
-- [ ] AC-009-02: Khi chọn học kỳ không thuộc ngành, hệ thống không cho lưu.
-- [ ] AC-009-03: Khi chưa chọn môn nào, hệ thống yêu cầu chọn ít nhất một môn.
-- [ ] AC-009-04: Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong CTĐT của học kỳ đó; lưu sau khi bỏ bớt vẫn hợp lệ nếu còn ít nhất một môn.
-- [ ] AC-063-01: Khi chọn tab học kỳ trên Drive, hệ thống nhóm tài liệu theo học kỳ đó mà không thay đổi hồ sơ đã lưu trên server.
-- [ ] AC-064-01: Khi dùng lối tắt「Chọn học kỳ」từ Drive, hệ thống cập nhật học kỳ chính và môn mặc định theo CTĐT trong một lần lưu.
+- [ ] AC-009-01: Khi chọn curriculum hợp lệ, hệ thống lưu và đánh dấu hồ sơ "Đã hoàn thành".
+- [ ] AC-009-02: Khi chưa chọn curriculum, hệ thống không cho lưu.
+- [ ] AC-009-03: Hồ sơ học thuật không yêu cầu chọn học kỳ hoặc môn đang học.
 
 ### Tải tài liệu (FR-013, FR-014, FR-019)
-- [ ] AC-013-01: Khi tải tệp PDF/DOCX/PPTX hợp lệ kèm môn học thuộc hồ sơ, hệ thống tạo tài liệu và bắt đầu xử lý.
+- [ ] AC-013-01: Khi tải tệp PDF/DOCX/PPTX hợp lệ kèm môn học thuộc CTĐT trong hồ sơ, hệ thống tạo tài liệu và bắt đầu xử lý.
 - [ ] AC-013-02: Khi tệp sai định dạng hoặc vượt hạn mức, hệ thống từ chối và nêu lý do.
 - [ ] AC-013-03: Khi đặt tài liệu công khai mà chưa gắn môn học, hệ thống từ chối.
 
@@ -949,7 +943,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 
 | Loại | Dải ID |
 |------|--------|
-| Yêu cầu chức năng | FR-001 đến FR-064 |
+| Yêu cầu chức năng | FR-001 đến FR-062 |
 | Yêu cầu phi chức năng | NFR-P/S/A/SC/R |
 | Quy tắc nghiệp vụ | BR-001 đến BR-027 |
 | Tình huống sử dụng | UC-001 đến UC-008 |

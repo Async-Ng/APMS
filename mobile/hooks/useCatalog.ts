@@ -88,8 +88,8 @@ export function useCatalogCurriculumSemesters(curriculumId: string | undefined) 
 
 export interface UpdateAcademicProfileBody {
   curriculumId: string;
-  currentSemesterId: string;
-  currentSubjectIds: string[];
+  currentSemesterId?: string;
+  currentSubjectIds?: string[];
 }
 
 export function useUpdateAcademicProfile() {
@@ -123,22 +123,15 @@ export function useCatalogCourseSlots(curriculumId?: string, semesterId?: string
   });
 }
 
-/** Course slots the student is enrolled in for the current semester. */
+/** Course slots in the student's curriculum. */
 export function useEnrolledCourses() {
   const profileQuery = useAcademicProfile();
-  const slotsQuery = useCatalogCourseSlots(
-    profileQuery.data?.curriculum?.id,
-    profileQuery.data?.currentSemester?.id,
-  );
+  const slotsQuery = useCatalogCourseSlots(profileQuery.data?.curriculum?.id);
 
   const profile = profileQuery.data;
   const enrolledCourses =
     profile?.isComplete && slotsQuery.data
-      ? slotsQuery.data.filter(
-          (slot) =>
-            slot.subject &&
-            profile.currentSubjects.some((s) => s.id === slot.subject?.id),
-        )
+      ? slotsQuery.data.filter((slot) => slot.subject)
       : [];
 
   return {

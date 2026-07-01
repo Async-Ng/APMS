@@ -281,30 +281,17 @@ async function getCourseIdsForFilter(options: ListDocumentsOptions): Promise<Typ
 }
 
 async function getProfileCourseBuckets(user: UserDocument) {
-  if (!user.curriculumId || !user.currentSemesterId || user.currentSubjectIds.length === 0) {
+  if (!user.curriculumId) {
     return { exactSlotIds: [] as Types.ObjectId[], relatedSlotIds: [] as Types.ObjectId[] };
   }
 
   const exactSlots = await CourseSlot.find({
     curriculumId: user.curriculumId,
-    semesterId: user.currentSemesterId,
-    subjectId: { $in: user.currentSubjectIds },
     isActive: true,
-  }).select("_id subjectId");
+  }).select("_id");
 
   const exactSlotIds = exactSlots.map((slot) => slot._id);
-  const subjectIds = [...new Set(exactSlots.map((slot) => slot.subjectId.toString()))];
-  const relatedSlotIds =
-    subjectIds.length === 0
-      ? []
-      : await CourseSlot.find({
-          curriculumId: user.curriculumId,
-          subjectId: { $in: subjectIds.map((id) => parseObjectId(id, "subjectId")) },
-          semesterId: { $ne: user.currentSemesterId },
-          isActive: true,
-        }).distinct("_id");
-
-  return { exactSlotIds, relatedSlotIds };
+  return { exactSlotIds, relatedSlotIds: [] as Types.ObjectId[] };
 }
 
 function matchTypeForDocument(

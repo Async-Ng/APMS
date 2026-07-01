@@ -11,18 +11,16 @@ export interface SubjectDocumentGroup {
   documents: DriveDocument[];
 }
 
-/** Courses the student is enrolled in for the current semester. */
+/** Course slots in the student's curriculum. */
 export function getEnrolledCourses(
   profile: AcademicProfile | undefined,
   curriculum: CatalogCourseSlot[] | undefined,
 ): CatalogCourseSlot[] {
   if (!profile?.isComplete || !curriculum) return [];
-  const enrolledSubjectIds = new Set(profile.currentSubjects.map((s) => s.id));
   return curriculum
-    .filter(
-      (course) => course.subject && enrolledSubjectIds.has(course.subject.id),
-    )
+    .filter((course) => course.subject)
     .sort((a, b) =>
+      (a.semester?.sortOrder ?? 0) - (b.semester?.sortOrder ?? 0) ||
       (a.subject?.code ?? "").localeCompare(b.subject?.code ?? ""),
     );
 }

@@ -104,7 +104,7 @@ const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   CURRICULUM_SEMESTER_NOT_FOUND: "Học kỳ chưa được gán cho CTĐT này.",
   COURSE_SLOT_NOT_FOUND: "Không tìm thấy môn trong CTĐT.",
   ACADEMIC_PROFILE_REQUIRED: "Hoàn thành hồ sơ học thuật trước khi tải lên tài liệu nội bộ.",
-  COURSE_SLOT_NOT_IN_PROFILE: "Môn học không thuộc CTĐT, học kỳ hoặc danh sách môn đã chọn của bạn.",
+  COURSE_SLOT_NOT_IN_PROFILE: "Môn học không thuộc CTĐT trong hồ sơ của bạn.",
 };
 
 const DEFAULT_MESSAGE = "Đã xảy ra lỗi. Vui lòng thử lại.";

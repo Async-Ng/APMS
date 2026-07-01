@@ -97,15 +97,14 @@ export function LibraryFiltersBar({
   }
 
   function applyMyProfile() {
-    if (!profile?.isComplete || !profile.curriculum || !profile.currentSemester) {
+    if (!profile?.isComplete || !profile.curriculum) {
       return;
     }
-    const firstSubject = profile.currentSubjects[0];
     onChange({
       ...filters,
       curriculumId: profile.curriculum.id,
-      semesterId: profile.currentSemester.id,
-      subjectId: firstSubject?.id ?? "",
+      semesterId: "",
+      subjectId: "",
     });
   }
 
@@ -251,7 +250,7 @@ export function LibraryFiltersBar({
         )}
         {isBrowse && profile && !profile.isComplete && (
           <p className="text-xs text-brutal-muted">
-            Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT và học kỳ của bạn.
+            Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT của bạn.
           </p>
         )}
       </div>

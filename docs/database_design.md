@@ -102,9 +102,9 @@ Unique index: `{ curriculumId, semesterId, subjectId }` (BR-019). `(curriculumId
 
 | Field | Notes |
 | --- | --- |
-| `curriculumId` | Ref `curriculums` |
-| `currentSemesterId` | Ref `semesters`; must belong to `curriculumsemesters` for selected curriculum |
-| `currentSubjectIds` | Ref `subjects` |
+| `curriculumId` | Ref `curriculums`; required for a complete academic profile |
+| `currentSemesterId` | Legacy optional ref `semesters`; not required for profile completion |
+| `currentSubjectIds` | Legacy optional refs `subjects`; not required for profile completion |
 | `storageUsedBytes` | Bytes currently used by the user's documents |
 | `storageQuotaBytes` | Storage quota, default 500 MB (`524_288_000`) |
 

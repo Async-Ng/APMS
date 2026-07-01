@@ -1,13 +1,12 @@
 ﻿"use client";
 
 import { FolderPlus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { DriveAcademicBanner } from "@/components/app/drive/DriveAcademicBanner";
 import { DriveListView } from "@/components/app/drive/DriveListView";
-import { DriveSemesterTabs } from "@/components/app/drive/DriveSemesterTabs";
 import { MobileQuickActionsMenu } from "@/components/app/drive/MobileQuickActionsMenu";
 import { SubjectFolderCard } from "@/components/app/drive/SubjectFolderCard";
 import { FileGrid } from "@/components/app/FileGrid";
@@ -28,69 +27,19 @@ import {
   groupRootDocumentsByCourse,
 } from "@/lib/drive/academic-grouping";
 import {
-  collectDriveSemesterTabs,
-  getCoursesWithRootDocuments,
-  resolveDriveViewSemesterId,
-} from "@/lib/drive/semester-view";
-import {
   useAcademicProfile,
   useCatalogCourseSlots,
-  useCatalogCurriculumSemesters,
 } from "@/lib/queries/catalog";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
-import { useDriveViewStore } from "@/stores/drive-view-store";
 
 export default function DrivePage() {
   const { data, isLoading, isError, refetch } = useDriveContents();
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
-  const storedViewSemesterId = useDriveViewStore((s) => s.driveViewSemesterId);
-  const setDriveViewSemesterId = useDriveViewStore((s) => s.setDriveViewSemesterId);
-
-  const primarySemesterId = profile?.currentSemester?.id;
   const documents = data?.documents ?? [];
-  const semesterTabs = useMemo(
-    () => collectDriveSemesterTabs(profile, documents),
-    [profile, documents],
-  );
-  const viewSemesterId = resolveDriveViewSemesterId(
-    storedViewSemesterId,
-    semesterTabs,
-    primarySemesterId,
-  );
-
-  useEffect(() => {
-    if (
-      storedViewSemesterId !== null &&
-      !semesterTabs.some((t) => t.id === storedViewSemesterId)
-    ) {
-      setDriveViewSemesterId(
-        resolveDriveViewSemesterId(null, semesterTabs, primarySemesterId),
-      );
-    }
-  }, [storedViewSemesterId, semesterTabs, primarySemesterId, setDriveViewSemesterId]);
-
-  const isAllView = viewSemesterId === "all";
-  const pastViewSemesterId =
-    !isAllView && viewSemesterId !== primarySemesterId ? viewSemesterId : undefined;
 
   const { data: primaryCurriculum } = useCatalogCourseSlots(
     profile?.curriculum?.id,
-    primarySemesterId,
-  );
-  const { data: pastSemesterCurriculum } = useCatalogCourseSlots(
-    profile?.curriculum?.id,
-    pastViewSemesterId,
-  );
-
-  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(profile?.curriculum?.id);
-  const availableSemesters = useMemo(
-    () =>
-      (curriculumSemesters ?? [])
-        .filter((link) => link.isActive && link.semester)
-        .map((link) => link.semester!)
-        .sort((a, b) => a.sortOrder - b.sortOrder),
-    [curriculumSemesters],
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -113,18 +62,8 @@ export default function DrivePage() {
 
   const displayCourses = useMemo(() => {
     if (!profileComplete) return [];
-    if (isAllView) return enrolledCourses;
-    if (viewSemesterId === primarySemesterId) return enrolledCourses;
-    return getCoursesWithRootDocuments(documents, pastSemesterCurriculum ?? []);
-  }, [
-    profileComplete,
-    isAllView,
-    viewSemesterId,
-    primarySemesterId,
-    enrolledCourses,
-    documents,
-    pastSemesterCurriculum,
-  ]);
+    return enrolledCourses;
+  }, [profileComplete, enrolledCourses]);
 
   const subjectGroups = useMemo(
     () => groupRootDocumentsByCourse(documents, displayCourses),
@@ -135,11 +74,8 @@ export default function DrivePage() {
     [subjectGroups],
   );
   const otherDocuments = useMemo(
-    () =>
-      isAllView
-        ? getOtherRootDocuments(documents, enrolledCourses, primarySemesterId)
-        : [],
-    [isAllView, documents, enrolledCourses, primarySemesterId],
+    () => getOtherRootDocuments(documents, enrolledCourses, undefined),
+    [documents, enrolledCourses],
   );
 
   const folders = data?.folders ?? [];
@@ -153,11 +89,7 @@ export default function DrivePage() {
     folders.length === 0 &&
     documents.length === 0;
 
-  const uploadDisabledForView =
-    !isAllView && viewSemesterId !== primarySemesterId;
-
   function openUpload(courseSlotId?: string) {
-    if (uploadDisabledForView) return;
     setUploadCourseId(courseSlotId);
     setUploadOpen(true);
   }
@@ -166,10 +98,6 @@ export default function DrivePage() {
     setUploadOpen(false);
     setUploadCourseId(undefined);
   }
-
-  const uploadDisabledTitle = uploadDisabledForView
-    ? "Chỉ tải lên khi xem học kỳ chính hoặc Tất cả"
-    : undefined;
 
   function shareDocument(doc: DriveDocument) {
     setShareTarget({
@@ -191,18 +119,12 @@ export default function DrivePage() {
             <MobileQuickActionsMenu
               onUpload={() => openUpload()}
               onNewFolder={() => setFolderModalOpen(true)}
-              uploadDisabled={uploadDisabledForView}
-              newFolderDisabled={uploadDisabledForView}
-              uploadDisabledReason={uploadDisabledTitle}
-              newFolderDisabledReason={uploadDisabledTitle}
             />
             <BrutalButton
               id="new-folder-btn"
               variant="ghost"
               onClick={() => setFolderModalOpen(true)}
               className="hidden w-auto! shrink-0 whitespace-nowrap sm:inline-flex"
-              disabled={uploadDisabledForView}
-              title={uploadDisabledTitle}
             >
               <FolderPlus className="h-4 w-4" aria-hidden="true" />
               Thư mục mới
@@ -215,26 +137,7 @@ export default function DrivePage() {
         <DriveAcademicBanner
           profile={profile}
           isLoading={isProfileLoading}
-          viewSemesterId={viewSemesterId}
-          availableSemesters={availableSemesters}
         />
-
-        {profileComplete && semesterTabs.length > 1 && (
-          <DriveSemesterTabs
-            tabs={semesterTabs}
-            activeId={viewSemesterId}
-            primarySemesterId={primarySemesterId}
-            onChange={setDriveViewSemesterId}
-          />
-        )}
-
-        {uploadDisabledForView && (
-          <ErrorAlert
-            variant="inline"
-            className="mb-4"
-            message={`Đang xem học kỳ khác — chỉ xem/tải tài liệu. Upload và thư mục mới dùng học kỳ chính (${profile?.currentSemester?.code ?? ""}).`}
-          />
-        )}
 
         {!isLoading && !isEmpty && (
           <ViewToggle view={viewMode} onChange={setViewMode} className="mb-4" />
@@ -258,11 +161,9 @@ export default function DrivePage() {
             title="Drive trống"
             description="Tải slide buổi học vừa rồi — PDF, DOCX hoặc PPTX, gắn đúng môn là xong."
             action={
-              !uploadDisabledForView ? (
-                <BrutalButton variant="primary" onClick={() => openUpload()}>
-                  Tải slide ngay
-                </BrutalButton>
-              ) : undefined
+              <BrutalButton variant="primary" onClick={() => openUpload()}>
+                Tải slide ngay
+              </BrutalButton>
             }
           />
         ) : showAcademicLayout ? (
@@ -288,8 +189,7 @@ export default function DrivePage() {
                         />
                       );
                     })}
-                    {isAllView &&
-                      folders.map((folder) => (
+                    {folders.map((folder) => (
                         <FolderCard
                           key={folder.id}
                           folder={folder}
@@ -315,7 +215,7 @@ export default function DrivePage() {
                         documentCount: documentCountByCourseId.get(course.id) ?? 0,
                       }))}
                     folders={
-                      isAllView ? folders.map((folder) => ({ folder })) : []
+                      folders.map((folder) => ({ folder }))
                     }
                   />
                 )}
@@ -411,7 +311,7 @@ export default function DrivePage() {
         )}
       </main>
 
-      {uploadOpen && !uploadDisabledForView && (
+      {uploadOpen && (
         <UploadModal
           key={uploadCourseId ?? "default"}
           folderId={null}

@@ -120,7 +120,7 @@ Creates a pending document and returns a presigned S3 PUT URL.
 Rules:
 
 - `courseSlotId` is required for new uploads (FR-013). Uploading a document without a course is rejected (BR-006).
-- The course must belong to the user's own academic profile (BR-007).
+- The course must belong to the curriculum selected in the user's academic profile (BR-007).
 - `mimeType` must be PDF, DOCX, or PPTX; other types are rejected (FR-013, BR-008).
 - `fileSizeBytes` must be ≤ 50 MB per file (`MAX_UPLOAD_BYTES`) and within the user's 500 MB storage quota (FR-014, BR-009).
 - `visibility` is optional, must be `private` or `public`, and defaults to `private` (BR-010).
@@ -257,21 +257,19 @@ Returns the signed-in user's academic profile.
 }
 ```
 
-`isComplete` is `true` when curriculum, semester, and at least one subject are set.
+`isComplete` is `true` when a valid curriculum is set. `currentSemester` and `currentSubjects` are retained for compatibility with older data and may be `null`/empty.
 
 ### `PATCH /api/users/me/academic-profile`
 
-Updates the signed-in user's academic profile. Every subject must be active and belong to the selected curriculum and semester in the course-slot catalog.
+Updates the signed-in user's academic profile. Only `curriculumId` is required; course slots are selected later when uploading or editing documents.
 
 ```json
 {
-  "curriculumId": "507f1f77bcf86cd799439011",
-  "currentSemesterId": "507f1f77bcf86cd799439014",
-  "currentSubjectIds": ["507f1f77bcf86cd799439013"]
+  "curriculumId": "507f1f77bcf86cd799439011"
 }
 ```
 
-`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `COURSE_SLOT_NOT_IN_PROFILE` when a subject is outside the selected curriculum/semester course slots.
+`currentSemesterId` and `currentSubjectIds` are accepted only for backward compatibility and are no longer required. Updating the profile clears the saved semester/subject selection. Returns the same shape as `GET`.
 
 Admin academic CRUD under `/api/admin`:
 

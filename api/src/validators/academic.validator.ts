@@ -82,6 +82,10 @@ export const catalogCourseSlotsQuerySchema = z.object({
 
 export const updateAcademicProfileSchema = z.object({
   curriculumId: objectId,
-  currentSemesterId: objectId,
-  currentSubjectIds: z.array(objectId).min(1).max(30).transform((ids) => [...new Set(ids)]),
+  currentSemesterId: objectId.optional(),
+  currentSubjectIds: z
+    .array(objectId)
+    .max(30)
+    .transform((ids) => [...new Set(ids)])
+    .optional(),
 });

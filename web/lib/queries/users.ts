@@ -38,8 +38,8 @@ export function useUpdateAcademicProfile() {
   return useMutation({
     mutationFn: async (input: {
       curriculumId: string;
-      currentSemesterId: string;
-      currentSubjectIds: string[];
+      currentSemesterId?: string;
+      currentSubjectIds?: string[];
     }) => {
       const res = await api.patch<{ status: string; data: AcademicProfile }>(
         "/users/me/academic-profile",
@@ -53,4 +53,3 @@ export function useUpdateAcademicProfile() {
     },
   });
 }
-

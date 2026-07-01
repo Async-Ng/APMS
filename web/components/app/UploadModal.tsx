@@ -61,7 +61,6 @@ export function UploadModal({
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
   const { data: curriculum } = useCatalogCourseSlots(
     profile?.curriculum?.id,
-    profile?.currentSemester?.id,
   );
 
   const uploadIntent = useUploadIntent();
@@ -74,16 +73,10 @@ export function UploadModal({
 
   const profileComplete = Boolean(profile?.isComplete);
 
-  /** Courses the student is enrolled in for the current semester — the only
-   *  mappings the API will accept for an upload. */
-  const enrolledCourses = useMemo(() => {
+  /** Course slots in the student's curriculum — the only mappings the API accepts for upload. */
+  const availableCourses = useMemo(() => {
     if (!profile?.isComplete || !curriculum) return [];
-    const enrolledSubjectIds = new Set(
-      profile.currentSubjects.map((s) => s.id),
-    );
-    return curriculum.filter(
-      (course) => course.subject && enrolledSubjectIds.has(course.subject.id),
-    );
+    return curriculum.filter((course) => course.subject);
   }, [profile, curriculum]);
 
   function validateFile(file: File): string | null {
@@ -203,7 +196,7 @@ export function UploadModal({
                       </p>
                       <p className="mt-1 text-sm text-brutal-muted">
                         Mỗi tài liệu phải gắn với một môn trong chương trình đào
-                        tạo. Hãy chọn ngành, học kỳ và môn học trước khi tải lên.
+                        tạo. Hãy chọn CTĐT trước khi tải lên.
                       </p>
                     </div>
                   </div>
@@ -247,16 +240,16 @@ export function UploadModal({
                       className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2.5 text-sm font-medium text-brutal-ink shadow-brutal-sm outline-none"
                     >
                       <option value="">Chọn môn học…</option>
-                      {enrolledCourses.map((course) => (
+                      {availableCourses.map((course) => (
                         <option key={course.id} value={course.id}>
+                          {course.semester?.code ? `${course.semester.code} · ` : ""}
                           {course.subject?.code} — {course.subject?.name}
                         </option>
                       ))}
                     </select>
-                    {profileComplete && enrolledCourses.length === 0 && (
+                    {profileComplete && availableCourses.length === 0 && (
                       <p className="text-xs text-brutal-muted">
-                        Không tìm thấy môn nào trong học kỳ hiện tại. Kiểm tra lại
-                        hồ sơ học thuật.
+                        CTĐT này chưa có môn nào để gắn tài liệu. Liên hệ quản trị viên.
                       </p>
                     )}
                   </div>
@@ -342,7 +335,7 @@ export function UploadModal({
                           <span className="text-brutal-muted">
                             {" "}
                             —{" "}
-                            {enrolledCourses.find((c) => c.id === courseSlotId)
+                            {availableCourses.find((c) => c.id === courseSlotId)
                               ?.subject?.code ?? "Môn đã chọn"}
                           </span>
                         </p>

@@ -46,7 +46,7 @@ Sinh viên đăng nhập Google; hệ thống kiểm tra email trong allowlist. 
 
 **SRS:** FR-013–FR-034, FR-061; BR-006–BR-010, BR-015, BR-027
 
-Sinh viên vào Drive; có thể **chọn học kỳ hiển thị** (tab) để xem tài liệu kỳ cũ mà không đổi hồ sơ server, hoặc dùng **「Chọn học kỳ」** để đổi học kỳ chính một bước. Có thể tải tài liệu mới (PDF/DOCX/PPTX, ≤ 50 MB, còn quota, môn thuộc hồ sơ học kỳ chính) hoặc xem danh sách hiện có. Tài liệu hợp lệ được lưu mặc định **Riêng tư**, xử lý nền đọc nội dung, rồi hiển thị nhóm theo môn. Các thao tác tuỳ chọn: sắp xếp thư mục, đổi tên, thẻ, gắn sao; chia sẻ chỉ đọc (lời mời hết hạn 7 ngày); đặt Riêng tư/Công khai; thùng rác (tự xóa vĩnh viễn sau 30 ngày).
+Sinh viên vào Drive để xem tài liệu được nhóm theo các môn trong CTĐT đã chọn ở hồ sơ học thuật. Có thể tải tài liệu mới (PDF/DOCX/PPTX, ≤ 50 MB, còn quota, môn thuộc CTĐT trong hồ sơ) hoặc xem danh sách hiện có. Tài liệu hợp lệ được lưu mặc định **Riêng tư**, xử lý nền đọc nội dung, rồi hiển thị nhóm theo môn. Các thao tác tuỳ chọn: sắp xếp thư mục, đổi tên, thẻ, gắn sao; chia sẻ chỉ đọc (lời mời hết hạn 7 ngày); đặt Riêng tư/Công khai; thùng rác (tự xóa vĩnh viễn sau 30 ngày).
 
 **File:** [diagrams/apms-activity-2.puml](./diagrams/apms-activity-2.puml)
 
