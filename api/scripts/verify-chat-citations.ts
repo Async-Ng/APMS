@@ -32,6 +32,27 @@ function assertCitationShape(
   }
 }
 
+function assertSuggestedQuestions(
+  value: unknown,
+  label: string,
+  expectedEmpty = false,
+): void {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label}: suggestedQuestions must be an array`);
+  }
+  if (value.length > 3) {
+    throw new Error(`${label}: suggestedQuestions must contain at most 3 items`);
+  }
+  if (expectedEmpty && value.length !== 0) {
+    throw new Error(`${label}: preset mode must not return suggestedQuestions`);
+  }
+  for (const [index, question] of value.entries()) {
+    if (typeof question !== "string" || question.trim().length === 0) {
+      throw new Error(`${label}: suggestedQuestions[${index}] must be a non-empty string`);
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const env = loadEnv();
   await mongoose.connect(env.MONGODB_URI);
@@ -54,6 +75,8 @@ async function main(): Promise<void> {
 
   console.log(`[verify] Session: ${session.id}`);
   console.log(`[verify] Citations: ${assistant.citations.length}`);
+  assertSuggestedQuestions(assistant.suggestedQuestions, "assistantMessage");
+  console.log(`[verify] Suggested questions: ${assistant.suggestedQuestions.length}`);
 
   if (assistant.citations.length === 0) {
     throw new Error("No citations returned — RAG may not be finding chunks");
@@ -79,6 +102,17 @@ async function main(): Promise<void> {
 
   for (const c of saved.citations) {
     assertCitationShape(c as unknown as Record<string, unknown>, "getSession citation");
+  }
+  assertSuggestedQuestions(saved.suggestedQuestions, "getSession assistantMessage");
+
+  for (const mode of ["summary", "faq", "study_guide"] as const) {
+    const presetResult = await chatService.sendMessage(user, session.id, "", mode);
+    assertSuggestedQuestions(
+      presetResult.assistantMessage.suggestedQuestions,
+      `${mode} assistantMessage`,
+      true,
+    );
+    console.log(`[verify] ${mode}: suggestedQuestions empty`);
   }
 
   console.log("\n[verify] PASSED — citation payload ready for web UI");

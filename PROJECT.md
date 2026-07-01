@@ -26,7 +26,7 @@ Search / Chat
 - Mọi upload mới bắt buộc có `courseSlotId`.
 - `visibility = "private" | "public"`.
 - `private`: chỉ owner và người được share trực tiếp đọc được.
-- `public`: active users trong hệ thống có thể tìm thấy; list mặc định vẫn ưu tiên môn/hồ sơ học vụ.
+- `public`: active users trong hệ thống có thể tìm thấy; list mặc định vẫn ưu tiên CTĐT trong hồ sơ học vụ.
 - API list duy nhất là `GET /api/documents`.
 - Các route cũ `/api/drive`, `/api/library`, `/api/forum` đã bị gỡ khỏi route mount.
 

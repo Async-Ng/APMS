@@ -476,14 +476,12 @@ export async function assertUserCanUseCourseSlot(
   user: UserDocument,
   courseSlotId: string,
 ): Promise<CourseSlotDocument> {
-  if (!user.curriculumId || !user.currentSemesterId) {
+  if (!user.curriculumId) {
     throw createAppError(ErrorCode.ACADEMIC_PROFILE_REQUIRED, 409);
   }
   const slot = await CourseSlot.findOne({
     _id: parseObjectId(courseSlotId, "courseSlotId"),
     curriculumId: user.curriculumId,
-    semesterId: user.currentSemesterId,
-    subjectId: { $in: user.currentSubjectIds },
     isActive: true,
   });
   if (!slot) throw createAppError(ErrorCode.COURSE_SLOT_NOT_IN_PROFILE, 403);
@@ -504,42 +502,21 @@ export async function getAcademicProfile(user: UserDocument) {
     curriculum: curriculum ? toCurriculumResponse(curriculum) : null,
     currentSemester: semester ? toSemesterResponse(semester) : null,
     currentSubjects: subjects.map(toSubjectResponse),
-    isComplete: Boolean(curriculum && semester && subjects.length > 0),
+    isComplete: Boolean(curriculum),
   };
 }
 
 export async function updateAcademicProfile(
   user: UserDocument,
-  input: { curriculumId: string; currentSemesterId: string; currentSubjectIds: string[] },
+  input: { curriculumId: string; currentSemesterId?: string; currentSubjectIds?: string[] },
 ) {
   const curriculumId = parseObjectId(input.curriculumId, "curriculumId");
-  const semesterId = parseObjectId(input.currentSemesterId, "currentSemesterId");
-  const subjectIds = input.currentSubjectIds.map((id) => parseObjectId(id, "currentSubjectIds"));
-  const [curriculum, , slots] = await Promise.all([
-    Curriculum.findOne({ _id: curriculumId, isActive: true }),
-    assertActiveCurriculumSemester(curriculumId, semesterId),
-    CourseSlot.find({
-      curriculumId,
-      semesterId,
-      subjectId: { $in: subjectIds },
-      isActive: true,
-    }),
-  ]);
+  const curriculum = await Curriculum.findOne({ _id: curriculumId, isActive: true });
   if (!curriculum) notFound("curriculum");
-  const activeSubjects = await Subject.countDocuments({
-    _id: { $in: subjectIds },
-    isActive: true,
-  });
-  if (slots.length !== subjectIds.length || activeSubjects !== subjectIds.length) {
-    throw createAppError(ErrorCode.COURSE_SLOT_NOT_IN_PROFILE, 400, {
-      technicalDetail:
-        "Every subject must be active and belong to the selected curriculum and semester",
-    });
-  }
 
   const updated = await User.findByIdAndUpdate(
     user._id,
-    { $set: { curriculumId, currentSemesterId: semesterId, currentSubjectIds: subjectIds } },
+    { $set: { curriculumId, currentSemesterId: null, currentSubjectIds: [] } },
     { returnDocument: "after", runValidators: true },
   );
   if (!updated) throw createAppError(ErrorCode.USER_NOT_FOUND, 404);

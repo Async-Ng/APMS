@@ -77,7 +77,7 @@ export const ERROR_MESSAGES: Record<ErrorCodeType, string> = {
   CURRICULUM_SEMESTER_NOT_FOUND: "Semester is not assigned to this curriculum.",
   COURSE_SLOT_NOT_FOUND: "Course slot not found.",
   COURSE_SLOT_NOT_IN_PROFILE:
-    "The subject is not in your current curriculum, semester, or selected courses.",
+    "The subject is not in your selected curriculum.",
   ACADEMIC_PROFILE_REQUIRED: "Complete your academic profile before uploading documents.",
   ACADEMIC_CONFLICT: "The academic record cannot be changed because it is currently in use.",
   ACCESS_EMAIL_NOT_FOUND: "Access email not found.",

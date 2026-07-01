@@ -123,7 +123,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
   const canSubmit = Boolean(file && courseSlotId);
 
   const courseActions: ActionItem[] = enrolledCourses.map((course) => ({
-    label: `${course.subject?.code ?? ""} — ${course.subject?.name ?? ""}`,
+    label: `${course.semester?.code ? `${course.semester.code} · ` : ""}${course.subject?.code ?? ""} — ${course.subject?.name ?? ""}`,
     icon: "book-outline",
     onPress: () => setcourseSlotId(course.id),
   }));
@@ -169,8 +169,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                           Cần hồ sơ học thuật
                         </Text>
                         <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
-                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật Chương trình đào tạo, học kỳ và môn học trước khi tải
-                          lên.
+                          Mỗi tài liệu phải gắn với một môn học. Hãy cập nhật Chương trình đào tạo trước khi tải lên.
                         </Text>
                         <BrutalButton
                           label="Cập nhật hồ sơ học thuật"
@@ -214,14 +213,14 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                               numberOfLines={1}
                             >
                               {selectedCourse
-                                ? `${selectedCourse.subject?.code} — ${selectedCourse.subject?.name}`
+                                ? `${selectedCourse.semester?.code ? `${selectedCourse.semester.code} · ` : ""}${selectedCourse.subject?.code} — ${selectedCourse.subject?.name}`
                                 : "Chọn môn học…"}
                             </Text>
                             <Ionicons name="chevron-down" size={18} color={colors.muted} />
                           </Pressable>
                           {enrolledCourses.length === 0 && (
                             <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
-                              Không tìm thấy môn nào trong học kỳ hiện tại. Kiểm tra lại hồ sơ học thuật.
+                              CTĐT này chưa có môn nào để gắn tài liệu. Liên hệ quản trị viên.
                             </Text>
                           )}
                         </View>

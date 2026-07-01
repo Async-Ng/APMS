@@ -1,32 +1,17 @@
 ﻿"use client";
 
 import { CheckCircle2, GraduationCap, IdCard, User2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { cn } from "@/lib/cn";
-import {
-  defaultSubjectIds,
-  MAX_ACADEMIC_SUBJECTS,
-  resolveSelectedSubjectIds,
-} from "@/lib/academic-profile";
-import { useAcademicProfile, useCatalogCourseSlots, useCatalogCurriculumSemesters, useCatalogCurricula, type CatalogCourseSlot } from "@/lib/queries/catalog";
+import { useAcademicProfile, useCatalogCurricula } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile, useUpdateDisplayName } from "@/lib/queries/users";
 import { getUserErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/stores/auth-store";
-
-function uniqueSubjects(curriculum: CatalogCourseSlot[] | undefined) {
-  const subjects =
-    curriculum
-      ?.map((c) => c.subject)
-      .filter((s): s is NonNullable<typeof s> => s !== null) ?? [];
-  return Array.from(new Map(subjects.map((s) => [s.id, s])).values()).sort((a, b) =>
-    a.code.localeCompare(b.code),
-  );
-}
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
@@ -44,52 +29,11 @@ export default function ProfilePage() {
   const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
 
   const [curriculumId, setCurriculumId] = useState("");
-  const [semesterId, setSemesterId] = useState("");
-  const [subjectIds, setSubjectIds] = useState<string[] | null>(null);
   const [academicError, setAcademicError] = useState<string | null>(null);
   const [academicSuccess, setAcademicSuccess] = useState<string | null>(null);
 
   const curriculumFromProfile = profile?.curriculum?.id ?? "";
-  const semesterFromProfile = profile?.currentSemester?.id ?? "";
-  const subjectsFromProfile = profile?.currentSubjects?.map((s) => s.id) ?? [];
-
   const effectiveCurriculumId = curriculumId || curriculumFromProfile;
-  const effectiveSemesterId = semesterId || semesterFromProfile;
-
-  const {
-    data: curriculum,
-    isLoading: isCurriculumLoading,
-    isError: isCurriculumError,
-  } = useCatalogCourseSlots(
-    effectiveCurriculumId || undefined,
-    effectiveSemesterId || undefined,
-  );
-
-  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId || undefined);
-
-  const availableSemesters =
-    curriculumSemesters
-      ?.filter((link) => link.isActive && link.semester)
-      .map((link) => link.semester!)
-      .sort((a, b) => a.sortOrder - b.sortOrder) ?? [];
-
-  const availableSubjects = useMemo(
-    () => uniqueSubjects(curriculum),
-    [curriculum],
-  );
-
-  const selectionMatchesProfile =
-    effectiveCurriculumId === curriculumFromProfile &&
-    effectiveSemesterId === semesterFromProfile;
-
-  const selectedSubjectIds = resolveSelectedSubjectIds({
-    subjectIds,
-    selectionMatchesProfile,
-    subjectsFromProfile,
-    availableSubjects,
-  });
-
-  const subjectsOverLimit = availableSubjects.length > MAX_ACADEMIC_SUBJECTS;
 
   const isAcademicComplete = Boolean(profile?.isComplete);
 
@@ -123,7 +67,7 @@ export default function ProfilePage() {
               Hồ sơ của tôi
             </h1>
             <p className="text-sm text-brutal-muted">
-              Cập nhật tên hiển thị và hồ sơ học thuật để Drive và Thư viện gợi ý đúng môn.
+              Cập nhật tên hiển thị và chương trình đào tạo để Drive và Thư viện gợi ý đúng CTĐT.
             </p>
           </div>
         </div>
@@ -226,12 +170,6 @@ export default function ProfilePage() {
               className="mb-3"
             />
           )}
-          {isCurriculumError && effectiveCurriculumId && (
-            <ErrorAlert
-              message="Không tải được chương trình đào tạo của CTĐT đã chọn."
-              className="mb-3"
-            />
-          )}
           {updateAcademic.isError && (
             <ErrorAlert
               message={getUserErrorMessage(updateAcademic.error)}
@@ -256,8 +194,6 @@ export default function ProfilePage() {
                     setAcademicError(null);
                     setAcademicSuccess(null);
                     setCurriculumId(e.target.value);
-                    setSemesterId("");
-                    setSubjectIds(null);
                   }}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
                 >
@@ -270,130 +206,11 @@ export default function ProfilePage() {
                 </select>
               </label>
 
-              <label className="text-xs font-bold text-brutal-muted">
-                Học kỳ
-                <select
-                  value={effectiveSemesterId}
-                  onChange={(e) => {
-                    setAcademicError(null);
-                    setAcademicSuccess(null);
-                    setSemesterId(e.target.value);
-                    setSubjectIds(null);
-                  }}
-                  disabled={!effectiveCurriculumId}
-                  className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink disabled:opacity-50"
-                >
-                  <option value="">Chọn học kỳ</option>
-                  {availableSemesters.map((semester) => (
-                    <option key={semester.id} value={semester.id}>
-                      {semester.code} — {semester.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm text-brutal-muted">
+                Hồ sơ học thuật chỉ cần CTĐT. Khi tải tài liệu, bạn sẽ chọn môn cụ thể trong CTĐT đó.
+              </div>
             </div>
             )}
-
-            <div>
-              <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold text-brutal-muted">Môn đang học</p>
-                  <p className="mt-0.5 text-xs text-brutal-muted">
-                    Mặc định chọn tất cả môn trong học kỳ — bỏ tick môn bạn không học.
-                  </p>
-                </div>
-                {effectiveSemesterId && availableSubjects.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-brutal-muted">
-                      Đã chọn {selectedSubjectIds.length} / {availableSubjects.length} môn
-                    </span>
-                    <BrutalButton
-                      type="button"
-                      variant="ghost"
-                      className="!w-auto !px-2 !py-1 text-xs"
-                      onClick={() => {
-                        setAcademicError(null);
-                        setAcademicSuccess(null);
-                        setSubjectIds(defaultSubjectIds(availableSubjects));
-                      }}
-                    >
-                      Chọn tất cả
-                    </BrutalButton>
-                    <BrutalButton
-                      type="button"
-                      variant="ghost"
-                      className="!w-auto !px-2 !py-1 text-xs"
-                      onClick={() => {
-                        setAcademicError(null);
-                        setAcademicSuccess(null);
-                        setSubjectIds([]);
-                      }}
-                    >
-                      Bỏ chọn
-                    </BrutalButton>
-                  </div>
-                )}
-              </div>
-              {subjectsOverLimit && effectiveSemesterId && (
-                <ErrorAlert
-                  variant="inline"
-                  className="mb-2"
-                  message={`Học kỳ này có ${availableSubjects.length} môn, vượt giới hạn tối đa ${MAX_ACADEMIC_SUBJECTS} môn mà hệ thống cho phép chọn. Vui lòng bỏ chọn các môn bạn không học trước khi lưu hồ sơ.`}
-                />
-              )}
-              <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
-                {isProfileLoading || (effectiveCurriculumId && isCurriculumLoading) ? (
-                  <p className="text-sm text-brutal-muted">Đang tải…</p>
-                ) : !effectiveCurriculumId ? (
-                  <p className="text-sm text-brutal-muted">
-                    Chọn CTĐT để xem học kỳ và môn học.
-                  </p>
-                ) : !effectiveSemesterId ? (
-                  <p className="text-sm text-brutal-muted">
-                    Chọn học kỳ để hiển thị danh sách môn.
-                  </p>
-                ) : availableSemesters.length === 0 ? (
-                  <p className="text-sm text-brutal-muted">
-                    CTĐT này chưa có học kỳ được gán.
-                  </p>
-                ) : availableSubjects.length === 0 ? (
-                  <p className="text-sm text-brutal-muted">
-                    Không có môn phù hợp với CTĐT và học kỳ đã chọn.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {availableSubjects.map((s) => {
-                      const checked = selectedSubjectIds.includes(s.id);
-                      return (
-                        <label
-                          key={s.id}
-                          className="flex items-start gap-2 rounded-lg border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm font-medium text-brutal-ink"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              setAcademicError(null);
-                              setAcademicSuccess(null);
-                              const next = e.target.checked
-                                ? [...new Set([...selectedSubjectIds, s.id])]
-                                : selectedSubjectIds.filter((id) => id !== s.id);
-                              setSubjectIds(next);
-                            }}
-                            className="mt-1"
-                            aria-label={`Chọn môn ${s.code}`}
-                          />
-                          <span className="min-w-0">
-                            <span className="block font-extrabold">{s.code}</span>
-                            <span className="block truncate text-xs text-brutal-muted">{s.name}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <BrutalButton
@@ -407,29 +224,13 @@ export default function ProfilePage() {
                     setAcademicError("Vui lòng chọn CTĐT.");
                     return;
                   }
-                  if (!effectiveSemesterId) {
-                    setAcademicError("Vui lòng chọn học kỳ.");
-                    return;
-                  }
-                  const availableSubjectIdSet = new Set(availableSubjects.map((s) => s.id));
-                  const subjectIdsToSave = selectedSubjectIds.filter((id) =>
-                    availableSubjectIdSet.has(id),
-                  );
-                  if (subjectIdsToSave.length === 0) {
-                    setAcademicError("Vui lòng chọn ít nhất 1 môn.");
-                    return;
-                  }
                   updateAcademic.mutate(
                     {
                       curriculumId: effectiveCurriculumId,
-                      currentSemesterId: effectiveSemesterId,
-                      currentSubjectIds: subjectIdsToSave,
                     },
                     {
                       onSuccess: () => {
                         setCurriculumId("");
-                        setSemesterId("");
-                        setSubjectIds(null);
                         setAcademicSuccess("Đã lưu hồ sơ học thuật.");
                       },
                     },
@@ -445,4 +246,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

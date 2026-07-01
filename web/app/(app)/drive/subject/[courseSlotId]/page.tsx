@@ -21,7 +21,6 @@ import {
 import {
   canOpenSubjectCourse,
   findSlotInCatalog,
-  isPrimarySemesterCourse,
 } from "@/lib/drive/semester-view";
 import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
 import type { DriveDocument } from "@/lib/queries/drive";
@@ -37,15 +36,11 @@ export default function SubjectDrivePage({ params }: PageProps) {
   const { data, isLoading, isError } = useDriveContents();
   const { data: profile } = useAcademicProfile();
   const { data: allCurriculum } = useCatalogCourseSlots(profile?.curriculum?.id);
-  const { data: primaryCurriculum } = useCatalogCourseSlots(
-    profile?.curriculum?.id,
-    profile?.currentSemester?.id,
-  );
 
   const documents = data?.documents ?? [];
   const enrolledCourses = useMemo(
-    () => getEnrolledCourses(profile, primaryCurriculum),
-    [profile, primaryCurriculum],
+    () => getEnrolledCourses(profile, allCurriculum),
+    [profile, allCurriculum],
   );
   const enrolledCourseIds = useMemo(
     () => new Set(enrolledCourses.map((c) => c.id)),
@@ -68,15 +63,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
     [course, documents, enrolledCourseIds],
   );
 
-  const canUpload = useMemo(
-    () =>
-      isPrimarySemesterCourse(
-        course,
-        profile?.currentSemester?.id,
-        enrolledCourseIds,
-      ),
-    [course, profile?.currentSemester?.id, enrolledCourseIds],
-  );
+  const canUpload = Boolean(course?.subject && enrolledCourseIds.has(course.id));
 
   const subjectDocuments = useMemo(
     () => filterRootDocumentsBySlot(documents, courseSlotId),
@@ -138,14 +125,6 @@ export default function SubjectDrivePage({ params }: PageProps) {
           <p className="mb-4 text-sm text-brutal-muted">{subjectLabel}</p>
         )}
 
-        {canAccess && !canUpload && (
-          <ErrorAlert
-            variant="inline"
-            className="mb-4"
-            message={`Chỉ upload vào học kỳ chính (${profile?.currentSemester?.code ?? ""}). Dùng「Chọn học kỳ」trên Drive hoặc sửa Hồ sơ để đổi học kỳ chính.`}
-          />
-        )}
-
         {isError && (
           <ErrorAlert
             className="mb-4"
@@ -165,7 +144,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
             description={
               canUpload
                 ? `Tải lên tệp PDF, DOCX hoặc PPTX cho môn ${course?.subject?.code ?? ""}.`
-                : `Chưa có tài liệu cho môn ${course?.subject?.code ?? ""} ở học kỳ này.`
+                : `Chưa có tài liệu cho môn ${course?.subject?.code ?? ""}.`
             }
             action={
               canUpload ? (

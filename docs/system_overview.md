@@ -52,10 +52,10 @@ Upload mới bắt buộc có `courseSlotId`. `visibility` mặc định là `pr
 Học vụ dùng entity `Semester` (không còn số học kỳ cứng 1–9):
 
 - `semesters`: học kỳ global (`code`, `name`, `sortOrder`)
-- `curriculumsemesters`: junction ngành ↔ học kỳ
-- `CourseSlots`: mapping ngành + `semesterId` + môn
+- `curriculumsemesters`: junction curriculum ↔ học kỳ
+- `courseslots`: mapping curriculum + `semesterId` + môn
 
-Admin quản lý qua `/api/admin` (majors, semesters, gán kỳ theo ngành, CTĐT). User đọc catalog qua `/api/catalog`. Hồ sơ học vụ (`PATCH /api/users/me/academic-profile`) dùng `currentSemesterId` thay số nguyên.
+Admin quản lý qua `/api/admin` (curricula, semesters, gán kỳ theo curriculum, course slots). User đọc catalog qua `/api/catalog`. Hồ sơ học vụ (`PATCH /api/users/me/academic-profile`) chỉ cần `curriculumId`; khi upload/chỉnh tài liệu, `courseSlotId` phải thuộc curriculum đó.
 
 Admin có thể promote/demote user qua `PATCH /api/admin/users/:id` với `role`; API đồng bộ Cognito group `admin` và `users.role`.
 
@@ -75,10 +75,11 @@ Search hoặc Chat
   -> Atlas Vector Search theo access scope
   -> Rerank/rewrite khi cần bằng Gemini lite model
   -> Gemini chat model sinh câu trả lời
-  -> Trả citations theo document/page/chunk
+  -> Sinh suggested questions cho chat mode
+  -> Trả citations theo document/page/chunk và suggestedQuestions
 ```
 
-Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
+Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Câu trả lời ở mọi mode ưu tiên ngắn gọn, tự nhiên như hội thoại và dựa trên tài liệu được truy xuất; mode `chat` trả thêm tối đa 3 `suggestedQuestions`, còn các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
 
 ## Non-Functional Notes
 
@@ -90,4 +91,4 @@ Chat tạo session với `contextType` `all | folder | document | documents` (FR
   - Đăng nhập giới hạn theo allowlist domain mặc định `fpt.edu.vn`, `fe.edu.vn` + access emails ngoại lệ (BR-002).
 - File gốc không trả trực tiếp từ API; API cấp presigned URL khi user có quyền đọc.
 - Public discovery không làm lộ private/shared-only data.
-- Web/mobile có thể cần phase cập nhật riêng sau API-only refactor; không giả định client đã hoàn tất migration nếu code chưa thể hiện.
+- Web/mobile đã dùng naming mới (`curriculumId`, `courseSlotId`) và route catalog/admin theo curricula.

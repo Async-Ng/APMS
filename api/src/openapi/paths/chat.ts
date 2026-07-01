@@ -67,6 +67,14 @@ const chatMessageSchema = registry.register(
       role: z.enum(["user", "assistant"]),
       content: z.string(),
       citations: z.array(citationSchema),
+      suggestedQuestions: z.array(z.string()).openapi({
+        description:
+          "Structured follow-up questions for chat mode. Preset modes return an empty array.",
+        example: [
+          "Microservice khac monolithic nhu the nao?",
+          "Khi nao nen tach mot service rieng?",
+        ],
+      }),
       createdAt: z.string().datetime(),
     })
     .openapi("ChatMessage"),
@@ -228,7 +236,7 @@ export function registerChatPaths(): void {
     tags: ["Chat"],
     summary: "Send a message and get an AI response",
     description:
-      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Gemini 2.5-flash via Vertex AI, returns answer with citations.",
+      "Runs RAG within the session's scope (all/folder/document). Embeds the message, retrieves top-5 relevant chunks, builds context prompt, calls Gemini 2.5-flash via Vertex AI, returns answer with citations and structured suggestedQuestions for chat mode.",
     security: [...bearerSecurity],
     request: {
       params: objectIdParamSchema,

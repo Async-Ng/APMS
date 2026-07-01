@@ -41,23 +41,19 @@ export function DocumentSettingsModal({
   const { data: profile } = useAcademicProfile();
   const { data: curriculum } = useCatalogCourseSlots(
     profile?.curriculum?.id,
-    profile?.currentSemester?.id,
   );
   const updateDocument = useUpdateDocument(doc.id, doc.folderId ?? undefined);
 
-  const enrolledCourses = useMemo(() => {
+  const availableCourses = useMemo(() => {
     if (!profile?.isComplete || !curriculum) return [];
-    const enrolledSubjectIds = new Set(profile.currentSubjects.map((s) => s.id));
-    return curriculum.filter(
-      (course) => course.subject && enrolledSubjectIds.has(course.subject.id),
-    );
+    return curriculum.filter((course) => course.subject);
   }, [profile, curriculum]);
 
-  /** The current course may not be in the enrolled list (e.g. profile changed);
+  /** The current course may not be in the available list (e.g. profile changed);
    *  keep it selectable so we never silently drop it. */
   const showsCurrentCourse =
     !!courseSlotId &&
-    !enrolledCourses.some((course) => course.id === courseSlotId);
+    !availableCourses.some((course) => course.id === courseSlotId);
 
   async function saveDocument() {
     const trimmed = title.trim();
@@ -160,8 +156,9 @@ export function DocumentSettingsModal({
               {showsCurrentCourse && (
                 <option value={courseSlotId}>Môn hiện tại</option>
               )}
-              {enrolledCourses.map((course) => (
+              {availableCourses.map((course) => (
                 <option key={course.id} value={course.id}>
+                  {course.semester?.code ? `${course.semester.code} · ` : ""}
                   {course.subject?.code} — {course.subject?.name}
                 </option>
               ))}

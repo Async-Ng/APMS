@@ -2,8 +2,8 @@ import { cn } from "@/lib/cn";
 import type { PublicDocument, PublicMatchType } from "@/lib/queries/public-documents";
 
 const MATCH_LABELS: Record<PublicMatchType, string> = {
-  exact_course: "Đúng môn học kỳ",
-  same_subject_other_semester: "Cùng môn, khác học kỳ",
+  exact_course: "Đúng CTĐT",
+  same_subject_other_semester: "Liên quan CTĐT",
   global_public: "Công khai toàn hệ thống",
 };
 

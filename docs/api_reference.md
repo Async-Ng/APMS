@@ -120,7 +120,7 @@ Creates a pending document and returns a presigned S3 PUT URL.
 Rules:
 
 - `courseSlotId` is required for new uploads (FR-013). Uploading a document without a course is rejected (BR-006).
-- The course must belong to the user's own academic profile (BR-007).
+- The course must belong to the curriculum selected in the user's academic profile (BR-007).
 - `mimeType` must be PDF, DOCX, or PPTX; other types are rejected (FR-013, BR-008).
 - `fileSizeBytes` must be ≤ 50 MB per file (`MAX_UPLOAD_BYTES`) and within the user's 500 MB storage quota (FR-014, BR-009).
 - `visibility` is optional, must be `private` or `public`, and defaults to `private` (BR-010).
@@ -257,21 +257,19 @@ Returns the signed-in user's academic profile.
 }
 ```
 
-`isComplete` is `true` when curriculum, semester, and at least one subject are set.
+`isComplete` is `true` when a valid curriculum is set. `currentSemester` and `currentSubjects` are retained for compatibility with older data and may be `null`/empty.
 
 ### `PATCH /api/users/me/academic-profile`
 
-Updates the signed-in user's academic profile. Every subject must be active and belong to the selected curriculum and semester in the course-slot catalog.
+Updates the signed-in user's academic profile. Only `curriculumId` is required; course slots are selected later when uploading or editing documents.
 
 ```json
 {
-  "curriculumId": "507f1f77bcf86cd799439011",
-  "currentSemesterId": "507f1f77bcf86cd799439014",
-  "currentSubjectIds": ["507f1f77bcf86cd799439013"]
+  "curriculumId": "507f1f77bcf86cd799439011"
 }
 ```
 
-`currentSubjectIds` must contain at least one unique ObjectId (max 30). Returns the same shape as `GET`. Validation failures return `400` with `COURSE_SLOT_NOT_IN_PROFILE` when a subject is outside the selected curriculum/semester course slots.
+`currentSemesterId` and `currentSubjectIds` are accepted only for backward compatibility and are no longer required. Updating the profile clears the saved semester/subject selection. Returns the same shape as `GET`.
 
 Admin academic CRUD under `/api/admin`:
 
@@ -306,12 +304,14 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 | `GET` | `/api/chat/sessions/:id` | Session detail with messages (404 if context unavailable) |
 | `PATCH` | `/api/chat/sessions/:id` | Rename or pin/unpin (`title`, `isPinned`) |
 | `DELETE` | `/api/chat/sessions/:id` | Delete a session |
-| `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations |
-| `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally (FR-045) |
+| `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations + suggestedQuestions |
+| `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally; final `done` event includes suggestedQuestions (FR-045) |
 
 - `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
 - `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
+- Answers prioritize concise, conversational first-pass responses across all modes; users can ask follow-up questions for deeper detail (FR-041).
 - Answers include `citations` referencing document, page, and section (FR-042, BR-023).
+- Assistant messages include `suggestedQuestions: string[]`; chat mode may return up to 3 follow-up questions, while `summary`, `faq`, and `study_guide` return an empty array.
 - Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
 
 ## Migration Notes

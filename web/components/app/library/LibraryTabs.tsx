@@ -9,7 +9,7 @@ const TABS = [
     id: "suggested" as const,
     label: "Gợi ý",
     description:
-      "Phù hợp môn bạn đang học — ưu tiên đúng CTĐT và học kỳ trong hồ sơ.",
+      "Phù hợp chương trình đào tạo trong hồ sơ của bạn.",
   },
   {
     id: "browse" as const,
