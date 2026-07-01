@@ -277,7 +277,7 @@ Admin academic CRUD under `/api/admin`:
 
 - `GET/POST/PATCH/DELETE /api/admin/curricula`
 - `GET/POST/PATCH/DELETE /api/admin/semesters`
-- `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters`
+- `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters` (when listing, inactive curricula are allowed so admins can inspect archived CTĐT)
 - `GET/POST/PATCH/DELETE /api/admin/subjects`
 - `GET/POST/PATCH/DELETE /api/admin/course-slots` (body uses `curriculumId`, `semesterId`, `subjectId`)
 
