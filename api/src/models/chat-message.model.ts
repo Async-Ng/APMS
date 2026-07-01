@@ -24,6 +24,7 @@ const chatMessageSchema = new Schema(
     role: { type: String, enum: ["user", "assistant"], required: true },
     content: { type: String, required: true },
     citations: { type: [citationSchema], default: [] },
+    suggestedQuestions: { type: [String], default: [] },
   },
   { timestamps: true },
 );
@@ -48,6 +49,7 @@ export function toChatMessageResponse(message: ChatMessageDocument) {
       heading: c.heading ?? null,
       excerpt: c.excerpt,
     })),
+    suggestedQuestions: message.suggestedQuestions ?? [],
     createdAt: message.createdAt,
   };
 }

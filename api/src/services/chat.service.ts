@@ -592,6 +592,7 @@ export async function getSession(user: UserDocument, sessionId: string) {
         heading: c.heading ?? null,
         excerpt: c.excerpt,
       })),
+      suggestedQuestions: m.suggestedQuestions ?? [],
       createdAt: m.createdAt,
     })),
   };
@@ -722,6 +723,7 @@ interface PreparedChatContext {
   userMessage: ChatMessageDocument;
   chunkResults: RetrievedChunk[];
   titleMap: Map<string, string>;
+  contextText: string;
   systemPrompt: string;
   historyMessages: ChatTurn[];
   retrievalDebug: RetrievalDebugInfo;
@@ -838,6 +840,7 @@ async function prepareChatContext(
     userMessage,
     chunkResults,
     titleMap,
+    contextText,
     systemPrompt,
     historyMessages,
     retrievalDebug: buildRetrievalDebugInfo(analysis, vectorChunks, lexicalChunks),
@@ -847,6 +850,99 @@ async function prepareChatContext(
 function writeSse(res: Response, event: string, data: unknown): void {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+const SUGGESTED_QUESTION_COUNT = 3;
+const SUGGESTED_QUESTION_MAX_CHARS = 160;
+const SUGGESTED_QUESTION_CONTEXT_CHARS = 6000;
+const SUGGESTED_QUESTION_ANSWER_CHARS = 2500;
+
+function suggestedQuestionCandidates(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+
+  const record = payload as Record<string, unknown>;
+  const candidates = record.suggestedQuestions ?? record.questions;
+  return Array.isArray(candidates) ? candidates : [];
+}
+
+function sanitizeSuggestedQuestions(payload: unknown): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const candidate of suggestedQuestionCandidates(payload)) {
+    if (typeof candidate !== "string") continue;
+
+    const question = candidate
+      .replace(/\s+/g, " ")
+      .replace(/^[-*]\s*/, "")
+      .replace(/^\d+[.)]\s*/, "")
+      .trim();
+
+    if (!question || question.length > SUGGESTED_QUESTION_MAX_CHARS) continue;
+
+    const key = question.toLocaleLowerCase();
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    result.push(question);
+
+    if (result.length >= SUGGESTED_QUESTION_COUNT) break;
+  }
+
+  return result;
+}
+
+function buildSuggestedQuestionsPrompt(
+  userQuestion: string,
+  assistantAnswer: string,
+  contextText: string,
+): string {
+  return `Create 2-3 concise follow-up questions the student can ask next.
+
+Rules:
+- Use only the retrieved context, the user's question, and the assistant answer below.
+- Do not introduce facts or topics not supported by the context.
+- Write questions in the same language as the user's question.
+- Make each question specific, useful, and suitable for a clickable suggestion chip.
+- Return JSON only: {"suggestedQuestions":["..."]}.
+
+User question:
+${userQuestion}
+
+Assistant answer:
+${assistantAnswer.slice(0, SUGGESTED_QUESTION_ANSWER_CHARS)}
+
+Retrieved context:
+${contextText.slice(0, SUGGESTED_QUESTION_CONTEXT_CHARS)}`;
+}
+
+async function generateSuggestedQuestions(
+  prepared: PreparedChatContext,
+  assistantAnswer: string,
+  mode: ChatMode,
+): Promise<string[]> {
+  if (mode !== "chat" || prepared.contextText.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const raw = await aiService.generateLite(
+      buildSuggestedQuestionsPrompt(
+        prepared.userMessage.content,
+        assistantAnswer,
+        prepared.contextText,
+      ),
+      { json: true, maxOutputTokens: 256 },
+    );
+    return sanitizeSuggestedQuestions(JSON.parse(raw));
+  } catch (error) {
+    console.warn(
+      "[chat] Failed to generate suggested questions:",
+      error instanceof Error ? error.message : error,
+    );
+    return [];
+  }
 }
 
 export async function sendMessage(
@@ -873,12 +969,14 @@ export async function sendMessage(
     prepared.chunkResults,
     prepared.titleMap,
   );
+  const suggestedQuestions = await generateSuggestedQuestions(prepared, assistantText, mode);
 
   const assistantMessage = await ChatMessage.create({
     sessionId: prepared.session._id,
     role: "assistant",
     content: assistantText,
     citations: builtCitations,
+    suggestedQuestions,
   });
 
   await ChatSession.findByIdAndUpdate(prepared.session._id, { updatedAt: new Date() });
@@ -945,6 +1043,11 @@ export async function sendMessageStream(
     prepared.chunkResults,
     prepared.titleMap,
   );
+  const suggestedQuestions = await generateSuggestedQuestions(
+    prepared,
+    assistantText.trim(),
+    mode,
+  );
 
   try {
     const assistantMessage = await ChatMessage.create({
@@ -952,6 +1055,7 @@ export async function sendMessageStream(
       role: "assistant",
       content: assistantText.trim(),
       citations: builtCitations,
+      suggestedQuestions,
     });
 
     await ChatSession.findByIdAndUpdate(prepared.session._id, { updatedAt: new Date() });

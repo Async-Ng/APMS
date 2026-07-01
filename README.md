@@ -23,8 +23,8 @@ APMS is a student knowledge-management system for academic documents. It lets us
 - Visibility model: `private` documents are owner/share-only; `public` documents are discoverable by active users across the system.
 - Folder workspace: owned documents and folders keep a Drive-like hierarchy through `/api/folders` and `view=my`.
 - Sharing: `/api/shares` remains available for direct read-only sharing of documents and folders.
-- Academic discovery: public document listing supports major, semester, subject, and match filters.
-- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search; chat is limited to 50 questions per user per day.
+- Academic discovery: public document listing supports curriculum, semester, subject, and match filters.
+- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search; chat answers are streamed with citations and follow-up suggestions, and are limited to 50 questions per user per day.
 - Admin access control: active/disabled users, email-domain allowlist, exact-email exceptions, and promote/demote admin role (Cognito group + MongoDB).
 
 Removed API surfaces: `/api/drive`, `/api/library`, and `/api/forum` are no longer mounted. They are replaced by the unified `/api/documents` API.
@@ -38,7 +38,7 @@ Web / Mobile
   -> Documents: MongoDB metadata + S3 file objects
   -> Processing worker: extract text/images -> chunk -> Gemini embeddings
   -> Retrieval: Atlas Vector Search over document_chunks
-  -> Generation: Gemini chat with grounded context and citations
+  -> Generation: Gemini chat with grounded context, citations, and follow-up suggestions
 ```
 
 ## Main API Routes
@@ -49,7 +49,7 @@ Web / Mobile
 | `/api/auth` | Login callback, current user, profile setup |
 | `/api/admin` | Admin users (quota, disable, role), stats, email allowlist, academic catalog |
 | `/api/users` | Current user profile and academic metadata |
-| `/api/catalog` | Majors, semesters, major-semester links, curriculum courses |
+| `/api/catalog` | Curricula, semesters, curriculum-semester links, course slots |
 | `/api/folders` | Folder CRUD, star, restore, permanent delete |
 | `/api/documents` | Unified document list and document operations |
 | `/api/shares` | Direct document/folder sharing |
@@ -101,6 +101,7 @@ Useful API maintenance commands:
 cd api
 pnpm migrate:document-visibility
 pnpm migrate:semester-entities
+pnpm migrate:major-to-curriculum
 pnpm setup:atlas
 pnpm purge:trash
 pnpm build

@@ -8,18 +8,18 @@ Business rules: see `docs/SRS.md` (FR/BR). APMS dùng MongoDB Atlas cho metadata
 | --- | --- |
 | `users` | User local profile, role, disabled state, quota, academic profile |
 | `access_emails` | Exact-email allowlist ngoài domain mặc định |
-| `curriculums` | Ngành học |
+| `curriculums` | Curriculum (track học vụ) |
 | `semesters` | Học kỳ (entity: code, name, sortOrder) |
-| `curriculumsemesters` | Junction ngành ↔ học kỳ |
+| `curriculumsemesters` | Junction curriculum ↔ học kỳ |
 | `subjects` | Môn học |
-| `CourseSlots` | Mapping ngành + semesterId + môn |
+| `courseslots` | Mapping curriculum + semesterId + môn |
 | `folders` | Cây thư mục cá nhân |
 | `documents` | Metadata tài liệu |
 | `document_chunks` | Text chunks + embeddings |
 | `shares` | Quyền read-only trực tiếp |
 | `shareinvites` | Email share invite records (hết hạn sau 7 ngày, BR-015) |
 | `chat_sessions` | Chat sessions |
-| `chat_messages` | Chat messages và citations |
+| `chat_messages` | Chat messages, citations, và suggested questions |
 
 Storage quota mặc định 500 MB/người (`users.storageQuotaBytes`); tài liệu trong thùng rác bị purge sau 30 ngày (`TRASH_RETENTION_DAYS`, BR-027).
 
@@ -80,15 +80,15 @@ Legacy enum values are handled by `pnpm migrate:document-visibility`: old `perso
 
 ### `curriculumsemesters`
 
-Junction **Major ↔ Semester**. Admin assigns semesters to a major before curriculum mapping.
+Junction **Curriculum ↔ Semester**. Admin assigns semesters to a curriculum before course-slot mapping.
 
 | Field | Notes |
 | --- | --- |
 | `curriculumId`, `semesterId` | Unique pair (BR-018) |
-| `sortOrder` | Optional per-major order override |
-| `isActive` | Soft-archive: remove semester from major without deleting global semester (BR-020) |
+| `sortOrder` | Optional per-curriculum order override |
+| `isActive` | Soft-archive: remove semester from curriculum without deleting global semester (BR-020) |
 
-### `CourseSlots`
+### `courseslots`
 
 | Field | Notes |
 | --- | --- |
@@ -103,7 +103,7 @@ Unique index: `{ curriculumId, semesterId, subjectId }` (BR-019). `(curriculumId
 | Field | Notes |
 | --- | --- |
 | `curriculumId` | Ref `curriculums` |
-| `currentSemesterId` | Ref `semesters`; must belong to `curriculumsemesters` for selected major |
+| `currentSemesterId` | Ref `semesters`; must belong to `curriculumsemesters` for selected curriculum |
 | `currentSubjectIds` | Ref `subjects` |
 | `storageUsedBytes` | Bytes currently used by the user's documents |
 | `storageQuotaBytes` | Storage quota, default 500 MB (`524_288_000`) |
@@ -126,8 +126,8 @@ Public match types:
 
 | Match type | Meaning |
 | --- | --- |
-| `exact_course` | Same major, current semesterId, current subject |
-| `same_subject_other_semester` | Same subject in another semester of the same major |
+| `exact_course` | Same curriculum, current semesterId, current subject |
+| `same_subject_other_semester` | Same subject in another semester of the same curriculum |
 | `global_public` | Public but not profile-related |
 
 ## Document Chunks And Vector Search
@@ -153,4 +153,4 @@ Atlas Vector Search index dimension must match `GEMINI_EMBEDDING_OUTPUT_DIMENSIO
 
 ## Chat Data
 
-Chat sessions and messages store prompt/response metadata and citations. Chat context validation must use the same document-read access rules as document detail/search.
+Chat sessions and messages store prompt/response metadata, citations, and optional `suggestedQuestions` for assistant follow-up prompts. Chat context validation must use the same document-read access rules as document detail/search.

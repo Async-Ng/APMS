@@ -74,11 +74,11 @@ APMS là một ứng dụng (web và di động) giúp sinh viên gom toàn bộ
 | Quản trị viên | Người quản lý danh mục học thuật, người dùng và danh sách email truy cập. |
 | Tài liệu | Một tệp học tập (PDF, DOCX, PPTX) do người dùng tải lên, gắn với một môn học. |
 | Thư mục | Đơn vị sắp xếp tài liệu trong không gian cá nhân, có thể lồng nhau. |
-| Ngành | Ngành học, ví dụ "Kỹ thuật phần mềm". |
+| Curriculum | Chương trình đào tạo (track) mà người dùng theo học, ví dụ "SE-STD", "SE-FND". |
 | Học kỳ | Một kỳ học trong chương trình đào tạo. |
 | Môn học | Một môn trong chương trình đào tạo. |
-| Chương trình đào tạo | Tập hợp các môn học được gán cho từng cặp ngành – học kỳ. |
-| Hồ sơ học thuật | Lựa chọn của người dùng về ngành, học kỳ hiện tại và các môn đang học. |
+| Course slot | Bản ghi học vụ 3 chiều gồm Curriculum – Học kỳ – Môn học; là điểm neo bắt buộc của tài liệu. |
+| Hồ sơ học thuật | Lựa chọn của người dùng về curriculum, học kỳ hiện tại và các môn đang học. |
 | Drive của tôi | Không gian tài liệu và thư mục cá nhân của người dùng. |
 | Thư viện công khai | Nơi xem các tài liệu được đặt ở chế độ công khai. |
 | Đã gắn sao | Nhóm tài liệu/thư mục được người dùng đánh dấu sao để truy cập nhanh. |
@@ -158,7 +158,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 **Trò chuyện AI**
 - Tạo và quản lý các phiên trò chuyện (đổi tên, ghim, xóa).
-- Đặt câu hỏi và nhận câu trả lời kèm trích dẫn từ tài liệu.
+- Đặt câu hỏi và nhận câu trả lời tổng quan kèm trích dẫn từ tài liệu, sau đó có gợi ý câu hỏi tiếp theo để người dùng khai thác sâu hơn.
 - Chọn ngữ cảnh trò chuyện: toàn bộ tài liệu, một thư mục, một hoặc nhiều tài liệu.
 - Các chế độ hỗ trợ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập.
 
@@ -253,8 +253,8 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 |----|------------------|
 | FR-007 | Hệ thống phải hiển thị email và tên hiển thị của người dùng. |
 | FR-008 | Hệ thống phải cho phép người dùng cập nhật tên hiển thị (tối đa 100 ký tự, không để trống). |
-| FR-009 | Hệ thống phải cho phép người dùng chọn ngành, học kỳ hiện tại và các môn đang học để tạo hồ sơ học thuật. |
-| FR-010 | Hệ thống phải chỉ cho phép chọn học kỳ thuộc ngành đã chọn và môn học thuộc đúng cặp ngành – học kỳ trong chương trình đào tạo. |
+| FR-009 | Hệ thống phải cho phép người dùng chọn curriculum, học kỳ hiện tại và các môn đang học để tạo hồ sơ học thuật. |
+| FR-010 | Hệ thống phải chỉ cho phép chọn học kỳ thuộc curriculum đã chọn và môn học thuộc đúng cặp curriculum – học kỳ trong danh mục course slot. |
 | FR-011 | Hệ thống phải yêu cầu chọn ít nhất một môn học khi lưu hồ sơ học thuật. |
 | FR-012 | Hệ thống phải hiển thị trạng thái hồ sơ học thuật là "Đã hoàn thành" hoặc "Chưa hoàn thành". |
 | FR-063 | Hệ thống phải cho phép người dùng chọn học kỳ **hiển thị** trên Drive (độc lập học kỳ chính trong hồ sơ); chỉ ảnh hưởng bố cục xem tài liệu, không đổi quyền upload hay gợi ý Thư viện. |
@@ -267,8 +267,8 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Actor | Người dùng |
 | Màn hình | Hồ sơ của tôi |
 | Điều kiện thực hiện | Đã đăng nhập; danh mục học thuật đã được thiết lập. |
-| Người dùng thực hiện | Chọn Ngành → chọn Học kỳ → điều chỉnh danh sách Môn đang học (mặc định đã chọn tất cả môn trong CTĐT của học kỳ) → nhấn "Lưu hồ sơ". |
-| Dữ liệu cần nhập | Ngành, Học kỳ, danh sách Môn đang học. |
+| Người dùng thực hiện | Chọn Curriculum → chọn Học kỳ → điều chỉnh danh sách Môn đang học (mặc định đã chọn tất cả môn trong course slots của học kỳ) → nhấn "Lưu hồ sơ". |
+| Dữ liệu cần nhập | Curriculum, Học kỳ, danh sách Môn đang học. |
 | Hành vi mặc định | Khi chọn hoặc đổi Học kỳ, giao diện mặc định chọn tất cả môn trong chương trình đào tạo của học kỳ đó (tối đa 30); người dùng có thể bỏ chọn trước khi lưu. |
 | Kết quả thành công | Hệ thống lưu hồ sơ và hiển thị thông báo "Đã lưu hồ sơ học thuật"; trạng thái chuyển sang "Đã hoàn thành". |
 | Ngoại lệ | Nếu chưa chọn ngành/học kỳ hoặc chưa chọn môn nào, hệ thống hiển thị thông báo yêu cầu bổ sung và không lưu. |
@@ -343,7 +343,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-040 | Hệ thống phải cho phép người dùng tạo phiên trò chuyện với ngữ cảnh: toàn bộ tài liệu, một thư mục, một tài liệu, hoặc nhiều tài liệu. |
-| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh. |
+| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh; ở chế độ hỏi đáp, câu trả lời ưu tiên tổng quan ngắn gọn và kèm gợi ý câu hỏi tiếp theo. |
 | FR-042 | Hệ thống phải đính kèm trích dẫn nguồn (tài liệu, trang, đoạn) vào câu trả lời. |
 | FR-043 | Hệ thống phải hỗ trợ các chế độ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập. |
 | FR-044 | Hệ thống phải cho phép người dùng xem danh sách phiên, đổi tên, ghim/bỏ ghim và xóa phiên trò chuyện. Phiên có ngữ cảnh tài liệu hoặc thư mục đã xóa (thùng rác) hoặc không còn tồn tại không hiển thị trong danh sách. |
@@ -365,27 +365,27 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 | ID | Yêu cầu chức năng |
 |----|------------------|
-| FR-052 | Hệ thống phải cho phép quản trị viên tạo, xem, cập nhật và lưu trữ (vô hiệu hóa) Ngành. |
+| FR-052 | Hệ thống phải cho phép quản trị viên tạo, xem, cập nhật và lưu trữ (vô hiệu hóa) Curriculum. |
 | FR-053 | Hệ thống phải cho phép quản trị viên tạo, xem, cập nhật và lưu trữ Học kỳ, kèm thứ tự sắp xếp. |
 | FR-054 | Hệ thống phải cho phép quản trị viên tạo, xem, cập nhật và lưu trữ Môn học. |
-| FR-055 | Hệ thống phải bảo đảm mã Ngành, mã Học kỳ và mã Môn học là duy nhất (không phân biệt hoa thường, tự chuẩn hóa in hoa). |
-| FR-056 | Hệ thống phải cho phép quản trị viên gán một hoặc nhiều Học kỳ cho một Ngành và gỡ (lưu trữ) liên kết đó. |
-| FR-057 | Hệ thống phải cho phép quản trị viên tạo, xem (có lọc), cập nhật và lưu trữ mục Chương trình đào tạo (gồm Ngành – Học kỳ – Môn học). |
-| FR-058 | Hệ thống phải chỉ cho phép tạo mục Chương trình đào tạo khi Ngành, Học kỳ, Môn học đều đang hoạt động và cặp Ngành – Học kỳ đã được gán với nhau. |
-| FR-059 | Hệ thống phải bảo đảm mỗi mục Chương trình đào tạo (Ngành – Học kỳ – Môn học) là duy nhất, không trùng lặp. |
-| FR-060 | Hệ thống phải ngăn việc thay đổi định danh của mục Chương trình đào tạo khi đã có tài liệu tham chiếu đến nó. |
+| FR-055 | Hệ thống phải bảo đảm mã Curriculum, mã Học kỳ và mã Môn học là duy nhất (không phân biệt hoa thường, tự chuẩn hóa in hoa). |
+| FR-056 | Hệ thống phải cho phép quản trị viên gán một hoặc nhiều Học kỳ cho một Curriculum và gỡ (lưu trữ) liên kết đó. |
+| FR-057 | Hệ thống phải cho phép quản trị viên tạo, xem (có lọc), cập nhật và lưu trữ mục Course slot (gồm Curriculum – Học kỳ – Môn học). |
+| FR-058 | Hệ thống phải chỉ cho phép tạo mục Course slot khi Curriculum, Học kỳ, Môn học đều đang hoạt động và cặp Curriculum – Học kỳ đã được gán với nhau. |
+| FR-059 | Hệ thống phải bảo đảm mỗi mục Course slot (Curriculum – Học kỳ – Môn học) là duy nhất, không trùng lặp. |
+| FR-060 | Hệ thống phải ngăn việc thay đổi định danh của mục Course slot khi đã có tài liệu tham chiếu đến nó. |
 
-**Chi tiết FR-057 — Quản lý Chương trình đào tạo:**
+**Chi tiết FR-057 — Quản lý Course slot:**
 
 | Thuộc tính | Nội dung |
 |------------|---------|
 | Actor | Quản trị viên |
 | Màn hình | Quản trị → Danh mục học thuật |
-| Điều kiện thực hiện | Đã đăng nhập với vai trò quản trị; đã có Ngành, Học kỳ, Môn học hoạt động và cặp Ngành – Học kỳ đã được gán. |
-| Người dùng thực hiện | Chọn Ngành, Học kỳ, Môn học để tạo mục mới; hoặc cập nhật/lưu trữ mục hiện có. |
-| Dữ liệu cần nhập | Ngành, Học kỳ, Môn học. |
-| Kết quả thành công | Mục Chương trình đào tạo được tạo/cập nhật và xuất hiện trong danh mục. |
-| Ngoại lệ | Trùng lặp, thành phần không hoạt động, cặp Ngành–Học kỳ chưa gán, hoặc đổi định danh khi đã có tài liệu tham chiếu → hệ thống từ chối và nêu lý do. |
+| Điều kiện thực hiện | Đã đăng nhập với vai trò quản trị; đã có Curriculum, Học kỳ, Môn học hoạt động và cặp Curriculum – Học kỳ đã được gán. |
+| Người dùng thực hiện | Chọn Curriculum, Học kỳ, Môn học để tạo mục mới; hoặc cập nhật/lưu trữ mục hiện có. |
+| Dữ liệu cần nhập | Curriculum, Học kỳ, Môn học. |
+| Kết quả thành công | Mục Course slot được tạo/cập nhật và xuất hiện trong danh mục. |
+| Ngoại lệ | Trùng lặp, thành phần không hoạt động, cặp Curriculum–Học kỳ chưa gán, hoặc đổi định danh khi đã có tài liệu tham chiếu → hệ thống từ chối và nêu lý do. |
 
 ---
 
@@ -511,7 +511,7 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Tên hiển thị | Tên hiển thị của người dùng | ✅ | Tối đa 100 ký tự |
 | Vai trò | Người dùng hoặc Quản trị viên | ✅ | Mặc định: Người dùng |
 | Trạng thái hoạt động | Còn hoạt động hay đã bị vô hiệu hóa | ✅ | Mặc định: hoạt động |
-| Ngành | Ngành đã chọn | ❌ | Tham chiếu Ngành |
+| Curriculum | Curriculum đã chọn | ❌ | Tham chiếu Curriculum |
 | Học kỳ hiện tại | Học kỳ đang theo học | ❌ | Tham chiếu Học kỳ |
 | Môn đang học | Các môn đang theo học | ❌ | Tham chiếu Môn học |
 | Dung lượng đã dùng / Hạn mức | Mức lưu trữ đã dùng so với hạn mức | ✅ | Hạn mức mặc định 500 MB |
@@ -544,12 +544,12 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Màu | Màu hiển thị | ❌ | Mặc định có sẵn |
 | Đã gắn sao / Thời điểm xóa | Đánh dấu sao / trạng thái thùng rác | ❌ | — |
 
-#### Đối tượng: Ngành
+#### Đối tượng: Curriculum
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
 |------------|---------|----------|-----------|
-| Mã ngành | Mã định danh | ✅ | Duy nhất, in hoa, tối đa 20 ký tự |
-| Tên ngành | Tên đầy đủ | ✅ | Tối đa 150 ký tự |
-| Mô tả | Mô tả ngành | ❌ | Tối đa 1000 ký tự |
+| Mã curriculum | Mã định danh | ✅ | Duy nhất, in hoa, tối đa 20 ký tự |
+| Tên curriculum | Tên đầy đủ | ✅ | Tối đa 150 ký tự |
+| Mô tả | Mô tả curriculum | ❌ | Tối đa 1000 ký tự |
 | Trạng thái hoạt động | Còn dùng hay đã lưu trữ | ✅ | Mặc định: hoạt động |
 
 #### Đối tượng: Học kỳ
@@ -568,24 +568,24 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Mô tả | Mô tả môn | ❌ | Tối đa 1000 ký tự |
 | Trạng thái hoạt động | Còn dùng hay đã lưu trữ | ✅ | Mặc định: hoạt động |
 
-#### Đối tượng: Gán Học kỳ cho Ngành
-**Ý nghĩa:** Xác định những học kỳ nào thuộc về một ngành.
+#### Đối tượng: Gán Học kỳ cho Curriculum
+**Ý nghĩa:** Xác định những học kỳ nào thuộc về một curriculum.
 
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
 |------------|---------|----------|-----------|
-| Ngành | Ngành liên quan | ✅ | Tham chiếu Ngành |
+| Curriculum | Curriculum liên quan | ✅ | Tham chiếu Curriculum |
 | Học kỳ | Học kỳ được gán | ✅ | Tham chiếu Học kỳ |
-| Trạng thái hoạt động | Còn hiệu lực hay đã gỡ | ✅ | Mỗi cặp Ngành–Học kỳ là duy nhất |
+| Trạng thái hoạt động | Còn hiệu lực hay đã gỡ | ✅ | Mỗi cặp Curriculum–Học kỳ là duy nhất |
 
-#### Đối tượng: Chương trình đào tạo
-**Ý nghĩa:** Một môn học thuộc một ngành ở một học kỳ cụ thể; là điểm neo bắt buộc của mọi tài liệu.
+#### Đối tượng: Course slot
+**Ý nghĩa:** Một môn học thuộc một curriculum ở một học kỳ cụ thể; là điểm neo bắt buộc của mọi tài liệu.
 
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
 |------------|---------|----------|-----------|
-| Ngành | Ngành | ✅ | Tham chiếu Ngành |
+| Curriculum | Curriculum | ✅ | Tham chiếu Curriculum |
 | Học kỳ | Học kỳ | ✅ | Tham chiếu Học kỳ |
 | Môn học | Môn học | ✅ | Tham chiếu Môn học |
-| Trạng thái hoạt động | Còn dùng hay đã lưu trữ | ✅ | Bộ ba Ngành–Học kỳ–Môn là duy nhất |
+| Trạng thái hoạt động | Còn dùng hay đã lưu trữ | ✅ | Bộ ba Curriculum–Học kỳ–Môn là duy nhất |
 
 #### Đối tượng: Chia sẻ
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
@@ -611,6 +611,7 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Ghim | Đánh dấu ghim | ❌ | — |
 | Vai trò tin nhắn | Người dùng hoặc Trợ lý | ✅ | — |
 | Nội dung & Trích dẫn | Nội dung tin nhắn và nguồn tham chiếu | ✅ (nội dung) | — |
+| Gợi ý câu hỏi tiếp theo | Các câu hỏi follow-up do trợ lý đề xuất sau câu trả lời ở chế độ hỏi đáp | ❌ | Tối đa 3 câu |
 
 #### Đối tượng: Email truy cập ngoại lệ
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
@@ -622,17 +623,17 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 ### 6.2 ERD — Quan hệ giữa các đối tượng
 
 ```
-Người dùng ───── (chọn) ─────── 1 Ngành
+Người dùng ───── (chọn) ─────── 1 Curriculum
 Người dùng ───── (chọn) ─────── 1 Học kỳ
 Người dùng ───── (đang học) ─── N Môn học
 Người dùng ───── (sở hữu) ───── N Tài liệu
 Người dùng ───── (sở hữu) ───── N Thư mục
 Người dùng ───── (sở hữu) ───── N Phiên trò chuyện
 
-Ngành ───────── (có) ────────── N Gán Học kỳ cho Ngành ── 1 Học kỳ
-Ngành + Học kỳ + Môn học ── (tạo thành) ── 1 Chương trình đào tạo
+Curriculum ──── (có) ───────── N Gán Học kỳ cho Curriculum ── 1 Học kỳ
+Curriculum + Học kỳ + Môn học ── (tạo thành) ── 1 Course slot
 
-Chương trình đào tạo ── (được gắn bởi) ── N Tài liệu
+Course slot ─────────── (được gắn bởi) ── N Tài liệu
 Thư mục ──────── (chứa) ─────── N Tài liệu
 Thư mục ──────── (chứa) ─────── N Thư mục con
 
@@ -670,7 +671,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 [Đang chờ] ──(quá 7 ngày)─> (hết hạn)
 ```
 
-**Danh mục học thuật (Ngành/Học kỳ/Môn/Chương trình đào tạo):**
+**Danh mục học thuật (Curriculum/Học kỳ/Môn/Course slot):**
 ```
 [Hoạt động] ──(lưu trữ)──> [Đã lưu trữ]
 ```
@@ -681,14 +682,14 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 | Màn hình / Đối tượng | Trường | Quy tắc |
 |----------------------|--------|---------|
 | Hồ sơ | Tên hiển thị | Bắt buộc, tối đa 100 ký tự |
-| Hồ sơ học thuật | Ngành, Học kỳ | Bắt buộc; học kỳ phải thuộc ngành đã chọn |
-| Hồ sơ học thuật | Môn đang học | Ít nhất 1, tối đa 30; phải thuộc đúng ngành–học kỳ |
+| Hồ sơ học thuật | Curriculum, Học kỳ | Bắt buộc; học kỳ phải thuộc curriculum đã chọn |
+| Hồ sơ học thuật | Môn đang học | Ít nhất 1, tối đa 30; phải thuộc đúng curriculum–học kỳ |
 | Tải lên | Tệp | Định dạng PDF/DOCX/PPTX; trong giới hạn dung lượng và hạn mức |
 | Tải lên | Môn học | Bắt buộc; phải thuộc hồ sơ học thuật của người dùng |
 | Tài liệu | Tiêu đề | Tối đa 255 ký tự |
 | Tài liệu | Thẻ | Tối đa 20 thẻ, mỗi thẻ tối đa 50 ký tự |
 | Tài liệu | Chế độ công khai | Chỉ đặt được khi đã gắn môn học |
-| Ngành/Học kỳ/Môn | Mã | Bắt buộc, duy nhất, tự chuẩn hóa in hoa |
+| Curriculum/Học kỳ/Môn | Mã | Bắt buộc, duy nhất, tự chuẩn hóa in hoa |
 | Chia sẻ | Người nhận | Ít nhất 1; tối đa 50 người và 50 email mỗi lần |
 | Trò chuyện | Nội dung câu hỏi | Bắt buộc khi ở chế độ hỏi đáp; tối đa 10.000 ký tự |
 | Trò chuyện | Số lượt hỏi | Tối đa 50 lượt/người/ngày |
@@ -736,11 +737,11 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 
 | ID | Quy tắc | Hệ quả khi vi phạm |
 |----|---------|-------------------|
-| BR-017 | Mã Ngành, Học kỳ, Môn học phải duy nhất, tự chuẩn hóa in hoa. | Từ chối tạo/cập nhật trùng. |
-| BR-018 | Mục Chương trình đào tạo chỉ tạo được khi Ngành, Học kỳ, Môn đều hoạt động và cặp Ngành–Học kỳ đã được gán. | Từ chối tạo. |
-| BR-019 | Bộ ba Ngành–Học kỳ–Môn trong Chương trình đào tạo phải duy nhất. | Từ chối tạo trùng. |
-| BR-020 | Không lưu trữ/vô hiệu hóa Ngành, Học kỳ, Môn, hoặc gán Học kỳ–Ngành khi vẫn còn người dùng hoặc tài liệu/chương trình tham chiếu. | Từ chối với thông báo xung đột. |
-| BR-021 | Không đổi định danh mục Chương trình đào tạo khi đã có tài liệu tham chiếu. | Từ chối thay đổi. |
+| BR-017 | Mã Curriculum, Học kỳ, Môn học phải duy nhất, tự chuẩn hóa in hoa. | Từ chối tạo/cập nhật trùng. |
+| BR-018 | Mục Course slot chỉ tạo được khi Curriculum, Học kỳ, Môn đều hoạt động và cặp Curriculum–Học kỳ đã được gán. | Từ chối tạo. |
+| BR-019 | Bộ ba Curriculum–Học kỳ–Môn trong Course slot phải duy nhất. | Từ chối tạo trùng. |
+| BR-020 | Không lưu trữ/vô hiệu hóa Curriculum, Học kỳ, Môn, hoặc gán Học kỳ–Curriculum khi vẫn còn người dùng hoặc tài liệu/course slot tham chiếu. | Từ chối với thông báo xung đột. |
+| BR-021 | Không đổi định danh mục Course slot khi đã có tài liệu tham chiếu. | Từ chối thay đổi. |
 
 ### 7.5 Trò chuyện AI
 
@@ -775,12 +776,12 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - **E2** Kiểm tra quyền gặp sự cố: hệ thống báo lỗi tạm thời, yêu cầu thử lại.
 
 ### UC-002: Thiết lập hồ sơ học thuật
-**Actor:** Người dùng — **Mục tiêu:** Chọn ngành, học kỳ, môn đang học.
+**Actor:** Người dùng — **Mục tiêu:** Chọn curriculum, học kỳ, môn đang học.
 1. Người dùng mở Hồ sơ của tôi.
-2. Chọn Ngành → Học kỳ → các Môn đang học.
+2. Chọn Curriculum → Học kỳ → các Môn đang học.
 3. Nhấn "Lưu hồ sơ".
 4. Hệ thống lưu và hiển thị "Đã lưu hồ sơ học thuật"; trạng thái "Đã hoàn thành".
-- **E1** Thiếu ngành/học kỳ/môn: hệ thống yêu cầu bổ sung, không lưu.
+- **E1** Thiếu curriculum/học kỳ/môn: hệ thống yêu cầu bổ sung, không lưu.
 
 ### UC-003: Tải tài liệu lên và xử lý
 **Actor:** Người dùng — **Mục tiêu:** Đưa tài liệu vào hệ thống.
@@ -804,14 +805,14 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 **Actor:** Người dùng — **Mục tiêu:** Nhận câu trả lời dựa trên tài liệu.
 1. Người dùng mở Trò chuyện AI, tạo phiên với ngữ cảnh mong muốn.
 2. Nhập câu hỏi và gửi.
-3. Hệ thống trả lời (hiển thị dần) kèm trích dẫn nguồn.
+3. Hệ thống trả lời (hiển thị dần) theo dạng tổng quan trước, kèm trích dẫn nguồn và gợi ý câu hỏi tiếp theo.
 - **E1** Câu hỏi để trống ở chế độ hỏi đáp: hệ thống không gửi.
 
 ### UC-006: Quản trị viên quản lý chương trình đào tạo
-**Actor:** Quản trị viên — **Mục tiêu:** Thiết lập môn học cho ngành–học kỳ.
+**Actor:** Quản trị viên — **Mục tiêu:** Thiết lập môn học cho curriculum–học kỳ.
 1. Quản trị viên mở Quản trị → Danh mục học thuật.
-2. Tạo Ngành/Học kỳ/Môn (nếu cần), gán Học kỳ cho Ngành.
-3. Tạo mục Chương trình đào tạo (Ngành – Học kỳ – Môn).
+2. Tạo Curriculum/Học kỳ/Môn (nếu cần), gán Học kỳ cho Curriculum.
+3. Tạo mục Course slot (Curriculum – Học kỳ – Môn).
 4. Hệ thống kiểm tra ràng buộc và lưu.
 - **E1** Thành phần không hoạt động / cặp chưa gán / trùng lặp: từ chối và nêu lý do.
 
@@ -930,14 +931,15 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-028-03: Khi chia sẻ trùng người nhận, hệ thống không tạo bản ghi trùng.
 
 ### Danh mục học thuật (FR-058, FR-060, BR-020)
-- [ ] AC-058-01: Khi tạo Chương trình đào tạo với thành phần hoạt động và cặp Ngành–Học kỳ đã gán, hệ thống lưu thành công.
-- [ ] AC-058-02: Khi lưu trữ Ngành/Học kỳ/Môn đang được tham chiếu, hệ thống từ chối với thông báo xung đột.
-- [ ] AC-058-03: Khi đổi định danh Chương trình đào tạo đã có tài liệu tham chiếu, hệ thống từ chối.
+- [ ] AC-058-01: Khi tạo Course slot với thành phần hoạt động và cặp Curriculum–Học kỳ đã gán, hệ thống lưu thành công.
+- [ ] AC-058-02: Khi lưu trữ Curriculum/Học kỳ/Môn đang được tham chiếu, hệ thống từ chối với thông báo xung đột.
+- [ ] AC-058-03: Khi đổi định danh Course slot đã có tài liệu tham chiếu, hệ thống từ chối.
 
 ### Trò chuyện AI (FR-041, FR-042, FR-044)
 - [ ] AC-041-01: Khi người dùng đặt câu hỏi trong ngữ cảnh có tài liệu, hệ thống trả lời kèm trích dẫn nguồn.
 - [ ] AC-041-02: Khi gửi câu hỏi trống ở chế độ hỏi đáp, hệ thống không gửi.
 - [ ] AC-044-01: Khi tài liệu hoặc thư mục ngữ cảnh của phiên đã vào thùng rác hoặc bị xóa vĩnh viễn, phiên không còn trong danh sách; mở URL trực tiếp hoặc gửi tin mới bị từ chối.
+- [ ] AC-041-03: Khi người dùng hỏi ở chế độ hỏi đáp, phản hồi ưu tiên tổng quan ngắn gọn và trả tối đa 3 gợi ý câu hỏi tiếp theo.
 
 ---
 

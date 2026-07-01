@@ -306,12 +306,13 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 | `GET` | `/api/chat/sessions/:id` | Session detail with messages (404 if context unavailable) |
 | `PATCH` | `/api/chat/sessions/:id` | Rename or pin/unpin (`title`, `isPinned`) |
 | `DELETE` | `/api/chat/sessions/:id` | Delete a session |
-| `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations |
-| `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally (FR-045) |
+| `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations + suggestedQuestions |
+| `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally; final `done` event includes suggestedQuestions (FR-045) |
 
 - `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
 - `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
 - Answers include `citations` referencing document, page, and section (FR-042, BR-023).
+- Assistant messages include `suggestedQuestions: string[]`; chat mode may return up to 3 follow-up questions, while `summary`, `faq`, and `study_guide` return an empty array.
 - Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
 
 ## Migration Notes
