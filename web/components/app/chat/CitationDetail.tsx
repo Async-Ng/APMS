@@ -27,9 +27,19 @@ export function CitationDetail({ citation }: CitationDetailProps) {
           <p className="font-heading font-extrabold leading-tight text-brutal-ink">
             {citation.documentTitle}
           </p>
-          {citation.pageNumber != null && (
+          {(citation.heading || citation.pageNumber != null) && (
             <p className="mt-1 text-xs font-semibold text-brutal-muted">
-              Trang {citation.pageNumber}
+              {[
+                citation.heading,
+                citation.pageNumber != null ? `Trang ${citation.pageNumber}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
+          {citation.sectionPath && citation.sectionPath.length > 0 && (
+            <p className="mt-1 text-xs text-brutal-muted">
+              {citation.sectionPath.join(" › ")}
             </p>
           )}
         </div>

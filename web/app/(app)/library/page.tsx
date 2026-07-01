@@ -4,42 +4,42 @@ import { Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo, useState } from "react";
 
-import { ForumFeedPanel } from "@/components/app/forum/ForumFeedPanel";
+import { LibraryBrowsePanel } from "@/components/app/library/LibraryBrowsePanel";
 import {
-  type ForumFilterState,
-  forumFiltersToQueryParams,
-  libraryFiltersToQueryParams,
-} from "@/components/app/forum/ForumFiltersBar";
+  type LibraryFilterState,
+  suggestedFiltersToQueryParams,
+  browseFiltersToQueryParams,
+} from "@/components/app/library/LibraryFiltersBar";
+import { LibrarySuggestedPanel } from "@/components/app/library/LibrarySuggestedPanel";
 import {
-  ForumLibraryTabs,
-  type ForumLibraryTabId,
-} from "@/components/app/forum/ForumLibraryTabs";
-import { LibraryBrowsePanel } from "@/components/app/forum/LibraryBrowsePanel";
+  LibraryTabs,
+  type LibraryTabId,
+} from "@/components/app/library/LibraryTabs";
 import { Topbar } from "@/components/app/Topbar";
 import { LoadingScreen } from "@/components/ui/Spinner";
-import type { InternalDocumentSort } from "@/lib/queries/internal-documents";
 import { usePublicDocuments } from "@/lib/queries/documents";
+import type { PublicDocumentSort } from "@/lib/queries/public-documents";
 
-function parseTab(value: string | null): ForumLibraryTabId {
-  if (value === "library") return "library";
+function parseTab(value: string | null): LibraryTabId {
+  if (value === "browse" || value === "library") return "browse";
   if (value === "suggested" || value === "forum") return "suggested";
   return "suggested";
 }
 
 function parseSort(
   value: string | null,
-  tab: ForumLibraryTabId,
-): InternalDocumentSort {
+  tab: LibraryTabId,
+): PublicDocumentSort {
   if (value === "newest" || value === "oldest" || value === "title") {
     return value;
   }
-  return tab === "library" ? "title" : "newest";
+  return tab === "browse" ? "title" : "newest";
 }
 
 function filtersFromParams(
   params: URLSearchParams,
-  tab: ForumLibraryTabId,
-): ForumFilterState {
+  tab: LibraryTabId,
+): LibraryFilterState {
   return {
     search: params.get("q") ?? "",
     curriculumId: params.get("curriculumId") ?? "",
@@ -60,25 +60,25 @@ function PublicLibraryContent() {
     [searchParams, tab],
   );
 
-  const [localFilters, setLocalFilters] = useState<ForumFilterState | null>(null);
+  const [localFilters, setLocalFilters] = useState<LibraryFilterState | null>(null);
   const activeFilters = localFilters ?? filters;
 
   const syncUrl = useCallback(
     (
-      nextTab: ForumLibraryTabId,
-      nextFilters: ForumFilterState,
+      nextTab: LibraryTabId,
+      nextFilters: LibraryFilterState,
       nextPage: number,
     ) => {
       const params = new URLSearchParams();
-      if (nextTab === "library") params.set("tab", "library");
+      if (nextTab === "browse") params.set("tab", "browse");
       if (nextFilters.search) params.set("q", nextFilters.search);
-      if (nextTab === "library") {
+      if (nextTab === "browse") {
         if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
         if (nextFilters.semesterId)
           params.set("semester", nextFilters.semesterId);
         if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
       }
-      if (nextFilters.sort !== (nextTab === "library" ? "title" : "newest")) {
+      if (nextFilters.sort !== (nextTab === "browse" ? "title" : "newest")) {
         params.set("sort", nextFilters.sort);
       }
       if (nextPage > 1) params.set("page", String(nextPage));
@@ -89,18 +89,18 @@ function PublicLibraryContent() {
     [router],
   );
 
-  const handleTabChange = (nextTab: ForumLibraryTabId) => {
+  const handleTabChange = (nextTab: LibraryTabId) => {
     const nextFilters = {
       ...activeFilters,
-      sort: nextTab === "library" ? "title" : "newest",
+      sort: nextTab === "browse" ? "title" : "newest",
       ...(nextTab === "suggested"
         ? { curriculumId: "", semesterId: "", subjectId: "" }
         : {}),
-    } as ForumFilterState;
+    } as LibraryFilterState;
     syncUrl(nextTab, nextFilters, 1);
   };
 
-  const handleFiltersChange = (nextFilters: ForumFilterState) => {
+  const handleFiltersChange = (nextFilters: LibraryFilterState) => {
     setLocalFilters(nextFilters);
     syncUrl(tab, nextFilters, 1);
   };
@@ -113,21 +113,21 @@ function PublicLibraryContent() {
     match: "auto",
     page,
     limit: 20,
-    ...forumFiltersToQueryParams(activeFilters),
+    ...suggestedFiltersToQueryParams(activeFilters),
     enabled: tab === "suggested",
   });
-  const libraryQuery = usePublicDocuments({
+  const browseQuery = usePublicDocuments({
     match: "all",
     page,
     limit: 20,
-    ...libraryFiltersToQueryParams(activeFilters),
-    enabled: tab === "library",
+    ...browseFiltersToQueryParams(activeFilters),
+    enabled: tab === "browse",
   });
 
   const totalCount =
     tab === "suggested"
       ? suggestedQuery.data?.pagination?.total
-      : libraryQuery.data?.pagination?.total;
+      : browseQuery.data?.pagination?.total;
 
   return (
     <>
@@ -148,14 +148,14 @@ function PublicLibraryContent() {
           </div>
         </div>
 
-        <ForumLibraryTabs
+        <LibraryTabs
           active={tab}
           onChange={handleTabChange}
           count={totalCount}
         />
 
         {tab === "suggested" ? (
-          <ForumFeedPanel
+          <LibrarySuggestedPanel
             filters={activeFilters}
             onFiltersChange={handleFiltersChange}
             page={page}

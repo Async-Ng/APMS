@@ -1,20 +1,22 @@
-import type {
-  DocumentSort,
-  DriveDocument,
+export type {
+  PublicDocumentSort,
+  PublicLibrarySource,
+  PublicDocument,
   PublicMatchType,
-} from "@/lib/queries/drive";
+} from "@/lib/queries/public-documents";
 
-/**
- * Public documents (Diễn đàn / Thư viện) share the unified document list shape
- * returned by `GET /api/documents`. These aliases keep the forum components
- * decoupled from the drive query module while pointing at one source of truth.
- */
+export {
+  isSuggestedDocument,
+  isSuggestedDocument as isForumDocument,
+} from "@/lib/queries/public-documents";
 
-export type InternalDocumentSort = DocumentSort;
-export type InternalSource = "forum" | "library";
-
-export type InternalDocument = DriveDocument;
-
-export type ForumMatchType = PublicMatchType;
-/** Public documents always carry a `matchType`; alias kept for readability. */
-export type ForumDocument = DriveDocument;
+/** @deprecated Use PublicDocumentSort */
+export type InternalDocumentSort = import("@/lib/queries/public-documents").PublicDocumentSort;
+/** @deprecated Use PublicLibrarySource */
+export type InternalSource = import("@/lib/queries/public-documents").PublicLibrarySource;
+/** @deprecated Use PublicDocument */
+export type InternalDocument = import("@/lib/queries/public-documents").PublicDocument;
+/** @deprecated Use PublicMatchType */
+export type ForumMatchType = import("@/lib/queries/public-documents").PublicMatchType;
+/** @deprecated Use PublicDocument */
+export type ForumDocument = import("@/lib/queries/public-documents").PublicDocument;

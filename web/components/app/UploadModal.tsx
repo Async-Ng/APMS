@@ -350,7 +350,7 @@ export function UploadModal({
 
                       <fieldset className="space-y-1.5">
                         <legend className="text-sm font-semibold text-brutal-ink">
-                          Quyền hiển thị
+                          Hiển thị
                         </legend>
                         <div className="grid grid-cols-2 gap-2">
                           {(
@@ -362,8 +362,8 @@ export function UploadModal({
                               },
                               {
                                 value: "public" as const,
-                                label: "Công khai",
-                                hint: "Mọi sinh viên có thể tìm thấy",
+                                label: "Công khai (Thư viện)",
+                                hint: "Hiển thị trên Thư viện công khai",
                               },
                             ]
                           ).map((option) => (

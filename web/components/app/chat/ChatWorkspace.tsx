@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Topbar } from "@/components/app/Topbar";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { LoadingScreen } from "@/components/ui/Spinner";
+import {
+  filterVisibleCitations,
+  isDeletedContextTitle,
+} from "@/lib/chat-visibility";
 import { cn } from "@/lib/cn";
-import { useCreateSession } from "@/lib/queries/chat";
+import { useCreateSession, chatKeys } from "@/lib/queries/chat";
 import { getUserErrorMessage } from "@/lib/errors";
 import type { ChatCitation, ChatMessage, SendMessageInput } from "@/lib/queries/chat";
 import { useChatContextStatus, useChatSession, useSendMessage } from "@/lib/queries/chat";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ChatComposer } from "./ChatComposer";
 import { ChatContextBadge } from "./ChatContextBadge";
@@ -37,6 +43,8 @@ export function ChatWorkspace({
   isNewChat = false,
   onSessionCreated,
 }: ChatWorkspaceProps) {
+  const router = useRouter();
+  const qc = useQueryClient();
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<ChatCitation | null>(
@@ -63,6 +71,67 @@ export function ChatWorkspace({
   const { data: contextStatuses } = useChatContextStatus(contextDocumentIds);
   const isContextProcessing =
     contextStatuses?.some((d) => d.status === "processing") ?? false;
+
+  const hiddenDocumentIds = useMemo(() => {
+    if (!session) return new Set<string>();
+
+    const contextIds =
+      session.contextType === "document" && session.contextId
+        ? [session.contextId]
+        : session.contextType === "documents"
+          ? session.contextIds ?? []
+          : [];
+
+    if (contextIds.length === 0) return new Set<string>();
+
+    const loadedIds = new Set(contextStatuses?.map((d) => d.id) ?? []);
+    const hidden = new Set<string>();
+
+    for (const id of contextIds) {
+      if (!loadedIds.has(id)) hidden.add(id);
+    }
+
+    for (const doc of session.contextDocuments ?? []) {
+      if (isDeletedContextTitle(doc.title)) hidden.add(doc.id);
+    }
+
+    if (isDeletedContextTitle(session.contextLabel) && session.contextId) {
+      hidden.add(session.contextId);
+    }
+
+    return hidden;
+  }, [session, contextStatuses]);
+
+  useEffect(() => {
+    if (isNewChat || !sessionId || isLoading) return;
+
+    const contextUnavailable =
+      isError ||
+      (session &&
+        ((session.contextType === "document" &&
+          isDeletedContextTitle(session.contextLabel)) ||
+          (session.contextType === "folder" &&
+            isDeletedContextTitle(session.contextLabel)) ||
+          (session.contextType === "documents" &&
+            (session.contextDocuments ?? []).length > 0 &&
+            (session.contextDocuments ?? []).every((doc) =>
+              isDeletedContextTitle(doc.title),
+            ))));
+
+    if (contextUnavailable) {
+      qc.removeQueries({ queryKey: chatKeys.session(sessionId) });
+      void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+      router.replace("/chat");
+    }
+  }, [isNewChat, sessionId, isLoading, isError, session, qc, router]);
+
+  const visibleMessages = useMemo(() => {
+    if (!session || hiddenDocumentIds.size === 0) return session?.messages ?? [];
+    return session.messages.map((message) => ({
+      ...message,
+      citations: filterVisibleCitations(message.citations, hiddenDocumentIds),
+    }));
+  }, [session, hiddenDocumentIds]);
 
   const handleSelectCitation = useCallback(
     (message: ChatMessage, citation: ChatCitation) => {
@@ -248,7 +317,7 @@ export function ChatWorkspace({
                   </div>
                 )}
                 <ChatMessageList
-                  messages={session.messages}
+                  messages={visibleMessages}
                   isThinking={showThinking}
                   streamingMessageId={streamingMessageId}
                   selectedCitationKey={selectedCitationKey}

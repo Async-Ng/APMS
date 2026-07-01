@@ -289,6 +289,35 @@ export function useArchiveCurriculumSemester() {
   });
 }
 
+/** Assign new links and revoke removed ones (FR-056). */
+export async function syncCurriculumSemesterLinks(
+  curriculumId: string,
+  selectedSemesterIds: string[],
+  originalSemesterIds: string[],
+  handlers: {
+    assign: (input: {
+      curriculumId: string;
+      semesterIds: string[];
+    }) => Promise<unknown>;
+    revoke: (input: {
+      curriculumId: string;
+      semesterId: string;
+    }) => Promise<unknown>;
+  },
+): Promise<void> {
+  const selected = [...new Set(selectedSemesterIds)];
+  const original = [...new Set(originalSemesterIds)];
+  const toAdd = selected.filter((id) => !original.includes(id));
+  const toRemove = original.filter((id) => !selected.includes(id));
+
+  if (toAdd.length > 0) {
+    await handlers.assign({ curriculumId, semesterIds: toAdd });
+  }
+  for (const semesterId of toRemove) {
+    await handlers.revoke({ curriculumId, semesterId });
+  }
+}
+
 export function useAdminSubjects() {
   return useQuery({
     queryKey: ["admin", "subjects"],

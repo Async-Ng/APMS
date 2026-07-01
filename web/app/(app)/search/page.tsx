@@ -118,8 +118,20 @@ function SearchPageContent() {
                       >
                         {item.documentTitle}
                       </Link>
-                      {item.pageNumber != null && (
-                        <p className="text-xs text-brutal-muted">Trang {item.pageNumber}</p>
+                      {(item.heading || item.pageNumber != null) && (
+                        <p className="text-xs text-brutal-muted">
+                          {[
+                            item.heading,
+                            item.pageNumber != null ? `Trang ${item.pageNumber}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      )}
+                      {item.sectionPath.length > 0 && (
+                        <p className="text-xs text-brutal-muted">
+                          {item.sectionPath.join(" › ")}
+                        </p>
                       )}
                       <p className="mt-2 line-clamp-3 text-sm text-brutal-muted">
                         {item.excerpt}

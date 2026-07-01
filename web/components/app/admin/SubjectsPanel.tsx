@@ -1,9 +1,11 @@
 "use client";
 
 import { BookOpen, Pencil, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { AdminClientPagination } from "@/components/app/admin/AdminClientPagination";
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
+import { AdminSearchBar } from "@/components/app/admin/AdminSearchBar";
 import {
   AdminStatusBadge,
   AdminTableShell,
@@ -13,6 +15,7 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
+import { filterBySearch, paginateItems } from "@/lib/admin/client-table";
 import {
   useAdminSubjects,
   useArchiveSubject,
@@ -52,6 +55,23 @@ export function SubjectsPanel() {
   const [archiveTarget, setArchiveTarget] = useState<Subject | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingSubjectId, setPendingSubjectId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const filteredSubjects = useMemo(
+    () => filterBySearch(subjects ?? [], search, ["code", "name", "description"]),
+    [subjects, search],
+  );
+
+  const { items: pagedSubjects, pagination } = useMemo(
+    () => paginateItems(filteredSubjects, page),
+    [filteredSubjects, page],
+  );
 
   const isFormValid = useMemo(
     () =>
@@ -147,8 +167,15 @@ export function SubjectsPanel() {
         <ErrorAlert message={error} actionLabel="Đóng" onAction={() => setError(null)} />
       )}
 
-      <div className="flex justify-end">
-        <BrutalButton variant="primary" onClick={openCreate}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminSearchBar
+          value={search}
+          onChange={handleSearch}
+          placeholder="Tìm theo mã, tên hoặc mô tả…"
+          id="subjects-search"
+          className="w-full sm:max-w-xs"
+        />
+        <BrutalButton variant="primary" onClick={openCreate} className="w-auto shrink-0">
           <Plus className="mr-2 h-4 w-4" />
           Thêm môn
         </BrutalButton>
@@ -173,20 +200,24 @@ export function SubjectsPanel() {
               </td>
             </tr>
           )}
-          {!isLoading && !isError && subjects?.length === 0 && (
+          {!isLoading && !isError && filteredSubjects.length === 0 && (
             <tr>
               <td colSpan={5} className="px-4 py-10 text-center">
                 <BookOpen className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có môn học</p>
-                <p className="mt-1 text-xs text-brutal-muted">
-                  Thêm môn học để gán vào chương trình đào tạo.
+                <p className="text-sm font-semibold text-brutal-ink">
+                  {search ? "Không tìm thấy môn học" : "Chưa có môn học"}
                 </p>
+                {!search && (
+                  <p className="mt-1 text-xs text-brutal-muted">
+                    Thêm môn học để gán vào chương trình đào tạo.
+                  </p>
+                )}
               </td>
             </tr>
           )}
           {!isLoading &&
             !isError &&
-            subjects?.map((subject) => (
+            pagedSubjects.map((subject) => (
               <tr
                 key={subject.id}
                 className={cn(
@@ -236,6 +267,12 @@ export function SubjectsPanel() {
             ))}
         </tbody>
       </AdminTableShell>
+
+      <AdminClientPagination
+        pagination={pagination}
+        onPageChange={setPage}
+        itemLabel="môn học"
+      />
 
       <AdminFormModal
         open={formOpen}

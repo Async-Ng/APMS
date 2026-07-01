@@ -104,14 +104,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
       <Topbar
         breadcrumbs={[{ label: "Hồ sơ" }]}
         showBreadcrumbRootIcon={false}
       />
 
       <main
-        className="mx-auto w-full min-w-0 max-w-3xl flex-1 space-y-6 overflow-x-hidden p-4 pb-8 sm:p-6 sm:pb-10"
+        className="mx-auto min-h-0 w-full min-w-0 max-w-3xl flex-1 space-y-6 overflow-x-hidden p-4 pb-8 sm:p-6 sm:pb-10"
         id="main-content"
       >
         <div className="flex items-center gap-3">
@@ -222,13 +222,13 @@ export default function ProfilePage() {
           {academicError && <ErrorAlert message={academicError} className="mb-3" />}
           {isCurriculaError && (
             <ErrorAlert
-              message="Không tải được danh sách ngành. Vui lòng thử lại sau."
+              message="Không tải được danh sách CTĐT. Vui lòng thử lại sau."
               className="mb-3"
             />
           )}
           {isCurriculumError && effectiveCurriculumId && (
             <ErrorAlert
-              message="Không tải được chương trình đào tạo của ngành đã chọn."
+              message="Không tải được chương trình đào tạo của CTĐT đã chọn."
               className="mb-3"
             />
           )}
@@ -241,15 +241,15 @@ export default function ProfilePage() {
 
           <div className="space-y-4">
             {isCurriculaLoading ? (
-              <p className="text-sm text-brutal-muted">Đang tải danh sách ngành…</p>
+              <p className="text-sm text-brutal-muted">Đang tải danh sách CTĐT…</p>
             ) : curricula?.length === 0 ? (
               <p className="text-sm text-brutal-muted">
-                Chưa có ngành nào. Liên hệ quản trị viên.
+                Chưa có CTĐT nào. Liên hệ quản trị viên.
               </p>
             ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="text-xs font-bold text-brutal-muted">
-                Ngành
+                Chương trình đào tạo
                 <select
                   value={effectiveCurriculumId}
                   onChange={(e) => {
@@ -261,7 +261,7 @@ export default function ProfilePage() {
                   }}
                   className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
                 >
-                  <option value="">Chọn ngành</option>
+                  <option value="">Chọn CTĐT</option>
                   {curricula?.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.code} — {m.name}
@@ -346,7 +346,7 @@ export default function ProfilePage() {
                   <p className="text-sm text-brutal-muted">Đang tải…</p>
                 ) : !effectiveCurriculumId ? (
                   <p className="text-sm text-brutal-muted">
-                    Chọn ngành để xem học kỳ và môn học.
+                    Chọn CTĐT để xem học kỳ và môn học.
                   </p>
                 ) : !effectiveSemesterId ? (
                   <p className="text-sm text-brutal-muted">
@@ -354,11 +354,11 @@ export default function ProfilePage() {
                   </p>
                 ) : availableSemesters.length === 0 ? (
                   <p className="text-sm text-brutal-muted">
-                    Ngành này chưa có học kỳ được gán.
+                    CTĐT này chưa có học kỳ được gán.
                   </p>
                 ) : availableSubjects.length === 0 ? (
                   <p className="text-sm text-brutal-muted">
-                    Không có môn phù hợp với ngành và học kỳ đã chọn.
+                    Không có môn phù hợp với CTĐT và học kỳ đã chọn.
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -404,7 +404,7 @@ export default function ProfilePage() {
                   setAcademicError(null);
                   setAcademicSuccess(null);
                   if (!effectiveCurriculumId) {
-                    setAcademicError("Vui lòng chọn ngành.");
+                    setAcademicError("Vui lòng chọn CTĐT.");
                     return;
                   }
                   if (!effectiveSemesterId) {

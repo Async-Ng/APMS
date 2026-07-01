@@ -36,15 +36,15 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
   useModalA11y(!!userId, onClose, dialogRef);
 
   const { data: user, isLoading, isError } = useAdminUser(userId);
-  const { data: majors } = useAdminCurricula();
+  const { data: curricula } = useAdminCurricula();
   const { data: subjects } = useAdminSubjects();
   const { data: semesters } = useAdminSemesters();
 
-  const majorLabel = useMemo(() => {
+  const curriculumLabel = useMemo(() => {
     if (!user?.curriculumId) return null;
-    const major = majors?.find((m) => m.id === user.curriculumId);
-    return major ? `${major.code} — ${major.name}` : user.curriculumId;
-  }, [user, majors]);
+    const curriculum = curricula?.find((m) => m.id === user.curriculumId);
+    return curriculum ? `${curriculum.code} — ${curriculum.name}` : user.curriculumId;
+  }, [user, curricula]);
 
   const semesterLabel = useMemo(() => {
     if (!user?.currentSemesterId) return null;
@@ -165,10 +165,10 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
                   </span>
                 </dd>
               </div>
-              {majorLabel && (
+              {curriculumLabel && (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-brutal-muted">Ngành</dt>
-                  <dd className="text-right font-semibold">{majorLabel}</dd>
+                  <dt className="text-brutal-muted">Chương trình đào tạo</dt>
+                  <dd className="text-right font-semibold">{curriculumLabel}</dd>
                 </div>
               )}
               {semesterLabel && (

@@ -1,14 +1,14 @@
 import { cn } from "@/lib/cn";
-import type { ForumMatchType, InternalDocument } from "@/lib/queries/internal-documents";
+import type { PublicDocument, PublicMatchType } from "@/lib/queries/public-documents";
 
-const MATCH_LABELS: Record<ForumMatchType, string> = {
+const MATCH_LABELS: Record<PublicMatchType, string> = {
   exact_course: "Đúng môn học kỳ",
   same_subject_other_semester: "Cùng môn, khác học kỳ",
   global_public: "Công khai toàn hệ thống",
 };
 
 interface MatchTypeBadgeProps {
-  matchType: ForumMatchType | null | undefined;
+  matchType: PublicMatchType | null | undefined;
   className?: string;
 }
 
@@ -28,10 +28,10 @@ export function MatchTypeBadge({ matchType, className }: MatchTypeBadgeProps) {
   );
 }
 
-export function getMatchTypeLabel(matchType: ForumMatchType): string {
+export function getMatchTypeLabel(matchType: PublicMatchType): string {
   return MATCH_LABELS[matchType];
 }
 
-export function isForumDocument(doc: InternalDocument): boolean {
+export function isSuggestedDocument(doc: PublicDocument): boolean {
   return doc.matchType != null;
 }

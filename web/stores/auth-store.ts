@@ -12,6 +12,9 @@ export interface AppUser {
   avatarUrl: string | null;
   role: "user" | "admin";
   isDisabled: boolean;
+  curriculumId?: string | null;
+  currentSemesterId?: string | null;
+  currentSubjectIds?: string[];
   storageUsedBytes: number;
   storageQuotaBytes: number;
   createdAt: string;

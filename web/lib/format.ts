@@ -16,3 +16,25 @@ export function formatRelativeDaysUntil(
   const msLeft = purgeAt.getTime() - Date.now();
   return Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
 }
+
+export function formatDaysUntil(targetDate: string | Date): number {
+  const target = new Date(targetDate);
+  const msLeft = target.getTime() - Date.now();
+  return Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+}
+
+export function formatTrashPurgeLabel(item: {
+  permanentDeleteAt?: string | null;
+  deletedAt?: string | null;
+}): string {
+  if (item.permanentDeleteAt) {
+    const days = formatDaysUntil(item.permanentDeleteAt);
+    return days > 0
+      ? `Còn ${days} ngày trước khi xóa vĩnh viễn`
+      : "Sắp bị xóa vĩnh viễn";
+  }
+  if (item.deletedAt) {
+    return `Còn ${formatRelativeDaysUntil(item.deletedAt, 30)} ngày trước khi xóa vĩnh viễn`;
+  }
+  return "Tự xóa sau 30 ngày";
+}

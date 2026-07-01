@@ -1,9 +1,11 @@
 "use client";
 
 import { CalendarRange, Pencil, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { AdminClientPagination } from "@/components/app/admin/AdminClientPagination";
 import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
+import { AdminSearchBar } from "@/components/app/admin/AdminSearchBar";
 import {
   AdminStatusBadge,
   AdminTableShell,
@@ -13,6 +15,7 @@ import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
+import { filterBySearch, paginateItems } from "@/lib/admin/client-table";
 import {
   useAdminSemesters,
   useArchiveSemester,
@@ -49,6 +52,23 @@ export function SemestersPanel() {
   const [archiveTarget, setArchiveTarget] = useState<Semester | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const filteredSemesters = useMemo(
+    () => filterBySearch(semesters ?? [], search, ["code", "name"]),
+    [semesters, search],
+  );
+
+  const { items: pagedSemesters, pagination } = useMemo(
+    () => paginateItems(filteredSemesters, page),
+    [filteredSemesters, page],
+  );
 
   const isFormValid = useMemo(
     () =>
@@ -132,8 +152,15 @@ export function SemestersPanel() {
         <ErrorAlert message={error} actionLabel="Đóng" onAction={() => setError(null)} />
       )}
 
-      <div className="flex justify-end">
-        <BrutalButton variant="primary" onClick={openCreate}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminSearchBar
+          value={search}
+          onChange={handleSearch}
+          placeholder="Tìm theo mã hoặc tên học kỳ…"
+          id="semesters-search"
+          className="w-full sm:max-w-xs"
+        />
+        <BrutalButton variant="primary" onClick={openCreate} className="w-auto shrink-0">
           <Plus className="mr-2 h-4 w-4" />
           Thêm học kỳ
         </BrutalButton>
@@ -158,17 +185,19 @@ export function SemestersPanel() {
               </td>
             </tr>
           )}
-          {!isLoading && !isError && semesters?.length === 0 && (
+          {!isLoading && !isError && filteredSemesters.length === 0 && (
             <tr>
               <td colSpan={5} className="px-4 py-10 text-center">
                 <CalendarRange className="mx-auto mb-2 h-8 w-8 text-brutal-muted" aria-hidden />
-                <p className="text-sm font-semibold text-brutal-ink">Chưa có học kỳ</p>
+                <p className="text-sm font-semibold text-brutal-ink">
+                  {search ? "Không tìm thấy học kỳ" : "Chưa có học kỳ"}
+                </p>
               </td>
             </tr>
           )}
           {!isLoading &&
             !isError &&
-            semesters?.map((semester) => (
+            pagedSemesters.map((semester) => (
               <tr
                 key={semester.id}
                 className={cn(
@@ -216,6 +245,12 @@ export function SemestersPanel() {
             ))}
         </tbody>
       </AdminTableShell>
+
+      <AdminClientPagination
+        pagination={pagination}
+        onPageChange={setPage}
+        itemLabel="học kỳ"
+      />
 
       <AdminFormModal
         open={formOpen}

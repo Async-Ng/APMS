@@ -6,6 +6,7 @@ import { useState } from "react";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
+import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
 import { FolderModal } from "@/components/app/FolderModal";
 import { Topbar } from "@/components/app/Topbar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -17,7 +18,7 @@ import { useStarred } from "@/lib/queries/drive";
 export default function StarredPage() {
   const { data, isLoading, isError, refetch } = useStarred();
   const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
-  const [renameDoc, setRenameDoc] = useState<DriveDocument | null>(null);
+  const [settingsDoc, setSettingsDoc] = useState<DriveDocument | null>(null);
 
   const isEmpty =
     !isLoading && data?.folders.length === 0 && data?.documents.length === 0;
@@ -81,7 +82,7 @@ export default function StarredPage() {
                     <DocumentCard
                       key={doc.id}
                       document={doc}
-                      onRename={setRenameDoc}
+                      onRename={setSettingsDoc}
                     />
                   ))}
                 </FileGrid>
@@ -99,11 +100,10 @@ export default function StarredPage() {
         />
       )}
 
-      {renameDoc && (
-        <FolderModal
-          parentId={null}
-          documentToRename={renameDoc}
-          onClose={() => setRenameDoc(null)}
+      {settingsDoc && (
+        <DocumentSettingsModal
+          document={settingsDoc}
+          onClose={() => setSettingsDoc(null)}
         />
       )}
     </>

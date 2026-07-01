@@ -1,12 +1,12 @@
-﻿"use client";
+"use client";
 
 import { FileText, Presentation } from "lucide-react";
 import Link from "next/link";
 
-import { MatchTypeBadge, isForumDocument } from "@/components/app/forum/MatchTypeBadge";
+import { MatchTypeBadge, isSuggestedDocument } from "@/components/app/library/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
-import type { InternalDocument, InternalSource } from "@/lib/queries/internal-documents";
+import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
@@ -34,26 +34,26 @@ function fileIconBg(mimeType: string): string {
   return "bg-brutal-secondary/15";
 }
 
-export function internalDocumentHref(id: string) {
+export function publicDocumentHref(id: string) {
   return `/documents/${id}?from=public`;
 }
 
-interface InternalDocumentCardProps {
-  doc: InternalDocument;
-  source: InternalSource;
+interface PublicDocumentCardProps {
+  doc: PublicDocument;
+  source: PublicLibrarySource;
   variant?: "feed" | "browse";
 }
 
-export function InternalDocumentCard({
+export function PublicDocumentCard({
   doc,
   source,
   variant = "feed",
-}: InternalDocumentCardProps) {
+}: PublicDocumentCardProps) {
   const course = doc.courseSlot;
 
   return (
     <Link
-      href={internalDocumentHref(doc.id)}
+      href={publicDocumentHref(doc.id)}
       className="focus-brutal brutal-card group flex h-full flex-col gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-brutal"
     >
       <div className="flex items-start gap-3">
@@ -79,7 +79,7 @@ export function InternalDocumentCard({
 
       {course && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {source === "forum" && isForumDocument(doc) && (
+          {source === "suggested" && isSuggestedDocument(doc) && (
             <MatchTypeBadge matchType={doc.matchType} />
           )}
           {course.curriculum && (
