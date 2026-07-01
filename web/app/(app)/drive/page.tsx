@@ -74,7 +74,7 @@ export default function DrivePage() {
     [subjectGroups],
   );
   const otherDocuments = useMemo(
-    () => getOtherRootDocuments(documents, enrolledCourses, undefined),
+    () => getOtherRootDocuments(documents, enrolledCourses),
     [documents, enrolledCourses],
   );
 

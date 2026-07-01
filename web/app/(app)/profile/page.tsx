@@ -185,7 +185,6 @@ export default function ProfilePage() {
                 Chưa có CTĐT nào. Liên hệ quản trị viên.
               </p>
             ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="text-xs font-bold text-brutal-muted">
                 Chương trình đào tạo
                 <select
@@ -205,11 +204,6 @@ export default function ProfilePage() {
                   ))}
                 </select>
               </label>
-
-              <div className="rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm text-brutal-muted">
-                Hồ sơ học thuật chỉ cần CTĐT. Khi tải tài liệu, bạn sẽ chọn môn cụ thể trong CTĐT đó.
-              </div>
-            </div>
             )}
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">

@@ -88,8 +88,6 @@ export function useCatalogCurriculumSemesters(curriculumId: string | undefined) 
 
 export interface UpdateAcademicProfileBody {
   curriculumId: string;
-  currentSemesterId?: string;
-  currentSubjectIds?: string[];
 }
 
 export function useUpdateAcademicProfile() {

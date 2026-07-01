@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { useModalA11y } from "@/components/ui/useModalA11y";
 import { useAdminUser } from "@/lib/queries/admin";
-import { useAdminCurricula, useAdminSemesters, useAdminSubjects } from "@/lib/queries/admin-academic";
+import { useAdminCurricula } from "@/lib/queries/admin-academic";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -37,32 +37,12 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
 
   const { data: user, isLoading, isError } = useAdminUser(userId);
   const { data: curricula } = useAdminCurricula();
-  const { data: subjects } = useAdminSubjects();
-  const { data: semesters } = useAdminSemesters();
 
   const curriculumLabel = useMemo(() => {
     if (!user?.curriculumId) return null;
     const curriculum = curricula?.find((m) => m.id === user.curriculumId);
     return curriculum ? `${curriculum.code} — ${curriculum.name}` : user.curriculumId;
   }, [user, curricula]);
-
-  const semesterLabel = useMemo(() => {
-    if (!user?.currentSemesterId) return null;
-    const semester = semesters?.find((s) => s.id === user.currentSemesterId);
-    return semester ? `${semester.code} — ${semester.name}` : user.currentSemesterId;
-  }, [user, semesters]);
-
-  const currentSubjects = useMemo(() => {
-    if (!user?.currentSubjectIds.length) return [];
-    const byId = new Map(subjects?.map((s) => [s.id, s]) ?? []);
-    return user.currentSubjectIds.map((id) => {
-      const subject = byId.get(id);
-      return {
-        id,
-        label: subject ? `${subject.code} — ${subject.name}` : id,
-      };
-    });
-  }, [user, subjects]);
 
   if (!userId) return null;
 
@@ -169,24 +149,6 @@ export function UserDetailModal({ userId, onClose }: UserDetailModalProps) {
                 <div className="flex justify-between gap-4">
                   <dt className="text-brutal-muted">Chương trình đào tạo</dt>
                   <dd className="text-right font-semibold">{curriculumLabel}</dd>
-                </div>
-              )}
-              {semesterLabel && (
-                <div className="flex justify-between gap-4">
-                  <dt className="text-brutal-muted">Học kỳ hiện tại</dt>
-                  <dd className="font-semibold">{semesterLabel}</dd>
-                </div>
-              )}
-              {currentSubjects.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <dt className="text-brutal-muted">Môn đang học</dt>
-                  <dd>
-                    <ul className="space-y-0.5 text-right font-semibold">
-                      {currentSubjects.map(({ id, label }) => (
-                        <li key={id}>{label}</li>
-                      ))}
-                    </ul>
-                  </dd>
                 </div>
               )}
               <div className="flex justify-between gap-4">
