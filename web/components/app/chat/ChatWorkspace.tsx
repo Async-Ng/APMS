@@ -324,6 +324,10 @@ export function ChatWorkspace({
                   activeMessageId={activeMessage?.id}
                   onSelectCitation={handleSelectCitation}
                   onSelectMessage={handleSelectMessage}
+                  onSuggestionClick={(question) =>
+                    handleSend({ content: question, mode: "chat" })
+                  }
+                  isSending={sendMessage.isPending}
                 />
                 {sendError && (
                   <div className="shrink-0 px-4 pb-2">
