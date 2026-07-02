@@ -8,6 +8,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "setup:atlas": "ts-node --files scripts/setup-atlas.ts",
+    "reprocess:docs": "ts-node --files scripts/reprocess-documents.ts",
+    "process:pending": "ts-node --files scripts/process-all-pending.ts",
+    "verify:chunking": "ts-node --files scripts/verify-chunking.ts",
     "purge:trash": "ts-node --files scripts/purge-trash.ts",
     "migrate:academic": "ts-node --files scripts/migrate-academic-library.ts",
     "migrate:document-visibility": "ts-node --files scripts/migrate-document-visibility.ts",
@@ -29,6 +32,7 @@
     "@aws-sdk/client-ses": "^3.1072.0",
     "@aws-sdk/s3-request-presigner": "^3.1050.0",
     "@google/genai": "^2.8.0",
+    "@joplin/turndown-plugin-gfm": "^1.0.67",
     "@napi-rs/canvas": "0.1.100",
     "aws-jwt-verify": "^5.1.1",
     "cors": "^2.8.6",
@@ -41,6 +45,7 @@
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "4.7.76",
     "swagger-ui-express": "^5.0.1",
+    "turndown": "^7.2.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -48,6 +53,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.8.0",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/turndown": "^5.0.6",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"

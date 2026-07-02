@@ -14,7 +14,7 @@ start
 if (Kênh?) then (Thư viện công khai)
   if (Chế độ?) then (Gợi ý)
     |Hệ thống APMS|
-    :Ưu tiên: đúng môn học kỳ →\ncùng môn khác HK → công khai khác;
+    :Ưu tiên: tài liệu thuộc CTĐT trong hồ sơ\n→ công khai khác;
     |Sinh viên|
   else (Duyệt toàn bộ)
     :Lọc theo Ngành, Học kỳ, Môn;
@@ -36,7 +36,12 @@ else (Trò chuyện AI)
     :Thông báo: thử lại ngày mai;
     |Sinh viên|
   else (còn)
-    :Trả lời kèm **trích dẫn** tài liệu nguồn;
+    :Trả lời ngắn gọn, tự nhiên,\nkèm **trích dẫn** tài liệu nguồn;
+    if (Chế độ hỏi đáp?) then (có)
+      :Trả thêm gợi ý câu hỏi tiếp theo;
+    else (không)
+      :Không trả gợi ý câu hỏi;
+    endif
     |Sinh viên|
   endif
 endif

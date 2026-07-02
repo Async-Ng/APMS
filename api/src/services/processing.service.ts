@@ -17,7 +17,6 @@ function nextQuotaRetryAt(processingAttempts: number): Date {
   return new Date(Date.now() + backoffMs!);
 }
 
-const EMBED_BATCH_SIZE = 20;
 const processingInFlight = new Set<string>();
 
 export async function processDocument(documentId: Types.ObjectId): Promise<void> {
@@ -63,8 +62,8 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
       document.extractionMode = extractionMode;
       document.extractionConfidence = extractionConfidence;
 
-      // 3. Chunk text (page-aware segments)
-      const chunks = await chunkSegments(
+      // 3. Chunk text (structure-based, page-aware segments — no embedding calls)
+      const chunks = chunkSegments(
         segments.length > 0 ? segments : [{ text: "", pageNumber: null }],
       );
 
@@ -74,8 +73,8 @@ export async function processDocument(documentId: Types.ObjectId): Promise<void>
         await DocumentChunk.deleteMany({ documentId: document._id });
 
         const batches: (typeof chunks)[] = [];
-        for (let i = 0; i < chunks.length; i += EMBED_BATCH_SIZE) {
-          batches.push(chunks.slice(i, i + EMBED_BATCH_SIZE));
+        for (let i = 0; i < chunks.length; i += env.EMBED_BATCH_SIZE) {
+          batches.push(chunks.slice(i, i + env.EMBED_BATCH_SIZE));
         }
 
         for (let i = 0; i < batches.length; i += embedConcurrency) {

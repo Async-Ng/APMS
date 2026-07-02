@@ -11,10 +11,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 
 import { loadEnv } from "../src/config/env";
-import {
-  CHUNKING_MAX_CHARS,
-  CHUNKING_OVERLAP_CHARS,
-} from "../src/services/chunking.service";
+import { CHUNKING_MAX_CHARS } from "../src/services/chunking.service";
 import { DocumentChunk } from "../src/models/document-chunk.model";
 import { Document } from "../src/models/document.model";
 import { User } from "../src/models/user.model";
@@ -106,8 +103,8 @@ async function verifyDocument(
     const len = c.content.length;
     if (len === 0) {
       fail(`${label}: empty content`);
-    } else if (len > CHUNKING_MAX_CHARS + CHUNKING_OVERLAP_CHARS + 120) {
-      fail(`${label}: length ${len} exceeds max ~${CHUNKING_MAX_CHARS} (+ overlap/section prefix)`);
+    } else if (len > CHUNKING_MAX_CHARS + 200) {
+      fail(`${label}: length ${len} exceeds max ~${CHUNKING_MAX_CHARS} (+ heading/tail-merge slack)`);
     }
 
     if (doc.mimeType === PDF_MIME && c.pageNumber == null) {
@@ -130,13 +127,12 @@ async function verifyDocument(
         }
       }
 
+      // Structural chunking does not use overlap; adjacent chunks sharing long
+      // text would indicate duplicated content.
       if (prev.pageNumber === c.pageNumber) {
         const shared = longestSharedSuffixPrefix(prev.content, c.content);
-        const minOverlap = Math.min(20, CHUNKING_OVERLAP_CHARS / 3);
-        if (shared < minOverlap && prev.content.length > 100 && c.content.length > 100) {
-          fail(
-            `${label}: low same-page overlap (${shared} chars; expected ~${CHUNKING_OVERLAP_CHARS})`,
-          );
+        if (shared > 100) {
+          fail(`${label}: same-page duplicated text (${shared} shared chars)`);
         }
       }
     }
@@ -201,7 +197,7 @@ async function main(): Promise<void> {
 
   console.log(`[verify-chunking] Checking ${documents.length} document(s)`);
   console.log(
-    `[verify-chunking] Expected: chunkSize<=${CHUNKING_MAX_CHARS}, overlap~${CHUNKING_OVERLAP_CHARS}, embedDims=${expectedEmbedDims}\n`,
+    `[verify-chunking] Expected: chunkSize<=${CHUNKING_MAX_CHARS}, no overlap (structural), embedDims=${expectedEmbedDims}\n`,
   );
 
   const allIssues: Issue[] = [];

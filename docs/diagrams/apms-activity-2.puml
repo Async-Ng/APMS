@@ -8,8 +8,12 @@ start
 :Vào **Drive của tôi**;
 
 |#E8FDE8|Hệ thống APMS|
+:Hiển thị tài liệu theo các môn/course slots\nthuộc CTĐT trong hồ sơ;
 if (Tải tài liệu mới?) then (có)
-  :Kiểm tra định dạng PDF/DOCX/PPTX,\n≤ 50 MB, còn quota, môn thuộc hồ sơ;
+  |Sinh viên|
+  :Chọn tệp và chọn môn cụ thể;
+  |Hệ thống APMS|
+  :Kiểm tra định dạng PDF/DOCX/PPTX,\n≤ 50 MB, còn quota,\nmôn thuộc CTĐT trong hồ sơ;
   if (Hợp lệ?) then (không)
     :Thông báo lý do — từ chối;
     detach

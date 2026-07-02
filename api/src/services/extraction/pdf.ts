@@ -4,10 +4,14 @@ import { pathToFileURL } from "node:url";
 import { createCanvas, DOMMatrix, Path2D, ImageData } from "@napi-rs/canvas";
 
 import { loadEnv } from "../../config/env";
-import { extractHeadingInfo, inferBlockType } from "../ai/reference-utils";
+import {
+  extractHeadingInfo,
+  inferBlockType,
+  isStructuralHeading,
+} from "../ai/reference-utils";
 import type { ExtractionResult } from "../extraction.service";
 import type { TextSegment } from "../extraction/types";
-import { describeImages, pageVisionBlock } from "./vision-ocr";
+import { parsePagesToMarkdown } from "./vision-markdown";
 
 // pdfjs-dist is ESM-only; this project is CommonJS + ts-node, which rewrites a plain
 // `await import()` into `require()` and breaks ESM loading. This Function escape hatch
@@ -124,6 +128,51 @@ function extractPageTextLines(items: any[]): string[] {
     .filter(Boolean);
 }
 
+const MATH_SIGNAL_RE = /[∑∫√≠≈≤≥±×÷^]|\\frac|\b[a-zA-Z]\s*=\s*[a-zA-Z0-9(]/;
+const TABLE_LINE_RE = /(?:\S\s{3,}\S.*\s{3,}\S)|\t.*\t|\|.*\|/;
+
+/**
+ * Heuristic for the "auto" vision strategy: pages whose extracted text looks like it
+ * contains formulas or column/table layout get a vision pass even when not scanned.
+ */
+function pageLooksStructured(lines: string[]): boolean {
+  let mathLines = 0;
+  let tableLines = 0;
+  for (const line of lines) {
+    if (MATH_SIGNAL_RE.test(line)) mathLines += 1;
+    if (TABLE_LINE_RE.test(line)) tableLines += 1;
+    if (mathLines >= 2 || tableLines >= 3) return true;
+  }
+  return false;
+}
+
+/**
+ * Converts pdfjs-reconstructed lines into lightweight Markdown: detected headings get
+ * a "#" prefix at their section depth, everything else stays as paragraph text.
+ * Used for pages that skip the vision pass.
+ */
+function pdfLinesToMarkdown(lines: string[]): string {
+  const out: string[] = [];
+  for (const line of lines) {
+    const headingInfo = extractHeadingInfo(line);
+    if (headingInfo) {
+      const level = Math.min(Math.max(headingInfo.sectionPath.length, 1), 6);
+      out.push("", `${"#".repeat(level)} ${line.trim()}`, "");
+    } else if (isStructuralHeading(line)) {
+      out.push("", `## ${line.trim()}`, "");
+    } else {
+      out.push(line);
+    }
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Strips Markdown heading markers so extractHeadingInfo can parse "## 2.1 Title". */
+function firstHeadingLine(markdown: string): string {
+  const firstLine = markdown.split("\n").find((l) => l.trim().length > 0) ?? "";
+  return firstLine.replace(/^#{1,6}\s+/, "").trim();
+}
+
 export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionResult> {
   const env = loadEnv();
   const pdfjs = await getPdfjs();
@@ -137,9 +186,9 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
   }).promise;
 
   const pageCount: number = doc.numPages;
-  const pageTexts: string[] = [];
-  let scannedPageCount = 0;
-  // Pages that need a vision pass, paired with their pre-rendered PNG.
+  const pageLines: string[][] = [];
+  const scannedPages = new Set<number>();
+  // Pages that get a vision markdown parse, paired with their pre-rendered PNG.
   const visionPages: Array<{ pageNumber: number; base64: string }> = [];
 
   for (let p = 1; p <= pageCount; p++) {
@@ -147,44 +196,62 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
     const content = await page.getTextContent();
     const lines = extractPageTextLines(content.items);
     const pageText = lines.join("\n").trim();
-    pageTexts.push(pageText);
-
-    if (!env.DOC_VISION_ENABLED) continue;
-    if (visionPages.length >= env.DOC_VISION_MAX_IMAGES) continue;
+    pageLines.push(lines);
 
     const scanned = pageText.length < env.DOC_VISION_SCANNED_TEXT_THRESHOLD;
-    if (scanned) scannedPageCount += 1;
-    const needsVision = scanned || (await pageHasImages(pdfjs, page));
+    if (scanned) scannedPages.add(p);
+
+    if (!env.DOC_VISION_ENABLED) continue;
+    if (visionPages.length >= env.DOC_VISION_MAX_PAGES) continue;
+
+    const needsVision =
+      env.DOC_VISION_PAGE_STRATEGY === "all" ||
+      scanned ||
+      pageLooksStructured(lines) ||
+      (await pageHasImages(pdfjs, page));
     if (needsVision) {
       const base64 = await renderPageToPngBase64(page);
       visionPages.push({ pageNumber: p, base64 });
     }
   }
 
-  const descriptions = await describeImages(
+  if (visionPages.length > 0) {
+    console.info(
+      `[extraction] PDF vision parse: ${visionPages.length}/${pageCount} pages (strategy=${env.DOC_VISION_PAGE_STRATEGY})`,
+    );
+  }
+
+  const markdowns = await parsePagesToMarkdown(
     visionPages.map((vp) => ({ base64: vp.base64, mime: "image/png" })),
   );
 
-  // Map pageNumber -> description for interleaving.
-  const descByPage = new Map<number, string>();
-  visionPages.forEach((vp, i) => descByPage.set(vp.pageNumber, descriptions[i] ?? ""));
+  // Map pageNumber -> vision markdown for substitution.
+  const markdownByPage = new Map<number, string>();
+  visionPages.forEach((vp, i) => {
+    const md = (markdowns[i] ?? "").trim();
+    if (md) markdownByPage.set(vp.pageNumber, md);
+  });
 
-  const segments: TextSegment[] = pageTexts.map((t, i) => {
+  const segments: TextSegment[] = pageLines.map((lines, i) => {
     const p = i + 1;
-    const headingInfo = extractHeadingInfo(t.split("\n")[0] ?? "");
-    const mergedText = `${t}${pageVisionBlock(p, descByPage.get(p) ?? "")}`.trim();
-    const hasVision = !!descByPage.get(p)?.trim();
+    const visionMarkdown = markdownByPage.get(p);
+    const scanned = scannedPages.has(p);
+    // Vision markdown replaces the pdfjs text entirely; otherwise fall back to a
+    // lightweight local markdown conversion of the positioned-text lines.
+    const text = visionMarkdown ?? pdfLinesToMarkdown(lines);
+    const headingInfo = extractHeadingInfo(firstHeadingLine(text));
     return {
-      text: mergedText,
+      text,
       pageNumber: p,
       sectionPath: headingInfo?.sectionPath ?? [],
       headingText: headingInfo?.displayHeading ?? null,
-      blockType: hasVision ? "ocr" : inferBlockType(t),
-      extractionMode: hasVision ? (t ? "hybrid" : "ocr") : "text",
-      extractionConfidence: hasVision ? (t ? "medium" : "low") : "high",
+      blockType: visionMarkdown && scanned ? "ocr" : inferBlockType(text),
+      extractionMode: visionMarkdown ? (scanned ? "ocr" : "hybrid") : "text",
+      extractionConfidence: visionMarkdown ? "medium" : scanned ? "low" : "high",
     };
   });
 
+  const scannedPageCount = scannedPages.size;
   const text = segments.map((s) => s.text).join("\n\n");
   const extractionMode =
     scannedPageCount === 0 ? "text" : scannedPageCount === pageCount ? "ocr" : "hybrid";

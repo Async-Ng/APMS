@@ -1,6 +1,3 @@
-import { runConcurrent } from "../utils/concurrency";
-import { loadEnv } from "../config/env";
-import * as aiService from "./ai/ai.service";
 import {
   extractHeadingInfo,
   inferBlockType,
@@ -16,27 +13,8 @@ import type {
 } from "./extraction/types";
 
 export const CHUNKING_MAX_CHARS = 1500;
-export const CHUNKING_OVERLAP_CHARS = 150;
 export const CHUNKING_MIN_CHARS = 260;
 export const CHUNKING_MERGE_TAIL_CHARS = 180;
-
-const SEMANTIC_BREAK_PERCENTILE = 20;
-const MAX_BREAK_SIMILARITY = 0.9;
-const SIMILARITY_DROP_DELTA = 0.05;
-const MIN_UNITS_PER_CHUNK = 2;
-const SENTENCE_EMBED_BATCH = 50;
-const WINDOW_RADIUS = 2;
-
-interface TextUnit {
-  text: string;
-  pageNumber: number | null;
-  sectionPath: string[];
-  displayHeading: string | null;
-  blockType: SegmentBlockType;
-  extractionMode: ExtractionMode;
-  extractionConfidence: ExtractionConfidence;
-  isHeading: boolean;
-}
 
 export interface TextChunk {
   content: string;
@@ -50,282 +28,320 @@ export interface TextChunk {
   extractionConfidence: ExtractionConfidence;
 }
 
-function detectHeading(line: string): { sectionPath: string[]; displayHeading: string } | null {
-  return extractHeadingInfo(line);
+interface MarkdownBlock {
+  type: SegmentBlockType;
+  text: string;
+  /** Only set for heading blocks (1-6). */
+  headingLevel?: number;
 }
 
-function buildHeadingFromAllCaps(line: string, priorSectionPath: string[]): {
-  sectionPath: string[];
+interface HeadingFrame {
+  level: number;
+  /** Heading text without the leading # markers. */
+  title: string;
+  /** Numbered section path ("2.1" -> ["2","1"]) when the title is numbered. */
+  numberPath: string[] | null;
   displayHeading: string;
-} | null {
-  if (!isStructuralHeading(line) || detectHeading(line)) return null;
-  const nextSectionPath =
-    priorSectionPath.length > 0 ? [...priorSectionPath, String(priorSectionPath.length + 1)] : [];
+}
+
+/**
+ * Heading hierarchy carried across segments/pages so a section that spans several
+ * pages keeps its sectionPath. Mutated by the chunker as headings stream by.
+ */
+interface HeadingState {
+  stack: HeadingFrame[];
+}
+
+const FIGURE_LINE_RE = /^\[Hình[^\]]*\]/;
+const TABLE_LINE_RE = /^\s*\|.*\|\s*$/;
+const FENCE_RE = /^```/;
+const MD_HEADING_RE = /^(#{1,6})\s+(.+)$/;
+const LIST_ITEM_RE = /^\s*(?:[-*+]|\d+[.)])\s+/;
+
+function headingFrameFor(level: number, title: string): HeadingFrame {
+  const info = extractHeadingInfo(title);
   return {
-    sectionPath: nextSectionPath,
-    displayHeading: line.trim(),
+    level,
+    title,
+    numberPath: info ? info.sectionPath : null,
+    displayHeading: info?.displayHeading ?? title,
   };
 }
 
-function splitIntoUnits(segment: TextSegment): TextUnit[] {
-  const normalised = segment.text.replace(/\r\n/g, "\n").trim();
-  if (!normalised) return [];
+function pushHeading(state: HeadingState, frame: HeadingFrame): void {
+  while (
+    state.stack.length > 0 &&
+    state.stack[state.stack.length - 1]!.level >= frame.level
+  ) {
+    state.stack.pop();
+  }
+  state.stack.push(frame);
+}
 
-  const lines = normalised
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+function currentSectionPath(state: HeadingState): string[] {
+  const top = state.stack[state.stack.length - 1];
+  if (!top) return [];
+  // A numbered heading carries its own full path ("2.1.3" -> ["2","1","3"]).
+  if (top.numberPath) return [...top.numberPath];
+  return state.stack.map((frame) => frame.title);
+}
 
-  const units: TextUnit[] = [];
-  let currentSectionPath = [...(segment.sectionPath ?? [])];
-  let currentHeading = segment.headingText ?? null;
+function currentDisplayHeading(state: HeadingState): string | null {
+  return state.stack[state.stack.length - 1]?.displayHeading ?? null;
+}
 
-  for (const line of lines) {
-    const numberedHeading = detectHeading(line);
-    const allCapsHeading = numberedHeading ? null : buildHeadingFromAllCaps(line, currentSectionPath);
-    const heading = numberedHeading ?? allCapsHeading;
+/**
+ * Splits segment text into typed Markdown blocks. Handles both vision-produced
+ * Markdown and legacy plain text (headings detected heuristically).
+ */
+function lexMarkdownBlocks(text: string): MarkdownBlock[] {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const blocks: MarkdownBlock[] = [];
+  let paragraph: string[] = [];
 
-    if (heading) {
-      currentSectionPath = heading.sectionPath;
-      currentHeading = heading.displayHeading;
-      units.push({
-        text: heading.displayHeading,
-        pageNumber: segment.pageNumber,
-        sectionPath: [...currentSectionPath],
-        displayHeading: currentHeading,
-        blockType: "heading",
-        extractionMode: segment.extractionMode ?? "text",
-        extractionConfidence: segment.extractionConfidence ?? "medium",
-        isHeading: true,
+  const flushParagraph = () => {
+    const body = paragraph.join("\n").trim();
+    paragraph = [];
+    if (!body) return;
+    blocks.push({ type: inferBlockType(body), text: body });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushParagraph();
+      continue;
+    }
+
+    // Fenced code block (verbatim, fences included).
+    if (FENCE_RE.test(trimmed)) {
+      flushParagraph();
+      const codeLines = [line];
+      i++;
+      while (i < lines.length) {
+        codeLines.push(lines[i]!);
+        if (FENCE_RE.test(lines[i]!.trim())) break;
+        i++;
+      }
+      blocks.push({ type: "code", text: codeLines.join("\n") });
+      continue;
+    }
+
+    // Display math block $$ ... $$.
+    if (trimmed.startsWith("$$")) {
+      flushParagraph();
+      const mathLines = [line];
+      if (!(trimmed.length > 2 && trimmed.endsWith("$$"))) {
+        i++;
+        while (i < lines.length) {
+          mathLines.push(lines[i]!);
+          if (lines[i]!.trim().endsWith("$$")) break;
+          i++;
+        }
+      }
+      blocks.push({ type: "equation", text: mathLines.join("\n") });
+      continue;
+    }
+
+    // Markdown heading.
+    const mdHeading = MD_HEADING_RE.exec(trimmed);
+    if (mdHeading) {
+      flushParagraph();
+      blocks.push({
+        type: "heading",
+        text: mdHeading[2]!.trim(),
+        headingLevel: mdHeading[1]!.length,
       });
       continue;
     }
 
-    const blockType = segment.blockType && segment.blockType !== "paragraph"
-      ? segment.blockType
-      : inferBlockType(line);
-
-    const sentenceLike =
-      blockType === "paragraph" || blockType === "figure_caption"
-        ? splitLineIntoSentences(line)
-        : [line];
-
-    for (const text of sentenceLike) {
-      units.push({
-        text,
-        pageNumber: segment.pageNumber,
-        sectionPath: [...currentSectionPath],
-        displayHeading: currentHeading,
-        blockType,
-        extractionMode: segment.extractionMode ?? "text",
-        extractionConfidence: segment.extractionConfidence ?? "medium",
-        isHeading: false,
+    // Legacy plain-text heading (numbered / "Chương N" / ALL-CAPS).
+    if (!LIST_ITEM_RE.test(trimmed) && isStructuralHeading(trimmed)) {
+      flushParagraph();
+      const info = extractHeadingInfo(trimmed);
+      blocks.push({
+        type: "heading",
+        text: trimmed,
+        headingLevel: info ? Math.min(Math.max(info.sectionPath.length, 1), 6) : 2,
       });
+      continue;
     }
-  }
 
-  return units;
-}
-
-function findHardBreaks(units: TextUnit[]): Set<number> {
-  const breaks = new Set<number>([0]);
-  for (let i = 1; i < units.length; i++) {
-    const current = units[i]!;
-    const previous = units[i - 1]!;
-    if (
-      current.isHeading ||
-      current.pageNumber !== previous.pageNumber ||
-      current.sectionPath.join(".") !== previous.sectionPath.join(".")
-    ) {
-      breaks.add(i);
+    // Markdown table: maximal run of |-delimited lines.
+    if (TABLE_LINE_RE.test(line)) {
+      flushParagraph();
+      const tableLines = [line];
+      while (i + 1 < lines.length && TABLE_LINE_RE.test(lines[i + 1]!)) {
+        i++;
+        tableLines.push(lines[i]!);
+      }
+      blocks.push({ type: "table", text: tableLines.join("\n") });
+      continue;
     }
-  }
-  return breaks;
-}
 
-async function embedUnitsInBatches(units: TextUnit[]): Promise<number[][]> {
-  const env = loadEnv();
-  const batches: string[][] = [];
-  for (let i = 0; i < units.length; i += SENTENCE_EMBED_BATCH) {
-    batches.push(units.slice(i, i + SENTENCE_EMBED_BATCH).map((unit) => unit.text));
-  }
-  const results = await runConcurrent(batches, env.SENTENCE_EMBED_CONCURRENCY, (batch) =>
-    aiService.embedBatch(batch, "similarity"),
-  );
-  return results.flat();
-}
+    // Figure description line inserted during extraction.
+    if (FIGURE_LINE_RE.test(trimmed)) {
+      flushParagraph();
+      blocks.push({ type: "figure_caption", text: trimmed });
+      continue;
+    }
 
-function dotProduct(a: number[], b: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += (a[i] ?? 0) * (b[i] ?? 0);
-  return sum;
-}
-
-function meanEmbedding(embeddings: number[][], start: number, end: number): number[] {
-  const dim = embeddings[0]?.length ?? 0;
-  const mean = new Array<number>(dim).fill(0);
-  let count = 0;
-  for (let i = start; i <= end; i++) {
-    const emb = embeddings[i];
-    if (!emb) continue;
-    for (let d = 0; d < dim; d++) mean[d] = (mean[d] ?? 0) + (emb[d] ?? 0);
-    count++;
-  }
-  if (count === 0) return mean;
-  for (let d = 0; d < dim; d++) mean[d] = (mean[d] ?? 0) / count;
-  return mean;
-}
-
-function percentile(sortedAsc: number[], p: number): number {
-  if (sortedAsc.length === 0) return 0;
-  const idx = Math.min(sortedAsc.length - 1, Math.floor((p / 100) * (sortedAsc.length - 1)));
-  return sortedAsc[idx]!;
-}
-
-function findSemanticBreaks(embeddings: number[][], hardBreaks: Set<number>): Set<number> {
-  const breaks = new Set<number>(hardBreaks);
-  if (embeddings.length < 3) return breaks;
-
-  const windowSims: number[] = [];
-  for (let i = 0; i < embeddings.length; i++) {
-    const start = Math.max(0, i - WINDOW_RADIUS);
-    const end = Math.min(embeddings.length - 1, i + WINDOW_RADIUS);
-    const contextMean = meanEmbedding(embeddings, start, end);
-    windowSims.push(dotProduct(embeddings[i]!, contextMean));
+    paragraph.push(line);
   }
 
-  const adjSims: number[] = [];
-  for (let i = 1; i < embeddings.length; i++) {
-    adjSims.push(dotProduct(embeddings[i - 1]!, embeddings[i]!));
+  flushParagraph();
+  return blocks;
+}
+
+/** Splits an oversized Markdown table by rows, repeating the header rows per piece. */
+function splitTableByRows(text: string, maxChars: number): string[] {
+  const lines = text.split("\n");
+  const separatorIdx = lines.findIndex((l) => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes("-"));
+  const headerLines = separatorIdx >= 1 ? lines.slice(0, separatorIdx + 1) : [];
+  const bodyLines = separatorIdx >= 1 ? lines.slice(separatorIdx + 1) : lines;
+  const header = headerLines.join("\n");
+
+  const pieces: string[] = [];
+  let rows: string[] = [];
+  let size = header.length;
+
+  const flush = () => {
+    if (rows.length === 0) return;
+    pieces.push([...(header ? [header] : []), ...rows].join("\n"));
+    rows = [];
+    size = header.length;
+  };
+
+  for (const row of bodyLines) {
+    if (size + row.length + 1 > maxChars && rows.length > 0) flush();
+    rows.push(row);
+    size += row.length + 1;
   }
+  flush();
 
-  const sorted = [...adjSims].sort((a, b) => a - b);
-  const threshold = Math.min(percentile(sorted, SEMANTIC_BREAK_PERCENTILE), MAX_BREAK_SIMILARITY);
+  return pieces.length > 0 ? pieces : [text];
+}
 
-  for (let i = 1; i < embeddings.length; i++) {
-    const current = i < adjSims.length ? unitsPreferSemanticSplit(i, hardBreaks, adjSims, windowSims, threshold) : false;
-    if (current) breaks.add(i);
+/** Splits an oversized block at line boundaries (code/equation) into <= maxChars pieces. */
+function splitByLines(text: string, maxChars: number): string[] {
+  const lines = text.split("\n");
+  const pieces: string[] = [];
+  let current: string[] = [];
+  let size = 0;
+
+  for (const line of lines) {
+    if (size + line.length + 1 > maxChars && current.length > 0) {
+      pieces.push(current.join("\n"));
+      current = [];
+      size = 0;
+    }
+    current.push(line);
+    size += line.length + 1;
   }
+  if (current.length > 0) pieces.push(current.join("\n"));
 
-  return breaks;
+  return pieces.length > 0 ? pieces : [text];
 }
 
-function unitsPreferSemanticSplit(
-  index: number,
-  hardBreaks: Set<number>,
-  adjSims: number[],
-  windowSims: number[],
-  threshold: number,
-): boolean {
-  if (hardBreaks.has(index)) return true;
-  const belowThreshold = (adjSims[index - 1] ?? 1) < threshold;
-  const sharpDrop =
-    index >= 2 &&
-    (windowSims[index - 2] ?? 0) - (windowSims[index - 1] ?? 0) >= SIMILARITY_DROP_DELTA;
-  return belowThreshold || sharpDrop;
+/** Splits an oversized paragraph at sentence boundaries into <= maxChars pieces. */
+function splitParagraphBySentences(text: string, maxChars: number): string[] {
+  const sentences = text
+    .split("\n")
+    .flatMap((line) => splitLineIntoSentences(line));
+  const pieces: string[] = [];
+  let current = "";
+
+  for (const sentence of sentences) {
+    if (current.length + sentence.length + 1 > maxChars && current) {
+      pieces.push(current.trim());
+      current = "";
+    }
+    current = current ? `${current} ${sentence}` : sentence;
+  }
+  if (current.trim()) pieces.push(current.trim());
+
+  return pieces.length > 0 ? pieces : [text];
 }
 
-function dominantBlockType(units: TextUnit[]): SegmentBlockType {
-  if (units.some((unit) => unit.blockType === "equation")) return "equation";
-  if (units.some((unit) => unit.blockType === "table")) return "table";
-  if (units.some((unit) => unit.blockType === "ocr")) return "ocr";
-  if (units.some((unit) => unit.blockType === "figure_caption")) return "figure_caption";
-  return units.some((unit) => unit.blockType === "heading") ? "heading" : "paragraph";
+/** Breaks a block that alone exceeds the budget into same-typed sub-blocks. */
+function splitOversizedBlock(block: MarkdownBlock, maxChars: number): MarkdownBlock[] {
+  if (block.text.length <= maxChars) return [block];
+  const pieces =
+    block.type === "table"
+      ? splitTableByRows(block.text, maxChars)
+      : block.type === "code" || block.type === "equation"
+        ? splitByLines(block.text, maxChars)
+        : splitParagraphBySentences(block.text, maxChars);
+  return pieces.map((text) => ({ type: block.type, text }));
 }
 
-function takeOverlapTail(text: string): string {
-  if (text.length <= CHUNKING_OVERLAP_CHARS) return text;
-  const tail = text.slice(-CHUNKING_OVERLAP_CHARS);
-  const spaceIdx = tail.indexOf(" ");
-  return spaceIdx > 0 ? tail.slice(spaceIdx + 1) : tail;
+const BLOCK_TYPE_PRIORITY: SegmentBlockType[] = [
+  "equation",
+  "table",
+  "code",
+  "figure_caption",
+  "ocr",
+];
+
+function dominantBlockType(types: SegmentBlockType[]): SegmentBlockType {
+  for (const priority of BLOCK_TYPE_PRIORITY) {
+    if (types.includes(priority)) return priority;
+  }
+  return types.includes("heading") && types.length === 1 ? "heading" : "paragraph";
 }
 
-function buildChunkFromUnits(
-  units: TextUnit[],
-  overlapPrefix: string,
-): Omit<TextChunk, "chunkIndex"> | null {
-  const body = units.map((unit) => unit.text).join(" ").replace(/\s+/g, " ").trim();
-  if (!body) return null;
+interface ChunkDraft {
+  blocks: MarkdownBlock[];
+  pageNumber: number | null;
+  sectionPath: string[];
+  displayHeading: string | null;
+  extractionMode: ExtractionMode;
+  extractionConfidence: ExtractionConfidence;
+}
 
-  const content = overlapPrefix ? `${overlapPrefix} ${body}`.trim() : body;
-  const first = units[0]!;
-  const blockType = dominantBlockType(units);
-  const extractionMode =
-    units.some((unit) => unit.extractionMode === "hybrid")
-      ? "hybrid"
-      : units.some((unit) => unit.extractionMode === "ocr")
-        ? "ocr"
-        : "text";
-  const extractionConfidence =
-    units.some((unit) => unit.extractionConfidence === "low")
-      ? "low"
-      : units.some((unit) => unit.extractionConfidence === "medium")
-        ? "medium"
-        : "high";
+function draftLength(draft: ChunkDraft): number {
+  return draft.blocks.reduce((sum, b) => sum + b.text.length + 2, 0);
+}
+
+function buildChunk(draft: ChunkDraft): Omit<TextChunk, "chunkIndex"> | null {
+  const content = draft.blocks
+    .map((block) =>
+      block.type === "heading" && block.headingLevel
+        ? `${"#".repeat(block.headingLevel)} ${block.text}`
+        : block.text,
+    )
+    .join("\n\n")
+    .trim();
+  if (!content) return null;
 
   return {
     content,
     queryText: normalizeMathQueryableText(
-      `${first.displayHeading ? `${first.displayHeading} ` : ""}${content}`,
+      `${draft.displayHeading ? `${draft.displayHeading} ` : ""}${content}`,
     ),
-    pageNumber: first.pageNumber,
-    sectionPath: [...first.sectionPath],
-    displayHeading: first.displayHeading,
-    blockType,
-    extractionMode,
-    extractionConfidence,
+    pageNumber: draft.pageNumber,
+    sectionPath: [...draft.sectionPath],
+    displayHeading: draft.displayHeading,
+    blockType: dominantBlockType(draft.blocks.map((b) => b.type)),
+    extractionMode: draft.extractionMode,
+    extractionConfidence: draft.extractionConfidence,
   };
 }
 
-function groupUnitsIntoChunks(
-  units: TextUnit[],
-  breaksBefore: Set<number>,
-): Omit<TextChunk, "chunkIndex">[] {
-  const chunks: Omit<TextChunk, "chunkIndex">[] = [];
-  let groupStart = 0;
-  let overlapPrefix = "";
-
-  const flush = (endExclusive: number) => {
-    const chunk = buildChunkFromUnits(units.slice(groupStart, endExclusive), overlapPrefix);
-    if (!chunk) return;
-    chunks.push(chunk);
-    overlapPrefix = takeOverlapTail(chunk.content);
-    groupStart = endExclusive;
-  };
-
-  for (let i = 1; i <= units.length; i++) {
-    if (i === units.length) {
-      flush(i);
-      break;
-    }
-
-    const slice = units.slice(groupStart, i);
-    const currentText = slice.map((unit) => unit.text).join(" ");
-    const currentChars = currentText.length;
-    const nextUnit = units[i]!;
-    const isBreak = breaksBefore.has(i);
-    const wouldExceedMax = currentChars + nextUnit.text.length + 1 > CHUNKING_MAX_CHARS;
-    const minChars = dominantBlockType(slice) === "equation" || dominantBlockType(slice) === "table"
-      ? Math.floor(CHUNKING_MIN_CHARS / 2)
-      : CHUNKING_MIN_CHARS;
-    const hasMin = currentChars >= minChars || i - groupStart >= MIN_UNITS_PER_CHUNK;
-
-    if ((isBreak && hasMin) || wouldExceedMax) {
-      flush(i);
-    }
-  }
-
-  return chunks;
-}
-
-function mergeSmallTrailingChunks(
+function mergeSmallTrailingChunk(
   chunks: Omit<TextChunk, "chunkIndex">[],
-  minChars: number,
 ): Omit<TextChunk, "chunkIndex">[] {
   if (chunks.length < 2) return chunks;
 
   const last = chunks[chunks.length - 1]!;
-  if (last.content.length >= minChars || last.blockType === "equation" || last.blockType === "table") {
+  if (
+    last.content.length >= CHUNKING_MERGE_TAIL_CHARS ||
+    last.blockType === "equation" ||
+    last.blockType === "table" ||
+    last.blockType === "code"
+  ) {
     return chunks;
   }
 
@@ -335,36 +351,83 @@ function mergeSmallTrailingChunks(
   return chunks.slice(0, -1);
 }
 
-async function chunkSegmentText(segment: TextSegment): Promise<Omit<TextChunk, "chunkIndex">[]> {
-  const units = splitIntoUnits(segment);
-  if (units.length === 0) return [];
+function chunkSegmentBlocks(
+  segment: TextSegment,
+  state: HeadingState,
+): Omit<TextChunk, "chunkIndex">[] {
+  const blocks = lexMarkdownBlocks(segment.text).flatMap((block) =>
+    splitOversizedBlock(block, CHUNKING_MAX_CHARS),
+  );
+  if (blocks.length === 0) return [];
 
-  if (units.length < 3) {
-    const chunk = buildChunkFromUnits(units, "");
-    return chunk ? [chunk] : [];
+  const extractionMode = segment.extractionMode ?? "text";
+  const extractionConfidence = segment.extractionConfidence ?? "medium";
+
+  const contextSectionPath = () => {
+    const path = currentSectionPath(state);
+    return path.length > 0 ? path : [...(segment.sectionPath ?? [])];
+  };
+  const contextHeading = () =>
+    currentDisplayHeading(state) ?? segment.headingText ?? null;
+
+  const chunks: Omit<TextChunk, "chunkIndex">[] = [];
+  let draft: ChunkDraft | null = null;
+
+  const startDraft = (): ChunkDraft => ({
+    blocks: [],
+    pageNumber: segment.pageNumber,
+    sectionPath: contextSectionPath(),
+    displayHeading: contextHeading(),
+    extractionMode,
+    extractionConfidence,
+  });
+
+  const flush = () => {
+    if (!draft) return;
+    const chunk = buildChunk(draft);
+    if (chunk) chunks.push(chunk);
+    draft = null;
+  };
+
+  for (const block of blocks) {
+    if (block.type === "heading") {
+      // A heading starts a new chunk and updates the section context for what follows.
+      flush();
+      pushHeading(state, headingFrameFor(block.headingLevel ?? 2, block.text));
+      draft = startDraft();
+      draft.blocks.push(block);
+      continue;
+    }
+
+    if (!draft) draft = startDraft();
+
+    if (
+      draft.blocks.length > 0 &&
+      draftLength(draft) + block.text.length + 2 > CHUNKING_MAX_CHARS
+    ) {
+      flush();
+      draft = startDraft();
+    }
+    draft.blocks.push(block);
   }
+  flush();
 
-  const hardBreaks = findHardBreaks(units);
-  const embeddings = await embedUnitsInBatches(units);
-  const breaks = findSemanticBreaks(embeddings, hardBreaks);
-  const chunks = groupUnitsIntoChunks(units, breaks);
-  return mergeSmallTrailingChunks(chunks, CHUNKING_MERGE_TAIL_CHARS);
+  return mergeSmallTrailingChunk(chunks);
 }
 
-export async function chunkSegments(segments: TextSegment[]): Promise<TextChunk[]> {
-  const env = loadEnv();
-  const nonEmptySegments = segments.filter((segment) => segment.text.trim());
-
-  const perSegmentChunks = await runConcurrent(
-    nonEmptySegments,
-    env.SENTENCE_EMBED_CONCURRENCY,
-    (segment) => chunkSegmentText(segment),
-  );
-
+/**
+ * Structure-based chunker: splits Markdown (or legacy plain text) into chunks along
+ * real document boundaries — headings, paragraphs, tables, code and math blocks —
+ * carrying the heading hierarchy across pages. No embedding calls are made here.
+ */
+export function chunkSegments(segments: TextSegment[]): TextChunk[] {
+  const state: HeadingState = { stack: [] };
   const allChunks: TextChunk[] = [];
   let chunkIndex = 0;
-  for (const segmentChunks of perSegmentChunks) {
-    for (const chunk of segmentChunks) {
+
+  for (const segment of segments) {
+    if (!segment.text.trim()) continue;
+    for (const chunk of chunkSegmentBlocks(segment, state)) {
       allChunks.push({ ...chunk, chunkIndex: chunkIndex++ });
     }
   }
@@ -372,11 +435,8 @@ export async function chunkSegments(segments: TextSegment[]): Promise<TextChunk[
   return allChunks;
 }
 
-/** @deprecated Use chunkSegments â€” kept for scripts/tests. */
-export async function chunkText(
-  text: string,
-  pageCount: number | null = null,
-): Promise<TextChunk[]> {
+/** @deprecated Use chunkSegments — kept for scripts/tests. */
+export function chunkText(text: string, pageCount: number | null = null): TextChunk[] {
   const pageNumber = pageCount !== null && pageCount > 0 ? 1 : null;
   return chunkSegments([{ text, pageNumber }]);
 }

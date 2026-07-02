@@ -277,7 +277,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 |----|------------------|
 | FR-013 | Hệ thống phải cho phép người dùng tải lên tài liệu định dạng PDF, DOCX hoặc PPTX, gắn bắt buộc với một môn học. |
 | FR-014 | Hệ thống phải từ chối tải lên nếu định dạng tệp không được hỗ trợ hoặc dung lượng vượt quá giới hạn cho phép/hạn mức còn lại. |
-| FR-015 | Hệ thống phải xử lý tài liệu sau khi tải lên (trích xuất nội dung, phân tích) và phản ánh trạng thái xử lý: đang chờ, đang xử lý, sẵn sàng, hoặc thất bại. |
+| FR-015 | Hệ thống phải xử lý tài liệu sau khi tải lên (trích xuất nội dung giữ cấu trúc — heading/section, bảng, công thức toán, code, mô tả hình/biểu đồ — rồi phân đoạn theo cấu trúc và đánh chỉ mục ngữ nghĩa) và phản ánh trạng thái xử lý: đang chờ, đang xử lý, sẵn sàng, hoặc thất bại. |
 | FR-016 | Hệ thống phải hiển thị danh sách tài liệu của người dùng, nhóm theo môn học trong curriculum của hồ sơ học thuật khi hồ sơ đã hoàn thành. |
 | FR-017 | Hệ thống phải cho phép người dùng xem chi tiết và tải xuống tài liệu của mình hoặc tài liệu được phép xem. |
 | FR-018 | Hệ thống phải cho phép người dùng cập nhật tiêu đề, thẻ, thư mục, môn học và chế độ hiển thị của tài liệu. |

@@ -445,12 +445,18 @@ export async function* chatWithContextStream(
   );
 }
 
+interface VisionGenerateOptions {
+  maxOutputTokens: number;
+  temperature: number;
+}
+
 async function tryDescribeWithModel(
   ai: GoogleGenAI,
   modelName: string,
   imageBase64: string,
   imageMimeType: string,
   prompt: string,
+  options: VisionGenerateOptions,
 ): Promise<string> {
   const response = await ai.models.generateContent({
     model: modelName,
@@ -464,8 +470,8 @@ async function tryDescribeWithModel(
       },
     ],
     config: {
-      maxOutputTokens: 1024,
-      temperature: 0.1,
+      maxOutputTokens: options.maxOutputTokens,
+      temperature: options.temperature,
     },
   });
 
@@ -473,14 +479,11 @@ async function tryDescribeWithModel(
   return response.text?.trim() ?? "";
 }
 
-/**
- * Sends an image to a Gemini multimodal model and returns a text description / OCR
- * of its contents. Reuses the chat quota-fallback chain.
- */
-export async function describeImage(
+async function generateFromImage(
   imageBase64: string,
   imageMimeType: string,
   prompt: string,
+  options: VisionGenerateOptions,
 ): Promise<string> {
   const env = loadEnv();
   const ai = getVertexClient();
@@ -496,7 +499,7 @@ export async function describeImage(
   for (const modelName of modelsToTry) {
     try {
       return await withGeminiRetry(
-        () => tryDescribeWithModel(ai, modelName, imageBase64, imageMimeType, prompt),
+        () => tryDescribeWithModel(ai, modelName, imageBase64, imageMimeType, prompt, options),
         "vision",
       );
     } catch (error) {
@@ -513,4 +516,42 @@ export async function describeImage(
     `All Gemini vision models exhausted quota. Tried: ${modelsToTry.join(", ")}. ` +
       `Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
+}
+
+/**
+ * Sends an image to a Gemini multimodal model and returns a text description / OCR
+ * of its contents. Reuses the chat quota-fallback chain.
+ */
+export async function describeImage(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  return generateFromImage(imageBase64, imageMimeType, prompt, {
+    maxOutputTokens: 1024,
+    temperature: 0.1,
+  });
+}
+
+/** Strips a single wrapping ``` / ```markdown fence if the model added one. */
+function stripWrappingFence(text: string): string {
+  const match = /^```(?:markdown|md)?\s*\n([\s\S]*?)\n?```$/.exec(text.trim());
+  return match ? match[1]!.trim() : text;
+}
+
+/**
+ * Parses a full document page image into structured Markdown. Uses a larger output
+ * budget than describeImage because a dense page can need several thousand tokens.
+ */
+export async function parseImageToMarkdown(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  const env = loadEnv();
+  const text = await generateFromImage(imageBase64, imageMimeType, prompt, {
+    maxOutputTokens: env.DOC_VISION_MAX_OUTPUT_TOKENS,
+    temperature: 0,
+  });
+  return stripWrappingFence(text);
 }

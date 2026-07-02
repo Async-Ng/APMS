@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { CornerDownRight, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
@@ -17,6 +17,8 @@ interface ChatMessageListProps {
   activeMessageId?: string | null;
   onSelectCitation: (message: ChatMessage, citation: ChatCitation) => void;
   onSelectMessage: (message: ChatMessage) => void;
+  onSuggestionClick?: (question: string) => void;
+  isSending?: boolean;
 }
 
 function citationKey(c: ChatCitation): string {
@@ -31,6 +33,8 @@ export function ChatMessageList({
   activeMessageId,
   onSelectCitation,
   onSelectMessage,
+  onSuggestionClick,
+  isSending = false,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -54,9 +58,16 @@ export function ChatMessageList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-2">
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         const isUser = message.role === "user";
         const isActive = activeMessageId === message.id;
+        const showSuggestions =
+          !isUser &&
+          index === messages.length - 1 &&
+          message.id !== streamingMessageId &&
+          !isSending &&
+          !!onSuggestionClick &&
+          (message.suggestedQuestions?.length ?? 0) > 0;
 
         return (
           <div
@@ -133,6 +144,25 @@ export function ChatMessageList({
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {showSuggestions && (
+                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-brutal-ink/20 pt-2">
+                  {message.suggestedQuestions?.map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSuggestionClick?.(question);
+                      }}
+                      className="focus-brutal inline-flex max-w-full items-center gap-1 rounded-full border-2 border-brutal-ink bg-brutal-bg px-2 py-0.5 text-left text-xs font-semibold text-brutal-ink transition-colors hover:bg-brutal-accent/30"
+                    >
+                      <CornerDownRight className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{question}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

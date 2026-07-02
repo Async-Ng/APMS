@@ -45,3 +45,11 @@ export async function describeImage(
 ): Promise<string> {
   return geminiProvider.describeImage(imageBase64, imageMimeType, prompt);
 }
+
+export async function parseImageToMarkdown(
+  imageBase64: string,
+  imageMimeType: string,
+  prompt: string,
+): Promise<string> {
+  return geminiProvider.parseImageToMarkdown(imageBase64, imageMimeType, prompt);
+}
