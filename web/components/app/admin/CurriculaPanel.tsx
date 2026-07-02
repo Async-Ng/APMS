@@ -2,16 +2,17 @@
 
 import { useQueries } from "@tanstack/react-query";
 import { GraduationCap, Pencil, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { AdminClientPagination } from "@/components/app/admin/AdminClientPagination";
-import { AdminFormModal } from "@/components/app/admin/AdminFormModal";
 import { AdminSearchBar } from "@/components/app/admin/AdminSearchBar";
 import {
   AdminStatusBadge,
   AdminTableShell,
   AdminTableSkeleton,
 } from "@/components/app/admin/AdminTableShell";
+import { CurriculumFormModal } from "@/components/app/admin/CurriculumFormModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
@@ -20,36 +21,13 @@ import { filterBySearch, paginateItems } from "@/lib/admin/client-table";
 import { cn } from "@/lib/cn";
 import { getUserErrorMessage } from "@/lib/errors";
 import {
-  syncCurriculumSemesterLinks,
   useAdminCurricula,
-  useAdminCurriculumSemesters,
   useAdminSemesters,
   useArchiveCurriculum,
-  useArchiveCurriculumSemester,
-  useAssignCurriculumSemesters,
-  useCreateCurriculum,
   useUpdateCurriculum,
   type Curriculum,
   type CurriculumSemesterLink,
-  type Semester,
 } from "@/lib/queries/admin-academic";
-import {
-  curriculumEntityFormSchema,
-  formatZodFieldErrors,
-} from "@/lib/validation/admin";
-
-interface CurriculumFormState {
-  code: string;
-  name: string;
-  description: string;
-}
-
-const EMPTY_FORM: CurriculumFormState = { code: "", name: "", description: "" };
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-1 text-xs font-medium text-brutal-danger">{message}</p>;
-}
 
 function formatLinkedSemesterDisplay(links: CurriculumSemesterLink[] | undefined): {
   label: string;
@@ -87,58 +65,6 @@ function SemesterCountCell({
   );
 }
 
-function SemesterCheckboxList({
-  semesters,
-  selectedIds,
-  onChange,
-  disabled,
-}: {
-  semesters: Semester[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
-  disabled?: boolean;
-}) {
-  function toggle(id: string) {
-    onChange(
-      selectedIds.includes(id)
-        ? selectedIds.filter((x) => x !== id)
-        : [...selectedIds, id],
-    );
-  }
-
-  if (semesters.length === 0) {
-    return (
-      <p className="text-sm text-brutal-muted">
-        Chưa có học kỳ nào. Tạo học kỳ ở tab &quot;Học kỳ&quot; trước khi gán vào CTĐT.
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {semesters.map((semester) => (
-        <label
-          key={semester.id}
-          className={cn(
-            "flex cursor-pointer items-center gap-2 rounded-lg border-2 border-brutal-ink px-3 py-1.5 text-sm font-medium",
-            selectedIds.includes(semester.id) && "bg-brutal-secondary text-white",
-            disabled && "pointer-events-none opacity-50",
-          )}
-        >
-          <input
-            type="checkbox"
-            className="sr-only"
-            checked={selectedIds.includes(semester.id)}
-            disabled={disabled}
-            onChange={() => toggle(semester.id)}
-          />
-          {semester.code} — {semester.name}
-        </label>
-      ))}
-    </div>
-  );
-}
-
 export function CurriculaPanel({
   selectedId,
   onSelect,
@@ -148,32 +74,19 @@ export function CurriculaPanel({
   onSelect?: (curriculum: Curriculum) => void;
   variant?: "compact" | "full";
 } = {}) {
+  const router = useRouter();
   const { data: curricula, isLoading, isError } = useAdminCurricula();
   const { data: allSemesters } = useAdminSemesters();
-  const { mutateAsync: createCurriculum } = useCreateCurriculum();
-  const { mutateAsync: updateCurriculumAsync, mutate: updateCurriculum } = useUpdateCurriculum();
-  const { mutateAsync: assignSemesters } = useAssignCurriculumSemesters();
-  const { mutateAsync: revokeSemester } = useArchiveCurriculumSemester();
+  const { mutate: updateCurriculum } = useUpdateCurriculum();
   const { mutate: archiveCurriculum, isPending: isArchiving } = useArchiveCurriculum();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Curriculum | null>(null);
-  const [form, setForm] = useState<CurriculumFormState>(EMPTY_FORM);
-  const [selectedSemesterIds, setSelectedSemesterIds] = useState<string[]>([]);
-  const [originalLinkedIds, setOriginalLinkedIds] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [archiveTarget, setArchiveTarget] = useState<Curriculum | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCurriculumId, setPendingCurriculumId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-
-  const editSessionRef = useRef<string | null>(null);
-
-  const { data: editLinks, isLoading: isEditLinksLoading } = useAdminCurriculumSemesters(
-    formOpen && editing ? editing.id : undefined,
-  );
 
   const activeSemesters = useMemo(
     () => allSemesters?.filter((s) => s.isActive) ?? [],
@@ -226,99 +139,18 @@ export function CurriculaPanel({
   const isCompact = variant === "compact";
   const colCount = isCompact ? 5 : 6;
   const isSelectable = Boolean(onSelect);
-
-  const isFormValid = useMemo(
-    () =>
-      curriculumEntityFormSchema.safeParse({
-        code: form.code,
-        name: form.name,
-        description: form.description.trim() || undefined,
-      }).success,
-    [form],
-  );
-
-  useEffect(() => {
-    if (!formOpen || !editing || isEditLinksLoading || !editLinks) return;
-    if (editSessionRef.current === editing.id) return;
-    editSessionRef.current = editing.id;
-    const ids = editLinks.filter((link) => link.isActive).map((link) => link.semesterId);
-    setSelectedSemesterIds(ids);
-    setOriginalLinkedIds(ids);
-  }, [formOpen, editing, editLinks, isEditLinksLoading]);
-
-  function resetSemesterSelection() {
-    editSessionRef.current = null;
-    setSelectedSemesterIds([]);
-    setOriginalLinkedIds([]);
-  }
+  const allowRowNavigation = variant === "full";
 
   function openCreate() {
     setEditing(null);
-    setForm(EMPTY_FORM);
-    resetSemesterSelection();
-    setFieldErrors({});
     setError(null);
     setFormOpen(true);
   }
 
   function openEdit(curriculum: Curriculum) {
     setEditing(curriculum);
-    setForm({
-      code: curriculum.code,
-      name: curriculum.name,
-      description: curriculum.description,
-    });
-    resetSemesterSelection();
-    setFieldErrors({});
     setError(null);
     setFormOpen(true);
-  }
-
-  async function handleSubmit() {
-    const parsed = curriculumEntityFormSchema.safeParse({
-      code: form.code,
-      name: form.name,
-      description: form.description.trim() || undefined,
-    });
-    if (!parsed.success) {
-      setFieldErrors(formatZodFieldErrors(parsed.error));
-      return;
-    }
-    setFieldErrors({});
-    setError(null);
-
-    const body = {
-      code: parsed.data.code.toUpperCase(),
-      name: parsed.data.name,
-      description: parsed.data.description,
-    };
-
-    setIsSaving(true);
-    try {
-      if (editing) {
-        await updateCurriculumAsync({ id: editing.id, body });
-        await syncCurriculumSemesterLinks(
-          editing.id,
-          selectedSemesterIds,
-          originalLinkedIds,
-          { assign: assignSemesters, revoke: revokeSemester },
-        );
-        setFormOpen(false);
-      } else {
-        const created = await createCurriculum(body);
-        if (selectedSemesterIds.length > 0) {
-          await assignSemesters({
-            curriculumId: created.id,
-            semesterIds: selectedSemesterIds,
-          });
-        }
-        setFormOpen(false);
-      }
-    } catch (err) {
-      setError(getUserErrorMessage(err));
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   function handleReactivate(curriculum: Curriculum) {
@@ -410,9 +242,15 @@ export function CurriculaPanel({
               return (
               <tr
                 key={curriculum.id}
-                onClick={isSelectable ? () => onSelect?.(curriculum) : undefined}
+                onClick={
+                  isSelectable
+                    ? () => onSelect?.(curriculum)
+                    : allowRowNavigation
+                      ? () => router.push(`/admin/curricula/${curriculum.id}`)
+                      : undefined
+                }
                 className={cn(
-                  isSelectable && "cursor-pointer",
+                  (isSelectable || allowRowNavigation) && "cursor-pointer",
                   "border-b border-brutal-ink/10 hover:bg-brutal-bg",
                   isSelected && "bg-brutal-secondary/10 ring-2 ring-inset ring-brutal-secondary",
                   !curriculum.isActive && "opacity-60",
@@ -476,95 +314,17 @@ export function CurriculaPanel({
         itemLabel="CTĐT"
       />
 
-      <AdminFormModal
+      <CurriculumFormModal
+        key={`${editing?.id ?? "new"}-${formOpen}`}
         open={formOpen}
-        title={editing ? "Sửa chương trình đào tạo" : "Thêm chương trình đào tạo"}
+        editing={editing}
+        activeSemesters={activeSemesters}
         onClose={() => setFormOpen(false)}
-        footer={
-          <>
-            <BrutalButton variant="ghost" className="flex-1" onClick={() => setFormOpen(false)}>
-              Huỷ
-            </BrutalButton>
-            <BrutalButton
-              variant="primary"
-              className="flex-1"
-              onClick={() => void handleSubmit()}
-              loading={isSaving}
-              disabled={!isFormValid || (Boolean(editing) && isEditLinksLoading)}
-            >
-              {editing ? "Lưu" : "Tạo"}
-            </BrutalButton>
-          </>
-        }
-      >
-        <label className="block text-sm font-bold">
-          Mã CTĐT
-          <input
-            value={form.code}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, code: e.target.value }));
-              setFieldErrors((fe) => ({ ...fe, code: "" }));
-            }}
-            onBlur={() => {
-              setForm((f) => ({ ...f, code: f.code.trim().toUpperCase() }));
-            }}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
-            placeholder="SE"
-            maxLength={30}
-            aria-invalid={!!fieldErrors.code}
-          />
-          <FieldError message={fieldErrors.code} />
-        </label>
-        <label className="block text-sm font-bold">
-          Tên CTĐT
-          <input
-            value={form.name}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, name: e.target.value }));
-              setFieldErrors((fe) => ({ ...fe, name: "" }));
-            }}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
-            placeholder="Kỹ thuật phần mềm"
-            maxLength={150}
-            aria-invalid={!!fieldErrors.name}
-          />
-          <FieldError message={fieldErrors.name} />
-        </label>
-        <label className="block text-sm font-bold">
-          Mô tả (tuỳ chọn)
-          <textarea
-            value={form.description}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, description: e.target.value }));
-              setFieldErrors((fe) => ({ ...fe, description: "" }));
-            }}
-            rows={2}
-            maxLength={1000}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink px-3 py-2 text-sm"
-            aria-invalid={!!fieldErrors.description}
-          />
-          <FieldError message={fieldErrors.description} />
-        </label>
-
-        <div className="block text-sm font-bold">
-          <span>Học kỳ áp dụng (tuỳ chọn)</span>
-          <p className="mt-0.5 text-xs font-medium text-brutal-muted">
-            Chọn các học kỳ thuộc CTĐT này. Có thể chỉnh lại khi sửa.
-          </p>
-          <div className="mt-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3">
-            {editing && isEditLinksLoading ? (
-              <p className="text-sm text-brutal-muted">Đang tải học kỳ đã gán…</p>
-            ) : (
-              <SemesterCheckboxList
-                semesters={activeSemesters}
-                selectedIds={selectedSemesterIds}
-                onChange={setSelectedSemesterIds}
-                disabled={Boolean(editing) && isEditLinksLoading}
-              />
-            )}
-          </div>
-        </div>
-      </AdminFormModal>
+        onSuccess={(curriculum) => {
+          setPendingCurriculumId(curriculum.id);
+          setEditing(null);
+        }}
+      />
 
       <ConfirmDialog
         open={!!archiveTarget}

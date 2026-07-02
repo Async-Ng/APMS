@@ -4,15 +4,11 @@ import { GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
-import type { CatalogSemester } from "@/lib/queries/catalog";
 import type { AcademicProfile } from "@/lib/queries/catalog";
-import type { DriveViewSemesterId } from "@/stores/drive-view-store";
 
 interface DriveAcademicBannerProps {
   profile: AcademicProfile | undefined;
   isLoading?: boolean;
-  viewSemesterId?: DriveViewSemesterId;
-  availableSemesters?: CatalogSemester[];
 }
 
 export function DriveAcademicBanner({
