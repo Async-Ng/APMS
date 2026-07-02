@@ -2,6 +2,10 @@
 skinparam swimlane {
   WrapTitle false
 }
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #333333
+}
 
 |#E8F4FD|Student|
 start
@@ -11,36 +15,45 @@ start
 :Limit readable scope to documents owned by the user,\nshared with the user, or public;
 
 |Student|
-if (Requested capability?) then (Public document listing)
+if (Requested capability?) then (Public library listing)
   if (Discovery scope?) then (Academic-profile suggestions)
     |APMS System|
-    :Prioritize public documents from the profile Curriculum,\nthen other public documents;
+    if (Academic profile completed?) then (no)
+      :Prompt to set up Curriculum;
+    else (yes)
+      :Prioritize public documents from the profile Curriculum,\nthen other public documents;
+    endif
     |Student|
   else (Full public listing)
-    :Provide major, semester, and course filters;
+    :Apply Curriculum, semester, and course filters;
     |APMS System|
     :Return public document list;
     |Student|
   endif
+
 elseif (Semantic document search) then
   :Provide search phrase or question;
   |APMS System|
   :Run semantic search within readable scope;
   |Student|
+
 else (AI assistant conversation session)
-  :Define AI context: all documents / folder / document;
+  :Define AI context: all documents / folder /\none document / multiple documents;
   :Define assistant mode: Q&A / Summary / FAQ / Study guide;
+  |APMS System|
+  :Hide sessions whose context document/folder\nwas trashed or no longer exists;
+  |Student|
   :Submit question;
   |APMS System|
   if (Daily AI message quota available?\nmax 50/day) then (no)
     :Reject request and ask user to try again tomorrow;
     |Student|
   else (yes)
-    :Generate concise conversational answer\nwith source citations;
+    :Retrieve relevant chunks in scope and\ngenerate a concise conversational answer\nwith source citations (document, page, section);
     if (Assistant mode is Q&A?) then (yes)
       :Include suggested follow-up questions;
     else (no)
-      :Do not include follow-up questions;
+      :Return without follow-up questions;
     endif
     |Student|
   endif

@@ -2,46 +2,66 @@
 skinparam swimlane {
   WrapTitle false
 }
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #333333
+}
 
 |#E8F4FD|Student|
 start
-:Access personal document collection;
+:Access personal document collection (My Drive);
 
 |#E8FDE8|APMS System|
-:Provide user documents grouped by courses/course slots\nfrom the academic profile Curriculum;
+if (Academic profile completed?) then (yes)
+  :List documents grouped by course slots\nof the academic profile Curriculum;
+else (no)
+  :Show flat document list\nand prompt to set up Curriculum;
+endif
+
+|Student|
 if (Document upload requested?) then (yes)
-  |Student|
-  :Submit document upload request;
-  :Provide file and required course;
+  :Submit upload request with file and a required course;
+
   |APMS System|
-  :Validate PDF/DOCX/PPTX format,\nfile size <= 50 MB, storage quota,\nand Curriculum membership;
-  if (Request valid?) then (no)
-    :Reject request with business reason;
+  if (Academic profile completed?) then (no)
+    :Reject: academic profile required before upload;
     detach
   else (yes)
-    :Create document with default **private** visibility;
-    :Process document content in background;
-    repeat
-      :Continue document processing;
-    repeat while (Document ready?) is (no)
-    ->yes;
-    :Update user document list grouped by course;
+    :Validate PDF/DOCX/PPTX format,\nfile size <= 50 MB, remaining storage quota,\nand course belongs to profile Curriculum;
+    if (Request valid?) then (no)
+      :Reject request with business reason;
+      detach
+    else (yes)
+      :Create document with default **private** visibility;
+      :Queue background processing\n(pending -> processing);
+      if (Processing succeeded?) then (yes)
+        :Mark document **ready**;
+      else (no)
+        :Mark document **failed**;
+      endif
+      :Update document list grouped by course;
+    endif
   endif
 else (no)
-  :Return existing user document list;
+  :Return existing document list;
 endif
 
 |Student|
 partition "Optional document operations (repeatable)" {
-  :Manage organization: folder, title, tags, star state;
-  :Share read-only access with users or email recipients\n(invites expire after 7 days);
+  :Organize: folder, title, tags, star state;
+  :Share read-only with users or email recipients\n(max 50 per request; email invites expire after 7 days);
   :Set **private** or **public** visibility\n(public requires an assigned course);
   :Move to trash / restore / permanently delete;
 }
 
 |APMS System|
-:Grant read-only access or send invite;
-:Apply private or public visibility;
+:Apply requested change;
+if (Restore item whose parent folder is in trash?) then (yes)
+  :Reject: restore the parent folder first;
+else (no)
+  :Grant read-only access or send invite;
+  :Apply visibility and refund quota on permanent delete;
+endif
 :Permanently purge items after **30 days** in trash;
 
 |Student|
