@@ -7,41 +7,41 @@ skinparam activity {
   BorderColor #333333
 }
 
-|#E8F4FD|Sinh viên|
+|#E8F4FD|Student|
 start
-:Đăng nhập bằng tài khoản Google;
+:Authenticate with Google account;
 
-|#E8FDE8|Hệ thống APMS|
-:Kiểm tra email được phép vào hệ thống;
-if (Email được phép?) then (không)
-  :Thông báo: không có quyền truy cập;
+|#E8FDE8|APMS System|
+:Verify allowed email for system access;
+if (Email allowed?) then (no)
+  :Reject access with authorization message;
   stop
-else (có)
-  :Tạo hoặc đồng bộ tài khoản;
+else (yes)
+  :Create or synchronize user account;
 endif
 
-|Sinh viên|
-:Vào Drive của tôi;
+|Student|
+:Request access to business functions;
 
-|Hệ thống APMS|
-if (Hồ sơ học thuật đã hoàn thành?) then (có)
-  #PaleGreen:Trạng thái Đã hoàn thành;
+|APMS System|
+if (Academic profile completed?) then (yes)
+  #PaleGreen:Profile status is Completed;
   stop
-else (chưa)
-  :Cung cấp danh mục CTĐT/Curriculum\nđang hoạt động;
+else (no)
+  :Provide active Curriculum catalog;
 endif
 
-|Sinh viên|
-:Chọn CTĐT/Curriculum;
-:Nhấn **Lưu hồ sơ**;
+|Student|
+:Select Curriculum;
+:Submit academic profile update;
 
-|Hệ thống APMS|
-if (Curriculum đang hoạt động?) then (không)
-  :Thông báo lỗi — yêu cầu chọn CTĐT hợp lệ;
+|APMS System|
+if (Curriculum is active?) then (no)
+  :Reject update and require a valid Curriculum;
   detach
-else (có)
-  :Lưu hồ sơ học thuật;
-  #PaleGreen:Trạng thái **Đã hoàn thành**;
+else (yes)
+  :Save academic profile;
+  #PaleGreen:Set profile status to **Completed**;
   stop
 endif
 

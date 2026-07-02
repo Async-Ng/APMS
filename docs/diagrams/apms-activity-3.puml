@@ -3,55 +3,55 @@ skinparam swimlane {
   WrapTitle false
 }
 
-|#E8F4FD|Sinh viên|
+|#E8F4FD|Student|
 start
-:Chọn kênh sử dụng;
+:Request knowledge access from documents;
 
-|#E8FDE8|Hệ thống APMS|
-:Lọc chỉ tài liệu được phép đọc:\ncủa mình · được chia sẻ · công khai;
+|#E8FDE8|APMS System|
+:Limit readable scope to documents owned by the user,\nshared with the user, or public;
 
-|Sinh viên|
-if (Kênh?) then (Thư viện công khai)
-  if (Chế độ?) then (Gợi ý)
-    |Hệ thống APMS|
-    :Ưu tiên: tài liệu thuộc CTĐT trong hồ sơ\n→ công khai khác;
-    |Sinh viên|
-  else (Duyệt toàn bộ)
-    :Lọc theo Ngành, Học kỳ, Môn;
-    |Hệ thống APMS|
-    :Trả danh sách tài liệu công khai;
-    |Sinh viên|
+|Student|
+if (Requested capability?) then (Public document listing)
+  if (Discovery scope?) then (Academic-profile suggestions)
+    |APMS System|
+    :Prioritize public documents from the profile Curriculum,\nthen other public documents;
+    |Student|
+  else (Full public listing)
+    :Provide major, semester, and course filters;
+    |APMS System|
+    :Return public document list;
+    |Student|
   endif
-elseif (Tìm kiếm) then
-  :Nhập câu hỏi hoặc từ khóa;
-  |Hệ thống APMS|
-  :Tìm kiếm ngữ nghĩa trong phạm vi quyền;
-  |Sinh viên|
-else (Trò chuyện AI)
-  :Chọn ngữ cảnh: toàn bộ / thư mục / tài liệu;
-  :Chọn chế độ: Hỏi đáp · Tóm tắt · FAQ · Ôn tập;
-  :Đặt câu hỏi;
-  |Hệ thống APMS|
-  if (Còn lượt hỏi hôm nay?\nmax 50/ngày) then (hết)
-    :Thông báo: thử lại ngày mai;
-    |Sinh viên|
-  else (còn)
-    :Trả lời ngắn gọn, tự nhiên,\nkèm **trích dẫn** tài liệu nguồn;
-    if (Chế độ hỏi đáp?) then (có)
-      :Trả thêm gợi ý câu hỏi tiếp theo;
-    else (không)
-      :Không trả gợi ý câu hỏi;
+elseif (Semantic document search) then
+  :Provide search phrase or question;
+  |APMS System|
+  :Run semantic search within readable scope;
+  |Student|
+else (AI assistant conversation session)
+  :Define AI context: all documents / folder / document;
+  :Define assistant mode: Q&A / Summary / FAQ / Study guide;
+  :Submit question;
+  |APMS System|
+  if (Daily AI message quota available?\nmax 50/day) then (no)
+    :Reject request and ask user to try again tomorrow;
+    |Student|
+  else (yes)
+    :Generate concise conversational answer\nwith source citations;
+    if (Assistant mode is Q&A?) then (yes)
+      :Include suggested follow-up questions;
+    else (no)
+      :Do not include follow-up questions;
     endif
-    |Sinh viên|
+    |Student|
   endif
 endif
 
-:Xem chi tiết / tải xuống / đọc câu trả lời\n(chỉ đọc — không sửa tài liệu người khác);
+:View details, download documents, or read AI answer\n(read-only for documents not owned by the user);
 
-if (Tiếp tục tra cứu?) then (có)
-  :Quay lại chọn kênh;
+if (Continue knowledge access?) then (yes)
+  :Return to capability selection;
   detach
-else (không)
+else (no)
   stop
 endif
 

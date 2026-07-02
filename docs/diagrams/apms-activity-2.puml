@@ -1,49 +1,50 @@
-@startuml APMS_Activity2_Drive
+@startuml APMS_Activity2_LearningDocumentManagement
 skinparam swimlane {
   WrapTitle false
 }
 
-|#E8F4FD|Sinh viên|
+|#E8F4FD|Student|
 start
-:Vào **Drive của tôi**;
+:Access personal document collection;
 
-|#E8FDE8|Hệ thống APMS|
-:Hiển thị tài liệu theo các môn/course slots\nthuộc CTĐT trong hồ sơ;
-if (Tải tài liệu mới?) then (có)
-  |Sinh viên|
-  :Chọn tệp và chọn môn cụ thể;
-  |Hệ thống APMS|
-  :Kiểm tra định dạng PDF/DOCX/PPTX,\n≤ 50 MB, còn quota,\nmôn thuộc CTĐT trong hồ sơ;
-  if (Hợp lệ?) then (không)
-    :Thông báo lý do — từ chối;
+|#E8FDE8|APMS System|
+:Provide user documents grouped by courses/course slots\nfrom the academic profile Curriculum;
+if (Document upload requested?) then (yes)
+  |Student|
+  :Submit document upload request;
+  :Provide file and required course;
+  |APMS System|
+  :Validate PDF/DOCX/PPTX format,\nfile size <= 50 MB, storage quota,\nand Curriculum membership;
+  if (Request valid?) then (no)
+    :Reject request with business reason;
     detach
-  else (có)
-    :Lưu tệp — mặc định **Riêng tư**;
-    :Xử lý nền: đọc nội dung tài liệu;
+  else (yes)
+    :Create document with default **private** visibility;
+    :Process document content in background;
     repeat
-      :Tiếp tục xử lý;
-    repeat while (Tài liệu sẵn sàng?) is (chưa)
-    ->có;
-    :Hiển thị trong Drive — nhóm theo môn học;
+      :Continue document processing;
+    repeat while (Document ready?) is (no)
+    ->yes;
+    :Update user document list grouped by course;
   endif
-else (không)
-  :Hiển thị danh sách tài liệu hiện có;
+else (no)
+  :Return existing user document list;
 endif
 
-|Sinh viên|
-partition "Thao tác tuỳ chọn (lặp)" {
-  :Sắp xếp: thư mục, đổi tên, thẻ, gắn sao;
-  :Chia sẻ chỉ đọc — bạn học hoặc email\n(lời mời hết hạn 7 ngày);
-  :Đặt **Riêng tư** hoặc **Công khai**\n(công khai phải đã gắn môn);
-  :Chuyển Thùng rác / khôi phục / xóa vĩnh viễn;
+|Student|
+partition "Optional document operations (repeatable)" {
+  :Manage organization: folder, title, tags, star state;
+  :Share read-only access with users or email recipients\n(invites expire after 7 days);
+  :Set **private** or **public** visibility\n(public requires an assigned course);
+  :Move to trash / restore / permanently delete;
 }
 
-|Hệ thống APMS|
-:Cấp quyền xem chỉ đọc / gửi lời mời;
-:Áp dụng chế độ Riêng tư hoặc Công khai;
-:Tự xóa vĩnh viễn sau **30 ngày** trong thùng rác;
+|APMS System|
+:Grant read-only access or send invite;
+:Apply private or public visibility;
+:Permanently purge items after **30 days** in trash;
 
-|Sinh viên|
+|Student|
 stop
 
 @enduml
