@@ -2,7 +2,7 @@
 
 import { Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useOptimistic, useTransition } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 
 import { LibraryBrowsePanel } from "@/components/app/library/LibraryBrowsePanel";
 import {
@@ -55,16 +55,11 @@ function PublicLibraryContent() {
 
   const tab = parseTab(searchParams.get("tab"));
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
-  const filters = useMemo(
+  const filtersFromUrl = useMemo(
     () => filtersFromParams(searchParams, tab),
     [searchParams, tab],
   );
-
-  const [, startTransition] = useTransition();
-  const [activeFilters, setOptimisticFilters] = useOptimistic(
-    filters,
-    (_current, next: LibraryFilterState) => next,
-  );
+  const [filters, setFilters] = useState(filtersFromUrl);
 
   const syncUrl = useCallback(
     (
@@ -90,35 +85,34 @@ function PublicLibraryContent() {
 
   const handleTabChange = (nextTab: LibraryTabId) => {
     const nextFilters = {
-      ...activeFilters,
+      ...filters,
       sort: nextTab === "browse" ? "title" : "newest",
     } as LibraryFilterState;
+    setFilters(nextFilters);
     syncUrl(nextTab, nextFilters, 1);
   };
 
   const handleFiltersChange = (nextFilters: LibraryFilterState) => {
-    startTransition(() => {
-      setOptimisticFilters(nextFilters);
-      syncUrl(tab, nextFilters, 1);
-    });
+    setFilters(nextFilters);
+    syncUrl(tab, nextFilters, 1);
   };
 
   const handlePageChange = (nextPage: number) => {
-    syncUrl(tab, activeFilters, nextPage);
+    syncUrl(tab, filters, nextPage);
   };
 
   const suggestedQuery = usePublicDocuments({
     match: "auto",
     page,
     limit: 20,
-    ...suggestedFiltersToQueryParams(activeFilters),
+    ...suggestedFiltersToQueryParams(filters),
     enabled: tab === "suggested",
   });
   const browseQuery = usePublicDocuments({
     match: "all",
     page,
     limit: 20,
-    ...browseFiltersToQueryParams(activeFilters),
+    ...browseFiltersToQueryParams(filters),
     enabled: tab === "browse",
   });
 
@@ -154,14 +148,14 @@ function PublicLibraryContent() {
 
         {tab === "suggested" ? (
           <LibrarySuggestedPanel
-            filters={activeFilters}
+            filters={filters}
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}
           />
         ) : (
           <LibraryBrowsePanel
-            filters={activeFilters}
+            filters={filters}
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}

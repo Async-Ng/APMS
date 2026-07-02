@@ -57,10 +57,7 @@ export function LibrarySuggestedPanel({
       <LibraryFiltersBar
         mode="suggested"
         filters={filters}
-        onChange={(next) => {
-          onFiltersChange(next);
-          onPageChange(1);
-        }}
+        onChange={onFiltersChange}
         defaultSort="newest"
       />
 

@@ -57,10 +57,7 @@ export function LibraryBrowsePanel({
       <LibraryFiltersBar
         mode="browse"
         filters={filters}
-        onChange={(next) => {
-          onFiltersChange(next);
-          onPageChange(1);
-        }}
+        onChange={onFiltersChange}
         defaultSort="title"
       />
 
