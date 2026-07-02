@@ -1,12 +1,13 @@
-﻿"use client";
+"use client";
 
 import { Globe, Lock, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 import { cn } from "@/lib/cn";
 import {
   isPublishingToLibrary,
@@ -37,6 +38,9 @@ export function DocumentSettingsModal({
   );
   const [error, setError] = useState<string | null>(null);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalA11y(true, onClose, dialogRef, { preventClose: updateDocument.isPending });
 
   const { data: profile } = useAcademicProfile();
   const { data: curriculum } = useCatalogCourseSlots(
@@ -88,6 +92,7 @@ export function DocumentSettingsModal({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",

@@ -41,6 +41,7 @@ export function BrutalTabs<T extends string>({
               type="button"
               role="tab"
               aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, tab.id)}
               className={cn(

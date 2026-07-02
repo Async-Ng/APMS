@@ -5,6 +5,7 @@ import { Menu, Search, Upload } from "lucide-react";
 
 import { useAppShell } from "@/components/app/AppShellContext";
 import { BreadcrumbNav, type BreadcrumbItem } from "@/components/ui/BreadcrumbNav";
+import { BrutalButton } from "@/components/ui/BrutalButton";
 import { cn } from "@/lib/cn";
 
 interface TopbarProps {
@@ -82,14 +83,15 @@ export function Topbar({
         {actions}
 
         {onUploadClick && (
-          <button
+          <BrutalButton
             id="topbar-upload-btn"
+            variant="primary"
             onClick={onUploadClick}
-            className="brutal-btn brutal-btn-primary focus-brutal hidden sm:inline-flex"
+            className="hidden w-auto! shrink-0 whitespace-nowrap sm:inline-flex"
           >
             <Upload className="h-4 w-4" aria-hidden="true" />
             Tải lên
-          </button>
+          </BrutalButton>
         )}
 
         {onUploadClick && !suppressMobileUpload && (

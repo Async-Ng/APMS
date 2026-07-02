@@ -103,24 +103,37 @@
 
   .brutal-btn {
     display: inline-flex;
-    min-height: 2.75rem;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.75rem;
-    border: var(--border-brutal-emphasis) solid var(--color-brutal-ink);
-    padding: 0.75rem 1.25rem;
     font-family: var(--font-heading);
-    font-size: 0.9375rem;
     font-weight: 700;
     line-height: 1.25;
     box-shadow: var(--shadow-brutal);
+    border-style: solid;
+    border-color: var(--color-brutal-ink);
     user-select: none;
     transition:
       transform 150ms ease,
       box-shadow 150ms ease,
       background-color 150ms ease,
       opacity 150ms ease;
+  }
+
+  .brutal-btn-md {
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+    border-width: var(--border-brutal-emphasis);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .brutal-btn-sm {
+    min-height: 2.25rem;
+    border-radius: 0.5rem;
+    border-width: var(--border-brutal-default);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
   }
 
   .brutal-btn-primary {
@@ -144,6 +157,11 @@
   .brutal-btn-ghost {
     background-color: var(--color-brutal-surface);
     color: var(--color-brutal-ink);
+  }
+
+  .brutal-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-brutal-lg);
   }
 
   .brutal-btn:active:not(:disabled) {

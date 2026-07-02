@@ -18,6 +18,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
     <div className={cn("flex items-center justify-end gap-2", className)}>
       <BrutalButton
         variant={view === "grid" ? "secondary" : "ghost"}
+        size="sm"
         className="px-2 py-1"
         onClick={() => onChange("grid")}
         aria-label="Xem dạng lưới"
@@ -27,6 +28,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
       </BrutalButton>
       <BrutalButton
         variant={view === "list" ? "secondary" : "ghost"}
+        size="sm"
         className="px-2 py-1"
         onClick={() => onChange("list")}
         aria-label="Xem dạng danh sách"
