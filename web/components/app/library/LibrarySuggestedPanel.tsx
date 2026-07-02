@@ -1,6 +1,5 @@
 "use client";
 
-import { LayoutGrid, List } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -12,14 +11,12 @@ import {
 } from "@/components/app/library/LibraryFiltersBar";
 import { PublicDocumentGrid } from "@/components/app/library/PublicDocumentGrid";
 import { PublicDocumentList } from "@/components/app/library/PublicDocumentList";
-import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { usePublicDocuments } from "@/lib/queries/documents";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
 
 const PAGE_LIMIT = 20;
-
-type ViewMode = "grid" | "list";
 
 interface LibrarySuggestedPanelProps {
   filters: LibraryFilterState;
@@ -75,29 +72,11 @@ export function LibrarySuggestedPanel({
         />
       )}
 
-      <div className="flex items-center justify-end gap-2">
-        <BrutalButton
-          variant={view === "grid" ? "secondary" : "ghost"}
-          className="px-2 py-1"
-          onClick={() => setView("grid")}
-          aria-label="Xem dạng lưới"
-        >
-          <LayoutGrid className="h-4 w-4" />
-        </BrutalButton>
-        <BrutalButton
-          variant={view === "list" ? "secondary" : "ghost"}
-          className="px-2 py-1"
-          onClick={() => setView("list")}
-          aria-label="Xem dạng danh sách"
-        >
-          <List className="h-4 w-4" />
-        </BrutalButton>
-      </div>
+      <ViewToggle view={view} onChange={setView} />
 
       {view === "grid" ? (
         <PublicDocumentGrid
           documents={data?.documents ?? []}
-          source="suggested"
           variant="feed"
           isLoading={isLoading}
           isError={isError}
@@ -107,7 +86,6 @@ export function LibrarySuggestedPanel({
       ) : (
         <PublicDocumentList
           documents={data?.documents ?? []}
-          source="suggested"
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}

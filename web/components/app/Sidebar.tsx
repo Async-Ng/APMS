@@ -10,7 +10,6 @@ import {
   PanelLeftClose,
   Share2,
   ShieldCheck,
-  Star,
   Trash2,
   User2,
 } from "lucide-react";
@@ -36,11 +35,6 @@ const NAV_ITEMS: NavItem[] = [
     label: "Drive của tôi",
     href: "/drive",
     icon: <HardDrive className="h-5 w-5 shrink-0" />,
-  },
-  {
-    label: "Đã gắn sao",
-    href: "/starred",
-    icon: <Star className="h-5 w-5 shrink-0" />,
   },
   {
     label: "Đã chia sẻ",

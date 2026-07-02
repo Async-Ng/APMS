@@ -19,7 +19,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
       <BrutalButton
         variant={view === "grid" ? "secondary" : "ghost"}
         size="sm"
-        className="px-2 py-1"
+        className="w-auto! shrink-0 px-2 py-1"
         onClick={() => onChange("grid")}
         aria-label="Xem dạng lưới"
         aria-pressed={view === "grid"}
@@ -29,7 +29,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
       <BrutalButton
         variant={view === "list" ? "secondary" : "ghost"}
         size="sm"
-        className="px-2 py-1"
+        className="w-auto! shrink-0 px-2 py-1"
         onClick={() => onChange("list")}
         aria-label="Xem dạng danh sách"
         aria-pressed={view === "list"}

@@ -2,7 +2,7 @@
 
 import { Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useOptimistic, useTransition } from "react";
 
 import { LibraryBrowsePanel } from "@/components/app/library/LibraryBrowsePanel";
 import {
@@ -60,8 +60,11 @@ function PublicLibraryContent() {
     [searchParams, tab],
   );
 
-  const [localFilters, setLocalFilters] = useState<LibraryFilterState | null>(null);
-  const activeFilters = localFilters ?? filters;
+  const [, startTransition] = useTransition();
+  const [activeFilters, setOptimisticFilters] = useOptimistic(
+    filters,
+    (_current, next: LibraryFilterState) => next,
+  );
 
   const syncUrl = useCallback(
     (
@@ -72,19 +75,15 @@ function PublicLibraryContent() {
       const params = new URLSearchParams();
       if (nextTab === "browse") params.set("tab", "browse");
       if (nextFilters.search) params.set("q", nextFilters.search);
-      if (nextTab === "browse") {
-        if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
-        if (nextFilters.semesterId)
-          params.set("semester", nextFilters.semesterId);
-        if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
-      }
+      if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
+      if (nextFilters.semesterId) params.set("semester", nextFilters.semesterId);
+      if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
       if (nextFilters.sort !== (nextTab === "browse" ? "title" : "newest")) {
         params.set("sort", nextFilters.sort);
       }
       if (nextPage > 1) params.set("page", String(nextPage));
       const qs = params.toString();
       router.replace(qs ? `/library?${qs}` : "/library", { scroll: false });
-      setLocalFilters(null);
     },
     [router],
   );
@@ -93,16 +92,15 @@ function PublicLibraryContent() {
     const nextFilters = {
       ...activeFilters,
       sort: nextTab === "browse" ? "title" : "newest",
-      ...(nextTab === "suggested"
-        ? { curriculumId: "", semesterId: "", subjectId: "" }
-        : {}),
     } as LibraryFilterState;
     syncUrl(nextTab, nextFilters, 1);
   };
 
   const handleFiltersChange = (nextFilters: LibraryFilterState) => {
-    setLocalFilters(nextFilters);
-    syncUrl(tab, nextFilters, 1);
+    startTransition(() => {
+      setOptimisticFilters(nextFilters);
+      syncUrl(tab, nextFilters, 1);
+    });
   };
 
   const handlePageChange = (nextPage: number) => {

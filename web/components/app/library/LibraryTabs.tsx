@@ -29,6 +29,7 @@ export function LibraryTabs({
 }) {
   return (
     <BrutalTabs
+      size="sm"
       tabs={TABS.map((tab) => ({
         ...tab,
         count: active === tab.id ? count : undefined,

@@ -25,6 +25,53 @@ export function getEnrolledCourses(
     );
 }
 
+export interface SemesterCourseGroup {
+  semesterId: string;
+  semesterCode: string;
+  semesterName: string;
+  sortOrder: number;
+  courses: CatalogCourseSlot[];
+}
+
+/** Group enrolled courses by semester for Drive section headers. */
+export function groupCoursesBySemester(
+  courses: CatalogCourseSlot[],
+): SemesterCourseGroup[] {
+  const byId = new Map<string, SemesterCourseGroup>();
+
+  for (const course of courses) {
+    const semester = course.semester;
+    const key = semester?.id ?? "__unassigned__";
+    if (!byId.has(key)) {
+      byId.set(key, {
+        semesterId: key,
+        semesterCode: semester?.code ?? "—",
+        semesterName: semester?.name ?? "Chưa gán học kỳ",
+        sortOrder: semester?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+        courses: [],
+      });
+    }
+    byId.get(key)!.courses.push(course);
+  }
+
+  return [...byId.values()]
+    .sort(
+      (a, b) =>
+        a.sortOrder - b.sortOrder ||
+        a.semesterCode.localeCompare(b.semesterCode),
+    )
+    .map((group) => ({
+      ...group,
+      courses: [...group.courses].sort((a, b) =>
+        (a.subject?.code ?? "").localeCompare(b.subject?.code ?? ""),
+      ),
+    }));
+}
+
+export function formatSemesterSectionTitle(code: string, name: string): string {
+  return `${code} — ${name}`;
+}
+
 function matchesEnrolledCourse(
   doc: DriveDocument,
   enrolledCourseIds: Set<string>,

@@ -44,13 +44,14 @@ const SORT_OPTIONS: { value: PublicDocumentSort; label: string }[] = [
   { value: "title", label: "Tên A–Z" },
 ];
 
+const FILTER_SELECT_CLASS =
+  "focus-brutal mt-1 block w-full max-w-full truncate rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink";
+
 export function LibraryFiltersBar({
   filters,
   onChange,
   defaultSort = "newest",
-  mode,
 }: LibraryFiltersBarProps) {
-  const isBrowse = mode === "browse";
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [prevSearch, setPrevSearch] = useState(filters.search);
 
@@ -113,23 +114,17 @@ export function LibraryFiltersBar({
     setLocalSearch("");
   }
 
-  const hasActiveFilters = isBrowse
-    ? filters.search ||
-      filters.curriculumId ||
-      filters.semesterId ||
-      filters.subjectId ||
-      filters.sort !== defaultSort
-    : filters.search || filters.sort !== defaultSort;
+  const hasActiveFilters =
+    filters.search ||
+    filters.curriculumId ||
+    filters.semesterId ||
+    filters.subjectId ||
+    filters.sort !== defaultSort;
 
   return (
     <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
-      {!isBrowse && (
-        <p className="text-xs text-brutal-muted">
-          Gợi ý hiển thị tài liệu theo hồ sơ học thuật của bạn.
-        </p>
-      )}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        <div className="relative min-w-0 flex-1">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_9rem_7rem] lg:items-end">
+        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1">
           <Search
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brutal-muted"
             aria-hidden="true"
@@ -144,72 +139,72 @@ export function LibraryFiltersBar({
           />
         </div>
 
-        {isBrowse && (
-          <>
-            <label className="text-xs font-bold text-brutal-muted">
-              CTĐT
-              <select
-                value={filters.curriculumId}
-                onChange={(e) =>
-                  patch({
-                    curriculumId: e.target.value,
-                    semesterId: "",
-                    subjectId: "",
-                  })
-                }
-                className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
-              >
-                <option value="">Tất cả CTĐT</option>
-                {curricula?.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.code} — {m.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+          CTĐT
+          <select
+            value={filters.curriculumId}
+            onChange={(e) =>
+              patch({
+                curriculumId: e.target.value,
+                semesterId: "",
+                subjectId: "",
+              })
+            }
+            className={FILTER_SELECT_CLASS}
+          >
+            <option value="">Tất cả CTĐT</option>
+            {curricula?.map((m) => (
+              <option key={m.id} value={m.id} title={`${m.code} — ${m.name}`}>
+                {m.code}
+              </option>
+            ))}
+          </select>
+        </label>
 
-            <label className="text-xs font-bold text-brutal-muted">
-              Học kỳ
-              <select
-                value={filters.semesterId}
-                onChange={(e) => patch({ semesterId: e.target.value, subjectId: "" })}
-                disabled={!filters.curriculumId}
-                className="focus-brutal mt-1 block w-full min-w-[100px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
+        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+          Học kỳ
+          <select
+            value={filters.semesterId}
+            onChange={(e) => patch({ semesterId: e.target.value, subjectId: "" })}
+            disabled={!filters.curriculumId}
+            className={cn(FILTER_SELECT_CLASS, "disabled:opacity-50")}
+          >
+            <option value="">Tất cả</option>
+            {semesterOptions.map((semester) => (
+              <option
+                key={semester.id}
+                value={semester.id}
+                title={`${semester.code} — ${semester.name}`}
               >
-                <option value="">Tất cả</option>
-                {semesterOptions.map((semester) => (
-                  <option key={semester.id} value={semester.id}>
-                    {semester.code} — {semester.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {semester.code}
+              </option>
+            ))}
+          </select>
+        </label>
 
-            <label className="text-xs font-bold text-brutal-muted">
-              Môn
-              <select
-                value={filters.subjectId}
-                onChange={(e) => patch({ subjectId: e.target.value })}
-                disabled={!filters.curriculumId}
-                className="focus-brutal mt-1 block w-full min-w-[140px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink disabled:opacity-50"
-              >
-                <option value="">Tất cả môn</option>
-                {uniqueSubjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </>
-        )}
+        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+          Môn
+          <select
+            value={filters.subjectId}
+            onChange={(e) => patch({ subjectId: e.target.value })}
+            disabled={!filters.curriculumId}
+            className={cn(FILTER_SELECT_CLASS, "disabled:opacity-50")}
+          >
+            <option value="">Tất cả môn</option>
+            {uniqueSubjects.map((s) => (
+              <option key={s.id} value={s.id} title={`${s.code} — ${s.name}`}>
+                {s.code}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <label className="text-xs font-bold text-brutal-muted">
+        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
           Sắp xếp
           <select
             value={filters.sort}
             onChange={(e) => patch({ sort: e.target.value as PublicDocumentSort })}
-            className="focus-brutal mt-1 block w-full min-w-[120px] rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink"
+            className={FILTER_SELECT_CLASS}
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -221,21 +216,19 @@ export function LibraryFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {isBrowse && (
-          <BrutalButton
-            variant="secondary"
-            className="px-3 py-1.5 text-xs"
-            onClick={applyMyProfile}
-            disabled={!profile?.isComplete}
-            title={
-              profile?.isComplete
-                ? undefined
-                : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
-            }
-          >
-            Theo hồ sơ của tôi
-          </BrutalButton>
-        )}
+        <BrutalButton
+          variant="secondary"
+          className="w-auto! shrink-0 px-3 py-1.5 text-xs"
+          onClick={applyMyProfile}
+          disabled={!profile?.isComplete}
+          title={
+            profile?.isComplete
+              ? undefined
+              : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
+          }
+        >
+          Theo hồ sơ của tôi
+        </BrutalButton>
         {hasActiveFilters && (
           <button
             type="button"
@@ -248,7 +241,7 @@ export function LibraryFiltersBar({
             Xóa bộ lọc
           </button>
         )}
-        {isBrowse && profile && !profile.isComplete && (
+        {profile && !profile.isComplete && (
           <p className="text-xs text-brutal-muted">
             Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT của bạn.
           </p>
@@ -261,6 +254,9 @@ export function LibraryFiltersBar({
 export function suggestedFiltersToQueryParams(filters: LibraryFilterState) {
   return {
     search: filters.search || undefined,
+    curriculumId: filters.curriculumId || undefined,
+    semesterId: filters.semesterId || undefined,
+    subjectId: filters.subjectId || undefined,
     sort: filters.sort,
   };
 }
