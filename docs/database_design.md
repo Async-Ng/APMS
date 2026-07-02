@@ -138,10 +138,10 @@ Public match types:
 | --- | --- |
 | `documentId` | Ref `documents` |
 | `ownerId` | Used for access filtering |
-| `content` | Chunk text content |
+| `content` | Chunk content (Markdown: bảng dạng Markdown table, công thức LaTeX, code fenced block) |
 | `queryText` | Normalized text used for keyword/text search |
 | `pageNumber` | Optional page/source location |
-| `sectionPath`, `displayHeading`, `blockType` | Structural context of the chunk |
+| `sectionPath`, `displayHeading`, `blockType` | Structural context of the chunk (`blockType`: paragraph, heading, table, equation, code, figure_caption, ocr) |
 | `extractionMode`, `extractionConfidence` | How the chunk text was extracted |
 | `embedding` | 1024-dimensional vector from Vertex AI `gemini-embedding-001` |
 

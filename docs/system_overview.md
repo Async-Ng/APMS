@@ -64,10 +64,14 @@ Admin có thể promote/demote user qua `PATCH /api/admin/users/:id` với `role
 ```text
 Upload complete
   -> Worker lấy file từ S3
-  -> Extract text bằng parser phù hợp
-  -> Gemini vision mô tả/OCR phần ảnh khi bật DOC_VISION_ENABLED
-  -> Chunk tài liệu
-  -> Gemini embedding: gemini-embedding-001, 1024 dims
+  -> Extract nội dung thành Markdown có cấu trúc:
+     - PDF: Gemini vision parse từng trang -> Markdown (bảng -> Markdown table,
+       công thức -> LaTeX, code -> fenced block, heading -> #, hình/chart -> [Hình: ...]).
+       DOC_VISION_PAGE_STRATEGY=all parse mọi trang; =auto chỉ parse trang scan/có ảnh/bảng/công thức.
+     - DOCX: mammoth HTML -> Markdown (turndown + GFM); ảnh nhúng mô tả bằng vision, chèn đúng vị trí.
+     - PPTX: mỗi slide -> "## Slide N — title" + bullets; ảnh map về đúng slide qua rels.
+  -> Chunk theo cấu trúc (heading/section/bảng/code/công thức; không gọi embedding khi chunk)
+  -> Gemini embedding: gemini-embedding-001, 1024 dims (batch EMBED_BATCH_SIZE)
   -> Lưu document_chunks vào MongoDB Atlas
 
 Search hoặc Chat

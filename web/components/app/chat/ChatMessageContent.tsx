@@ -49,6 +49,21 @@ const markdownComponents: Components = {
       {children}
     </blockquote>
   ),
+  table: ({ children }) => (
+    <div className="mb-2 overflow-x-auto last:mb-0">
+      <table className="w-full border-collapse border-2 border-brutal-ink text-xs">
+        {children}
+      </table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="border border-brutal-ink/40 bg-brutal-bg px-2 py-1 text-left font-extrabold">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="border border-brutal-ink/40 px-2 py-1 align-top">{children}</td>
+  ),
 };
 
 interface ChatMessageContentProps {

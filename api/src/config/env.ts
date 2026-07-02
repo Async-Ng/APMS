@@ -43,7 +43,7 @@ const envSchema = z
     GEMINI_EMBED_MIN_INTERVAL_MS: z.coerce.number().int().min(0).default(100),
     GEMINI_EMBED_TOKENS_PER_MINUTE: z.coerce.number().int().positive().default(200_000),
     EMBED_CONCURRENCY: z.coerce.number().int().positive().default(5),
-    SENTENCE_EMBED_CONCURRENCY: z.coerce.number().int().positive().default(4),
+    EMBED_BATCH_SIZE: z.coerce.number().int().positive().default(32),
     GEMINI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
     GEMINI_RETRY_BASE_MS: z.coerce.number().int().min(100).default(1000),
     GEMINI_QUOTA_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
@@ -54,9 +54,15 @@ const envSchema = z
       .string()
       .default("true")
       .transform((v) => v !== "false" && v !== "0"),
-    DOC_VISION_MAX_IMAGES: z.coerce.number().int().positive().default(30),
+    // "all" sends every PDF page through vision markdown parsing (best quality);
+    // "auto" only sends scanned pages or pages with images/tables/formulas (saves quota).
+    DOC_VISION_PAGE_STRATEGY: z.enum(["all", "auto"]).default("all"),
+    DOC_VISION_MAX_PAGES: z.coerce.number().int().positive().optional(),
+    // Legacy name for DOC_VISION_MAX_PAGES; still honored as a fallback.
+    DOC_VISION_MAX_IMAGES: z.coerce.number().int().positive().optional(),
+    DOC_VISION_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8192),
     DOC_VISION_SCANNED_TEXT_THRESHOLD: z.coerce.number().int().min(0).default(100),
-    DOC_VISION_CONCURRENCY: z.coerce.number().int().positive().default(3),
+    DOC_VISION_CONCURRENCY: z.coerce.number().int().positive().default(4),
     MAX_UPLOAD_BYTES: z.coerce.number().default(52_428_800),
     S3_PRESIGN_EXPIRES_SECONDS: z.coerce.number().default(900),
     CHAT_DAILY_LIMIT_PER_USER: z.coerce.number().int().min(0).default(50),
@@ -66,7 +72,9 @@ const envSchema = z
     DOCUMENT_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(3),
   });
 
-export type Env = z.infer<typeof envSchema>;
+export type Env = Omit<z.infer<typeof envSchema>, "DOC_VISION_MAX_PAGES" | "DOC_VISION_MAX_IMAGES"> & {
+  DOC_VISION_MAX_PAGES: number;
+};
 
 export function loadEnv(): Env {
   const result = envSchema.safeParse(process.env);
@@ -79,10 +87,11 @@ export function loadEnv(): Env {
     throw new Error(`Invalid environment variables:\n${formatted}`);
   }
 
-  const data = result.data;
+  const { DOC_VISION_MAX_IMAGES, ...data } = result.data;
 
   return {
     ...data,
     COGNITO_REGION: data.COGNITO_REGION ?? data.AWS_REGION,
+    DOC_VISION_MAX_PAGES: data.DOC_VISION_MAX_PAGES ?? DOC_VISION_MAX_IMAGES ?? 60,
   };
 }

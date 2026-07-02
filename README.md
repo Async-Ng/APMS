@@ -36,7 +36,7 @@ Web / Mobile
   -> API Gateway shape: Express REST API under /api
   -> Auth: Cognito JWT + local user profile
   -> Documents: MongoDB metadata + S3 file objects
-  -> Processing worker: extract text/images -> chunk -> Gemini embeddings
+  -> Processing worker: Gemini vision page-to-Markdown extraction (tables, LaTeX math, code, figure descriptions) -> structural chunking -> Gemini embeddings
   -> Retrieval: Atlas Vector Search over document_chunks
   -> Generation: Gemini chat with grounded context, citations, and follow-up suggestions
 ```
@@ -80,7 +80,9 @@ Create package-local env files from the corresponding examples when available. I
 | `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Vertex AI project and region |
 | `GEMINI_CHAT_MODEL`, `GEMINI_EMBEDDING_MODEL` | Gemini chat and embedding models |
 | `GEMINI_EMBEDDING_OUTPUT_DIMENSION` | Embedding dimension, default `1024` |
-| `DOC_VISION_ENABLED` | Enables Gemini vision extraction for scanned/image-heavy documents |
+| `DOC_VISION_ENABLED` | Enables Gemini vision page-to-Markdown extraction |
+| `DOC_VISION_PAGE_STRATEGY` | `all` (parse every PDF page, default) or `auto` (only scanned/structured pages, saves quota) |
+| `DOC_VISION_MAX_PAGES` | Max vision-parsed pages per document, default `60` |
 
 Vertex AI uses Google Application Default Credentials. Configure ADC or `GOOGLE_APPLICATION_CREDENTIALS` in the API runtime environment.
 

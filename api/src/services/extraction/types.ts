@@ -3,6 +3,7 @@ export type SegmentBlockType =
   | "heading"
   | "table"
   | "equation"
+  | "code"
   | "figure_caption"
   | "ocr";
 
