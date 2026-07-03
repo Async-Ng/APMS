@@ -1,4 +1,5 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+﻿import { isAxiosError } from "axios";
+import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -43,7 +44,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
 
   const [step, setStep] = useState<Step>("pick");
   const [file, setFile] = useState<PickedFile | null>(null);
-  const [courseSlotId, setcourseSlotId] = useState("");
+  const [courseSlotId, setCourseSlotId] = useState("");
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -53,10 +54,19 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
   const uploadDocument = useUploadDocument();
 
   useEffect(() => {
+    console.log("📋 Profile & Courses:", {
+      profileComplete: profile?.isComplete,
+      curriculumId: profile?.curriculum?.id,
+      enrolledCoursesCount: enrolledCourses.length,
+      selectedCourseSlotId: courseSlotId
+    });
+  }, [profile, enrolledCourses, courseSlotId]);
+
+  useEffect(() => {
     if (visible) {
       setStep("pick");
       setFile(null);
-      setcourseSlotId("");
+      setCourseSlotId("");
       setVisibility("private");
       setProgress(0);
       setErrorMsg(null);
@@ -96,6 +106,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
     if (!file || !courseSlotId) return;
     setStep("uploading");
     setProgress(0);
+    console.log("🚀 Upload payload:", { courseSlotId, fileName: file.name, fileSize: file.size });
     try {
       await uploadDocument.mutateAsync({
         uri: file.uri,
@@ -109,6 +120,21 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
       });
       setStep("done");
     } catch (err) {
+      console.error("❌ Upload error:", err);
+      if (isAxiosError(err)) {
+        console.error("❌ API error details:", {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          requestData: {
+            originalFilename: file.name,
+            mimeType: file.mimeType,
+            fileSizeBytes: file.size,
+            courseSlotId,
+            visibility,
+          }
+        });
+      }
       setErrorMsg(getErrorMessage(err, "Tải lên thất bại. Vui lòng thử lại."));
       setStep("error");
     }
@@ -125,7 +151,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
   const courseActions: ActionItem[] = enrolledCourses.map((course) => ({
     label: `${course.semester?.code ? `${course.semester.code} · ` : ""}${course.subject?.code ?? ""} — ${course.subject?.name ?? ""}`,
     icon: "book-outline",
-    onPress: () => setcourseSlotId(course.id),
+    onPress: () => setCourseSlotId(course.id),
   }));
 
   return (
@@ -187,7 +213,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>
                             Môn học *
                           </Text>
-                          <Pressable
+                                          <Pressable
                             onPress={() => enrolledCourses.length > 0 && setShowCoursePicker(true)}
                             style={{
                               borderWidth: 2,
