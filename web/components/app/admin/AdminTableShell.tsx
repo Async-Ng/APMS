@@ -6,24 +6,52 @@ interface AdminTableShellProps {
   children: React.ReactNode;
   ariaLabel: string;
   className?: string;
+  layout?: "fixed" | "auto";
 }
 
 export function AdminTableShell({
   children,
   ariaLabel,
   className,
+  layout = "fixed",
 }: AdminTableShellProps) {
+  const isAuto = layout === "auto";
+
   return (
     <div
       className={cn(
-        "overflow-x-auto rounded-xl border-2 border-brutal-ink shadow-brutal",
+        "overflow-hidden rounded-xl border-2 border-brutal-ink shadow-brutal",
         className,
       )}
     >
-      <table className="min-w-full text-sm" aria-label={ariaLabel}>
-        {children}
-      </table>
+      <div className="overflow-x-auto">
+        <table
+          className={cn(
+            "w-full text-sm [&_th]:whitespace-nowrap",
+            isAuto ? "table-auto" : "table-fixed [&_td]:overflow-hidden",
+          )}
+          aria-label={ariaLabel}
+        >
+          {children}
+        </table>
+      </div>
     </div>
+  );
+}
+
+export function AdminTableTruncate({
+  children,
+  title,
+  className,
+}: {
+  children: React.ReactNode;
+  title?: string;
+  className?: string;
+}) {
+  return (
+    <span className={cn("block truncate", className)} title={title}>
+      {children}
+    </span>
   );
 }
 

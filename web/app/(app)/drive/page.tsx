@@ -1,13 +1,11 @@
 ﻿"use client";
 
-import { FolderPlus } from "lucide-react";
+import { Star } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
-import { DriveAcademicBanner } from "@/components/app/drive/DriveAcademicBanner";
 import { DriveListView } from "@/components/app/drive/DriveListView";
-import { MobileQuickActionsMenu } from "@/components/app/drive/MobileQuickActionsMenu";
 import { SubjectFolderCard } from "@/components/app/drive/SubjectFolderCard";
 import { FileGrid } from "@/components/app/FileGrid";
 import { FolderCard } from "@/components/app/FolderCard";
@@ -22,8 +20,10 @@ import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import {
+  formatSemesterSectionTitle,
   getEnrolledCourses,
   getOtherRootDocuments,
+  groupCoursesBySemester,
   groupRootDocumentsByCourse,
 } from "@/lib/drive/academic-grouping";
 import {
@@ -35,7 +35,7 @@ import { useDriveContents } from "@/lib/queries/drive";
 
 export default function DrivePage() {
   const { data, isLoading, isError, refetch } = useDriveContents();
-  const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
+  const { data: profile } = useAcademicProfile();
   const documents = data?.documents ?? [];
 
   const { data: primaryCurriculum } = useCatalogCourseSlots(
@@ -64,6 +64,11 @@ export default function DrivePage() {
     if (!profileComplete) return [];
     return enrolledCourses;
   }, [profileComplete, enrolledCourses]);
+
+  const semesterGroups = useMemo(
+    () => groupCoursesBySemester(displayCourses),
+    [displayCourses],
+  );
 
   const subjectGroups = useMemo(
     () => groupRootDocumentsByCourse(documents, displayCourses),
@@ -111,36 +116,34 @@ export default function DrivePage() {
     <>
       <Topbar
         breadcrumbs={[{ label: "Drive của tôi" }]}
-        onUploadClick={() => openUpload()}
-        suppressMobileUpload
         actions={
-          <>
-            <AskAiLink id="drive-ask-ai-btn" href="/chat" />
-            <MobileQuickActionsMenu
-              onUpload={() => openUpload()}
-              onNewFolder={() => setFolderModalOpen(true)}
-            />
+          <Link href="/profile">
             <BrutalButton
-              id="new-folder-btn"
-              variant="ghost"
-              onClick={() => setFolderModalOpen(true)}
-              className="hidden w-auto! shrink-0 whitespace-nowrap sm:inline-flex"
+              variant="primary"
+              size="sm"
+              className="w-auto! shrink-0 whitespace-nowrap"
             >
-              <FolderPlus className="h-4 w-4" aria-hidden="true" />
-              Thư mục mới
+              {profileComplete ? "Sửa hồ sơ" : "Cập nhật hồ sơ"}
             </BrutalButton>
-          </>
+          </Link>
         }
       />
 
       <main className="flex-1 p-4 sm:p-6" id="main-content">
-        <DriveAcademicBanner
-          profile={profile}
-          isLoading={isProfileLoading}
-        />
-
         {!isLoading && !isEmpty && (
-          <ViewToggle view={viewMode} onChange={setViewMode} className="mb-4" />
+          <div className="mb-4 flex items-center justify-end gap-2">
+            <ViewToggle view={viewMode} onChange={setViewMode} className="mb-0" />
+            <Link href="/starred">
+              <BrutalButton
+                variant="ghost"
+                size="sm"
+                className="w-auto! shrink-0 gap-1.5 px-2.5 py-1"
+              >
+                <Star className="h-4 w-4" aria-hidden="true" />
+                Đã gắn sao
+              </BrutalButton>
+            </Link>
+          </div>
         )}
 
         {isError && (
@@ -169,57 +172,79 @@ export default function DrivePage() {
         ) : showAcademicLayout ? (
           <div className="space-y-8">
             {hasUnifiedFolders && (
-              <section aria-labelledby="folders-heading">
-                <h2
-                  id="folders-heading"
-                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-                >
-                  Thư mục
-                </h2>
-                {viewMode === "grid" ? (
-                  <FileGrid>
-                    {displayCourses.map((course) => {
-                      if (!course.subject) return null;
-                      return (
-                        <SubjectFolderCard
-                          key={course.id}
-                          subject={course.subject}
-                          courseSlotId={course.id}
-                          documentCount={documentCountByCourseId.get(course.id) ?? 0}
-                        />
-                      );
-                    })}
-                    {folders.map((folder) => (
-                        <FolderCard
-                          key={folder.id}
-                          folder={folder}
-                          parentId={undefined}
-                          onRename={setRenameFolder}
-                          onShare={(f) =>
-                            setShareTarget({
-                              resourceType: "folder",
-                              resourceId: f.id,
-                              resourceName: f.name,
-                            })
-                          }
-                        />
-                      ))}
-                  </FileGrid>
-                ) : (
-                  <DriveListView
-                    subjects={displayCourses
-                      .filter((course) => course.subject)
-                      .map((course) => ({
-                        courseSlotId: course.id,
-                        label: `${course.subject!.code} — ${course.subject!.name}`,
-                        documentCount: documentCountByCourseId.get(course.id) ?? 0,
-                      }))}
-                    folders={
-                      folders.map((folder) => ({ folder }))
-                    }
-                  />
+              <div className="space-y-8">
+                {semesterGroups.map((group) => (
+                  <section
+                    key={group.semesterId}
+                    aria-labelledby={`semester-${group.semesterId}`}
+                  >
+                    <h2
+                      id={`semester-${group.semesterId}`}
+                      className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                    >
+                      {formatSemesterSectionTitle(group.semesterCode, group.semesterName)}
+                    </h2>
+                    {viewMode === "grid" ? (
+                      <FileGrid>
+                        {group.courses.map((course) => {
+                          if (!course.subject) return null;
+                          return (
+                            <SubjectFolderCard
+                              key={course.id}
+                              subject={course.subject}
+                              courseSlotId={course.id}
+                              documentCount={documentCountByCourseId.get(course.id) ?? 0}
+                            />
+                          );
+                        })}
+                      </FileGrid>
+                    ) : (
+                      <DriveListView
+                        subjects={group.courses
+                          .filter((course) => course.subject)
+                          .map((course) => ({
+                            courseSlotId: course.id,
+                            label: `${course.subject!.code} — ${course.subject!.name}`,
+                            documentCount: documentCountByCourseId.get(course.id) ?? 0,
+                            semesterLabel: group.semesterCode,
+                          }))}
+                      />
+                    )}
+                  </section>
+                ))}
+
+                {folders.length > 0 && (
+                  <section aria-labelledby="personal-folders-heading">
+                    <h2
+                      id="personal-folders-heading"
+                      className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                    >
+                      Thư mục cá nhân
+                    </h2>
+                    {viewMode === "grid" ? (
+                      <FileGrid>
+                        {folders.map((folder) => (
+                          <FolderCard
+                            key={folder.id}
+                            folder={folder}
+                            parentId={undefined}
+                            onRename={setRenameFolder}
+                            onShare={(f) =>
+                              setShareTarget({
+                                resourceType: "folder",
+                                resourceId: f.id,
+                                resourceName: f.name,
+                              })
+                            }
+                          />
+                        ))}
+                      </FileGrid>
+                    ) : (
+                      <DriveListView folders={folders.map((folder) => ({ folder }))} />
+                    )}
+                  </section>
                 )}
-              </section>
+              </div>
             )}
 
             {otherDocuments.length > 0 && (

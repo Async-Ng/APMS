@@ -2,47 +2,52 @@
 skinparam swimlane {
   WrapTitle false
 }
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #333333
+}
 
 |#E8F4FD|Student|
 start
-:Access personal document collection;
+:Access personal document collection (My Drive);
 
 |#E8FDE8|APMS System|
-:Provide user documents grouped by courses/course slots\nfrom the academic profile Curriculum;
-if (Document upload requested?) then (yes)
-  |Student|
-  :Submit document upload request;
-  :Provide file and required course;
-  |APMS System|
-  :Validate PDF/DOCX/PPTX format,\nfile size <= 50 MB, storage quota,\nand Curriculum membership;
-  if (Request valid?) then (no)
-    :Reject request with business reason;
-    detach
-  else (yes)
-    :Create document with default **private** visibility;
-    :Process document content in background;
-    repeat
-      :Continue document processing;
-    repeat while (Document ready?) is (no)
-    ->yes;
-    :Update user document list grouped by course;
-  endif
+if (Academic profile completed?) then (yes)
+  :List documents grouped by course slots\nof the academic profile Curriculum;
 else (no)
-  :Return existing user document list;
+  :Show flat document list\nand prompt to set up Curriculum;
+endif
+
+|Student|
+:Request upload (file + required course);
+
+|APMS System|
+if (Profile complete and request valid?) then (no)
+  :Reject with reason\n(profile required / format /\n50 MB / quota / course not in Curriculum);
+  detach
+else (yes)
+  :Create **private** document;
+  :Process in background\n(pending -> ready / failed);
+  :Group document under its course;
 endif
 
 |Student|
 partition "Optional document operations (repeatable)" {
-  :Manage organization: folder, title, tags, star state;
-  :Share read-only access with users or email recipients\n(invites expire after 7 days);
+  :Organize: folder, title, tags, star state;
+  :Share read-only with users or email recipients\n(max 50 per request; email invites expire after 7 days);
   :Set **private** or **public** visibility\n(public requires an assigned course);
   :Move to trash / restore / permanently delete;
 }
 
 |APMS System|
-:Grant read-only access or send invite;
-:Apply private or public visibility;
-:Permanently purge items after **30 days** in trash;
+:Apply requested change;
+if (Restore under trashed parent?) then (yes)
+  :Reject: restore parent first;
+else (no)
+  :Grant read-only / send invite;
+  :Apply visibility; refund quota on delete;
+endif
+:Auto-purge after **30 days** in trash;
 
 |Student|
 stop

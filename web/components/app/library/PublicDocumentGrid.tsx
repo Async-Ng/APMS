@@ -6,11 +6,10 @@ import { PublicDocumentCard } from "@/components/app/library/PublicDocumentCard"
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { SkeletonGrid } from "@/components/ui/SkeletonCard";
-import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
+import type { PublicDocument } from "@/lib/queries/public-documents";
 
 interface PublicDocumentGridProps {
   documents: PublicDocument[];
-  source: PublicLibrarySource;
   variant?: "feed" | "browse";
   isLoading?: boolean;
   isError?: boolean;
@@ -20,7 +19,6 @@ interface PublicDocumentGridProps {
 
 export function PublicDocumentGrid({
   documents,
-  source,
   variant = "feed",
   isLoading,
   isError,
@@ -64,7 +62,6 @@ export function PublicDocumentGrid({
         <PublicDocumentCard
           key={doc.id}
           doc={doc}
-          source={source}
           variant={variant}
         />
       ))}

@@ -2,6 +2,10 @@
 skinparam swimlane {
   WrapTitle false
 }
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #333333
+}
 
 |#E8F4FD|Student|
 start
@@ -11,42 +15,32 @@ start
 :Limit readable scope to documents owned by the user,\nshared with the user, or public;
 
 |Student|
-if (Requested capability?) then (Public document listing)
-  if (Discovery scope?) then (Academic-profile suggestions)
+if (Requested capability?) then (Public library)
+  if (Discovery scope?) then (Profile suggestions)
     |APMS System|
-    :Prioritize public documents from the profile Curriculum,\nthen other public documents;
-    |Student|
-  else (Full public listing)
-    :Provide major, semester, and course filters;
+    :Rank profile-Curriculum public docs first\n(profile optional; non-blocking);
+  else (Full listing)
     |APMS System|
-    :Return public document list;
-    |Student|
+    :List public docs\n(Curriculum / semester / course filters);
   endif
-elseif (Semantic document search) then
+elseif (Semantic search) then
   :Provide search phrase or question;
   |APMS System|
   :Run semantic search within readable scope;
-  |Student|
-else (AI assistant conversation session)
-  :Define AI context: all documents / folder / document;
-  :Define assistant mode: Q&A / Summary / FAQ / Study guide;
+else (AI assistant chat)
+  :Pick context (all / folder / docs)\nand mode (Q&A / Summary / FAQ / Study guide);
   :Submit question;
   |APMS System|
-  if (Daily AI message quota available?\nmax 50/day) then (no)
-    :Reject request and ask user to try again tomorrow;
-    |Student|
-  else (yes)
-    :Generate concise conversational answer\nwith source citations;
-    if (Assistant mode is Q&A?) then (yes)
-      :Include suggested follow-up questions;
-    else (no)
-      :Do not include follow-up questions;
-    endif
-    |Student|
+  :Hide sessions with trashed / missing context;
+  if (Daily AI quota available?\nmax 50/day) then (yes)
+    :Answer from in-scope chunks + citations\n(doc, page, section); follow-ups in Q&A only;
+  else (no)
+    :Reject and ask to retry tomorrow;
   endif
 endif
 
-:View details, download documents, or read AI answer\n(read-only for documents not owned by the user);
+|Student|
+:View / download / read answer\n(read-only if not owner);
 
 if (Continue knowledge access?) then (yes)
   :Return to capability selection;

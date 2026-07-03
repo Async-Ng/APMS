@@ -1,11 +1,14 @@
 "use client";
 
+import { FolderPlus } from "lucide-react";
 import { use, useMemo, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentCard } from "@/components/app/DocumentCard";
 import { FileGrid } from "@/components/app/FileGrid";
+import { FolderCard } from "@/components/app/FolderCard";
 import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
+import { FolderModal } from "@/components/app/FolderModal";
 import { ShareModal } from "@/components/app/ShareModal";
 import { Topbar } from "@/components/app/Topbar";
 import { UploadModal } from "@/components/app/UploadModal";
@@ -23,7 +26,7 @@ import {
   findSlotInCatalog,
 } from "@/lib/drive/semester-view";
 import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
-import type { DriveDocument } from "@/lib/queries/drive";
+import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useDriveContents } from "@/lib/queries/drive";
 
 interface PageProps {
@@ -37,6 +40,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
   const { data: profile } = useAcademicProfile();
   const { data: allCurriculum } = useCatalogCourseSlots(profile?.curriculum?.id);
 
+  const folders = data?.folders ?? [];
   const documents = data?.documents ?? [];
   const enrolledCourses = useMemo(
     () => getEnrolledCourses(profile, allCurriculum),
@@ -71,6 +75,8 @@ export default function SubjectDrivePage({ params }: PageProps) {
   );
 
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [renameFolder, setRenameFolder] = useState<DriveFolder | null>(null);
   const [settingsDoc, setSettingsDoc] = useState<DriveDocument | null>(null);
   const [shareTarget, setShareTarget] = useState<{
     resourceType: "folder" | "document";
@@ -81,7 +87,8 @@ export default function SubjectDrivePage({ params }: PageProps) {
   const subjectLabel = course?.subject
     ? `${course.subject.code} — ${course.subject.name}`
     : "Môn học";
-  const isEmpty = !isLoading && subjectDocuments.length === 0;
+  const isEmpty =
+    !isLoading && folders.length === 0 && subjectDocuments.length === 0;
 
   function shareDocument(doc: DriveDocument) {
     setShareTarget({
@@ -101,10 +108,21 @@ export default function SubjectDrivePage({ params }: PageProps) {
         onUploadClick={() => canUpload && setUploadOpen(true)}
         actions={
           course && canUpload ? (
-            <AskAiLink
-              id={`subject-${courseSlotId}-ask-ai-btn`}
-              href="/chat"
-            />
+            <>
+              <AskAiLink
+                id={`subject-${courseSlotId}-ask-ai-btn`}
+                href="/chat"
+              />
+              <BrutalButton
+                id={`subject-${courseSlotId}-new-folder-btn`}
+                variant="ghost"
+                onClick={() => setFolderModalOpen(true)}
+                className="hidden !w-auto shrink-0 whitespace-nowrap sm:inline-flex"
+              >
+                <FolderPlus className="h-4 w-4" aria-hidden="true" />
+                Thư mục mới
+              </BrutalButton>
+            </>
           ) : undefined
         }
       />
@@ -143,37 +161,78 @@ export default function SubjectDrivePage({ params }: PageProps) {
             title="Chưa có tài liệu"
             description={
               canUpload
-                ? `Tải lên tệp PDF, DOCX hoặc PPTX cho môn ${course?.subject?.code ?? ""}.`
+                ? `Tải lên tệp hoặc tạo thư mục mới cho môn ${course?.subject?.code ?? ""}.`
                 : `Chưa có tài liệu cho môn ${course?.subject?.code ?? ""}.`
             }
             action={
               canUpload ? (
-                <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
-                  Tải lên tệp
-                </BrutalButton>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <BrutalButton variant="primary" onClick={() => setUploadOpen(true)}>
+                    Tải lên tệp
+                  </BrutalButton>
+                  <BrutalButton
+                    variant="ghost"
+                    onClick={() => setFolderModalOpen(true)}
+                  >
+                    <FolderPlus className="h-4 w-4" aria-hidden="true" />
+                    Thư mục mới
+                  </BrutalButton>
+                </div>
               ) : undefined
             }
           />
         ) : (
-          <section aria-labelledby="subject-docs-heading">
-            <h2
-              id="subject-docs-heading"
-              className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
-            >
-              Tệp
-            </h2>
-            <FileGrid>
-              {subjectDocuments.map((doc) => (
-                <DocumentCard
-                  key={doc.id}
-                  document={doc}
-                  parentId={undefined}
-                  onRename={setSettingsDoc}
-                  onShare={shareDocument}
-                />
-              ))}
-            </FileGrid>
-          </section>
+          <div className="space-y-6">
+            {folders.length > 0 && (
+              <section aria-labelledby={`subject-folders-heading-${courseSlotId}`}>
+                <h2
+                  id={`subject-folders-heading-${courseSlotId}`}
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Thư mục
+                </h2>
+                <FileGrid>
+                  {folders.map((folder) => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      parentId={undefined}
+                      onRename={setRenameFolder}
+                      onShare={(f) =>
+                        setShareTarget({
+                          resourceType: "folder",
+                          resourceId: f.id,
+                          resourceName: f.name,
+                        })
+                      }
+                    />
+                  ))}
+                </FileGrid>
+              </section>
+            )}
+
+            {subjectDocuments.length > 0 && (
+              <section aria-labelledby="subject-docs-heading">
+                <h2
+                  id="subject-docs-heading"
+                  className="mb-3 font-heading text-sm font-bold uppercase tracking-widest text-brutal-muted"
+                >
+                  Tệp
+                </h2>
+                <FileGrid>
+                  {subjectDocuments.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      parentId={undefined}
+                      onRename={setSettingsDoc}
+                      onShare={shareDocument}
+                    />
+                  ))}
+                </FileGrid>
+              </section>
+            )}
+          </div>
         )}
       </main>
 
@@ -183,6 +242,17 @@ export default function SubjectDrivePage({ params }: PageProps) {
           folderId={null}
           defaultCourseSlotId={courseSlotId}
           onClose={() => setUploadOpen(false)}
+        />
+      )}
+
+      {(folderModalOpen || renameFolder) && (
+        <FolderModal
+          parentId={null}
+          folder={renameFolder ?? undefined}
+          onClose={() => {
+            setFolderModalOpen(false);
+            setRenameFolder(null);
+          }}
         />
       )}
 

@@ -57,7 +57,6 @@ export function FolderModal({
   }, []);
 
   const dialogRef = useRef<HTMLDivElement>(null);
-  useModalA11y(true, onClose, dialogRef, { preventClose: isPending });
 
   const createFolder = useCreateFolder(parentId ?? undefined);
   const updateFolder = useUpdateFolder(folder?.id ?? "", parentId ?? undefined);
@@ -68,6 +67,8 @@ export function FolderModal({
 
   const isPending =
     createFolder.isPending || updateFolder.isPending || updateDocument.isPending;
+
+  useModalA11y(true, onClose, dialogRef, { preventClose: isPending });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -4,11 +4,10 @@ import { FileText } from "lucide-react";
 import Link from "next/link";
 
 import { publicDocumentHref } from "@/components/app/library/PublicDocumentCard";
-import { MatchTypeBadge, isSuggestedDocument } from "@/components/app/library/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
+import type { PublicDocument } from "@/lib/queries/public-documents";
 import { cn } from "@/lib/cn";
 
 function formatBytes(bytes: number): string {
@@ -26,7 +25,6 @@ function formatDate(iso: string): string {
 
 interface PublicDocumentListProps {
   documents: PublicDocument[];
-  source: PublicLibrarySource;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
@@ -35,7 +33,6 @@ interface PublicDocumentListProps {
 
 export function PublicDocumentList({
   documents,
-  source,
   isLoading,
   isError,
   onRetry,
@@ -89,11 +86,6 @@ export function PublicDocumentList({
             <th scope="col" className="hidden px-4 py-3 font-heading font-bold md:table-cell">
               CTĐT / Môn
             </th>
-            {source === "suggested" && (
-              <th scope="col" className="hidden px-4 py-3 font-heading font-bold lg:table-cell">
-                Khớp
-              </th>
-            )}
             <th scope="col" className="hidden px-4 py-3 font-heading font-bold sm:table-cell">
               Người đăng
             </th>
@@ -137,15 +129,6 @@ export function PublicDocumentList({
                     "—"
                   )}
                 </td>
-                {source === "suggested" && (
-                  <td className="hidden px-4 py-3 lg:table-cell">
-                    {isSuggestedDocument(doc) ? (
-                      <MatchTypeBadge matchType={doc.matchType} />
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                )}
                 <td className="hidden px-4 py-3 sm:table-cell">
                   {doc.owner?.displayName ?? "—"}
                 </td>

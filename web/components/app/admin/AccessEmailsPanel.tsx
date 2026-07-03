@@ -11,6 +11,7 @@ import {
   AdminStatusBadge,
   AdminTableShell,
   AdminTableSkeleton,
+  AdminTableTruncate,
 } from "@/components/app/admin/AdminTableShell";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -211,8 +212,10 @@ export function AccessEmailsPanel() {
                       <span className="ml-1 text-xs text-brutal-muted">(bạn)</span>
                     )}
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-brutal-muted">
-                    {entry.note || "—"}
+                  <td className="px-4 py-3 text-brutal-muted">
+                    <AdminTableTruncate title={entry.note || undefined}>
+                      {entry.note || "—"}
+                    </AdminTableTruncate>
                   </td>
                   <td className="px-4 py-3">
                     <AdminStatusBadge

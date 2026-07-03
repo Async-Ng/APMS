@@ -17,6 +17,7 @@ import {
 } from "@/components/app/library/LibraryTabs";
 import { Topbar } from "@/components/app/Topbar";
 import { LoadingScreen } from "@/components/ui/Spinner";
+import { useAcademicProfile } from "@/lib/queries/catalog";
 import { usePublicDocuments } from "@/lib/queries/documents";
 import type { PublicDocumentSort } from "@/lib/queries/public-documents";
 
@@ -42,7 +43,7 @@ function filtersFromParams(
 ): LibraryFilterState {
   return {
     search: params.get("q") ?? "",
-    curriculumId: params.get("curriculumId") ?? "",
+    curriculumId: tab === "browse" ? (params.get("curriculumId") ?? "") : "",
     semesterId: params.get("semester") ?? "",
     subjectId: params.get("subject") ?? "",
     sort: parseSort(params.get("sort"), tab),
@@ -55,13 +56,12 @@ function PublicLibraryContent() {
 
   const tab = parseTab(searchParams.get("tab"));
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
-  const filters = useMemo(
+  const filtersFromUrl = useMemo(
     () => filtersFromParams(searchParams, tab),
     [searchParams, tab],
   );
-
-  const [localFilters, setLocalFilters] = useState<LibraryFilterState | null>(null);
-  const activeFilters = localFilters ?? filters;
+  const [filters, setFilters] = useState(filtersFromUrl);
+  const { data: profile } = useAcademicProfile();
 
   const syncUrl = useCallback(
     (
@@ -72,55 +72,52 @@ function PublicLibraryContent() {
       const params = new URLSearchParams();
       if (nextTab === "browse") params.set("tab", "browse");
       if (nextFilters.search) params.set("q", nextFilters.search);
-      if (nextTab === "browse") {
-        if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
-        if (nextFilters.semesterId)
-          params.set("semester", nextFilters.semesterId);
-        if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
+      if (nextTab === "browse" && nextFilters.curriculumId) {
+        params.set("curriculumId", nextFilters.curriculumId);
       }
+      if (nextFilters.semesterId) params.set("semester", nextFilters.semesterId);
+      if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
       if (nextFilters.sort !== (nextTab === "browse" ? "title" : "newest")) {
         params.set("sort", nextFilters.sort);
       }
       if (nextPage > 1) params.set("page", String(nextPage));
       const qs = params.toString();
       router.replace(qs ? `/library?${qs}` : "/library", { scroll: false });
-      setLocalFilters(null);
     },
     [router],
   );
 
   const handleTabChange = (nextTab: LibraryTabId) => {
     const nextFilters = {
-      ...activeFilters,
+      ...filters,
+      curriculumId: nextTab === "suggested" ? "" : filters.curriculumId,
       sort: nextTab === "browse" ? "title" : "newest",
-      ...(nextTab === "suggested"
-        ? { curriculumId: "", semesterId: "", subjectId: "" }
-        : {}),
     } as LibraryFilterState;
+    setFilters(nextFilters);
     syncUrl(nextTab, nextFilters, 1);
   };
 
   const handleFiltersChange = (nextFilters: LibraryFilterState) => {
-    setLocalFilters(nextFilters);
+    setFilters(nextFilters);
     syncUrl(tab, nextFilters, 1);
   };
 
   const handlePageChange = (nextPage: number) => {
-    syncUrl(tab, activeFilters, nextPage);
+    syncUrl(tab, filters, nextPage);
   };
 
   const suggestedQuery = usePublicDocuments({
     match: "auto",
     page,
     limit: 20,
-    ...suggestedFiltersToQueryParams(activeFilters),
+    ...suggestedFiltersToQueryParams(filters, profile?.curriculum?.id),
     enabled: tab === "suggested",
   });
   const browseQuery = usePublicDocuments({
     match: "all",
     page,
     limit: 20,
-    ...browseFiltersToQueryParams(activeFilters),
+    ...browseFiltersToQueryParams(filters),
     enabled: tab === "browse",
   });
 
@@ -156,14 +153,14 @@ function PublicLibraryContent() {
 
         {tab === "suggested" ? (
           <LibrarySuggestedPanel
-            filters={activeFilters}
+            filters={filters}
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}
           />
         ) : (
           <LibraryBrowsePanel
-            filters={activeFilters}
+            filters={filters}
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}

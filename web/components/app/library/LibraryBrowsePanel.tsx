@@ -57,10 +57,7 @@ export function LibraryBrowsePanel({
       <LibraryFiltersBar
         mode="browse"
         filters={filters}
-        onChange={(next) => {
-          onFiltersChange(next);
-          onPageChange(1);
-        }}
+        onChange={onFiltersChange}
         defaultSort="title"
       />
 
@@ -77,7 +74,6 @@ export function LibraryBrowsePanel({
       {view === "grid" ? (
         <PublicDocumentGrid
           documents={data?.documents ?? []}
-          source="browse"
           variant="browse"
           isLoading={isLoading}
           isError={isError}
@@ -86,7 +82,6 @@ export function LibraryBrowsePanel({
       ) : (
         <PublicDocumentList
           documents={data?.documents ?? []}
-          source="browse"
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
