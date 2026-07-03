@@ -35,8 +35,7 @@ export function Topbar({
   return (
     <header
       className={cn(
-        "sticky top-0 flex items-center gap-2 border-b-2 border-brutal-ink bg-brutal-surface px-3 py-0 sm:gap-3 sm:px-4",
-        "transition-[padding-left] duration-200",
+        "sticky top-0 flex shrink-0 items-center gap-2 border-b-2 border-brutal-ink bg-brutal-surface px-3 py-0 sm:gap-3 sm:px-4",
         className,
       )}
       style={{

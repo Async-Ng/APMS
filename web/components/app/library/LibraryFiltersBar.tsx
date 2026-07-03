@@ -51,6 +51,7 @@ export function LibraryFiltersBar({
   filters,
   onChange,
   defaultSort = "newest",
+  mode,
 }: LibraryFiltersBarProps) {
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [prevSearch, setPrevSearch] = useState(filters.search);
@@ -60,11 +61,19 @@ export function LibraryFiltersBar({
     setLocalSearch(filters.search);
   }
 
+  const isSuggested = mode === "suggested";
   const { data: curricula } = useCatalogCurricula();
   const { data: profile } = useAcademicProfile();
-  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(filters.curriculumId || undefined);
+  const effectiveCurriculumId = isSuggested
+    ? profile?.curriculum?.id
+    : filters.curriculumId || undefined;
+  const catalogDisabled = isSuggested
+    ? !profile?.isComplete
+    : !filters.curriculumId;
+
+  const { data: curriculumSemesters } = useCatalogCurriculumSemesters(effectiveCurriculumId);
   const { data: curriculum } = useCatalogCourseSlots(
-    filters.curriculumId || undefined,
+    effectiveCurriculumId,
     filters.semesterId || undefined,
   );
 
@@ -116,14 +125,18 @@ export function LibraryFiltersBar({
 
   const hasActiveFilters =
     filters.search ||
-    filters.curriculumId ||
+    (!isSuggested && filters.curriculumId) ||
     filters.semesterId ||
     filters.subjectId ||
     filters.sort !== defaultSort;
 
+  const gridClass = isSuggested
+    ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_7rem_9rem_7rem] lg:items-end"
+    : "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_9rem_7rem] lg:items-end";
+
   return (
     <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_9rem_7rem] lg:items-end">
+      <div className={gridClass}>
         <div className="relative min-w-0 sm:col-span-2 lg:col-span-1">
           <Search
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brutal-muted"
@@ -139,34 +152,36 @@ export function LibraryFiltersBar({
           />
         </div>
 
-        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
-          CTĐT
-          <select
-            value={filters.curriculumId}
-            onChange={(e) =>
-              patch({
-                curriculumId: e.target.value,
-                semesterId: "",
-                subjectId: "",
-              })
-            }
-            className={FILTER_SELECT_CLASS}
-          >
-            <option value="">Tất cả CTĐT</option>
-            {curricula?.map((m) => (
-              <option key={m.id} value={m.id} title={`${m.code} — ${m.name}`}>
-                {m.code}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!isSuggested && (
+          <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+            CTĐT
+            <select
+              value={filters.curriculumId}
+              onChange={(e) =>
+                patch({
+                  curriculumId: e.target.value,
+                  semesterId: "",
+                  subjectId: "",
+                })
+              }
+              className={FILTER_SELECT_CLASS}
+            >
+              <option value="">Tất cả CTĐT</option>
+              {curricula?.map((m) => (
+                <option key={m.id} value={m.id} title={`${m.code} — ${m.name}`}>
+                  {m.code}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
           Học kỳ
           <select
             value={filters.semesterId}
             onChange={(e) => patch({ semesterId: e.target.value, subjectId: "" })}
-            disabled={!filters.curriculumId}
+            disabled={catalogDisabled}
             className={cn(FILTER_SELECT_CLASS, "disabled:opacity-50")}
           >
             <option value="">Tất cả</option>
@@ -187,7 +202,7 @@ export function LibraryFiltersBar({
           <select
             value={filters.subjectId}
             onChange={(e) => patch({ subjectId: e.target.value })}
-            disabled={!filters.curriculumId}
+            disabled={catalogDisabled}
             className={cn(FILTER_SELECT_CLASS, "disabled:opacity-50")}
           >
             <option value="">Tất cả môn</option>
@@ -216,19 +231,21 @@ export function LibraryFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <BrutalButton
-          variant="secondary"
-          className="w-auto! shrink-0 px-3 py-1.5 text-xs"
-          onClick={applyMyProfile}
-          disabled={!profile?.isComplete}
-          title={
-            profile?.isComplete
-              ? undefined
-              : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
-          }
-        >
-          Theo hồ sơ của tôi
-        </BrutalButton>
+        {!isSuggested && (
+          <BrutalButton
+            variant="secondary"
+            className="w-auto! shrink-0 px-3 py-1.5 text-xs"
+            onClick={applyMyProfile}
+            disabled={!profile?.isComplete}
+            title={
+              profile?.isComplete
+                ? undefined
+                : "Hoàn thành hồ sơ học thuật để dùng bộ lọc này"
+            }
+          >
+            Theo hồ sơ của tôi
+          </BrutalButton>
+        )}
         {hasActiveFilters && (
           <button
             type="button"
@@ -241,7 +258,7 @@ export function LibraryFiltersBar({
             Xóa bộ lọc
           </button>
         )}
-        {profile && !profile.isComplete && (
+        {!isSuggested && profile && !profile.isComplete && (
           <p className="text-xs text-brutal-muted">
             Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT của bạn.
           </p>
@@ -251,10 +268,14 @@ export function LibraryFiltersBar({
   );
 }
 
-export function suggestedFiltersToQueryParams(filters: LibraryFilterState) {
+export function suggestedFiltersToQueryParams(
+  filters: LibraryFilterState,
+  profileCurriculumId?: string,
+) {
+  const narrow = filters.semesterId || filters.subjectId;
   return {
     search: filters.search || undefined,
-    curriculumId: filters.curriculumId || undefined,
+    curriculumId: narrow ? profileCurriculumId : undefined,
     semesterId: filters.semesterId || undefined,
     subjectId: filters.subjectId || undefined,
     sort: filters.sort,

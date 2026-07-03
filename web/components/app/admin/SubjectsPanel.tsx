@@ -10,6 +10,7 @@ import {
   AdminStatusBadge,
   AdminTableShell,
   AdminTableSkeleton,
+  AdminTableTruncate,
 } from "@/components/app/admin/AdminTableShell";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -226,9 +227,15 @@ export function SubjectsPanel() {
                 )}
               >
                 <td className="px-4 py-3 font-mono text-sm font-bold">{subject.code}</td>
-                <td className="px-4 py-3 font-semibold">{subject.name}</td>
-                <td className="max-w-xs truncate px-4 py-3 text-brutal-muted">
-                  {subject.description || "—"}
+                <td className="px-4 py-3">
+                  <AdminTableTruncate title={subject.name} className="font-semibold">
+                    {subject.name}
+                  </AdminTableTruncate>
+                </td>
+                <td className="px-4 py-3 text-brutal-muted">
+                  <AdminTableTruncate title={subject.description || undefined}>
+                    {subject.description || "—"}
+                  </AdminTableTruncate>
                 </td>
                 <td className="px-4 py-3">
                   <AdminStatusBadge active={subject.isActive} />

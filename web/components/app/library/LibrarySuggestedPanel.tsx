@@ -14,6 +14,7 @@ import { PublicDocumentList } from "@/components/app/library/PublicDocumentList"
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { ViewToggle, type ViewMode } from "@/components/ui/ViewToggle";
 import { usePublicDocuments } from "@/lib/queries/documents";
+import { useAcademicProfile } from "@/lib/queries/catalog";
 import { ErrorCode, getUserErrorCode } from "@/lib/errors";
 
 const PAGE_LIMIT = 20;
@@ -33,12 +34,13 @@ export function LibrarySuggestedPanel({
 }: LibrarySuggestedPanelProps) {
   const [view, setView] = useState<ViewMode>("grid");
   const router = useRouter();
+  const { data: profile } = useAcademicProfile();
 
   const { data, isLoading, isError, error, refetch } = usePublicDocuments({
     match: "auto",
     page,
     limit: PAGE_LIMIT,
-    ...suggestedFiltersToQueryParams(filters),
+    ...suggestedFiltersToQueryParams(filters, profile?.curriculum?.id),
   });
 
   const errorCode = getUserErrorCode(error);

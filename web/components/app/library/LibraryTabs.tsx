@@ -13,8 +13,8 @@ const TABS = [
   },
   {
     id: "browse" as const,
-    label: "Duyệt toàn bộ",
-    description: "Duyệt toàn bộ tài liệu công khai theo CTĐT, học kỳ và môn học.",
+    label: "Tất cả",
+    description: "Xem và lọc tài liệu công khai theo CTĐT, học kỳ và môn học.",
   },
 ];
 

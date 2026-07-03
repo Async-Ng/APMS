@@ -146,7 +146,7 @@ export function Sidebar({
         {/* Logo + collapse toggle */}
         <div
           className={cn(
-            "flex items-center border-b-2 border-brutal-ink px-3 py-3",
+            "flex h-[var(--topbar-height)] shrink-0 items-center border-b-2 border-brutal-ink px-3",
             isCollapsed ? "justify-center" : "justify-between",
           )}
         >
@@ -188,30 +188,35 @@ export function Sidebar({
           <ul className="space-y-1 px-2">
             {visibleItems.map((item) => {
               const active = isActive(item.href);
+              const link = (
+                <Link
+                  href={item.href}
+                  onClick={onClose}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "focus-brutal flex min-h-[44px] items-center gap-3 rounded-xl border-2 px-3 font-heading text-sm font-bold transition-all duration-150",
+                    isCollapsed && "justify-center px-0",
+                    active
+                      ? "border-brutal-ink bg-brutal-primary text-brutal-on-brand shadow-brutal-sm"
+                      : "border-transparent text-brutal-ink hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm",
+                  )}
+                >
+                  {item.icon}
+                  {!isCollapsed && (
+                    <span className="truncate">{item.label}</span>
+                  )}
+                </Link>
+              );
+
               return (
                 <li key={item.href}>
-                  <Tooltip
-                    content={item.label}
-                    side="right"
-                  >
-                    <Link
-                      href={item.href}
-                      onClick={onClose}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "focus-brutal flex min-h-[44px] items-center gap-3 rounded-xl border-2 px-3 font-heading text-sm font-bold transition-all duration-150",
-                        isCollapsed && "justify-center px-0",
-                        active
-                          ? "border-brutal-ink bg-brutal-primary text-brutal-on-brand shadow-brutal-sm"
-                          : "border-transparent text-brutal-ink hover:border-brutal-ink hover:bg-brutal-bg hover:shadow-brutal-sm",
-                      )}
-                    >
-                      {item.icon}
-                      {!isCollapsed && (
-                        <span className="truncate">{item.label}</span>
-                      )}
-                    </Link>
-                  </Tooltip>
+                  {isCollapsed ? (
+                    <Tooltip content={item.label} side="right">
+                      {link}
+                    </Tooltip>
+                  ) : (
+                    link
+                  )}
                 </li>
               );
             })}

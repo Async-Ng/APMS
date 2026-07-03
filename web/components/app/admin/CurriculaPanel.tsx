@@ -11,6 +11,7 @@ import {
   AdminStatusBadge,
   AdminTableShell,
   AdminTableSkeleton,
+  AdminTableTruncate,
 } from "@/components/app/admin/AdminTableShell";
 import { CurriculumFormModal } from "@/components/app/admin/CurriculumFormModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -197,13 +198,18 @@ export function CurriculaPanel({
         </BrutalButton>
       </div>
 
-      <AdminTableShell ariaLabel="Bảng chương trình đào tạo">
+      <AdminTableShell ariaLabel="Bảng chương trình đào tạo" layout="auto">
         <thead>
           <tr className="border-b-2 border-brutal-ink bg-brutal-bg">
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Mã</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Tên</th>
             {!isCompact && (
-              <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Mô tả</th>
+              <th
+                scope="col"
+                className="w-[11rem] max-w-[11rem] px-4 py-3 text-left font-heading font-bold"
+              >
+                Mô tả
+              </th>
             )}
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Học kỳ</th>
             <th scope="col" className="px-4 py-3 text-left font-heading font-bold">Trạng thái</th>
@@ -256,11 +262,17 @@ export function CurriculaPanel({
                   !curriculum.isActive && "opacity-60",
                 )}
               >
-                <td className="px-4 py-3 font-mono text-sm font-bold">{curriculum.code}</td>
-                <td className="px-4 py-3 font-semibold">{curriculum.name}</td>
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm font-bold">
+                  {curriculum.code}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 font-semibold">
+                  {curriculum.name}
+                </td>
                 {!isCompact && (
-                  <td className="max-w-xs truncate px-4 py-3 text-brutal-muted">
-                    {curriculum.description || "—"}
+                  <td className="w-[11rem] max-w-[11rem] overflow-hidden px-4 py-3 text-brutal-muted">
+                    <AdminTableTruncate title={curriculum.description || undefined}>
+                      {curriculum.description || "—"}
+                    </AdminTableTruncate>
                   </td>
                 )}
                 <td className="px-4 py-3">

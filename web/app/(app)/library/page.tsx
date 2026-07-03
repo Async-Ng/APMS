@@ -17,6 +17,7 @@ import {
 } from "@/components/app/library/LibraryTabs";
 import { Topbar } from "@/components/app/Topbar";
 import { LoadingScreen } from "@/components/ui/Spinner";
+import { useAcademicProfile } from "@/lib/queries/catalog";
 import { usePublicDocuments } from "@/lib/queries/documents";
 import type { PublicDocumentSort } from "@/lib/queries/public-documents";
 
@@ -42,7 +43,7 @@ function filtersFromParams(
 ): LibraryFilterState {
   return {
     search: params.get("q") ?? "",
-    curriculumId: params.get("curriculumId") ?? "",
+    curriculumId: tab === "browse" ? (params.get("curriculumId") ?? "") : "",
     semesterId: params.get("semester") ?? "",
     subjectId: params.get("subject") ?? "",
     sort: parseSort(params.get("sort"), tab),
@@ -60,6 +61,7 @@ function PublicLibraryContent() {
     [searchParams, tab],
   );
   const [filters, setFilters] = useState(filtersFromUrl);
+  const { data: profile } = useAcademicProfile();
 
   const syncUrl = useCallback(
     (
@@ -70,7 +72,9 @@ function PublicLibraryContent() {
       const params = new URLSearchParams();
       if (nextTab === "browse") params.set("tab", "browse");
       if (nextFilters.search) params.set("q", nextFilters.search);
-      if (nextFilters.curriculumId) params.set("curriculumId", nextFilters.curriculumId);
+      if (nextTab === "browse" && nextFilters.curriculumId) {
+        params.set("curriculumId", nextFilters.curriculumId);
+      }
       if (nextFilters.semesterId) params.set("semester", nextFilters.semesterId);
       if (nextFilters.subjectId) params.set("subject", nextFilters.subjectId);
       if (nextFilters.sort !== (nextTab === "browse" ? "title" : "newest")) {
@@ -86,6 +90,7 @@ function PublicLibraryContent() {
   const handleTabChange = (nextTab: LibraryTabId) => {
     const nextFilters = {
       ...filters,
+      curriculumId: nextTab === "suggested" ? "" : filters.curriculumId,
       sort: nextTab === "browse" ? "title" : "newest",
     } as LibraryFilterState;
     setFilters(nextFilters);
@@ -105,7 +110,7 @@ function PublicLibraryContent() {
     match: "auto",
     page,
     limit: 20,
-    ...suggestedFiltersToQueryParams(filters),
+    ...suggestedFiltersToQueryParams(filters, profile?.curriculum?.id),
     enabled: tab === "suggested",
   });
   const browseQuery = usePublicDocuments({

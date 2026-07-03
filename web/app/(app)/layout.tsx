@@ -22,10 +22,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
       <div
         className={cn(
-          "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain transition-[margin-left] duration-200",
+          "flex min-w-0 min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-contain transition-[padding-left] duration-200",
           isCollapsed
-            ? "lg:ml-[var(--sidebar-collapsed-width)]"
-            : "lg:ml-[var(--sidebar-width)]",
+            ? "lg:pl-[var(--sidebar-collapsed-width)]"
+            : "lg:pl-[var(--sidebar-width)]",
         )}
       >
         {children}

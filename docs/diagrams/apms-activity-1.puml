@@ -26,7 +26,8 @@ endif
 
 |APMS System|
 if (Academic profile completed?) then (yes)
-  #PaleGreen:Show profile status **Completed**;
+  :Show profile status **Completed**; <<#PaleGreen>>
+  stop
 else (no)
   :Prompt to set up academic profile\nand provide active Curriculum options;
 endif
@@ -53,7 +54,7 @@ if (Curriculum is active?) then (no)
   detach
 else (yes)
   :Save academic profile\n(clear any legacy semester/subject data);
-  #PaleGreen:Set profile status to **Completed**;
+  :Set profile status to **Completed**; <<#PaleGreen>>
   stop
 endif
 

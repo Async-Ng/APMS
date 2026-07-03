@@ -19,31 +19,16 @@ else (no)
 endif
 
 |Student|
-if (Document upload requested?) then (yes)
-  :Submit upload request with file and a required course;
+:Request upload (file + required course);
 
-  |APMS System|
-  if (Academic profile completed?) then (no)
-    :Reject: academic profile required before upload;
-    detach
-  else (yes)
-    :Validate PDF/DOCX/PPTX format,\nfile size <= 50 MB, remaining storage quota,\nand course belongs to profile Curriculum;
-    if (Request valid?) then (no)
-      :Reject request with business reason;
-      detach
-    else (yes)
-      :Create document with default **private** visibility;
-      :Queue background processing\n(pending -> processing);
-      if (Processing succeeded?) then (yes)
-        :Mark document **ready**;
-      else (no)
-        :Mark document **failed**;
-      endif
-      :Update document list grouped by course;
-    endif
-  endif
-else (no)
-  :Return existing document list;
+|APMS System|
+if (Profile complete and request valid?) then (no)
+  :Reject with reason\n(profile required / format /\n50 MB / quota / course not in Curriculum);
+  detach
+else (yes)
+  :Create **private** document;
+  :Process in background\n(pending -> ready / failed);
+  :Group document under its course;
 endif
 
 |Student|
@@ -56,13 +41,13 @@ partition "Optional document operations (repeatable)" {
 
 |APMS System|
 :Apply requested change;
-if (Restore item whose parent folder is in trash?) then (yes)
-  :Reject: restore the parent folder first;
+if (Restore under trashed parent?) then (yes)
+  :Reject: restore parent first;
 else (no)
-  :Grant read-only access or send invite;
-  :Apply visibility and refund quota on permanent delete;
+  :Grant read-only / send invite;
+  :Apply visibility; refund quota on delete;
 endif
-:Permanently purge items after **30 days** in trash;
+:Auto-purge after **30 days** in trash;
 
 |Student|
 stop
