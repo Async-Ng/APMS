@@ -11,6 +11,7 @@ interface FileItemProps {
   mimeType: string;
   fileSizeBytes: number;
   status: DocStatus;
+  createdAt?: string;
   isStarred?: boolean;
   onPress: () => void;
   onLongPress: () => void;
@@ -29,7 +30,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileItem({ title, mimeType, fileSizeBytes, status, isStarred, onPress, onLongPress }: FileItemProps) {
+export function FileItem({ title, mimeType, fileSizeBytes, status, createdAt, isStarred, onPress, onLongPress }: FileItemProps) {
   const icon = getFileIcon(mimeType);
 
   return (
@@ -75,7 +76,7 @@ export function FileItem({ title, mimeType, fileSizeBytes, status, isStarred, on
           {title}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <StatusBadge status={status} />
+          <StatusBadge status={status} createdAt={createdAt} />
           <Text style={{ fontSize: 11, color: colors.muted }}>{formatBytes(fileSizeBytes)}</Text>
         </View>
       </View>

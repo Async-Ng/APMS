@@ -50,7 +50,7 @@ export function DocumentMetaCard({ doc }: { doc: DocumentDetail }) {
         <Text style={{ fontSize: 20, fontWeight: "800", color: colors.onBrand, textAlign: "center" }}>{doc.title}</Text>
         <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{getMimeLabel(doc.mimeType)}</Text>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-          <StatusBadge status={doc.status} />
+          <StatusBadge status={doc.status} createdAt={doc.createdAt} />
           {doc.isStarred && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Ionicons name="star" size={14} color="#FCD34D" />

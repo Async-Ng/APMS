@@ -1,15 +1,23 @@
 "use client";
 
-import { Folder, MoreVertical, Share2, Star, Trash2 } from "lucide-react";
+import { Folder, FolderInput, MoreVertical, Share2, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useStarPulse } from "@/components/ui/useStarPulse";
 import { cn } from "@/lib/cn";
-import { useDeleteFolder, useToggleFolderStar } from "@/lib/queries/drive";
+import { getUserErrorMessage } from "@/lib/errors";
+import {
+  driveKey,
+  useDeleteFolder,
+  useToggleFolderStar,
+  useUpdateFolder,
+} from "@/lib/queries/drive";
 import type { DriveFolder } from "@/lib/queries/drive";
 import { formatSharedAt } from "@/lib/queries/shares";
+import { FolderPickerModal } from "./FolderPickerModal";
 
 /** Map a folder color (hex or null) to a Tailwind-friendly inline style. */
 function folderIconColor(color: string | null): string {
@@ -37,10 +45,28 @@ export function FolderCard({
 }: FolderCardProps) {
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
+  const [movePickerOpen, setMovePickerOpen] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const starPulse = useStarPulse(folder.isStarred);
+  const qc = useQueryClient();
   const { mutate: toggleStar } = useToggleFolderStar(parentId);
   const { mutate: deleteFolder } = useDeleteFolder(folder.id, parentId);
+  const { mutateAsync: updateFolderAsync, isPending: isMoving } = useUpdateFolder(
+    folder.id,
+    parentId,
+  );
+
+  async function moveFolder(targetFolderId: string | null) {
+    setMoveError(null);
+    try {
+      await updateFolderAsync({ parentId: targetFolderId });
+      void qc.invalidateQueries({ queryKey: driveKey(targetFolderId ?? undefined) });
+      setMovePickerOpen(false);
+    } catch (err) {
+      setMoveError(getUserErrorMessage(err));
+    }
+  }
 
   const menuItems = isShared
     ? []
@@ -74,6 +100,11 @@ export function FolderCard({
           label: "Đổi tên",
           icon: <span className="text-base">✏️</span>,
           onClick: () => onRename(folder),
+        },
+        {
+          label: "Di chuyển đến...",
+          icon: <FolderInput className="h-4 w-4" />,
+          onClick: () => setMovePickerOpen(true),
         },
         {
           label: "Chuyển vào thùng rác",
@@ -172,6 +203,18 @@ export function FolderCard({
         <p className="text-xs text-brutal-muted">
           Chia sẻ {formatSharedAt(sharedAt)}
         </p>
+      )}
+
+      {movePickerOpen && (
+        <FolderPickerModal
+          title={`Di chuyển "${folder.name}"`}
+          initialFolderId={folder.parentId}
+          excludeFolderId={folder.id}
+          isPending={isMoving}
+          submitError={moveError}
+          onConfirm={(parentId) => void moveFolder(parentId)}
+          onClose={() => setMovePickerOpen(false)}
+        />
       )}
     </div>
   );

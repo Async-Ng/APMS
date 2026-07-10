@@ -18,6 +18,7 @@ import {
 } from "../validators/admin.validator";
 import {
   assignCurriculumSemestersSchema,
+  bulkCreateCourseSlotSchema,
   createCourseSlotSchema,
   createCurriculumSchema,
   createSemesterSchema,
@@ -153,6 +154,11 @@ adminRouter.post(
   "/course-slots",
   validate({ body: createCourseSlotSchema }),
   academicController.createCourseSlot,
+);
+adminRouter.post(
+  "/course-slots/bulk",
+  validate({ body: bulkCreateCourseSlotSchema }),
+  academicController.createCourseSlotsBulk,
 );
 adminRouter.patch(
   "/course-slots/:id",

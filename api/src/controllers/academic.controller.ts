@@ -84,6 +84,9 @@ export const archiveCurriculumSemester = catchAsync(async (req: Request, res: Re
 export const createCourseSlot = catchAsync(async (req: Request, res: Response) => {
   sendSuccess(res, await academicService.createCourseSlot(req.body), 201);
 });
+export const createCourseSlotsBulk = catchAsync(async (req: Request, res: Response) => {
+  sendSuccess(res, await academicService.createCourseSlotsBulk(req.body), 201);
+});
 export const listAdminCourseSlots = catchAsync(async (req: Request, res: Response) => {
   const query = req.validatedQuery as z.infer<typeof listCourseSlotsQuerySchema>;
   sendSuccess(res, await academicService.listCourseSlots(query));

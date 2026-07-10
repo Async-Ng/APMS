@@ -305,7 +305,7 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
                 <div className="flex justify-between gap-2">
                   <dt className="text-brutal-muted">Trạng thái</dt>
                   <dd>
-                    <StatusBadge status={doc.status} />
+                    <StatusBadge status={doc.status} createdAt={doc.createdAt} />
                   </dd>
                 </div>
                 {doc.visibility && (

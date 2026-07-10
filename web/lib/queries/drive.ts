@@ -152,11 +152,18 @@ export function driveKey(parentId?: string) {
   return ["drive", parentId ?? "root"] as const;
 }
 
+function hasProcessingDocuments(data: DriveContents | undefined): boolean {
+  return (
+    data?.documents.some((d) => d.status === "pending" || d.status === "processing") ?? false
+  );
+}
+
 /** Root or folder contents — GET /api/documents?view=my&parentId= */
 export function useDriveContents(parentId?: string) {
   return useQuery({
     queryKey: driveKey(parentId),
     queryFn: () => fetchDocuments({ view: "my", parentId: parentId ?? null }),
+    refetchInterval: (query) => (hasProcessingDocuments(query.state.data) ? 4000 : false),
   });
 }
 

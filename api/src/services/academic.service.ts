@@ -336,6 +336,48 @@ export async function createCourseSlot(input: {
   }
 }
 
+export async function createCourseSlotsBulk(input: {
+  curriculumId: string;
+  semesterId: string;
+  subjectIds: string[];
+}) {
+  const curriculumId = parseObjectId(input.curriculumId, "curriculumId");
+  const semesterId = parseObjectId(input.semesterId, "semesterId");
+  const subjectObjectIds = input.subjectIds.map((id) => parseObjectId(id, "subjectId"));
+
+  const curriculum = await Curriculum.findOne({ _id: curriculumId, isActive: true });
+  if (!curriculum) notFound("curriculum");
+  await assertActiveCurriculumSemester(curriculumId, semesterId);
+
+  const activeSubjects = await Subject.find({ _id: { $in: subjectObjectIds }, isActive: true });
+  const activeSubjectIds = new Set(activeSubjects.map((subject) => subject._id.toString()));
+
+  const created: CourseSlotDocument[] = [];
+  const skipped: { subjectId: string; reason: string }[] = [];
+
+  for (const subjectId of subjectObjectIds) {
+    if (!activeSubjectIds.has(subjectId.toString())) {
+      skipped.push({ subjectId: subjectId.toString(), reason: "Subject not found or inactive" });
+      continue;
+    }
+    try {
+      const slot = await CourseSlot.create({ curriculumId, semesterId, subjectId });
+      created.push(slot);
+    } catch (error) {
+      if (isDuplicateKey(error)) {
+        skipped.push({ subjectId: subjectId.toString(), reason: "Course slot already exists" });
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  return {
+    created: await enrichCourseSlots(created),
+    skipped,
+  };
+}
+
 async function assertSlotNotSelected(slot: CourseSlotDocument): Promise<void> {
   const selected = await User.countDocuments({
     curriculumId: slot.curriculumId,

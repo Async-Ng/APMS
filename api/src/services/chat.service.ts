@@ -805,6 +805,7 @@ async function prepareChatContext(
       queryText: String(c.queryText ?? ""),
       pageNumber: (c.pageNumber as number | null) ?? null,
       score: c.score as number,
+      vectorScore: c.score as number,
       sectionPath: (c.sectionPath as string[] | undefined) ?? [],
       displayHeading: (c.displayHeading as string | null | undefined) ?? null,
       blockType: String(c.blockType ?? "paragraph"),
@@ -819,7 +820,13 @@ async function prepareChatContext(
 
   const { chunks: lexicalChunks, analysis } = await findLexicalChunks(vectorSearchFilter, retrievalQuery);
   const combined = mergeRetrievedChunks(vectorChunks, lexicalChunks);
-  const aboveThreshold = combined.filter((chunk) => chunk.score >= MIN_CHUNK_SCORE);
+  // Vector and lexical scores are on different scales (see mergeRetrievedChunks) — a
+  // chunk should survive if it clears the vector threshold OR was found lexically at
+  // all (the lexical pool is small and precision-oriented, so it doesn't need the
+  // same cutoff as the 36-candidate vector pool).
+  const aboveThreshold = combined.filter(
+    (chunk) => (chunk.vectorScore ?? 0) >= MIN_CHUNK_SCORE || chunk.lexicalScore !== undefined,
+  );
   const chunksForContext = aboveThreshold.length > 0 ? aboveThreshold : combined;
 
   const reranked = await rerankChunks(retrievalQuery, chunksForContext, CONTEXT_CHUNKS);

@@ -6,8 +6,18 @@ import { useDeleteDocument, useToggleDocumentStar } from "./useDocuments";
 import { useDeleteFolder, useToggleFolderStar } from "./useFolders";
 
 export type ShareTarget = { type: "folder" | "document"; id: string; name: string };
+export type MoveTarget = {
+  type: "folder" | "document";
+  id: string;
+  name: string;
+  parentId: string | null;
+};
 
-export function useDriveItemActions(onShare: (target: ShareTarget) => void) {
+export function useDriveItemActions(
+  onShare: (target: ShareTarget) => void,
+  onMove: (target: MoveTarget) => void,
+  onEditTags: (doc: DriveDocument) => void,
+) {
   const router = useRouter();
   const deleteFolder = useDeleteFolder();
   const toggleFolderStar = useToggleFolderStar();
@@ -25,6 +35,12 @@ export function useDriveItemActions(onShare: (target: ShareTarget) => void) {
         label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => onShare({ type: "folder", id: folder.id, name: folder.name }),
+      },
+      {
+        label: "Di chuyển đến...",
+        icon: "folder-open-outline",
+        onPress: () =>
+          onMove({ type: "folder", id: folder.id, name: folder.name, parentId: folder.parentId }),
       },
       {
         label: "Xóa",
@@ -46,6 +62,17 @@ export function useDriveItemActions(onShare: (target: ShareTarget) => void) {
         label: "Chia sẻ",
         icon: "share-outline",
         onPress: () => onShare({ type: "document", id: doc.id, name: doc.title }),
+      },
+      {
+        label: "Sửa thẻ",
+        icon: "pricetag-outline",
+        onPress: () => onEditTags(doc),
+      },
+      {
+        label: "Di chuyển đến...",
+        icon: "folder-open-outline",
+        onPress: () =>
+          onMove({ type: "document", id: doc.id, name: doc.title, parentId: doc.folderId }),
       },
       {
         label: "Trò chuyện về tài liệu này",

@@ -6,7 +6,9 @@ import { ActionSheet } from "../../../components/app/ActionSheet";
 import { FileItem } from "../../../components/app/FileItem";
 import { FolderItem } from "../../../components/app/FolderItem";
 import { FolderModal } from "../../../components/app/FolderModal";
+import { FolderPickerModal } from "../../../components/app/FolderPickerModal";
 import { ShareSheet } from "../../../components/app/ShareSheet";
+import { TagEditModal } from "../../../components/app/TagEditModal";
 import { UploadSheet } from "../../../components/app/UploadSheet";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { Fab } from "../../../components/ui/Fab";
@@ -15,8 +17,14 @@ import { SectionHeaderRow } from "../../../components/ui/SectionHeaderRow";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import { useDrive, type DriveDocument, type DriveFolder } from "../../../hooks/useDrive";
-import { useCreateFolder } from "../../../hooks/useFolders";
-import { useDriveItemActions, type ShareTarget } from "../../../hooks/useDriveItemActions";
+import { useUpdateDocument } from "../../../hooks/useDocuments";
+import { useCreateFolder, useUpdateFolder } from "../../../hooks/useFolders";
+import {
+  useDriveItemActions,
+  type MoveTarget,
+  type ShareTarget,
+} from "../../../hooks/useDriveItemActions";
+import { getErrorMessage } from "../../../lib/api-error";
 
 type ActionTarget =
   | { kind: "folder"; item: DriveFolder }
@@ -28,13 +36,44 @@ export default function DriveRoot() {
   const { data, isLoading, refetch, isRefetching } = useDrive(null);
 
   const createFolder = useCreateFolder();
+  const updateDocument = useUpdateDocument();
+  const updateFolder = useUpdateFolder();
 
   const [showUpload, setShowUpload] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
   const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
+  const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [tagTarget, setTagTarget] = useState<DriveDocument | null>(null);
 
-  const { buildFolderActions, buildDocumentActions } = useDriveItemActions(setShareTarget);
+  const { buildFolderActions, buildDocumentActions } = useDriveItemActions(
+    setShareTarget,
+    setMoveTarget,
+    setTagTarget,
+  );
+
+  function handleMoveConfirm(targetFolderId: string | null) {
+    if (!moveTarget) return;
+    setMoveError(null);
+    const onSuccess = () => {
+      setMoveTarget(null);
+    };
+    const onError = (err: unknown) => {
+      setMoveError(getErrorMessage(err, "Di chuyển thất bại. Vui lòng thử lại."));
+    };
+    if (moveTarget.type === "document") {
+      updateDocument.mutate(
+        { id: moveTarget.id, folderId: targetFolderId },
+        { onSuccess, onError },
+      );
+    } else {
+      updateFolder.mutate(
+        { id: moveTarget.id, parentId: targetFolderId },
+        { onSuccess, onError },
+      );
+    }
+  }
 
   const folders = data?.folders ?? [];
   const documents = data?.documents ?? [];
@@ -130,6 +169,7 @@ export default function DriveRoot() {
                   mimeType={item.item.mimeType}
                   fileSizeBytes={item.item.fileSizeBytes}
                   status={item.item.status}
+                  createdAt={item.item.createdAt}
                   isStarred={item.item.isStarred}
                   onPress={() => router.push(`/documents/${item.item.id}`)}
                   onLongPress={() => setActionTarget({ kind: "document", item: item.item })}
@@ -187,6 +227,33 @@ export default function DriveRoot() {
           onDismiss={() => setShareTarget(null)}
         />
       )}
+      <TagEditModal
+        visible={tagTarget !== null}
+        title={tagTarget?.title ?? ""}
+        initialTags={tagTarget?.tags ?? []}
+        loading={updateDocument.isPending}
+        onConfirm={(tags) => {
+          if (!tagTarget) return;
+          updateDocument.mutate(
+            { id: tagTarget.id, tags },
+            { onSuccess: () => setTagTarget(null) },
+          );
+        }}
+        onDismiss={() => setTagTarget(null)}
+      />
+      <FolderPickerModal
+        visible={moveTarget !== null}
+        title={moveTarget ? `Di chuyển "${moveTarget.name}"` : ""}
+        initialFolderId={moveTarget?.parentId ?? null}
+        excludeFolderId={moveTarget?.type === "folder" ? moveTarget.id : undefined}
+        submitError={moveError}
+        loading={updateDocument.isPending || updateFolder.isPending}
+        onConfirm={handleMoveConfirm}
+        onDismiss={() => {
+          setMoveTarget(null);
+          setMoveError(null);
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -22,8 +22,10 @@ import {
   useAdminCurricula,
   useAdminSubjects,
   useArchiveCourseSlot,
+  useBulkCreateCourseSlots,
   useCreateCourseSlot,
   useUpdateCourseSlot,
+  type BulkCreateCourseSlotsResult,
   type EnrichedCourseSlot,
 } from "@/lib/queries/admin-academic";
 import { courseSlotFormSchema, formatZodFieldErrors } from "@/lib/validation/admin";
@@ -76,6 +78,7 @@ export function CourseSlotsPanel({
   const { mutate: createCourse, isPending: isCreating } = useCreateCourseSlot();
   const { mutate: updateCourse, isPending: isUpdating } = useUpdateCourseSlot();
   const { mutate: archiveCourse, isPending: isArchiving } = useArchiveCourseSlot();
+  const { mutate: bulkCreateCourses, isPending: isBulkCreating } = useBulkCreateCourseSlots();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<EnrichedCourseSlot | null>(null);
@@ -85,10 +88,20 @@ export function CourseSlotsPanel({
   const [error, setError] = useState<string | null>(null);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkCurriculumId, setBulkCurriculumId] = useState("");
+  const [bulkSemesterId, setBulkSemesterId] = useState("");
+  const [bulkSubjectIds, setBulkSubjectIds] = useState<string[]>([]);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkResult, setBulkResult] = useState<BulkCreateCourseSlotsResult | null>(null);
+
   const lockedCurriculum = curricula?.find((m) => m.id === lockedCurriculumId);
 
   const { data: formCurriculumSemesters } = useAdminCurriculumSemesters(
     form.curriculumId || undefined,
+  );
+  const { data: bulkCurriculumSemesters } = useAdminCurriculumSemesters(
+    bulkCurriculumId || undefined,
   );
 
   const filterSemesters = useMemo(
@@ -125,6 +138,8 @@ export function CourseSlotsPanel({
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
   const semesterOptions =
     formCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
+  const bulkSemesterOptions =
+    bulkCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
 
   const resolvedSemesterId = useMemo(() => {
     if (!form.curriculumId || semesterOptions.length === 0) return form.semesterId;
@@ -211,6 +226,36 @@ export function CourseSlotsPanel({
         },
       );
     }
+  }
+
+  function openBulkCreate() {
+    setBulkCurriculumId(lockedCurriculumId ?? activeCurricula[0]?.id ?? "");
+    setBulkSemesterId("");
+    setBulkSubjectIds([]);
+    setBulkError(null);
+    setBulkResult(null);
+    setBulkOpen(true);
+  }
+
+  function toggleBulkSubject(subjectId: string) {
+    setBulkSubjectIds((prev) =>
+      prev.includes(subjectId) ? prev.filter((id) => id !== subjectId) : [...prev, subjectId],
+    );
+  }
+
+  function handleBulkSubmit() {
+    if (!bulkCurriculumId || !bulkSemesterId || bulkSubjectIds.length === 0) return;
+    setBulkError(null);
+    bulkCreateCourses(
+      { curriculumId: bulkCurriculumId, semesterId: bulkSemesterId, subjectIds: bulkSubjectIds },
+      {
+        onSuccess: (result) => {
+          setBulkResult(result);
+          setBulkSubjectIds([]);
+        },
+        onError: (err) => setBulkError(getUserErrorMessage(err)),
+      },
+    );
   }
 
   function handleReactivate(course: EnrichedCourseSlot) {
@@ -323,15 +368,26 @@ export function CourseSlotsPanel({
               Hiện đã xóa
             </label>
           </div>
-          <BrutalButton
-            variant="primary"
-            onClick={openCreate}
-            disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
-            className="w-auto shrink-0"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Gán môn
-          </BrutalButton>
+          <div className="flex shrink-0 gap-2">
+            <BrutalButton
+              variant="secondary"
+              onClick={openBulkCreate}
+              disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
+              className="w-auto"
+            >
+              <Layers className="mr-2 h-4 w-4" />
+              Tạo hàng loạt
+            </BrutalButton>
+            <BrutalButton
+              variant="primary"
+              onClick={openCreate}
+              disabled={activeCurricula.length === 0 || activeSubjects.length === 0}
+              className="w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Gán môn
+            </BrutalButton>
+          </div>
         </div>
       </div>
 
@@ -537,6 +593,108 @@ export function CourseSlotsPanel({
           </select>
           <FieldError message={fieldErrors.subjectId} />
         </label>
+      </AdminFormModal>
+
+      <AdminFormModal
+        open={bulkOpen}
+        title="Tạo hàng loạt Course slot"
+        onClose={() => setBulkOpen(false)}
+        footer={
+          <>
+            <BrutalButton variant="ghost" className="flex-1" onClick={() => setBulkOpen(false)}>
+              Đóng
+            </BrutalButton>
+            <BrutalButton
+              variant="primary"
+              className="flex-1"
+              onClick={handleBulkSubmit}
+              loading={isBulkCreating}
+              disabled={!bulkCurriculumId || !bulkSemesterId || bulkSubjectIds.length === 0}
+            >
+              Tạo {bulkSubjectIds.length > 0 ? `(${bulkSubjectIds.length})` : ""}
+            </BrutalButton>
+          </>
+        }
+      >
+        {bulkError && <ErrorAlert message={bulkError} actionLabel="Đóng" onAction={() => setBulkError(null)} />}
+        {bulkResult && (
+          <div className="rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm">
+            <p className="font-bold">
+              Đã tạo {bulkResult.created.length} môn, bỏ qua {bulkResult.skipped.length} môn.
+            </p>
+            {bulkResult.skipped.length > 0 && (
+              <p className="mt-1 text-xs text-brutal-muted">
+                Bỏ qua do trùng lặp hoặc không hoạt động.
+              </p>
+            )}
+          </div>
+        )}
+        <label className="block text-sm font-bold">
+          Chương trình đào tạo
+          {lockedCurriculumId ? (
+            <p className="mt-1 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium">
+              {lockedCurriculum?.code} — {lockedCurriculum?.name}
+            </p>
+          ) : (
+            <select
+              value={bulkCurriculumId}
+              onChange={(e) => {
+                setBulkCurriculumId(e.target.value);
+                setBulkSemesterId("");
+                setBulkResult(null);
+              }}
+              className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
+            >
+              {activeCurricula.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} — {m.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+        <label className="block text-sm font-bold">
+          Học kỳ
+          <select
+            value={bulkSemesterId}
+            onChange={(e) => {
+              setBulkSemesterId(e.target.value);
+              setBulkResult(null);
+            }}
+            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
+            disabled={bulkSemesterOptions.length === 0}
+          >
+            <option value="">
+              {bulkSemesterOptions.length === 0 ? "Chưa gán học kỳ cho ngành" : "Chọn học kỳ…"}
+            </option>
+            {bulkSemesterOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div>
+          <p className="text-sm font-bold">Môn học (tối đa 50)</p>
+          <div className="mt-1 max-h-64 space-y-1 overflow-y-auto rounded-xl border-2 border-brutal-ink bg-brutal-surface p-2">
+            {activeSubjects.map((s) => (
+              <label
+                key={s.id}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-brutal-bg"
+              >
+                <input
+                  type="checkbox"
+                  checked={bulkSubjectIds.includes(s.id)}
+                  onChange={() => toggleBulkSubject(s.id)}
+                  disabled={!bulkSubjectIds.includes(s.id) && bulkSubjectIds.length >= 50}
+                  className="h-4 w-4 rounded border-2 border-brutal-ink"
+                />
+                <span className="font-mono text-xs font-bold">{s.code}</span>
+                <span>{s.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </AdminFormModal>
 
       <ConfirmDialog

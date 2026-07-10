@@ -39,6 +39,8 @@ export async function rerankChunks(
 ): Promise<RetrievedChunk[]> {
   if (chunks.length <= 1) return chunks.slice(0, topN);
 
+  const byScoreDesc = () => [...chunks].sort((a, b) => b.score - a.score);
+
   const numbered = chunks
     .map(
       (chunk, i) =>
@@ -63,7 +65,10 @@ Return ONLY a JSON array, one object per passage: [{"index": <number>, "score": 
       maxOutputTokens: 1024,
     });
     const scores = parseRerankResponse(raw);
-    if (scores.length === 0) return chunks.slice(0, topN);
+    if (scores.length === 0) {
+      console.warn("[rerank] empty/unparseable response, falling back to score order");
+      return byScoreDesc().slice(0, topN);
+    }
 
     const scoreByIndex = new Map(scores.map((s) => [s.index, s.score]));
     return [...chunks]
@@ -73,10 +78,10 @@ Return ONLY a JSON array, one object per passage: [{"index": <number>, "score": 
       .map((entry) => entry.chunk);
   } catch (error) {
     console.warn(
-      `[rerank] failed, using vector order: ${
+      `[rerank] failed, using score order: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    return chunks.slice(0, topN);
+    return byScoreDesc().slice(0, topN);
   }
 }

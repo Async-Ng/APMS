@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe, Lock, X } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useMemo, useRef, useState } from "react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
@@ -20,6 +21,9 @@ import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog
 import type { DocumentVisibility, DriveDocument } from "@/lib/queries/drive";
 import { useUpdateDocument } from "@/lib/queries/documents";
 
+const MAX_TAGS = 20;
+const MAX_TAG_LENGTH = 50;
+
 interface DocumentSettingsModalProps {
   document: DriveDocument;
   onClose: () => void;
@@ -36,8 +40,45 @@ export function DocumentSettingsModal({
   const [visibility, setVisibility] = useState<DocumentVisibility>(
     doc.visibility ?? "private",
   );
+  const [tags, setTags] = useState<string[]>(doc.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+
+  function addTag(raw: string) {
+    const value = raw.trim();
+    if (!value) return;
+    if (value.length > MAX_TAG_LENGTH) {
+      setError(`Thẻ không được dài quá ${MAX_TAG_LENGTH} ký tự.`);
+      return;
+    }
+    if (tags.some((t) => t.toLowerCase() === value.toLowerCase())) {
+      setTagInput("");
+      return;
+    }
+    if (tags.length >= MAX_TAGS) {
+      setError(`Tối đa ${MAX_TAGS} thẻ.`);
+      return;
+    }
+    setTags((prev) => [...prev, value]);
+    setTagInput("");
+    setError(null);
+  }
+
+  function removeTag(value: string) {
+    setTags((prev) => prev.filter((t) => t !== value));
+  }
+
+  function handleTagInputKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(tagInput);
+    } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
+      removeTag(tags[tags.length - 1]!);
+    }
+  }
+
+  const updateDocument = useUpdateDocument(doc.id, doc.folderId ?? undefined);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   useModalA11y(true, onClose, dialogRef, { preventClose: updateDocument.isPending });
@@ -46,7 +87,6 @@ export function DocumentSettingsModal({
   const { data: curriculum } = useCatalogCourseSlots(
     profile?.curriculum?.id,
   );
-  const updateDocument = useUpdateDocument(doc.id, doc.folderId ?? undefined);
 
   const availableCourses = useMemo(() => {
     if (!profile?.isComplete || !curriculum) return [];
@@ -75,6 +115,7 @@ export function DocumentSettingsModal({
         title: trimmed,
         courseSlotId,
         visibility,
+        tags,
       });
       onClose();
     } catch (err) {
@@ -217,6 +258,49 @@ export function DocumentSettingsModal({
               với đăng lên Thư viện công khai.
             </p>
           </fieldset>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="doc-settings-tags"
+              className="block text-sm font-semibold text-brutal-ink"
+            >
+              Thẻ
+            </label>
+            <div className="flex flex-wrap gap-1.5 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-2 shadow-brutal-sm">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1 rounded-full border-2 border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-semibold text-brutal-ink"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    aria-label={`Xoá thẻ ${tag}`}
+                    className="focus-brutal rounded-full hover:opacity-70"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              <input
+                id="doc-settings-tags"
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  setError(null);
+                }}
+                onKeyDown={handleTagInputKeyDown}
+                onBlur={() => addTag(tagInput)}
+                maxLength={MAX_TAG_LENGTH}
+                placeholder={tags.length === 0 ? "Nhập thẻ rồi nhấn Enter…" : ""}
+                className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm font-medium text-brutal-ink outline-none"
+              />
+            </div>
+            <p className="text-xs text-brutal-muted">
+              Tối đa {MAX_TAGS} thẻ, mỗi thẻ tối đa {MAX_TAG_LENGTH} ký tự.
+            </p>
+          </div>
 
           {error && <ErrorAlert message={error} variant="inline" />}
 

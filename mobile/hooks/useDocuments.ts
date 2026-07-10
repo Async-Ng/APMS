@@ -31,6 +31,10 @@ export function useDocument(documentId: string, withDownloadUrl = false) {
       );
       return res.data.data;
     },
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "pending" || status === "processing" ? 4000 : false;
+    },
   });
 }
 

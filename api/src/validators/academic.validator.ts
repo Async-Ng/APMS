@@ -58,6 +58,12 @@ export const createCourseSlotSchema = z.object({
   subjectId: objectId,
 });
 
+export const bulkCreateCourseSlotSchema = z.object({
+  curriculumId: objectId,
+  semesterId: objectId,
+  subjectIds: z.array(objectId).min(1).max(50).transform((ids) => [...new Set(ids)]),
+});
+
 export const updateCourseSlotSchema = z
   .object({
     curriculumId: objectId.optional(),
