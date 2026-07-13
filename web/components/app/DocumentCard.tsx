@@ -283,19 +283,20 @@ export function DocumentCard({
         {doc.title}
       </p>
 
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex items-center gap-1">
+      <div className="flex min-w-0 items-center justify-between gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
           <StatusBadge status={doc.status} createdAt={doc.createdAt} />
           {doc.visibility === "public" && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-md border-2 border-brutal-ink bg-brutal-bg px-1.5 py-0.5 text-xs font-bold"
+              className="inline-flex shrink-0 items-center rounded-md border-2 border-brutal-ink bg-brutal-bg p-1 text-xs font-bold"
               title="Công khai (Thư viện)"
             >
-              <Globe className="h-3 w-3" />
+              <Globe className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">Công khai</span>
             </span>
           )}
         </div>
-        <span className="text-xs text-brutal-muted tabular-nums">
+        <span className="shrink-0 text-xs tabular-nums text-brutal-muted">
           {formatBytes(doc.fileSizeBytes)}
         </span>
       </div>

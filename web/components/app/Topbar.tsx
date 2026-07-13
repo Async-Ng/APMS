@@ -57,22 +57,22 @@ export function Topbar({
         <BreadcrumbNav items={breadcrumbs} showRootIcon={showBreadcrumbRootIcon} />
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex min-w-0 shrink-0 items-center gap-2">
         {showSearch && (
           <Link
             href="/search"
-            className="focus-brutal hidden items-center gap-2 rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium text-brutal-muted shadow-brutal-sm transition-colors hover:bg-brutal-surface hover:text-brutal-ink md:inline-flex"
+            className="focus-brutal hidden max-w-[14rem] shrink-0 items-center gap-2 overflow-hidden rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2 text-sm font-medium text-brutal-muted shadow-brutal-sm transition-colors hover:bg-brutal-surface hover:text-brutal-ink md:inline-flex"
             aria-label="Tìm kiếm tài liệu"
           >
             <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="max-w-[12rem] truncate">Tìm tài liệu…</span>
+            <span className="truncate">Tìm tài liệu…</span>
           </Link>
         )}
 
         {showSearch && (
           <Link
             href="/search"
-            className="focus-brutal flex h-10 w-10 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal md:hidden"
+            className="focus-brutal flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal md:hidden"
             aria-label="Tìm kiếm tài liệu"
           >
             <Search className="h-4 w-4" />

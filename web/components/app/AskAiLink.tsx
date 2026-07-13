@@ -25,9 +25,8 @@ export function AskAiLink({
       id={id}
       href={href}
       className={cn(
-        "brutal-btn brutal-btn-ghost focus-brutal whitespace-nowrap",
-        layout === "topbar" &&
-          "hidden shrink-0 sm:inline-flex",
+        "brutal-btn brutal-btn-md brutal-btn-ghost focus-brutal w-auto whitespace-nowrap",
+        layout === "topbar" && "hidden shrink-0 sm:inline-flex",
         layout === "block" && "flex w-full justify-center",
         className,
       )}

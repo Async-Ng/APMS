@@ -25,7 +25,7 @@ export function StatusBadge({ status, className, createdAt }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold",
         `status-${status}`,
         className,
       )}
