@@ -163,7 +163,7 @@ Patch example:
 
 ## Shares
 
-`/api/shares` remains active in this refactor. Shares grant read-only access to a document or folder (BR-013). Shared recipients can read private documents through the share path and can use shared content in search/chat where the backend access rule allows it. A share may target existing users (`sharedWithUserIds`) and/or emails (`emails`), up to 50 each per request; duplicate grants for the same resource + recipient are ignored (BR-014).
+`/api/shares` remains active in this refactor. Shares grant read-only access to a document or folder (BR-013). Shared recipients can read private documents through the share path and can use shared content in search/chat where the backend access rule allows it. A share may target existing users (`sharedWithUserIds`) and/or emails (`emails`), up to 50 recipients total per request; duplicate grants for the same resource + recipient are ignored (BR-014).
 
 | Method | Path | Notes |
 | --- | --- | --- |

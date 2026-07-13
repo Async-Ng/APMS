@@ -27,7 +27,7 @@ if (Profile complete and request valid?) then (no)
   detach
 else (yes)
   :Create **private** document;
-  :Process in background\n(pending -> ready / failed);
+  :Process in background\n(pending -> processing -> ready / failed);
   :Group document under its course;
 endif
 
