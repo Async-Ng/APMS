@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { CheckCircle2, GraduationCap, IdCard, User2 } from "lucide-react";
 import { useState } from "react";
@@ -26,7 +26,7 @@ export default function ProfilePage() {
     isLoading: isCurriculaLoading,
     isError: isCurriculaError,
   } = useCatalogCurricula();
-  const { data: profile, isLoading: isProfileLoading } = useAcademicProfile();
+  const { data: profile } = useAcademicProfile();
 
   const [curriculumId, setCurriculumId] = useState("");
   const [academicError, setAcademicError] = useState<string | null>(null);
@@ -92,16 +92,20 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-brutal-muted">
+                <label
+                  htmlFor="profile-display-name"
+                  className="block text-xs font-bold text-brutal-muted"
+                >
                   Tên hiển thị
-                  <input
-                    value={displayName}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    placeholder="Nhập tên hiển thị…"
-                    className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink outline-none"
-                    aria-label="Tên hiển thị"
-                  />
                 </label>
+                <input
+                  id="profile-display-name"
+                  value={displayName}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  placeholder="Nhập tên hiển thị…"
+                  className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink outline-none"
+                  aria-label="Tên hiển thị"
+                />
                 {nameError && <ErrorAlert variant="inline" message={nameError} className="mt-2" />}
               </div>
 
@@ -111,9 +115,9 @@ export default function ProfilePage() {
                 />
               )}
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <div className="flex justify-end">
                 <BrutalButton
-                  className="sm:w-auto"
+                  className="w-auto shrink-0"
                   loading={updateName.isPending}
                   onClick={() => {
                     setNameError(null);
@@ -185,16 +189,22 @@ export default function ProfilePage() {
                 Chưa có CTĐT nào. Liên hệ quản trị viên.
               </p>
             ) : (
-              <label className="text-xs font-bold text-brutal-muted">
-                Chương trình đào tạo
+              <div className="min-w-0">
+                <label
+                  htmlFor="profile-curriculum"
+                  className="block text-xs font-bold text-brutal-muted"
+                >
+                  Chương trình đào tạo
+                </label>
                 <select
+                  id="profile-curriculum"
                   value={effectiveCurriculumId}
                   onChange={(e) => {
                     setAcademicError(null);
                     setAcademicSuccess(null);
                     setCurriculumId(e.target.value);
                   }}
-                  className="focus-brutal mt-1 block w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
+                  className="focus-brutal mt-1 block w-full min-w-0 max-w-full truncate rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
                 >
                   <option value="">Chọn CTĐT</option>
                   {curricula?.map((m) => (
@@ -203,12 +213,12 @@ export default function ProfilePage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             )}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <div className="flex justify-end">
               <BrutalButton
-                className="sm:w-auto"
+                className="w-auto shrink-0"
                 variant="secondary"
                 loading={updateAcademic.isPending}
                 onClick={() => {

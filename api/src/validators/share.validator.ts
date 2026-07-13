@@ -18,7 +18,11 @@ export const createShareSchema = z
   })
   .refine((data) => data.sharedWithUserIds.length + data.emails.length >= 1, {
     message: "At least one recipient is required",
-  });
+  })
+  .refine(
+    (data) => data.sharedWithUserIds.length + data.emails.length <= 50,
+    { message: "Cannot share with more than 50 recipients at once" },
+  );
 
 export const userSearchQuerySchema = z.object({
   email: z.string().email("Invalid email format").optional(),

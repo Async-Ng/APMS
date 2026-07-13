@@ -13,7 +13,7 @@ export function FileGrid({ children, className }: FileGridProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3",
+        "grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3",
         className,
       )}
     >

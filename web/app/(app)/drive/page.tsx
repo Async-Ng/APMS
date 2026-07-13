@@ -36,7 +36,7 @@ import { useDriveContents } from "@/lib/queries/drive";
 export default function DrivePage() {
   const { data, isLoading, isError, refetch } = useDriveContents();
   const { data: profile } = useAcademicProfile();
-  const documents = data?.documents ?? [];
+  const documents = useMemo(() => data?.documents ?? [], [data?.documents]);
 
   const { data: primaryCurriculum } = useCatalogCourseSlots(
     profile?.curriculum?.id,

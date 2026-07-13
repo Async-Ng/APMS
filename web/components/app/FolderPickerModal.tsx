@@ -2,6 +2,7 @@
 
 import { ChevronRight, Folder, HardDrive, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
@@ -55,7 +56,9 @@ export function FolderPickerModal({
 
   const targetIsUnchanged = current.id === initialFolderId;
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
@@ -70,13 +73,13 @@ export function FolderPickerModal({
       aria-labelledby="folder-picker-title"
     >
       <BrutalCard className="flex w-full max-w-md flex-col" style={{ zIndex: "var(--z-modal)" }}>
-        <div className="flex items-center justify-between">
-          <h2 id="folder-picker-title" className="font-heading text-xl font-extrabold">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="folder-picker-title" className="min-w-0 font-heading text-xl font-extrabold">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="focus-brutal flex h-8 w-8 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg"
+            className="focus-brutal flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-brutal-ink transition-colors hover:bg-brutal-bg"
             aria-label="Đóng"
           >
             <X className="h-4 w-4" />
@@ -154,6 +157,7 @@ export function FolderPickerModal({
           </BrutalButton>
         </div>
       </BrutalCard>
-    </div>
+    </div>,
+    document.body,
   );
 }
