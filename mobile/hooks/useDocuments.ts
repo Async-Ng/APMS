@@ -1,4 +1,4 @@
-﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 import { api } from "../lib/api-client";
@@ -13,6 +13,7 @@ export interface DocumentDetail {
   s3Key: string;
   fileSizeBytes: number;
   status: "pending" | "processing" | "ready" | "failed";
+  visibility: "private" | "public";
   pageCount: number | null;
   tags: string[];
   isStarred: boolean;
@@ -93,7 +94,7 @@ export function useToggleDocumentStar() {
 export function useUpdateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; title?: string; tags?: string[]; folderId?: string | null }) => {
+    mutationFn: async ({ id, ...data }: { id: string; title?: string; tags?: string[]; folderId?: string | null; visibility?: "private" | "public" }) => {
       const res = await api.patch(`/documents/${id}`, data);
       return res.data;
     },
@@ -178,6 +179,61 @@ export function useUploadDocument() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
+    },
+  });
+}
+
+export interface PublicDocument extends DocumentDetail {
+  source?: "public" | "owned" | "shared";
+  matchType?: "exact_course" | "same_subject_other_semester" | "global_public" | null;
+  owner?: {
+    id: string;
+    displayName: string;
+    email: string;
+    avatarUrl: string | null;
+  } | null;
+  courseSlot?: {
+    id: string;
+    semesterId: string;
+    semester?: { id: string; name: string; code: string } | null;
+    curriculum?: { id: string; name: string; code: string } | null;
+    subject?: { id: string; name: string; code: string } | null;
+  } | null;
+}
+
+export interface PublicDocumentsResponse {
+  folders: any[];
+  documents: PublicDocument[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface PublicDocumentsParams {
+  sort?: "newest" | "oldest" | "title";
+  search?: string;
+  match?: "auto" | "all" | "exact" | "related";
+  curriculumId?: string;
+  semesterId?: string;
+  subjectId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export function usePublicDocuments(params: PublicDocumentsParams = {}) {
+  return useQuery({
+    queryKey: ["documents", "public", params],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: PublicDocumentsResponse }>("/documents", {
+        params: {
+          view: "public",
+          ...params,
+        },
+      });
+      return res.data.data;
     },
   });
 }

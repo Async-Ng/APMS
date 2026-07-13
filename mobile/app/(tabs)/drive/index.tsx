@@ -1,6 +1,10 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, RefreshControl, SafeAreaView, View } from "react-native";
+import { FlatList, RefreshControl, SafeAreaView, View, Text } from "react-native";
+
+import { BrutalCard } from "../../../components/ui/BrutalCard";
+import { BrutalButton } from "../../../components/ui/BrutalButton";
+import { useAcademicProfile } from "../../../hooks/useCatalog";
 
 import { ActionSheet } from "../../../components/app/ActionSheet";
 import { FileItem } from "../../../components/app/FileItem";
@@ -34,6 +38,7 @@ type ActionTarget =
 export default function DriveRoot() {
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useDrive(null);
+  const { data: profile, isLoading: profileLoading } = useAcademicProfile();
 
   const createFolder = useCreateFolder();
   const updateDocument = useUpdateDocument();
@@ -129,6 +134,27 @@ export default function DriveRoot() {
           </View>
         }
       />
+
+      {/* Warning Banner */}
+      {!profileLoading && profile && !profile.isComplete && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <BrutalCard accentColor="#FFE600" padding={16}>
+            <Text style={{ fontWeight: "800", fontSize: 16, color: colors.ink, marginBottom: 8 }}>
+              Cấu hình học tập chưa hoàn tất!
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.ink, marginBottom: 12, fontWeight: "500" }}>
+              Vui lòng thiết lập chương trình học để nhận được gợi ý tài liệu học tập chính xác.
+            </Text>
+            <BrutalButton
+              label="Thiết lập ngay"
+              onPress={() => router.push("/profile/academic")}
+              variant="secondary"
+              size="sm"
+              style={{ alignSelf: "flex-start" }}
+            />
+          </BrutalCard>
+        </View>
+      )}
 
       {/* Content */}
       {isLoading ? (

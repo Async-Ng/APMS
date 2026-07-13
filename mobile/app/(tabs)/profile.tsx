@@ -11,13 +11,17 @@ import { HeaderBar } from "../../components/ui/HeaderBar";
 import { colors } from "../../constants/colors";
 import { brutalCardStyle } from "../../lib/brutal-style";
 import { api } from "../../lib/api-client";
-import { useAuthStore } from "../../stores/auth-store";
+import { useAuthStore, type AppUser } from "../../stores/auth-store";
+import { EditDisplayNameModal } from "../../components/app/EditDisplayNameModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, fetchMe } = useAuthStore();
+  const setUser = useAuthStore((state) => state.setUser);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showEditName, setShowEditName] = useState(false);
+  const [updatingName, setUpdatingName] = useState(false);
 
   const isAdmin = user?.role === "admin";
 
@@ -100,6 +104,16 @@ export default function ProfileScreen() {
               onPress={() => router.push("/profile/academic")}
             />
           </View>
+
+          <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted, marginTop: 16, marginBottom: 4 }}>TÀI KHOẢN</Text>
+          <View style={{ ...brutalCardStyle, padding: 4 }}>
+            <ProfileMenuItem
+              icon="create-outline"
+              label="Đổi tên hiển thị"
+              subtitle="Thay đổi tên hiển thị trên hệ thống"
+              onPress={() => setShowEditName(true)}
+            />
+          </View>
         </View>
 
         {isAdmin && (
@@ -137,6 +151,26 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: 11, color: colors.muted }}>v1.0.0 · FPT University</Text>
         </View>
       </ScrollView>
+      <EditDisplayNameModal
+        visible={showEditName}
+        initialValue={user?.displayName ?? ""}
+        onDismiss={() => setShowEditName(false)}
+        onConfirm={async (newName) => {
+          try {
+            setUpdatingName(true);
+            const res = await api.patch<{ status: string; data: AppUser }>("/users/me", {
+              displayName: newName,
+            });
+            setUser(res.data.data);
+            setShowEditName(false);
+          } catch (err) {
+            Alert.alert("Lỗi", "Không thể cập nhật tên hiển thị. Vui lòng thử lại.");
+          } finally {
+            setUpdatingName(false);
+          }
+        }}
+        loading={updatingName}
+      />
     </SafeAreaView>
   );
 }

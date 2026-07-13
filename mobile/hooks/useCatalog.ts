@@ -73,6 +73,16 @@ export function useCatalogCurricula() {
   });
 }
 
+export function useCatalogSemesters() {
+  return useQuery({
+    queryKey: ["catalog", "semesters"],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: CatalogSemester[] }>("/catalog/semesters");
+      return res.data.data;
+    },
+  });
+}
+
 export function useCatalogCurriculumSemesters(curriculumId: string | undefined) {
   return useQuery({
     queryKey: ["catalog", "curriculum-semesters", curriculumId],

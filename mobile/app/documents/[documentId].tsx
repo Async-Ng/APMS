@@ -10,7 +10,9 @@ import { HeaderBar, HeaderIconButton } from "../../components/ui/HeaderBar";
 import { SkeletonCard } from "../../components/ui/SkeletonCard";
 import { colors } from "../../constants/colors";
 import { brutalCtaStyle, pressedBrutalStyle } from "../../lib/brutal-style";
-import { useDocument, useDeleteDocument, useToggleDocumentStar } from "../../hooks/useDocuments";
+import { useDocument, useDeleteDocument, useToggleDocumentStar, useUpdateDocument } from "../../hooks/useDocuments";
+import { useAuthStore } from "../../stores/auth-store";
+import { RenameDocumentModal } from "../../components/app/RenameDocumentModal";
 
 export default function DocumentDetailScreen() {
   const { documentId } = useLocalSearchParams<{ documentId: string }>();
@@ -19,9 +21,14 @@ export default function DocumentDetailScreen() {
   const { data: doc, isLoading } = useDocument(documentId, true);
   const deleteDocument = useDeleteDocument();
   const toggleStar = useToggleDocumentStar();
+  const updateDoc = useUpdateDocument();
+  const { user } = useAuthStore();
 
   const [showActions, setShowActions] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+
+  const isOwner = doc?.ownerId === user?.id;
 
   function handleOpenExternal() {
     if (doc?.downloadUrl) {
@@ -33,17 +40,36 @@ export default function DocumentDetailScreen() {
     ? [
         {
           label: doc.isStarred ? "Bỏ gắn sao" : "Gắn sao",
-          icon: doc.isStarred ? "star" : "star-outline",
+          icon: (doc.isStarred ? "star" : "star-outline") as keyof typeof Ionicons.glyphMap,
           onPress: () => toggleStar.mutate({ id: doc.id, star: !doc.isStarred }),
         },
         {
           label: "Chia sẻ",
-          icon: "share-outline",
+          icon: "share-outline" as keyof typeof Ionicons.glyphMap,
           onPress: () => setShowShare(true),
         },
+        ...(isOwner
+          ? [
+              {
+                label: "Đổi tên",
+                icon: "create-outline" as keyof typeof Ionicons.glyphMap,
+                onPress: () => setShowRename(true),
+              },
+              {
+                label: doc.visibility === "public" ? "Chuyển thành Riêng tư" : "Chuyển thành Công khai",
+                icon: (doc.visibility === "public" ? "eye-off-outline" : "eye-outline") as keyof typeof Ionicons.glyphMap,
+                onPress: () => {
+                  updateDoc.mutate({
+                    id: doc.id,
+                    visibility: doc.visibility === "public" ? "private" : "public",
+                  });
+                },
+              },
+            ]
+          : []),
         {
           label: "Trò chuyện về tài liệu này",
-          icon: "chatbubble-outline",
+          icon: "chatbubble-outline" as keyof typeof Ionicons.glyphMap,
           onPress: () =>
             router.push({
               pathname: "/(tabs)/chat",
@@ -52,13 +78,13 @@ export default function DocumentDetailScreen() {
         },
         {
           label: "Mở trên trình duyệt",
-          icon: "open-outline",
+          icon: "open-outline" as keyof typeof Ionicons.glyphMap,
           disabled: !doc.downloadUrl,
           onPress: handleOpenExternal,
         },
         {
           label: "Xóa",
-          icon: "trash-outline",
+          icon: "trash-outline" as keyof typeof Ionicons.glyphMap,
           destructive: true,
           onPress: () => {
             deleteDocument.mutate(doc.id, { onSuccess: () => router.back() });
@@ -143,6 +169,18 @@ export default function DocumentDetailScreen() {
         subtitle={getMimeLabel(doc.mimeType)}
         actions={actions}
         onDismiss={() => setShowActions(false)}
+      />
+      <RenameDocumentModal
+        visible={showRename}
+        initialTitle={doc.title}
+        onDismiss={() => setShowRename(false)}
+        onConfirm={(newTitle) => {
+          updateDoc.mutate(
+            { id: doc.id, title: newTitle },
+            { onSuccess: () => setShowRename(false) },
+          );
+        }}
+        loading={updateDoc.isPending}
       />
       {showShare && (
         <ShareSheet

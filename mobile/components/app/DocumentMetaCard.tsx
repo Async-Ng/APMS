@@ -65,6 +65,7 @@ export function DocumentMetaCard({ doc }: { doc: DocumentDetail }) {
         {[
           { label: "Tên tệp", value: doc.originalFilename },
           { label: "Dung lượng", value: formatBytes(doc.fileSizeBytes) },
+          { label: "Hiển thị", value: doc.visibility === "public" ? "Công khai" : "Riêng tư" },
           { label: "Số trang", value: doc.pageCount !== null ? String(doc.pageCount) : "—" },
           { label: "Tải lên", value: new Date(doc.createdAt).toLocaleDateString() },
           { label: "Cập nhật lần cuối", value: new Date(doc.updatedAt).toLocaleDateString() },
