@@ -2,19 +2,14 @@ import { useEffect, useState } from "react";
 
 /** Ticking elapsed-seconds counter since `startIso`, updated every second. */
 export function useElapsedSeconds(startIso: string): number {
-  const [elapsed, setElapsed] = useState(() =>
-    Math.max(0, Math.floor((Date.now() - new Date(startIso).getTime()) / 1000)),
-  );
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setElapsed(Math.max(0, Math.floor((Date.now() - new Date(startIso).getTime()) / 1000)));
-    const interval = setInterval(() => {
-      setElapsed(Math.max(0, Math.floor((Date.now() - new Date(startIso).getTime()) / 1000)));
-    }, 1000);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [startIso]);
+  }, []);
 
-  return elapsed;
+  return Math.max(0, Math.floor((now - new Date(startIso).getTime()) / 1000));
 }
 
 /** Format a seconds count as "Ns" or "Mp Ns" for display. */

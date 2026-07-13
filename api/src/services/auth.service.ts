@@ -17,9 +17,10 @@ export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument
   }
   const role: UserRole = authUser.isAdmin ? "admin" : "user";
 
+  // Sync identity/role from Cognito on every request, but do not overwrite
+  // displayName — users set that via PATCH /users/me (FR-008).
   const update: Record<string, string> = {
     email: authUser.email,
-    displayName: authUser.displayName,
     role,
   };
 
@@ -31,7 +32,10 @@ export async function syncUserFromAuth(authUser: AuthUser): Promise<UserDocument
     { cognitoSub: authUser.cognitoSub },
     {
       $set: update,
-      $setOnInsert: { cognitoSub: authUser.cognitoSub },
+      $setOnInsert: {
+        cognitoSub: authUser.cognitoSub,
+        displayName: authUser.displayName,
+      },
     },
     { upsert: true, returnDocument: "after", runValidators: true },
   );
