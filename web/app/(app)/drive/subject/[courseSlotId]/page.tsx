@@ -41,7 +41,7 @@ export default function SubjectDrivePage({ params }: PageProps) {
   const { data: allCurriculum } = useCatalogCourseSlots(profile?.curriculum?.id);
 
   const folders = data?.folders ?? [];
-  const documents = data?.documents ?? [];
+  const documents = useMemo(() => data?.documents ?? [], [data?.documents]);
   const enrolledCourses = useMemo(
     () => getEnrolledCourses(profile, allCurriculum),
     [profile, allCurriculum],

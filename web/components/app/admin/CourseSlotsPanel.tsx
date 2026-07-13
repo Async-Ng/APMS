@@ -136,10 +136,16 @@ export function CourseSlotsPanel({
 
   const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
   const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
-  const semesterOptions =
-    formCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
-  const bulkSemesterOptions =
-    bulkCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [];
+  const semesterOptions = useMemo(
+    () =>
+      formCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [],
+    [formCurriculumSemesters],
+  );
+  const bulkSemesterOptions = useMemo(
+    () =>
+      bulkCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [],
+    [bulkCurriculumSemesters],
+  );
 
   const resolvedSemesterId = useMemo(() => {
     if (!form.curriculumId || semesterOptions.length === 0) return form.semesterId;
