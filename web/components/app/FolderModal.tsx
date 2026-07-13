@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 import { getUserErrorMessage } from "@/lib/errors";
 import type { DriveDocument, DriveFolder } from "@/lib/queries/drive";
 import { useCreateFolder, useUpdateFolder } from "@/lib/queries/drive";
@@ -55,14 +56,7 @@ export function FolderModal({
     inputRef.current?.select();
   }, []);
 
-  // Keyboard: close on Escape
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const createFolder = useCreateFolder(parentId ?? undefined);
   const updateFolder = useUpdateFolder(folder?.id ?? "", parentId ?? undefined);
@@ -73,6 +67,8 @@ export function FolderModal({
 
   const isPending =
     createFolder.isPending || updateFolder.isPending || updateDocument.isPending;
+
+  useModalA11y(true, onClose, dialogRef, { preventClose: isPending });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -108,6 +104,7 @@ export function FolderModal({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",

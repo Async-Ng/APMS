@@ -2,27 +2,20 @@
 
 import { useState } from "react";
 
-import { CourseSlotsPanel } from "@/components/app/admin/CourseSlotsPanel";
 import { CurriculaPanel } from "@/components/app/admin/CurriculaPanel";
 import { SemestersPanel } from "@/components/app/admin/SemestersPanel";
 import { SubjectsPanel } from "@/components/app/admin/SubjectsPanel";
 import { useTabArrowNav } from "@/components/ui/useTabArrowNav";
 import { cn } from "@/lib/cn";
 
-type AcademicSubTab = "curricula" | "semesters" | "subjects" | "course-slots";
+type AcademicSubTab = "curricula" | "semesters" | "subjects";
 
-const SUB_TAB_IDS: AcademicSubTab[] = [
-  "curricula",
-  "semesters",
-  "subjects",
-  "course-slots",
-];
+const SUB_TAB_IDS: AcademicSubTab[] = ["curricula", "semesters", "subjects"];
 
 const SUB_TABS: { id: AcademicSubTab; label: string }[] = [
   { id: "curricula", label: "Chương trình đào tạo" },
   { id: "semesters", label: "Học kỳ" },
   { id: "subjects", label: "Môn học" },
-  { id: "course-slots", label: "Môn trong CTĐT" },
 ];
 
 export function AcademicAdminPanel() {
@@ -90,17 +83,6 @@ export function AcademicAdminPanel() {
         className="outline-none"
       >
         {subTab === "subjects" && <SubjectsPanel />}
-      </div>
-
-      <div
-        id="panel-academic-course-slots"
-        role="tabpanel"
-        aria-labelledby="tab-academic-course-slots"
-        tabIndex={0}
-        hidden={subTab !== "course-slots"}
-        className="outline-none"
-      >
-        {subTab === "course-slots" && <CourseSlotsPanel />}
       </div>
     </div>
   );

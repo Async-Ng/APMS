@@ -441,6 +441,32 @@ export function useCreateCourseSlot() {
   });
 }
 
+export interface BulkCreateCourseSlotsResult {
+  created: EnrichedCourseSlot[];
+  skipped: { subjectId: string; reason: string }[];
+}
+
+export function useBulkCreateCourseSlots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      curriculumId: string;
+      semesterId: string;
+      subjectIds: string[];
+    }) => {
+      const res = await api.post<{ status: string; data: BulkCreateCourseSlotsResult }>(
+        "/admin/course-slots/bulk",
+        body,
+      );
+      return res.data.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "course-slots"] });
+      invalidateAdminAcademic(qc);
+    },
+  });
+}
+
 export function useUpdateCourseSlot() {
   const qc = useQueryClient();
   return useMutation({

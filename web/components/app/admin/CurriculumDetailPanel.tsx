@@ -40,7 +40,7 @@ function SemesterList({
       {active.map((l) => (
         <span
           key={l.semesterId}
-          className="inline-flex items-center rounded-lg border-2 border-brutal-ink bg-brutal-bg px-3 py-1 text-sm font-bold"
+          className="inline-flex items-center rounded-md border-2 border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-bold"
         >
           {l.semester!.code} — {l.semester!.name}
         </span>
@@ -108,8 +108,10 @@ export function CurriculumDetailPanel({ curriculumId }: { curriculumId: string }
         <Topbar breadcrumbs={[{ label: "Quản trị", href: "/admin?tab=academic" }, { label: "CTĐT" }]} />
         <div className="space-y-3 p-4 sm:p-6">
           <ErrorAlert message="Không tìm thấy CTĐT hoặc không tải được dữ liệu." />
-          <Link href="/admin?tab=academic">
-            <BrutalButton variant="secondary">Quay lại</BrutalButton>
+          <Link href="/admin?tab=academic" className="inline-flex">
+            <BrutalButton variant="secondary" size="sm" className="w-auto">
+              Quay lại
+            </BrutalButton>
           </Link>
         </div>
       </>
@@ -130,8 +132,8 @@ export function CurriculumDetailPanel({ curriculumId }: { curriculumId: string }
           <ErrorAlert message={error} actionLabel="Đóng" onAction={() => setError(null)} />
         )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-widest text-brutal-muted">
             Chương trình đào tạo
           </p>
@@ -139,19 +141,26 @@ export function CurriculumDetailPanel({ curriculumId }: { curriculumId: string }
             {curriculum.code} — {curriculum.name}
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin?tab=academic">
-            <BrutalButton variant="ghost">Quay lại</BrutalButton>
+        <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-auto">
+          <Link href="/admin?tab=academic" className="inline-flex">
+            <BrutalButton variant="ghost" size="sm" className="w-auto">
+              Quay lại
+            </BrutalButton>
           </Link>
-          <BrutalButton variant="secondary" onClick={() => setFormOpen(true)}>
+          <BrutalButton variant="secondary" size="sm" className="w-auto" onClick={() => setFormOpen(true)}>
             Sửa
           </BrutalButton>
           {curriculum.isActive ? (
-            <BrutalButton variant="primary" onClick={() => setArchiveTarget(curriculum)}>
+            <BrutalButton
+              variant="primary"
+              size="sm"
+              className="w-auto"
+              onClick={() => setArchiveTarget(curriculum)}
+            >
               Xóa
             </BrutalButton>
           ) : (
-            <BrutalButton variant="primary" onClick={handleReactivate}>
+            <BrutalButton variant="primary" size="sm" className="w-auto" onClick={handleReactivate}>
               Kích hoạt
             </BrutalButton>
           )}

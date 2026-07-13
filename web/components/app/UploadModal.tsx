@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { CheckCircle2, GraduationCap, Loader2, Upload, X } from "lucide-react";
 import Link from "next/link";
@@ -7,6 +7,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { BrutalCard } from "@/components/ui/BrutalCard";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useModalA11y } from "@/components/ui/useModalA11y";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
@@ -148,11 +149,15 @@ export function UploadModal({
     onClose();
   }
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalA11y(true, handleClose, dialogRef, { preventClose: step === "uploading" });
+
   const canContinueStep1 = Boolean(selectedFile && courseSlotId);
   const canSubmit = canContinueStep1;
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: "var(--z-modal-overlay)",

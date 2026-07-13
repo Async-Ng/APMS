@@ -368,7 +368,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | FR-054 | Hệ thống phải cho phép quản trị viên tạo, xem, cập nhật và lưu trữ Môn học. |
 | FR-055 | Hệ thống phải bảo đảm mã Curriculum, mã Học kỳ và mã Môn học là duy nhất (không phân biệt hoa thường, tự chuẩn hóa in hoa). |
 | FR-056 | Hệ thống phải cho phép quản trị viên gán một hoặc nhiều Học kỳ cho một Curriculum và gỡ (lưu trữ) liên kết đó. |
-| FR-057 | Hệ thống phải cho phép quản trị viên tạo, xem (có lọc), cập nhật và lưu trữ mục Course slot (gồm Curriculum – Học kỳ – Môn học). |
+| FR-057 | Hệ thống phải cho phép quản trị viên tạo (đơn lẻ hoặc hàng loạt nhiều Môn học cho cùng một Curriculum–Học kỳ), xem (có lọc), cập nhật và lưu trữ mục Course slot (gồm Curriculum – Học kỳ – Môn học). |
 | FR-058 | Hệ thống phải chỉ cho phép tạo mục Course slot khi Curriculum, Học kỳ, Môn học đều đang hoạt động và cặp Curriculum – Học kỳ đã được gán với nhau. |
 | FR-059 | Hệ thống phải bảo đảm mỗi mục Course slot (Curriculum – Học kỳ – Môn học) là duy nhất, không trùng lặp. |
 | FR-060 | Hệ thống phải ngăn việc thay đổi định danh của mục Course slot khi đã có tài liệu tham chiếu đến nó. |
@@ -384,6 +384,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Dữ liệu cần nhập | Curriculum, Học kỳ, Môn học. |
 | Kết quả thành công | Mục Course slot được tạo/cập nhật và xuất hiện trong danh mục. |
 | Ngoại lệ | Trùng lặp, thành phần không hoạt động, cặp Curriculum–Học kỳ chưa gán, hoặc đổi định danh khi đã có tài liệu tham chiếu → hệ thống từ chối và nêu lý do. |
+| Luồng tạo hàng loạt (bulk) | Quản trị viên chọn 1 Curriculum và 1 Học kỳ, sau đó chọn nhiều Môn học cùng lúc (tối đa 50 môn/lượt). Hệ thống tạo từng mục Course slot tương ứng; các mục đã tồn tại (trùng Curriculum–Học kỳ–Môn học) được bỏ qua mà không làm lỗi cả lượt tạo. Kết quả trả về gồm số lượng đã tạo và số lượng đã bỏ qua (kèm lý do). |
 
 ---
 

@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 
 import { colors } from "../../constants/colors";
+import { formatElapsed, useElapsedSeconds } from "../../hooks/useElapsedSeconds";
 
 type Status = "pending" | "processing" | "ready" | "failed" | "shared" | "starred";
 
@@ -13,12 +14,17 @@ const statusConfig: Record<Status, { label: string; bg: string; text: string }> 
   starred:    { label: "Đã gắn sao",  bg: "#FEF9C3", text: "#713F12" },
 };
 
-export function StatusBadge({ status }: { status: Status }) {
+export function StatusBadge({ status, createdAt }: { status: Status; createdAt?: string }) {
   const cfg = statusConfig[status];
+  const isProcessing = status === "pending" || status === "processing";
+  const elapsed = useElapsedSeconds(createdAt ?? new Date().toISOString());
+
   return (
     <View
       style={{
         alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
         backgroundColor: cfg.bg,
         borderWidth: 1.5,
         borderColor: colors.ink,
@@ -28,6 +34,11 @@ export function StatusBadge({ status }: { status: Status }) {
       }}
     >
       <Text style={{ fontSize: 10, fontWeight: "700", color: cfg.text }}>{cfg.label}</Text>
+      {createdAt && isProcessing && (
+        <Text style={{ fontSize: 10, fontWeight: "600", color: cfg.text, opacity: 0.7, marginLeft: 4 }}>
+          ({formatElapsed(elapsed)})
+        </Text>
+      )}
     </View>
   );
 }

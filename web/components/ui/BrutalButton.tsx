@@ -6,12 +6,16 @@ interface BrutalButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost";
   loading?: boolean;
+  size?: "sm" | "md";
 }
 
-function Spinner() {
+function Spinner({ size = "md" }: { size?: "sm" | "md" }) {
   return (
     <svg
-      className="h-5 w-5 animate-spin"
+      className={cn(
+        "animate-spin",
+        size === "sm" ? "h-4 w-4" : "h-5 w-5"
+      )}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -38,6 +42,7 @@ export function BrutalButton({
   children,
   variant = "primary",
   loading = false,
+  size = "md",
   className,
   disabled,
   type = "button",
@@ -47,8 +52,10 @@ export function BrutalButton({
     <button
       type={type}
       disabled={disabled ?? loading}
+      aria-busy={loading}
       className={cn(
-        "brutal-btn focus-brutal w-full",
+        "brutal-btn focus-brutal w-full relative",
+        size === "sm" ? "brutal-btn-sm" : "brutal-btn-md",
         variant === "primary" && "brutal-btn-primary",
         variant === "secondary" && "brutal-btn-secondary",
         variant === "ghost" && "brutal-btn-ghost",
@@ -56,7 +63,14 @@ export function BrutalButton({
       )}
       {...props}
     >
-      {loading ? <Spinner /> : children}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Spinner size={size} />
+        </div>
+      )}
+      <span className={cn("inline-flex items-center justify-center gap-2", loading && "invisible")}>
+        {children}
+      </span>
     </button>
   );
 }

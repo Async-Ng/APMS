@@ -190,6 +190,11 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
   const scannedPages = new Set<number>();
   // Pages that get a vision markdown parse, paired with their pre-rendered PNG.
   const visionPages: Array<{ pageNumber: number; base64: string }> = [];
+  // Pages that would have needed vision (scanned/structured/all-strategy) but were
+  // skipped because DOC_VISION_MAX_PAGES was already reached — these fall back to
+  // the lossy pdfjs-text conversion and lose table/formula structure, so they're
+  // tracked separately to surface as low-confidence rather than silently "high".
+  const cappedPages = new Set<number>();
 
   for (let p = 1; p <= pageCount; p++) {
     const page = await doc.getPage(p);
@@ -202,7 +207,13 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
     if (scanned) scannedPages.add(p);
 
     if (!env.DOC_VISION_ENABLED) continue;
-    if (visionPages.length >= env.DOC_VISION_MAX_PAGES) continue;
+
+    if (visionPages.length >= env.DOC_VISION_MAX_PAGES) {
+      const likelyNeedsVision =
+        env.DOC_VISION_PAGE_STRATEGY === "all" || scanned || pageLooksStructured(lines);
+      if (likelyNeedsVision) cappedPages.add(p);
+      continue;
+    }
 
     const needsVision =
       env.DOC_VISION_PAGE_STRATEGY === "all" ||
@@ -218,6 +229,13 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
   if (visionPages.length > 0) {
     console.info(
       `[extraction] PDF vision parse: ${visionPages.length}/${pageCount} pages (strategy=${env.DOC_VISION_PAGE_STRATEGY})`,
+    );
+  }
+  if (cappedPages.size > 0) {
+    console.warn(
+      `[extraction] PDF vision cap reached (DOC_VISION_MAX_PAGES=${env.DOC_VISION_MAX_PAGES}): ` +
+        `${cappedPages.size} page(s) needing vision fell back to lossy text extraction: ` +
+        `${[...cappedPages].join(", ")}`,
     );
   }
 
@@ -247,7 +265,11 @@ export async function extractPdfWithVision(buffer: Buffer): Promise<ExtractionRe
       headingText: headingInfo?.displayHeading ?? null,
       blockType: visionMarkdown && scanned ? "ocr" : inferBlockType(text),
       extractionMode: visionMarkdown ? (scanned ? "ocr" : "hybrid") : "text",
-      extractionConfidence: visionMarkdown ? "medium" : scanned ? "low" : "high",
+      extractionConfidence: visionMarkdown
+        ? "medium"
+        : cappedPages.has(p) || scanned
+          ? "low"
+          : "high",
     };
   });
 

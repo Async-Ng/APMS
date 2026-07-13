@@ -13,6 +13,7 @@ import { UserDetailModal } from "@/components/app/admin/UserDetailModal";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { getUserErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/format";
 import type { AdminUser } from "@/lib/queries/admin";
@@ -65,6 +66,7 @@ function QuotaCell({
         disabled={isSaving}
         className="focus-brutal rounded px-2 py-1 text-sm tabular-nums underline-offset-2 hover:underline disabled:opacity-50"
         title="Nhấn để sửa hạn mức"
+        aria-label={`Sửa hạn mức lưu trữ của ${user.displayName}, hiện tại là ${formatBytes(user.storageQuotaBytes)}`}
       >
         {isSaving ? "…" : formatBytes(user.storageQuotaBytes)}
       </button>
@@ -82,7 +84,15 @@ function QuotaCell({
             setInlineError(null);
           }}
           onBlur={commit}
-          onKeyDown={(e) => e.key === "Enter" && commit()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              commit();
+            } else if (e.key === "Escape") {
+              setEditing(false);
+              setValue(String(Math.round(user.storageQuotaBytes / 1_048_576)));
+              setInlineError(null);
+            }
+          }}
           className="focus-brutal w-20 rounded border-2 border-brutal-ink px-2 py-1 text-sm tabular-nums"
           aria-label="Hạn mức lưu trữ (MB)"
           aria-invalid={!!inlineError}
@@ -117,6 +127,7 @@ function UserRowActions({
     <div className="flex flex-wrap gap-1">
       <BrutalButton
         variant="ghost"
+        size="sm"
         onClick={() => onViewDetail(user.id)}
         className="px-2 py-1 text-xs"
         aria-label={`Chi tiết ${user.displayName}`}
@@ -126,6 +137,7 @@ function UserRowActions({
       {!isSelf && (
         <BrutalButton
           variant={user.isDisabled ? "secondary" : "ghost"}
+          size="sm"
           onClick={() => onToggleDisable(user)}
           disabled={isRowPending}
           className="px-3 py-1 text-xs"
@@ -168,6 +180,7 @@ function UserRoleCell({ user, isSelf, isRowPending, onToggleRole }: UserRoleCell
   return (
     <BrutalButton
       variant={user.role === "admin" ? "secondary" : "ghost"}
+      size="sm"
       className="px-3 py-1 text-xs"
       onClick={() => onToggleRole(user)}
       disabled={isRowPending || user.isDisabled}
@@ -606,10 +619,7 @@ export function UsersTable() {
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-40 animate-pulse rounded-xl border-2 border-brutal-ink/20 bg-brutal-bg"
-              />
+              <SkeletonCard key={i} rows={3} />
             ))}
           </div>
         )}

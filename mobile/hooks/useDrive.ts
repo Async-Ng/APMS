@@ -21,6 +21,7 @@ export interface DriveDocument {
   status: "pending" | "processing" | "ready" | "failed";
   isStarred: boolean;
   folderId: string | null;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +29,12 @@ export interface DriveDocument {
 export interface DriveData {
   folders: DriveFolder[];
   documents: DriveDocument[];
+}
+
+function hasProcessingDocuments(data: DriveData | undefined): boolean {
+  return (
+    data?.documents.some((d) => d.status === "pending" || d.status === "processing") ?? false
+  );
 }
 
 export function useDrive(parentId?: string | null) {
@@ -39,6 +46,7 @@ export function useDrive(parentId?: string | null) {
       });
       return res.data.data;
     },
+    refetchInterval: (query) => (hasProcessingDocuments(query.state.data) ? 4000 : false),
   });
 }
 

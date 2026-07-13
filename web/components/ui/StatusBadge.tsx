@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { formatElapsed, useElapsedSeconds } from "@/components/ui/useElapsedSeconds";
 
 export type DocumentStatus = "pending" | "processing" | "ready" | "failed";
 
@@ -12,10 +13,15 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
 interface BadgeProps {
   status: DocumentStatus;
   className?: string;
+  /** When set and status is pending/processing, shows elapsed time since this timestamp. */
+  createdAt?: string;
 }
 
 /** Document processing status badge. */
-export function StatusBadge({ status, className }: BadgeProps) {
+export function StatusBadge({ status, className, createdAt }: BadgeProps) {
+  const isProcessing = status === "pending" || status === "processing";
+  const elapsed = useElapsedSeconds(createdAt ?? new Date().toISOString());
+
   return (
     <span
       className={cn(
@@ -31,6 +37,9 @@ export function StatusBadge({ status, className }: BadgeProps) {
         />
       )}
       {STATUS_LABELS[status]}
+      {createdAt && isProcessing && (
+        <span className="ml-1 font-normal opacity-70">({formatElapsed(elapsed)})</span>
+      )}
     </span>
   );
 }

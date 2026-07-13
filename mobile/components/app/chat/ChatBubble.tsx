@@ -2,11 +2,14 @@ import { Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { colors } from "../../../constants/colors";
+import { type Citation } from "../../../hooks/useChat";
 
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
   createdAt?: string;
+  citations?: Citation[];
+  onCitationPress?: (documentId: string) => void;
 }
 
 const markdownStyles = {
@@ -59,8 +62,48 @@ const markdownStyles = {
   hr: { backgroundColor: "#E5E5E5", height: 1, marginVertical: 8 },
 };
 
-export function ChatBubble({ role, content, createdAt }: ChatBubbleProps) {
+export function ChatBubble({
+  role,
+  content,
+  createdAt,
+  citations = [],
+  onCitationPress,
+}: ChatBubbleProps) {
   const isUser = role === "user";
+
+  const formattedContent = isUser
+    ? content
+    : content.replace(/\[(?:source\s*)?(\d+)\]/gi, "[$1](citation:$1)");
+
+  const rules = {
+    link: (node: any, children: any) => {
+      const href = node.attributes.href;
+      if (href && href.startsWith("citation:")) {
+        const indexStr = href.split(":")[1];
+        const index = parseInt(indexStr, 10);
+        return (
+          <Text
+            key={node.key}
+            style={{
+              color: colors.fptOrange,
+              fontWeight: "800",
+              fontSize: 13,
+              marginHorizontal: 2,
+              textDecorationLine: "underline",
+            }}
+            onPress={() => {
+              if (citations && citations[index - 1] && onCitationPress) {
+                onCitationPress(citations[index - 1].documentId);
+              }
+            }}
+          >
+            [{indexStr}]
+          </Text>
+        );
+      }
+      return null; // fall back to default rendering for other links
+    },
+  };
 
   return (
     <View
@@ -117,7 +160,7 @@ export function ChatBubble({ role, content, createdAt }: ChatBubbleProps) {
         {isUser ? (
           <Text style={{ fontSize: 15, color: colors.onBrand, lineHeight: 22 }}>{content}</Text>
         ) : (
-          <Markdown style={markdownStyles}>{content}</Markdown>
+          <Markdown style={markdownStyles} rules={rules}>{formattedContent}</Markdown>
         )}
       </View>
       {createdAt && (

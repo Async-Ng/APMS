@@ -3,6 +3,7 @@
 import {
   Download,
   FileText,
+  FolderInput,
   Globe,
   MoreVertical,
   Presentation,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -22,8 +24,9 @@ import {
   PUBLISH_TO_LIBRARY_CONFIRM_DESCRIPTION,
   PUBLISH_TO_LIBRARY_CONFIRM_TITLE,
 } from "@/lib/document-visibility";
+import { getUserErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/format";
-import type { DriveDocument } from "@/lib/queries/drive";
+import { driveKey, type DriveDocument } from "@/lib/queries/drive";
 import {
   useDeleteDocument,
   useDocumentDownloadUrl,
@@ -31,6 +34,7 @@ import {
   useUpdateDocument,
 } from "@/lib/queries/documents";
 import { formatSharedAt } from "@/lib/queries/shares";
+import { FolderPickerModal } from "./FolderPickerModal";
 
 function FileIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.includes("pdf"))
@@ -70,17 +74,32 @@ export function DocumentCard({
   const isShared = variant === "shared";
   const [menuOpen, setMenuOpen] = useState(false);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [movePickerOpen, setMovePickerOpen] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [triggerDownload, setTriggerDownload] = useState(false);
   const starPulse = useStarPulse(doc.isStarred);
+  const qc = useQueryClient();
 
   const { mutate: toggleStar } = useToggleDocumentStar(parentId);
   const { mutate: deleteDoc } = useDeleteDocument(doc.id, parentId);
-  const { mutate: updateDoc, isPending: isUpdatingVisibility } = useUpdateDocument(
-    doc.id,
-    parentId,
-  );
+  const {
+    mutate: updateDoc,
+    mutateAsync: updateDocAsync,
+    isPending: isUpdatingVisibility,
+  } = useUpdateDocument(doc.id, parentId);
   const { data: downloadData } = useDocumentDownloadUrl(doc.id, triggerDownload);
+
+  async function moveDocument(targetFolderId: string | null) {
+    setMoveError(null);
+    try {
+      await updateDocAsync({ folderId: targetFolderId });
+      void qc.invalidateQueries({ queryKey: driveKey(targetFolderId ?? undefined) });
+      setMovePickerOpen(false);
+    } catch (err) {
+      setMoveError(getUserErrorMessage(err));
+    }
+  }
 
   const canManageLibrary = doc.status === "ready" && !!doc.courseSlotId;
 
@@ -165,6 +184,11 @@ export function DocumentCard({
           label: "Chỉnh sửa",
           icon: <span className="text-base leading-none">✏️</span>,
           onClick: () => onRename(doc),
+        },
+        {
+          label: "Di chuyển đến...",
+          icon: <FolderInput className="h-4 w-4" />,
+          onClick: () => setMovePickerOpen(true),
         },
         {
           label: "Chuyển vào thùng rác",
@@ -261,7 +285,7 @@ export function DocumentCard({
 
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1">
-          <StatusBadge status={doc.status} />
+          <StatusBadge status={doc.status} createdAt={doc.createdAt} />
           {doc.visibility === "public" && (
             <span
               className="inline-flex items-center gap-0.5 rounded-md border-2 border-brutal-ink bg-brutal-bg px-1.5 py-0.5 text-xs font-bold"
@@ -290,6 +314,17 @@ export function DocumentCard({
         onConfirm={confirmPublishToLibrary}
         onClose={() => setPublishConfirmOpen(false)}
       />
+
+      {movePickerOpen && (
+        <FolderPickerModal
+          title={`Di chuyển "${doc.title}"`}
+          initialFolderId={doc.folderId}
+          isPending={isUpdatingVisibility}
+          submitError={moveError}
+          onConfirm={(folderId) => void moveDocument(folderId)}
+          onClose={() => setMovePickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

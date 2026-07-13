@@ -5,7 +5,12 @@ export interface RetrievedChunk {
   content: string;
   queryText: string;
   pageNumber: number | null;
+  /** Display/sort score: vectorScore when available, else a normalized lexicalScore. */
   score: number;
+  /** Raw cosine-like score (~0-1) from $vectorSearch, if this chunk matched the vector pool. */
+  vectorScore?: number;
+  /** Raw additive lexical boost score (unbounded), if this chunk matched the lexical pool. */
+  lexicalScore?: number;
   sectionPath: string[];
   displayHeading: string | null;
   blockType: string;

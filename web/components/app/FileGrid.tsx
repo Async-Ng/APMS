@@ -7,13 +7,13 @@ interface FileGridProps {
 
 /**
  * Responsive grid container for FolderCard + DocumentCard items.
- * 2 cols on mobile → 3 on sm → 4 on lg → 5 on xl
+ * Auto-fill keeps card width sensible on wide viewports.
  */
 export function FileGrid({ children, className }: FileGridProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+        "grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3",
         className,
       )}
     >

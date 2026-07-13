@@ -7,41 +7,54 @@ skinparam activity {
   BorderColor #333333
 }
 
-|#E8F4FD|Sinh viên|
+|#E8F4FD|Student|
 start
-:Đăng nhập bằng tài khoản Google;
+:Authenticate with Google account;
 
-|#E8FDE8|Hệ thống APMS|
-:Kiểm tra email được phép vào hệ thống;
-if (Email được phép?) then (không)
-  :Thông báo: không có quyền truy cập;
+|#E8FDE8|APMS System|
+:Verify allowed email\n(fpt.edu.vn / fe.edu.vn domains or approved exception);
+if (Email allowed?) then (no)
+  :Reject access with authorization message;
   stop
-else (có)
-  :Tạo hoặc đồng bộ tài khoản;
+else (yes)
+  :Create or synchronize user account;
+  :Return account with academic profile status;
 endif
 
-|Sinh viên|
-:Vào Drive của tôi;
+|Student|
+:Enter the application;
 
-|Hệ thống APMS|
-if (Hồ sơ học thuật đã hoàn thành?) then (có)
-  #PaleGreen:Trạng thái Đã hoàn thành;
+|APMS System|
+if (Academic profile completed?) then (yes)
+  :Show profile status **Completed**; <<#PaleGreen>>
   stop
-else (chưa)
-  :Cung cấp danh mục CTĐT/Curriculum\nđang hoạt động;
+else (no)
+  :Prompt to set up academic profile\nand provide active Curriculum options;
 endif
 
-|Sinh viên|
-:Chọn CTĐT/Curriculum;
-:Nhấn **Lưu hồ sơ**;
+|Student|
+if (Set up academic profile now?) then (no)
+  :Skip for now;
+  note right
+    Profile stays **Incomplete**.
+    App is still usable, but upload and
+    library suggestions require a profile.
+  end note
+  stop
+else (yes)
+  :Select Curriculum;
+  :Submit academic profile update;
+endif
 
-|Hệ thống APMS|
-if (Curriculum đang hoạt động?) then (không)
-  :Thông báo lỗi — yêu cầu chọn CTĐT hợp lệ;
+|APMS System|
+if (Curriculum is active?) then (no)
+  :Reject update and require a valid Curriculum;
+  |Student|
+  :Return to Curriculum selection;
   detach
-else (có)
-  :Lưu hồ sơ học thuật;
-  #PaleGreen:Trạng thái **Đã hoàn thành**;
+else (yes)
+  :Save academic profile\n(clear any legacy semester/subject data);
+  :Set profile status to **Completed**; <<#PaleGreen>>
   stop
 endif
 

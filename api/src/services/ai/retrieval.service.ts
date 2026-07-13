@@ -62,6 +62,16 @@ function lexicalBoost(
   return score;
 }
 
+/**
+ * Lexical boost scores are an unbounded additive scale (section +3, page +1.5,
+ * formula token +1.25, term +0.5 each) — not comparable to the ~0-1 cosine-like
+ * vectorSearch score. Saturate into 0-1 so a lexical-only chunk's display/sort
+ * `score` doesn't outrank genuinely stronger vector matches.
+ */
+function normalizeLexicalScore(raw: number): number {
+  return raw / (raw + 3);
+}
+
 export interface RetrievalDebugEntry {
   source: "vector" | "lexical";
   documentId: string;
@@ -115,7 +125,8 @@ export async function findLexicalChunks(
         content: doc.content,
         queryText: String(doc.queryText ?? "").toLowerCase(),
         pageNumber: (doc.pageNumber as number | null) ?? null,
-        score: baseScore,
+        score: normalizeLexicalScore(baseScore),
+        lexicalScore: baseScore,
         sectionPath: (doc.sectionPath as string[] | undefined) ?? [],
         displayHeading: (doc.displayHeading as string | null | undefined) ?? null,
         blockType: String(doc.blockType ?? "paragraph"),
@@ -151,9 +162,14 @@ export function mergeRetrievedChunks(
       continue;
     }
 
+    const mergedLexicalScore = chunk.lexicalScore ?? existing.lexicalScore;
+
     merged.set(key, {
       ...existing,
-      score: Math.max(existing.score, chunk.score),
+      // Keep the vector-side score as the display/sort score — do not let an
+      // unbounded lexical boost score inflate it (see normalizeLexicalScore).
+      score: existing.vectorScore ?? existing.score,
+      ...(mergedLexicalScore !== undefined ? { lexicalScore: mergedLexicalScore } : {}),
       queryText: existing.queryText || chunk.queryText,
       sectionPath: existing.sectionPath.length > 0 ? existing.sectionPath : chunk.sectionPath,
       displayHeading: existing.displayHeading ?? chunk.displayHeading,

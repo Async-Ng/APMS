@@ -3,10 +3,9 @@
 import { FileText, Presentation } from "lucide-react";
 import Link from "next/link";
 
-import { MatchTypeBadge, isSuggestedDocument } from "@/components/app/library/MatchTypeBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
-import type { PublicDocument, PublicLibrarySource } from "@/lib/queries/public-documents";
+import type { PublicDocument } from "@/lib/queries/public-documents";
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
@@ -40,13 +39,11 @@ export function publicDocumentHref(id: string) {
 
 interface PublicDocumentCardProps {
   doc: PublicDocument;
-  source: PublicLibrarySource;
   variant?: "feed" | "browse";
 }
 
 export function PublicDocumentCard({
   doc,
-  source,
   variant = "feed",
 }: PublicDocumentCardProps) {
   const course = doc.courseSlot;
@@ -79,9 +76,6 @@ export function PublicDocumentCard({
 
       {course && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {source === "suggested" && isSuggestedDocument(doc) && (
-            <MatchTypeBadge matchType={doc.matchType} />
-          )}
           {course.curriculum && (
             <span className="rounded-md border border-brutal-ink bg-brutal-bg px-2 py-0.5 text-xs font-bold">
               {course.curriculum.code}

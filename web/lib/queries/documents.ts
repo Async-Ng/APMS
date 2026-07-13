@@ -44,6 +44,10 @@ export function useDocument(documentId: string) {
       return res.data.data;
     },
     enabled: !!documentId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "pending" || status === "processing" ? 4000 : false;
+    },
   });
 }
 

@@ -1,49 +1,55 @@
-@startuml APMS_Activity2_Drive
+@startuml APMS_Activity2_LearningDocumentManagement
 skinparam swimlane {
   WrapTitle false
 }
-
-|#E8F4FD|Sinh viên|
-start
-:Vào **Drive của tôi**;
-
-|#E8FDE8|Hệ thống APMS|
-:Hiển thị tài liệu theo các môn/course slots\nthuộc CTĐT trong hồ sơ;
-if (Tải tài liệu mới?) then (có)
-  |Sinh viên|
-  :Chọn tệp và chọn môn cụ thể;
-  |Hệ thống APMS|
-  :Kiểm tra định dạng PDF/DOCX/PPTX,\n≤ 50 MB, còn quota,\nmôn thuộc CTĐT trong hồ sơ;
-  if (Hợp lệ?) then (không)
-    :Thông báo lý do — từ chối;
-    detach
-  else (có)
-    :Lưu tệp — mặc định **Riêng tư**;
-    :Xử lý nền: đọc nội dung tài liệu;
-    repeat
-      :Tiếp tục xử lý;
-    repeat while (Tài liệu sẵn sàng?) is (chưa)
-    ->có;
-    :Hiển thị trong Drive — nhóm theo môn học;
-  endif
-else (không)
-  :Hiển thị danh sách tài liệu hiện có;
-endif
-
-|Sinh viên|
-partition "Thao tác tuỳ chọn (lặp)" {
-  :Sắp xếp: thư mục, đổi tên, thẻ, gắn sao;
-  :Chia sẻ chỉ đọc — bạn học hoặc email\n(lời mời hết hạn 7 ngày);
-  :Đặt **Riêng tư** hoặc **Công khai**\n(công khai phải đã gắn môn);
-  :Chuyển Thùng rác / khôi phục / xóa vĩnh viễn;
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #333333
 }
 
-|Hệ thống APMS|
-:Cấp quyền xem chỉ đọc / gửi lời mời;
-:Áp dụng chế độ Riêng tư hoặc Công khai;
-:Tự xóa vĩnh viễn sau **30 ngày** trong thùng rác;
+|#E8F4FD|Student|
+start
+:Access personal document collection (My Drive);
 
-|Sinh viên|
+|#E8FDE8|APMS System|
+if (Academic profile completed?) then (yes)
+  :List documents grouped by course slots\nof the academic profile Curriculum;
+else (no)
+  :Show flat document list\nand prompt to set up Curriculum;
+endif
+
+|Student|
+:Request upload (file + required course);
+
+|APMS System|
+if (Profile complete and request valid?) then (no)
+  :Reject with reason\n(profile required / format /\n50 MB / quota / course not in Curriculum);
+  detach
+else (yes)
+  :Create **private** document;
+  :Process in background\n(pending -> ready / failed);
+  :Group document under its course;
+endif
+
+|Student|
+partition "Optional document operations (repeatable)" {
+  :Organize: folder, title, tags, star state;
+  :Share read-only with users or email recipients\n(max 50 per request; email invites expire after 7 days);
+  :Set **private** or **public** visibility\n(public requires an assigned course);
+  :Move to trash / restore / permanently delete;
+}
+
+|APMS System|
+:Apply requested change;
+if (Restore under trashed parent?) then (yes)
+  :Reject: restore parent first;
+else (no)
+  :Grant read-only / send invite;
+  :Apply visibility; refund quota on delete;
+endif
+:Auto-purge after **30 days** in trash;
+
+|Student|
 stop
 
 @enduml

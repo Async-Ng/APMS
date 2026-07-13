@@ -12,6 +12,7 @@ export interface DriveSubjectListEntry {
   courseSlotId: string;
   label: string;
   documentCount?: number;
+  semesterLabel?: string;
 }
 
 interface DriveListViewProps {
@@ -52,6 +53,7 @@ export function DriveListView({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-brutal-ink">{subject.label}</p>
               <p className="text-xs text-brutal-muted">
+                {subject.semesterLabel ? `${subject.semesterLabel} · ` : ""}
                 Môn học
                 {subject.documentCount != null && subject.documentCount > 0
                   ? ` · ${subject.documentCount} tệp`
@@ -93,7 +95,7 @@ export function DriveListView({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-brutal-ink">{doc.title}</p>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <StatusBadge status={doc.status} />
+                <StatusBadge status={doc.status} createdAt={doc.createdAt} />
                 {doc.visibility === "public" && (
                   <span className="inline-flex items-center gap-0.5 text-xs text-brutal-muted">
                     <Globe className="h-3 w-3" />

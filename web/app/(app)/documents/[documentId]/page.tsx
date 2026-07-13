@@ -12,9 +12,8 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, use, useState } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 
 import { AskAiLink } from "@/components/app/AskAiLink";
 import { DocumentSettingsModal } from "@/components/app/DocumentSettingsModal";
@@ -27,6 +26,8 @@ import { CustomDocxViewer } from "@/components/app/CustomDocxViewer";
 import { CustomOfficeViewer } from "@/components/app/CustomOfficeViewer";
 import { CustomPdfViewer } from "@/components/app/CustomPdfViewer";
 import { cn } from "@/lib/cn";
+import { buildDocumentBreadcrumbs } from "@/lib/drive/document-breadcrumbs";
+import { findSlotInCatalog } from "@/lib/drive/semester-view";
 import {
   canPreviewInBrowser,
   isDocxMime,
@@ -40,6 +41,8 @@ import {
   useToggleDocumentStar,
 } from "@/lib/queries/documents";
 import { useDocument } from "@/lib/queries/documents";
+import { useAcademicProfile, useCatalogCourseSlots } from "@/lib/queries/catalog";
+import { useFolderPath } from "@/lib/queries/drive";
 import { useAuthStore } from "@/stores/auth-store";
 
 /* ── helpers ────────────────────────────────────────────────── */
@@ -125,6 +128,20 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
   const currentUser = useAuthStore((s) => s.user);
 
   const { data: doc, isLoading, isError } = useDocument(documentId);
+  const isShared = from === "shared";
+  const { data: folderPath, isLoading: isFolderPathLoading } = useFolderPath(
+    doc?.folderId,
+    { shared: isShared },
+  );
+  const { data: profile } = useAcademicProfile();
+  const { data: catalog } = useCatalogCourseSlots(profile?.curriculum?.id);
+  const courseSlot = useMemo(
+    () =>
+      doc?.courseSlotId
+        ? findSlotInCatalog(catalog, doc.courseSlotId)
+        : undefined,
+    [catalog, doc?.courseSlotId],
+  );
   const [fetchUrl, setFetchUrl] = useState(false);
   const { data: withUrl } = useDocumentDownloadUrl(documentId, fetchUrl);
 
@@ -189,13 +206,6 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
     }
   }
 
-  const backRoot =
-    from === "public"
-      ? { label: "Thư viện công khai", href: "/library" }
-      : from === "shared"
-        ? { label: "Đã chia sẻ", href: "/shared" }
-        : { label: "Drive của tôi", href: "/drive" };
-
   const backHref =
     from === "public"
       ? "/library"
@@ -205,10 +215,22 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
           ? `/drive/${doc.folderId}`
           : "/drive";
 
-  const breadcrumbs = [
-    backRoot,
-    { label: isLoading ? "…" : (doc?.title ?? "Tài liệu") },
-  ];
+  const breadcrumbs = buildDocumentBreadcrumbs({
+    from,
+    doc,
+    isLoading,
+    folderPath,
+    isFolderPathLoading,
+    courseSlot,
+  });
+
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(backHref);
+  }
 
   return (
     <>
@@ -236,13 +258,14 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
             <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
               {/* Back + title row */}
               <div className="flex items-center gap-3">
-                <Link
-                  href={backHref}
+                <button
+                  type="button"
+                  onClick={handleBack}
                   className="focus-brutal flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-surface shadow-brutal-sm transition-all hover:-translate-y-0.5 hover:shadow-brutal active:translate-y-0.5 active:shadow-[0_0_0_#1A1A1A]"
                   aria-label="Quay lại"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                </Link>
+                </button>
                 <h1 className="font-heading text-xl font-extrabold leading-tight text-brutal-ink truncate">
                   {doc.title}
                 </h1>
@@ -282,7 +305,7 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
                 <div className="flex justify-between gap-2">
                   <dt className="text-brutal-muted">Trạng thái</dt>
                   <dd>
-                    <StatusBadge status={doc.status} />
+                    <StatusBadge status={doc.status} createdAt={doc.createdAt} />
                   </dd>
                 </div>
                 {doc.visibility && (

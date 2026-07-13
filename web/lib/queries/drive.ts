@@ -1,5 +1,6 @@
 ﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { BreadcrumbItem } from "@/components/ui/BreadcrumbNav";
 import { api } from "@/lib/api-client";
 import {
   evictChatSessionsForTrashedFolder,
@@ -151,11 +152,18 @@ export function driveKey(parentId?: string) {
   return ["drive", parentId ?? "root"] as const;
 }
 
+function hasProcessingDocuments(data: DriveContents | undefined): boolean {
+  return (
+    data?.documents.some((d) => d.status === "pending" || d.status === "processing") ?? false
+  );
+}
+
 /** Root or folder contents — GET /api/documents?view=my&parentId= */
 export function useDriveContents(parentId?: string) {
   return useQuery({
     queryKey: driveKey(parentId),
     queryFn: () => fetchDocuments({ view: "my", parentId: parentId ?? null }),
+    refetchInterval: (query) => (hasProcessingDocuments(query.state.data) ? 4000 : false),
   });
 }
 
@@ -181,6 +189,46 @@ export function useSharedFolderContents(parentId: string) {
     queryKey: ["drive", "shared", parentId],
     queryFn: () => fetchDocuments({ view: "shared", parentId }),
     enabled: !!parentId,
+  });
+}
+
+async function fetchFolder(folderId: string): Promise<DriveFolder> {
+  const res = await api.get<{ status: string; data: DriveFolder }>(
+    `/folders/${folderId}`,
+  );
+  return res.data.data;
+}
+
+async function fetchFolderPath(
+  folderId: string,
+  options?: { shared?: boolean },
+): Promise<BreadcrumbItem[]> {
+  const crumbs: BreadcrumbItem[] = [];
+  let currentId: string | null = folderId;
+  const sharedSuffix = options?.shared ? "?shared=1" : "";
+
+  while (currentId) {
+    const folder = await fetchFolder(currentId);
+    crumbs.unshift({
+      label: folder.name,
+      href: `/drive/${folder.id}${sharedSuffix}`,
+    });
+    currentId = folder.parentId;
+  }
+
+  return crumbs;
+}
+
+/** Ancestor folders from root to leaf for breadcrumb navigation. */
+export function useFolderPath(
+  folderId: string | null | undefined,
+  options?: { shared?: boolean },
+) {
+  return useQuery({
+    queryKey: ["folder-path", folderId, options?.shared ?? false],
+    queryFn: () => fetchFolderPath(folderId!, options),
+    enabled: !!folderId,
+    staleTime: 60_000,
   });
 }
 

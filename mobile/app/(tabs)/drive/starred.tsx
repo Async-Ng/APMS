@@ -120,6 +120,7 @@ export default function StarredScreen() {
                   mimeType={item.item.mimeType}
                   fileSizeBytes={item.item.fileSizeBytes}
                   status={item.item.status}
+                  createdAt={item.item.createdAt}
                   isStarred={item.item.isStarred}
                   onPress={() => router.push(`/documents/${item.item.id}`)}
                   onLongPress={() => setActionTarget({ kind: "document", item: item.item })}

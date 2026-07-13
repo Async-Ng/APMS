@@ -278,6 +278,7 @@ Admin academic CRUD under `/api/admin`:
 - `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters` (when listing, inactive curricula are allowed so admins can inspect archived CTĐT)
 - `GET/POST/PATCH/DELETE /api/admin/subjects`
 - `GET/POST/PATCH/DELETE /api/admin/course-slots` (body uses `curriculumId`, `semesterId`, `subjectId`)
+- `POST /api/admin/course-slots/bulk` — body `{ curriculumId, semesterId, subjectIds: string[] (1-50) }`; creates one Course slot per subject for the given curriculum + semester, skipping (without failing the request) subjects that are inactive or already have a slot. Returns `{ created: CourseSlot[], skipped: { subjectId, reason }[] }`.
 
 `PATCH /api/admin/users/:id` accepts optional `role: user | admin` (syncs Cognito group `admin` + MongoDB `users.role`). Guards: cannot demote self, cannot demote last active admin, cannot promote disabled users.
 

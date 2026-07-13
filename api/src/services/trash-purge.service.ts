@@ -141,11 +141,16 @@ export async function purgeExpiredTrash(): Promise<{ documents: number; folders:
   }
 
   const expiredFolders = await Folder.find({ deletedAt: { $lte: cutoff } });
+  let deletedFoldersCount = 0;
+
   for (const folder of expiredFolders) {
-    await revokeSharesByResource(folder.ownerId, "folder", folder._id);
+    const stillExists = await Folder.exists({ _id: folder._id });
+    if (stillExists) {
+      const descendantIds = await collectDescendantFolderIds(folder._id, folder.ownerId);
+      await permanentlyDeleteFolder(folder);
+      deletedFoldersCount += descendantIds.length;
+    }
   }
 
-  const folderResult = await Folder.deleteMany({ deletedAt: { $lte: cutoff } });
-
-  return { documents: expiredDocs.length, folders: folderResult.deletedCount };
+  return { documents: expiredDocs.length, folders: deletedFoldersCount };
 }
