@@ -151,7 +151,13 @@ export default function ChatSessionScreen() {
               const msg = item.data;
               return (
                 <View style={{ gap: 10 }}>
-                  <ChatBubble role={msg.role} content={msg.content} createdAt={msg.createdAt} />
+                  <ChatBubble
+                    role={msg.role}
+                    content={msg.content}
+                    createdAt={msg.createdAt}
+                    citations={msg.citations}
+                    onCitationPress={(docId) => router.push(`/documents/${docId}`)}
+                  />
                   {msg.role === "assistant" && msg.citations.length > 0 && (
                     <CitationStrip
                       citations={msg.citations}
