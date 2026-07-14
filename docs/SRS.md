@@ -326,7 +326,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-035 | Hệ thống phải cho phép người dùng xem danh sách tài liệu công khai. |
-| FR-036 | Hệ thống phải cho phép lọc tài liệu công khai theo ngành, học kỳ và môn học. |
+| FR-036 | Hệ thống phải cho phép lọc tài liệu công khai theo ngành, học kỳ, môn học và người đăng. |
 | FR-037 | Hệ thống phải cho phép người dùng xem chi tiết tài liệu công khai. |
 
 ### 3.7 Tìm kiếm

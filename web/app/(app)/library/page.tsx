@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Globe } from "lucide-react";
+import { Globe, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo, useState } from "react";
 
@@ -49,12 +49,26 @@ function filtersFromParams(
   };
 }
 
+export interface LibraryOwnerFilter {
+  id: string;
+  name: string;
+}
+
 function PublicLibraryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const tab = parseTab(searchParams.get("tab"));
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const ownerFilter = useMemo((): LibraryOwnerFilter | null => {
+    const id = searchParams.get("ownerId");
+    if (!id) return null;
+    return {
+      id,
+      name: searchParams.get("ownerName")?.trim() || "người dùng này",
+    };
+  }, [searchParams]);
+
   const filtersFromUrl = useMemo(
     () => filtersFromParams(searchParams, tab),
     [searchParams, tab],
@@ -67,6 +81,7 @@ function PublicLibraryContent() {
       nextTab: LibraryTabId,
       nextFilters: LibraryFilterState,
       nextPage: number,
+      nextOwner: LibraryOwnerFilter | null = ownerFilter,
     ) => {
       const params = new URLSearchParams();
       if (nextTab === "browse") params.set("tab", "browse");
@@ -78,11 +93,15 @@ function PublicLibraryContent() {
       if (nextFilters.sort !== (nextTab === "browse" ? "title" : "newest")) {
         params.set("sort", nextFilters.sort);
       }
+      if (nextOwner) {
+        params.set("ownerId", nextOwner.id);
+        if (nextOwner.name) params.set("ownerName", nextOwner.name);
+      }
       if (nextPage > 1) params.set("page", String(nextPage));
       const qs = params.toString();
       router.replace(qs ? `/library?${qs}` : "/library", { scroll: false });
     },
-    [router],
+    [router, ownerFilter],
   );
 
   const handleTabChange = (nextTab: LibraryTabId) => {
@@ -92,7 +111,8 @@ function PublicLibraryContent() {
       sort: nextTab === "browse" ? "title" : "newest",
     } as LibraryFilterState;
     setFilters(nextFilters);
-    syncUrl(nextTab, nextFilters, 1);
+    // Owner filter only applies on browse (match=all)
+    syncUrl(nextTab, nextFilters, 1, nextTab === "browse" ? ownerFilter : null);
   };
 
   const handleFiltersChange = (nextFilters: LibraryFilterState) => {
@@ -102,6 +122,19 @@ function PublicLibraryContent() {
 
   const handlePageChange = (nextPage: number) => {
     syncUrl(tab, filters, nextPage);
+  };
+
+  const handleOwnerClick = (owner: LibraryOwnerFilter) => {
+    const nextFilters = {
+      ...filters,
+      sort: "newest" as const,
+    };
+    setFilters(nextFilters);
+    syncUrl("browse", nextFilters, 1, owner);
+  };
+
+  const clearOwnerFilter = () => {
+    syncUrl(tab, filters, 1, null);
   };
 
   const suggestedQuery = usePublicDocuments({
@@ -116,6 +149,7 @@ function PublicLibraryContent() {
     page,
     limit: 20,
     ...browseFiltersToQueryParams(filters),
+    ownerId: ownerFilter?.id,
     enabled: tab === "browse",
   });
 
@@ -149,12 +183,29 @@ function PublicLibraryContent() {
           count={totalCount}
         />
 
+        {ownerFilter && tab === "browse" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-lg border-2 border-brutal-ink bg-brutal-surface px-3 py-1.5 text-sm font-bold shadow-brutal-sm">
+              Tài liệu của {ownerFilter.name}
+              <button
+                type="button"
+                onClick={clearOwnerFilter}
+                className="focus-brutal rounded p-0.5 hover:bg-brutal-bg"
+                aria-label="Xóa lọc người đăng"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {tab === "suggested" ? (
           <LibrarySuggestedPanel
             filters={filters}
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}
+            onOwnerClick={handleOwnerClick}
           />
         ) : (
           <LibraryBrowsePanel
@@ -162,6 +213,8 @@ function PublicLibraryContent() {
             onFiltersChange={handleFiltersChange}
             page={page}
             onPageChange={handlePageChange}
+            ownerId={ownerFilter?.id}
+            onOwnerClick={handleOwnerClick}
           />
         )}
       </main>
