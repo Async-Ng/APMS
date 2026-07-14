@@ -42,7 +42,6 @@ function filtersFromParams(
   tab: LibraryTabId,
 ): LibraryFilterState {
   return {
-    search: params.get("q") ?? "",
     curriculumId: tab === "browse" ? (params.get("curriculumId") ?? "") : "",
     semesterId: params.get("semester") ?? "",
     subjectId: params.get("subject") ?? "",
@@ -71,7 +70,6 @@ function PublicLibraryContent() {
     ) => {
       const params = new URLSearchParams();
       if (nextTab === "browse") params.set("tab", "browse");
-      if (nextFilters.search) params.set("q", nextFilters.search);
       if (nextTab === "browse" && nextFilters.curriculumId) {
         params.set("curriculumId", nextFilters.curriculumId);
       }
