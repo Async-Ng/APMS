@@ -23,6 +23,7 @@ export const listDocumentsQuerySchema = z.object({
   curriculumId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   semesterId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   subjectId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  ownerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   match: z.enum(["auto", "exact", "related", "all"]).default("auto"),
 });
 

@@ -78,6 +78,7 @@ export interface PublicDocumentsParams {
   curriculumId?: string;
   semesterId?: string;
   subjectId?: string;
+  ownerId?: string;
 }
 
 export function usePublicDocuments(
@@ -98,6 +99,7 @@ export function usePublicDocuments(
       if (listParams.curriculumId) query.curriculumId = listParams.curriculumId;
       if (listParams.semesterId) query.semesterId = listParams.semesterId;
       if (listParams.subjectId) query.subjectId = listParams.subjectId;
+      if (listParams.ownerId) query.ownerId = listParams.ownerId;
 
       const res = await api.get<{ status: string; data: DriveContents }>(
         "/documents",
