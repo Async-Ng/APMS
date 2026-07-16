@@ -33,6 +33,64 @@ const NUMBERED_HEADING_RE = /^(\d+(?:\.\d+)*)(?:\.)?\s+(.+)$/;
 const CHAPTER_HEADING_RE = /^(chuong|chapter)\s+(\d+)(?:[.:]?\s*(.*))?$/i;
 const PAGE_REF_RE = /\b(?:trang|page)\s+(\d+)\b/i;
 const SECTION_REF_RE = /\b(?:muc|mục|phan|phần|section|sec\.)?\s*(\d+(?:\.\d+)+)(?:\.)?\b/i;
+const LEXICAL_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "by",
+  "for",
+  "from",
+  "how",
+  "in",
+  "is",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "what",
+  "with",
+  "ai",
+  "apms",
+  "có",
+  "co",
+  "của",
+  "cua",
+  "dẫn",
+  "dan",
+  "được",
+  "duoc",
+  "gì",
+  "gi",
+  "hỏi",
+  "hoi",
+  "hướng",
+  "huong",
+  "không",
+  "khong",
+  "là",
+  "la",
+  "làm",
+  "lam",
+  "liệu",
+  "lieu",
+  "này",
+  "nay",
+  "những",
+  "nhung",
+  "theo",
+  "trả",
+  "tra",
+  "trong",
+  "tài",
+  "tai",
+  "và",
+  "va",
+  "về",
+  "ve",
+]);
 
 export interface HeadingInfo {
   sectionPath: string[];
@@ -142,7 +200,11 @@ function extractFormulaTokens(query: string): string[] {
   return unique(
     rawMatches
       .map((value) => normalizeMathQueryableText(value))
-      .filter((value) => value.length >= 2),
+      .filter(
+        (value) =>
+          value.length >= 2 &&
+          (value.includes("=") || /_[0-9a-z]+/.test(value) || /\d/.test(value)),
+      ),
   );
 }
 
@@ -154,7 +216,7 @@ function extractLexicalTerms(query: string): string[] {
     .toLowerCase()
     .split(/[^\p{L}\p{N}_.=]+/u)
     .map((term) => term.trim())
-    .filter((term) => term.length >= 2);
+    .filter((term) => term.length >= 2 && !LEXICAL_STOPWORDS.has(term));
 
   return unique([...sectionTerm, ...formulaTerms, ...plainTerms]).slice(0, 12);
 }

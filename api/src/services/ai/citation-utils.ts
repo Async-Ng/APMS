@@ -44,8 +44,8 @@ export interface BuiltCitation {
 }
 
 const CITATION_REF_RE = /\[(\d+)\]/g;
-const CITATION_GROUP_RE = /\[((?:(?:source\s*)?\d+\s*,?\s*)+)\]/gi;
-const CITATION_INDEX_RE = /(?:source\s*)?(\d+)/gi;
+const CITATION_GROUP_RE = /\[((?:(?:(?:source|s)\s*)?\d+\s*,?\s*)+)\]/gi;
+const CITATION_INDEX_RE = /(?:(?:source|s)\s*)?(\d+)/gi;
 
 function parseCitationGroup(rawGroup: string): number[] {
   const indices: number[] = [];

@@ -796,12 +796,14 @@ function evaluateEvidenceGate(
   const bestScore = best ? best.hybridScore ?? best.score : 0;
   const hasStrongSignal = chunks.some(
     (chunk) =>
-      (chunk.vectorScore ?? 0) >= MIN_CHUNK_SCORE ||
-      (chunk.lexicalScore ?? 0) >= 1.5 ||
-      (chunk.rerankScore ?? 0) >= 7,
+      (chunk.rerankScore ?? 0) >= 6 ||
+      (chunk.lexicalScore ?? 0) >= 2 ||
+      ((chunk.vectorScore ?? 0) >= MIN_CHUNK_SCORE &&
+        (chunk.hybridScore ?? chunk.score) >= 0.7 &&
+        chunk.lexicalScore !== undefined),
   );
 
-  if (!hasStrongSignal && bestScore < 0.28) {
+  if (!hasStrongSignal || bestScore < 0.45) {
     return {
       passed: false,
       reason: "weak_retrieval_signal",
