@@ -22,12 +22,15 @@ export interface Citation {
   excerpt: string;
 }
 
+export type ChatMode = "chat" | "summary" | "faq" | "study_guide";
+
 export interface ChatMessage {
   id: string;
   sessionId: string;
   role: "user" | "assistant";
   content: string;
   citations: Citation[];
+  suggestedQuestions: string[];
   createdAt: string;
 }
 
@@ -160,6 +163,7 @@ function parseSseEvents(buffer: string): {
 function streamChatMessage(
   sessionId: string,
   content: string,
+  mode: ChatMode,
   onChunk: (text: string) => void,
 ): Promise<SendMessageResult> {
   return new Promise((resolve, reject) => {
@@ -220,7 +224,7 @@ function streamChatMessage(
           reject(new Error("Network error"));
         }
       };
-      xhr.send(JSON.stringify({ content, mode: "chat" }));
+      xhr.send(JSON.stringify({ content, mode }));
     })();
   });
 }
@@ -228,9 +232,17 @@ function streamChatMessage(
 export function useSendMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
+    mutationFn: async ({
+      sessionId,
+      content,
+      mode = "chat",
+    }: {
+      sessionId: string;
+      content: string;
+      mode?: ChatMode;
+    }) => {
       let streamedContent = "";
-      return streamChatMessage(sessionId, content, (text) => {
+      return streamChatMessage(sessionId, content, mode, (text) => {
         streamedContent += text;
         const queryKey = ["chat", "session", sessionId];
         const current = queryClient.getQueryData<SessionWithMessages>(queryKey);
@@ -256,6 +268,7 @@ export function useSendMessage() {
         role: "user",
         content,
         citations: [],
+        suggestedQuestions: [],
         createdAt: new Date().toISOString(),
       };
       const streamingAssistant: ChatMessage = {
@@ -264,6 +277,7 @@ export function useSendMessage() {
         role: "assistant",
         content: "",
         citations: [],
+        suggestedQuestions: [],
         createdAt: new Date().toISOString(),
       };
 

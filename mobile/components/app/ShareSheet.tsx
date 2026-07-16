@@ -13,10 +13,13 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { colors } from "../../constants/colors";
 import { api } from "../../lib/api-client";
+import { getErrorMessage } from "../../lib/api-error";
+import { useCreateShare } from "../../hooks/useShares";
+import { useToastStore } from "../../stores/toast-store";
 import { BrutalButton } from "../ui/BrutalButton";
 
 interface UserResult {
@@ -25,6 +28,8 @@ interface UserResult {
   email: string;
   avatarUrl: string | null;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface ShareSheetProps {
   visible: boolean;
@@ -40,6 +45,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
   const opacity = useRef(new Animated.Value(0)).current;
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<UserResult[]>([]);
+  const [pendingEmails, setPendingEmails] = useState<string[]>([]);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -47,6 +53,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     if (visible) {
       setQuery("");
       setSelected([]);
+      setPendingEmails([]);
       setDebouncedQuery("");
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -78,18 +85,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     enabled: debouncedQuery.trim().length >= 2,
   });
 
-  const shareMutation = useMutation({
-    mutationFn: async () => {
-      await api.post("/shares", {
-        resourceType,
-        resourceId,
-        sharedWithUserIds: selected.map((u) => u.id),
-      });
-    },
-    onSuccess: () => {
-      onDismiss();
-    },
-  });
+  const createShare = useCreateShare();
 
   function toggleUser(user: UserResult) {
     setSelected((prev) =>
@@ -97,15 +93,55 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     );
   }
 
+  function addPendingEmail(email: string) {
+    const normalized = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(normalized) || pendingEmails.includes(normalized)) return;
+    setPendingEmails((prev) => [...prev, normalized]);
+    setQuery("");
+  }
+
+  function removePendingEmail(email: string) {
+    setPendingEmails((prev) => prev.filter((e) => e !== email));
+  }
+
+  function handleShare() {
+    createShare.mutate(
+      {
+        resourceType,
+        resourceId,
+        sharedWithUserIds: selected.map((u) => u.id),
+        emails: pendingEmails,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.skipped > 0) {
+            useToastStore.getState().show(`Đã bỏ qua ${result.skipped} người nhận không hợp lệ`);
+          }
+          onDismiss();
+        },
+        onError: (err) => {
+          useToastStore.getState().show(getErrorMessage(err, "Chia sẻ thất bại. Vui lòng thử lại."));
+        },
+      },
+    );
+  }
+
   const results = (searchQuery.data ?? []).filter((u) => !selected.find((s) => s.id === u.id));
+  const showInviteByEmail =
+    debouncedQuery.trim().length >= 3 &&
+    EMAIL_RE.test(debouncedQuery.trim()) &&
+    !searchQuery.isFetching &&
+    results.length === 0 &&
+    !pendingEmails.includes(debouncedQuery.trim().toLowerCase());
+  const totalRecipients = selected.length + pendingEmails.length;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <Pressable style={{ flex: 1 }} onPress={onDismiss}>
-          <Animated.View
-            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
-          >
+      <Pressable style={{ flex: 1 }} onPress={onDismiss}>
+        <Animated.View
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
+        >
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
             <Pressable>
               <Animated.View
                 style={{
@@ -159,7 +195,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                   {searchQuery.isFetching && <ActivityIndicator size="small" color={colors.fptBlue} />}
                 </View>
 
-                {selected.length > 0 && (
+                {(selected.length > 0 || pendingEmails.length > 0) && (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                     {selected.map((u) => (
                       <Pressable
@@ -181,7 +217,69 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                         <Ionicons name="close" size={12} color={colors.onBrand} />
                       </Pressable>
                     ))}
+                    {pendingEmails.map((email) => (
+                      <Pressable
+                        key={email}
+                        onPress={() => removePendingEmail(email)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          backgroundColor: colors.surface,
+                          borderWidth: 2,
+                          borderColor: colors.fptOrange,
+                          borderRadius: 999,
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                        }}
+                      >
+                        <Ionicons name="mail-outline" size={12} color={colors.fptOrange} />
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink }}>{email}</Text>
+                        <Ionicons name="close" size={12} color={colors.ink} />
+                      </Pressable>
+                    ))}
                   </View>
+                )}
+
+                {showInviteByEmail && (
+                  <Pressable
+                    onPress={() => addPendingEmail(debouncedQuery.trim())}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      paddingVertical: 10,
+                      paddingHorizontal: 4,
+                      backgroundColor: pressed ? "#F0F0F0" : "transparent",
+                      borderRadius: 8,
+                      minHeight: 48,
+                      marginBottom: 8,
+                    })}
+                  >
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        borderWidth: 2,
+                        borderColor: colors.ink,
+                        backgroundColor: colors.fptOrange,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons name="mail-outline" size={16} color={colors.onBrand} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "700", color: colors.ink }}>
+                        Mời qua email: {debouncedQuery.trim()}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.muted }}>
+                        Người này chưa có tài khoản — sẽ nhận email mời
+                      </Text>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={22} color={colors.fptOrange} />
+                  </Pressable>
                 )}
 
                 {results.length > 0 && (
@@ -232,19 +330,19 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                   <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
                   <BrutalButton
-                    label={`Chia sẻ (${selected.length})`}
-                    onPress={() => shareMutation.mutate()}
+                    label={`Chia sẻ (${totalRecipients})`}
+                    onPress={handleShare}
                     variant="secondary"
-                    loading={shareMutation.isPending}
-                    disabled={selected.length === 0}
+                    loading={createShare.isPending}
+                    disabled={totalRecipients === 0}
                     style={{ flex: 1 }}
                   />
                 </View>
               </Animated.View>
             </Pressable>
-          </Animated.View>
-        </Pressable>
-      </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      </Pressable>
     </Modal>
   );
 }
