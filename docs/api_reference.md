@@ -54,6 +54,7 @@ Query:
 | `curriculumId` | ObjectId | none | Public academic filter |
 | `semesterId` | ObjectId | none | Public academic filter |
 | `subjectId` | ObjectId | none | Public academic filter |
+| `ownerId` | ObjectId | none | Public filter by uploader (owner) |
 | `match` | `auto | exact | related | all` | `auto` | Public matching behavior |
 
 Response shape:

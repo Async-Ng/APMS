@@ -24,6 +24,7 @@ export interface ListDocumentsOptions {
   curriculumId?: string | undefined;
   semesterId?: string | undefined;
   subjectId?: string | undefined;
+  ownerId?: string | undefined;
   match: "auto" | "exact" | "related" | "all";
 }
 
@@ -319,6 +320,10 @@ async function listPublicDocuments(user: UserDocument, options: ListDocumentsOpt
     courseSlotId: { $ne: null },
   };
   applySearch(filter, options.search);
+
+  if (options.ownerId) {
+    filter.ownerId = parseObjectId(options.ownerId, "ownerId");
+  }
 
   if (filteredSlotIds) {
     filter.courseSlotId = { $in: filteredSlotIds };

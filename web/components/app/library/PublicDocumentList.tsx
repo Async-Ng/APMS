@@ -29,6 +29,7 @@ interface PublicDocumentListProps {
   isError?: boolean;
   onRetry?: () => void;
   emptyDescription?: string;
+  onOwnerClick?: (owner: { id: string; name: string }) => void;
 }
 
 export function PublicDocumentList({
@@ -37,6 +38,7 @@ export function PublicDocumentList({
   isError,
   onRetry,
   emptyDescription = "Thử nới bộ lọc hoặc quay lại sau.",
+  onOwnerClick,
 }: PublicDocumentListProps) {
   if (isLoading) {
     return (
@@ -130,7 +132,22 @@ export function PublicDocumentList({
                   )}
                 </td>
                 <td className="hidden px-4 py-3 sm:table-cell">
-                  {doc.owner?.displayName ?? "—"}
+                  {doc.owner && onOwnerClick ? (
+                    <button
+                      type="button"
+                      className="focus-brutal max-w-[12rem] truncate font-semibold text-brutal-ink underline-offset-2 hover:underline"
+                      onClick={() =>
+                        onOwnerClick({
+                          id: doc.owner!.id,
+                          name: doc.owner!.displayName,
+                        })
+                      }
+                    >
+                      {doc.owner.displayName}
+                    </button>
+                  ) : (
+                    (doc.owner?.displayName ?? "—")
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={doc.status} />

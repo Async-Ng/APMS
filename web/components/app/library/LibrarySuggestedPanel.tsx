@@ -24,6 +24,7 @@ interface LibrarySuggestedPanelProps {
   onFiltersChange: (filters: LibraryFilterState) => void;
   page: number;
   onPageChange: (page: number) => void;
+  onOwnerClick?: (owner: { id: string; name: string }) => void;
 }
 
 export function LibrarySuggestedPanel({
@@ -31,6 +32,7 @@ export function LibrarySuggestedPanel({
   onFiltersChange,
   page,
   onPageChange,
+  onOwnerClick,
 }: LibrarySuggestedPanelProps) {
   const [view, setView] = useState<ViewMode>("grid");
   const router = useRouter();
@@ -81,6 +83,7 @@ export function LibrarySuggestedPanel({
           isError={isError}
           onRetry={() => void refetch()}
           emptyDescription="Chưa có tài liệu phù hợp với hồ sơ học thuật của bạn."
+          onOwnerClick={onOwnerClick}
         />
       ) : (
         <PublicDocumentList
@@ -89,6 +92,7 @@ export function LibrarySuggestedPanel({
           isError={isError}
           onRetry={() => void refetch()}
           emptyDescription="Chưa có tài liệu phù hợp với hồ sơ học thuật của bạn."
+          onOwnerClick={onOwnerClick}
         />
       )}
 
