@@ -1,137 +1,122 @@
 # Khung Nội Dung Slide Báo Cáo APMS
 
-Tài liệu này mô tả nội dung cho bộ slide báo cáo ngắn gọn của dự án **APMS - Academic Personal Management System**. Bộ slide gồm đúng 6 slide, tập trung vào giới thiệu dự án, vấn đề, phạm vi, quy tắc nghiệp vụ, luồng nghiệp vụ chính và kết luận.
+Tài liệu này mô tả nội dung cho bộ slide báo cáo ngắn gọn của dự án **APMS - Academic Personal Management System**. Bộ slide gồm đúng 6 slide, tập trung vào giá trị cốt lõi của hệ thống: quản lý tài liệu học tập theo môn học, kiểm soát quyền truy cập, tìm kiếm ngữ nghĩa và RAG Chat có trích dẫn mở lại đúng nguồn.
 
-## Slide 1 - Trang bìa
+## Slide 1 - APMS: Trung Tâm Tài Liệu Học Tập Cá Nhân
 
 **Tiêu đề:** APMS - Academic Personal Management System  
-**Phụ đề:** Hệ thống quản lý tài liệu học tập cá nhân cho sinh viên
+**Phụ đề:** Quản lý tài liệu theo môn học, tìm kiếm nội dung và hỏi AI có trích dẫn nguồn.
 
 **Nội dung:**
-- Môn học / đồ án: WDP301
-- Nhóm thực hiện: [Tên nhóm]
-- Thành viên: [Danh sách thành viên]
-- Giảng viên hướng dẫn: [Tên GVHD]
-- Thời gian: [Học kỳ / năm]
+- Hệ thống hỗ trợ sinh viên lưu trữ và tổ chức tài liệu học tập.
+- Mỗi tài liệu được gắn với chương trình đào tạo và môn học cụ thể.
+- Hỗ trợ các định dạng học tập phổ biến: PDF, DOCX, PPTX.
+- AI trả lời dựa trên tài liệu người dùng được phép xem và có citation mở lại đúng nguồn.
+- Quản trị viên quản lý người dùng, quyền truy cập và danh mục học thuật.
 
-**Gợi ý hình ảnh:** biểu tượng tài liệu, thư mục, tìm kiếm hoặc AI.
+**Gợi ý hình ảnh:** logo/tên APMS kết hợp 3 biểu tượng: Document, Search, AI Citation.
 
-## Slide 2 - Vấn đề và mục tiêu
-
-**Tiêu đề:** Vấn đề và mục tiêu
+## Slide 2 - Vấn Đề Và Mục Tiêu
 
 **Vấn đề hiện tại:**
-- Tài liệu học tập bị phân tán ở nhiều nơi.
-- Khó phân loại theo chương trình đào tạo, học kỳ và môn học.
-- Khó tìm kiếm nội dung bên trong file.
-- Chia sẻ tài liệu thiếu kiểm soát quyền truy cập.
-- Sinh viên cần công cụ hỗ trợ hỏi đáp, tóm tắt và ôn tập bằng AI.
+- Tài liệu học tập nằm rải rác ở nhiều nơi.
+- Sinh viên khó phân loại tài liệu theo curriculum, học kỳ và môn học.
+- Tìm kiếm trong nội dung PDF/DOCX/PPTX mất thời gian.
+- Tài liệu chia sẻ thiếu kiểm soát quyền xem.
+- Câu trả lời AI khó tin cậy nếu không truy ngược được nguồn.
 
-**Mục tiêu của hệ thống:**
-- Gom tài liệu học tập vào một hệ thống thống nhất.
-- Mỗi tài liệu được liên kết với một môn học cụ thể trong chương trình đào tạo.
-- Hỗ trợ quản lý, chia sẻ, tìm kiếm và hỏi đáp với trợ lý AI kèm nguồn tham khảo từ tài liệu.
-- Cung cấp công cụ quản trị người dùng và danh mục học thuật.
+**Mục tiêu của APMS:**
+- Gom tài liệu học tập về một workspace thống nhất.
+- Bắt buộc gắn tài liệu với môn học để dữ liệu có cấu trúc.
+- Cho phép quản lý, chia sẻ read-only và công khai tài liệu học tập.
+- Hỗ trợ semantic search và RAG Chat có citation.
+- Khi nguồn không đủ, AI phải nói chưa đủ thông tin thay vì suy diễn.
 
-## Slide 3 - Phạm vi và người dùng
-
-**Tiêu đề:** Phạm vi và người dùng
-
-**Phạm vi chức năng:**
-- Đăng nhập bằng Google/Cognito.
-- Thiết lập hồ sơ học thuật của sinh viên.
-- Quản lý tài liệu và thư mục học tập.
-- Chia sẻ tài liệu cho người khác xem nhưng không cho chỉnh sửa.
-- Cho phép người dùng hợp lệ xem tài liệu được công khai trong hệ thống.
-- Tìm kiếm tài liệu theo ý nghĩa nội dung.
-- Hỏi đáp với trợ lý AI có nguồn tham khảo từ tài liệu.
-- Quản trị người dùng và danh mục học thuật.
-
-**Ngoài phạm vi:**
-- Không chỉnh sửa trực tiếp nội dung file.
-- Không cộng tác chỉnh sửa theo thời gian thực.
-- Không quản lý điểm hoặc tích hợp LMS/FAP.
-- Không có bình luận hoặc diễn đàn thảo luận.
+## Slide 3 - Phạm Vi Và Người Dùng
 
 **Người dùng chính:**
-- **Sinh viên:** tải lên và quản lý tài liệu học tập cá nhân, sắp xếp theo thư mục và môn học, tìm kiếm nội dung cần học, đặt câu hỏi cho trợ lý AI dựa trên tài liệu đã lưu.
-- **Quản trị viên:** quản lý danh sách người dùng, email hoặc tên miền được phép truy cập, chương trình đào tạo, học kỳ, môn học và dữ liệu nền để sinh viên sử dụng hệ thống đúng cấu trúc.
+- **Sinh viên:** đăng nhập, chọn curriculum, upload tài liệu, quản lý thư mục, chia sẻ, tìm kiếm và hỏi AI.
+- **Quản trị viên:** quản lý user, quota, access email, curriculum, semester, subject và course slot.
 
-## Slide 4 - Quy tắc nghiệp vụ chính
+**Trong phạm vi:**
+- Đăng nhập Google/Cognito với allowlist domain/email.
+- Hồ sơ học vụ theo curriculum.
+- Upload và xử lý PDF/DOCX/PPTX.
+- Drive cá nhân, shared, public, starred, trash.
+- Semantic search và Chat AI có citation.
+- Mở citation về đúng tài liệu/trang/chunk khi metadata khả dụng.
 
-**Tiêu đề:** Quy tắc nghiệp vụ chính
+**Ngoài phạm vi:**
+- Không chỉnh sửa nội dung file trực tiếp.
+- Không cộng tác realtime trên tài liệu.
+- Không quản lý điểm, LMS/FAP.
+- Không diễn đàn hoặc bình luận học tập.
 
-**Nội dung:**
-- Mỗi tài liệu tải lên phải gắn với một môn học cụ thể.
-- File hỗ trợ gồm PDF, DOCX và PPTX.
-- Mỗi file có dung lượng tối đa 50 MB.
-- Mỗi người dùng có hạn mức lưu trữ mặc định 500 MB.
-- Tài liệu có hai chế độ hiển thị: chỉ người được phép xem hoặc mọi người dùng hợp lệ trong hệ thống có thể xem.
-- Tài liệu mới tải lên mặc định chỉ chủ sở hữu xem được.
-- Người được chia sẻ chỉ được xem, không được chỉnh sửa.
-- Lời mời chia sẻ hết hạn sau 7 ngày.
-- Tài liệu trong thùng rác quá 30 ngày sẽ bị xóa vĩnh viễn.
-- Trợ lý AI giới hạn 50 lượt hỏi cho mỗi người dùng trong một ngày.
-
-**Gợi ý hình ảnh:** bảng 2 cột: Quy tắc / Giá trị.
-
-## Slide 5 - Luồng nghiệp vụ chính
-
-**Tiêu đề:** Luồng nghiệp vụ chính
+## Slide 4 - Quy Tắc Nghiệp Vụ Chính
 
 **Nội dung:**
-- **Luồng 1:** Đăng nhập và thiết lập hồ sơ học thuật.
-- **Luồng 2:** Quản lý tài liệu học tập.
-- **Luồng 3:** Tìm kiếm tri thức và học với trợ lý AI.
+- Đăng nhập chỉ cho email thuộc domain được phép hoặc access email ngoại lệ.
+- Sinh viên phải chọn curriculum hợp lệ trước khi dùng đầy đủ hệ thống.
+- Mỗi tài liệu upload phải gắn với course slot thuộc curriculum của sinh viên.
+- File hỗ trợ PDF/DOCX/PPTX, tối đa 50 MB/file; quota mặc định 500 MB/user.
+- Tài liệu mặc định private; owner có thể share read-only, đặt public, hoặc chuyển vào trash.
+- Chat AI giới hạn 50 lượt/user/ngày và chỉ trả lời theo nguồn được phép đọc; citation phải mở được hoặc bị loại.
 
-**Ghi chú thuyết trình:**
-- Luồng 1 mô tả cách sinh viên đăng nhập và hoàn tất hồ sơ học thuật.
-- Luồng 2 mô tả cách sinh viên tải lên, sắp xếp, chia sẻ và xử lý tài liệu trong thùng rác.
-- Luồng 3 mô tả cách sinh viên tìm tài liệu theo nội dung, xem tài liệu được công khai và đặt câu hỏi cho trợ lý AI.
+**Gợi ý hình ảnh:** bảng 2 cột `Quy tắc` / `Giá trị`.
 
-**Gợi ý hình ảnh:** chèn 3 flowchart draw.io riêng biệt, mỗi hình tương ứng một main flow.
+## Slide 5 - 3 Luồng Nghiệp Vụ Chính
 
-**Nguồn sơ đồ:**
-- `docs/diagrams/apms-main-flow-1-access-profile-flowchart.png`
-- `docs/diagrams/apms-main-flow-2-document-lifecycle-flowchart.png`
-- `docs/diagrams/apms-main-flow-3-search-rag-citation-flowchart.png`
+**Nội dung:**
+- **Flow 1 - Truy cập hệ thống & hồ sơ học vụ:** Google Login -> kiểm tra quyền truy cập -> sync user -> chọn curriculum -> vào Drive.
+- **Flow 2 - Vòng đời tài liệu học tập:** Upload file -> validate course/quota/type -> S3 + metadata -> extract/chunk/embed -> ready trong Drive -> share/public/trash.
+- **Flow 3 - Search & RAG Chat có citation:** User hỏi/tìm kiếm -> kiểm tra quyền đọc -> retrieval/rerank/evidence gate -> Gemini trả lời có citation -> click mở đúng nguồn.
+
+**Hình chèn vào slide:**
+- `docs/diagrams/apms-main-flow-1-access-profile-activity.png`
+- `docs/diagrams/apms-main-flow-2-document-lifecycle-activity.png`
+- `docs/diagrams/apms-main-flow-3-search-rag-citation-activity.png`
 
 **File nguồn có thể chỉnh sửa bằng draw.io:**
-- `docs/diagrams/apms-main-flow-1-access-profile-flowchart.drawio`
-- `docs/diagrams/apms-main-flow-2-document-lifecycle-flowchart.drawio`
-- `docs/diagrams/apms-main-flow-3-search-rag-citation-flowchart.drawio`
+- `docs/diagrams/apms-main-flow-1-access-profile-activity.drawio`
+- `docs/diagrams/apms-main-flow-2-document-lifecycle-activity.drawio`
+- `docs/diagrams/apms-main-flow-3-search-rag-citation-activity.drawio`
 
-## Slide 6 - Kết luận và hướng phát triển
+**Ghi chú thuyết trình:**
+- Nhấn mạnh mỗi UML Activity Diagram có swimlane để thấy rõ đâu là thao tác người dùng, đâu là xử lý APMS, đâu là external service/database.
+- Nếu slide quá chật, tách Slide 5 thành 3 biến thể phụ khi trình bày demo, nhưng outline chính vẫn giữ 6 slide.
+- Nếu hội đồng hỏi về kiến trúc hệ thống, dùng thêm C4 C2 Container Diagram: `docs/diagrams/apms-c2-container.png`.
 
-**Tiêu đề:** Kết luận và hướng phát triển
+## Slide 6 - Kết Luận Và Hướng Phát Triển
 
 **Kết luận:**
-- APMS giúp sinh viên quản lý tài liệu học tập có cấu trúc.
-- Hệ thống kết hợp quản lý tài liệu, chia sẻ tài liệu, danh mục học thuật, tìm kiếm theo ý nghĩa nội dung và trợ lý AI.
-- Cơ chế phân quyền giúp bảo vệ tài liệu riêng tư của sinh viên.
-- Trợ lý AI có nguồn tham khảo hỗ trợ sinh viên học tập và ôn tập hiệu quả hơn.
+- APMS giúp tài liệu học tập được quản lý có cấu trúc theo curriculum và môn học.
+- Hệ thống gom quản lý tài liệu, chia sẻ, public discovery, search và AI vào một trải nghiệm thống nhất.
+- Phân quyền private/share/public giúp bảo vệ tài liệu cá nhân.
+- Citation deep link giúp câu trả lời AI có thể kiểm chứng lại từ nguồn.
+- Evidence gate giảm rủi ro AI trả lời không có căn cứ.
 
 **Hướng phát triển:**
-- Cải thiện chất lượng xử lý tài liệu.
-- Tối ưu tốc độ tìm kiếm, hỏi đáp và chi phí AI.
-- Bổ sung kiểm thử tự động.
-- Hoàn thiện trải nghiệm trên thiết bị di động.
-- Nâng cấp trang quản trị.
-- Thêm thống kê và phân tích về tài liệu, lượt tìm kiếm và mức sử dụng AI.
+- Hoàn thiện kiểm thử tự động cho API, web và RAG quality.
+- Cải thiện highlight chính xác trong PDF/DOCX và trải nghiệm PPTX.
+- Bổ sung dashboard thống kê tài liệu, tìm kiếm và mức sử dụng AI.
+- Tối ưu chi phí/tốc độ xử lý embedding và chat.
+- Hoàn thiện mobile và trang quản trị.
 
 ## Hướng Dẫn Thiết Kế Cho Agent
 
 - Dựng đúng 6 slide.
-- Không thêm lại các slide đã bỏ: System Architecture, Unified Document API, AI/RAG Pipeline, Demo/Testing/Results.
 - Mỗi slide chỉ nên có 4-6 ý chính, tránh quá nhiều chữ.
-- Slide 5 nên dùng các flowchart draw.io mới để giảm chữ.
-- Không dùng tên field, enum, API route hoặc từ viết kiểu code trên slide.
+- Slide 5 dùng 3 UML Activity Diagram vẽ bằng draw.io để giảm chữ.
+- Sơ đồ kiến trúc bổ sung dùng C4 C2 Container Diagram, không trộn lẫn với 3 flow nghiệp vụ.
+- Không dùng metric giả, testimonial giả hoặc mô tả các tính năng chưa có.
+- Không mô tả Drive/Library/Forum như ba sản phẩm tách rời.
+- Không dùng tên field, enum, API route hoặc từ viết kiểu code trên slide, trừ ghi chú nguồn cho agent.
 - Có thể giữ tên công nghệ phổ biến khi cần, ví dụ Google/Cognito, PDF, DOCX, PPTX, AI.
 - Ưu tiên câu ngắn, dễ thuyết trình; mỗi bullet nên là một ý nghiệp vụ rõ ràng.
 - Phong cách: chuyên nghiệp, rõ ràng, phù hợp báo cáo đồ án.
 
-## Giả định
+## Giả Định
 
-- "Slice" được hiểu là "slide".
-- Các slide bị bỏ là slide 6, 7, 8, 9 trong bản 10-slide trước đó.
-- Slide 10 cũ được giữ lại và đánh số lại thành Slide 6.
+- Tài liệu này là outline nội dung, chưa phải file PowerPoint hoàn chỉnh.
+- Bộ slide chính giữ đúng 6 slide; nếu cần thuyết trình chi tiết hơn, Slide 5 có thể tách phụ thành 3 slide flow khi demo.
+- Các sơ đồ chính nằm trong `docs/diagrams` và được chỉnh sửa bằng draw.io.

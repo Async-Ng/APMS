@@ -8,9 +8,9 @@ import { scrollToSection } from "@/lib/scroll-to-section";
 
 const navLinks = [
   { label: "Tổng quan", sectionId: "overview" },
-  { label: "Luồng", sectionId: "workflow" },
+  { label: "Cách dùng", sectionId: "workflow" },
   { label: "Tính năng", sectionId: "features" },
-  { label: "Quy tắc", sectionId: "rules" },
+  { label: "Quyền riêng tư", sectionId: "rules" },
 ] as const;
 
 function FptStripe() {

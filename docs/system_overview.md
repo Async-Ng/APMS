@@ -11,13 +11,21 @@ Business rules: xem `docs/SRS.md` (FR/BR/NFR). APMS là hệ thống quản lý 
 
 ## Main Flow Diagrams
 
-Ba luồng nghiệp vụ chính được vẽ bằng draw.io flowchart có swimlane trong `docs/diagrams`:
+Ba luồng nghiệp vụ chính được vẽ bằng UML Activity Diagram có swimlane trong `docs/diagrams`:
 
 | Flow | PNG dùng cho báo cáo | Source chỉnh sửa |
 | --- | --- | --- |
-| Truy cập hệ thống & hồ sơ học vụ | `apms-main-flow-1-access-profile-flowchart.png` | `apms-main-flow-1-access-profile-flowchart.drawio` |
-| Vòng đời tài liệu học tập | `apms-main-flow-2-document-lifecycle-flowchart.png` | `apms-main-flow-2-document-lifecycle-flowchart.drawio` |
-| Search & RAG Chat có citation | `apms-main-flow-3-search-rag-citation-flowchart.png` | `apms-main-flow-3-search-rag-citation-flowchart.drawio` |
+| Truy cập hệ thống & hồ sơ học vụ | `apms-main-flow-1-access-profile-activity.png` | `apms-main-flow-1-access-profile-activity.drawio` |
+| Vòng đời tài liệu học tập | `apms-main-flow-2-document-lifecycle-activity.png` | `apms-main-flow-2-document-lifecycle-activity.drawio` |
+| Search & RAG Chat có citation | `apms-main-flow-3-search-rag-citation-activity.png` | `apms-main-flow-3-search-rag-citation-activity.drawio` |
+
+## C4 Model - C2 Container Diagram
+
+Sơ đồ C2 theo C4 Model mô tả các container chính của APMS và hệ thống ngoài mà chúng giao tiếp. Sơ đồ này dùng để trình bày kiến trúc ở mức container, không thay thế các main flow nghiệp vụ.
+
+| Diagram | PNG dùng cho báo cáo | Source chỉnh sửa |
+| --- | --- | --- |
+| APMS C2 Container Diagram | `apms-c2-container.png` | `apms-c2-container.drawio` |
 
 ## Các Khối Chính
 
