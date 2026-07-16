@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Layers, Plus } from "lucide-react";
+import { Layers, Plus, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { AdminClientPagination } from "@/components/app/admin/AdminClientPagination";
@@ -11,11 +11,12 @@ import {
   AdminTableShell,
   AdminTableSkeleton,
 } from "@/components/app/admin/AdminTableShell";
+import { SubjectSearchSelect } from "@/components/app/admin/SubjectSearchSelect";
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { getUserErrorMessage } from "@/lib/errors";
-import { filterBySearchFn, paginateItems } from "@/lib/admin/client-table";
+import { filterBySearch, filterBySearchFn, paginateItems } from "@/lib/admin/client-table";
 import {
   useAdminCourseSlots,
   useAdminCurriculumSemesters,
@@ -92,6 +93,7 @@ export function CourseSlotsPanel({
   const [bulkCurriculumId, setBulkCurriculumId] = useState("");
   const [bulkSemesterId, setBulkSemesterId] = useState("");
   const [bulkSubjectIds, setBulkSubjectIds] = useState<string[]>([]);
+  const [bulkSubjectSearch, setBulkSubjectSearch] = useState("");
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkResult, setBulkResult] = useState<BulkCreateCourseSlotsResult | null>(null);
 
@@ -171,7 +173,7 @@ export function CourseSlotsPanel({
     setEditing(null);
     setForm({
       curriculumId: defaultCurriculum,
-      subjectId: activeSubjects[0]?.id ?? "",
+      subjectId: "",
       semesterId: "",
     });
     setFieldErrors({});
@@ -238,10 +240,16 @@ export function CourseSlotsPanel({
     setBulkCurriculumId(lockedCurriculumId ?? activeCurricula[0]?.id ?? "");
     setBulkSemesterId("");
     setBulkSubjectIds([]);
+    setBulkSubjectSearch("");
     setBulkError(null);
     setBulkResult(null);
     setBulkOpen(true);
   }
+
+  const filteredBulkSubjects = useMemo(
+    () => filterBySearch(activeSubjects, bulkSubjectSearch, ["code", "name"]),
+    [activeSubjects, bulkSubjectSearch],
+  );
 
   function toggleBulkSubject(subjectId: string) {
     setBulkSubjectIds((prev) =>
@@ -581,24 +589,21 @@ export function CourseSlotsPanel({
           )}
           <FieldError message={fieldErrors.semesterId} />
         </label>
-        <label className="block text-sm font-bold">
-          Môn học
-          <select
-            value={form.subjectId}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, subjectId: e.target.value }));
-              setFieldErrors((fe) => ({ ...fe, subjectId: "" }));
-            }}
-            className="focus-brutal mt-1 w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface px-3 py-2 text-sm"
-          >
-            {activeSubjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
-              </option>
-            ))}
-          </select>
+        <div className="block text-sm font-bold">
+          <span id="course-slot-subject-label">Môn học</span>
+          <div className="mt-1">
+            <SubjectSearchSelect
+              id="course-slot-subject-search"
+              subjects={activeSubjects}
+              value={form.subjectId}
+              onChange={(subjectId) => {
+                setForm((f) => ({ ...f, subjectId }));
+                setFieldErrors((fe) => ({ ...fe, subjectId: "" }));
+              }}
+            />
+          </div>
           <FieldError message={fieldErrors.subjectId} />
-        </label>
+        </div>
       </AdminFormModal>
 
       <AdminFormModal
@@ -681,24 +686,50 @@ export function CourseSlotsPanel({
           </select>
         </label>
         <div>
-          <p className="text-sm font-bold">Môn học (tối đa 50)</p>
-          <div className="mt-1 max-h-64 space-y-1 overflow-y-auto rounded-xl border-2 border-brutal-ink bg-brutal-surface p-2">
-            {activeSubjects.map((s) => (
-              <label
-                key={s.id}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-brutal-bg"
-              >
-                <input
-                  type="checkbox"
-                  checked={bulkSubjectIds.includes(s.id)}
-                  onChange={() => toggleBulkSubject(s.id)}
-                  disabled={!bulkSubjectIds.includes(s.id) && bulkSubjectIds.length >= 50}
-                  className="h-4 w-4 rounded border-2 border-brutal-ink"
-                />
-                <span className="font-mono text-xs font-bold">{s.code}</span>
-                <span>{s.name}</span>
-              </label>
-            ))}
+          <p className="text-sm font-bold">
+            Môn học (tối đa 50)
+            {bulkSubjectIds.length > 0 && (
+              <span className="ml-1 font-medium text-brutal-muted">
+                — đã chọn {bulkSubjectIds.length}
+              </span>
+            )}
+          </p>
+          <div className="relative mt-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brutal-muted"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={bulkSubjectSearch}
+              onChange={(e) => setBulkSubjectSearch(e.target.value)}
+              placeholder="Tìm mã hoặc tên môn…"
+              className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-surface py-2.5 pl-9 pr-3 text-sm outline-none"
+              aria-label="Tìm môn học trong danh sách hàng loạt"
+              autoComplete="off"
+            />
+          </div>
+          <div className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border-2 border-brutal-ink bg-brutal-surface p-2">
+            {filteredBulkSubjects.length === 0 ? (
+              <p className="px-2 py-3 text-sm text-brutal-muted">Không tìm thấy môn.</p>
+            ) : (
+              filteredBulkSubjects.map((s) => (
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-brutal-bg"
+                >
+                  <input
+                    type="checkbox"
+                    checked={bulkSubjectIds.includes(s.id)}
+                    onChange={() => toggleBulkSubject(s.id)}
+                    disabled={!bulkSubjectIds.includes(s.id) && bulkSubjectIds.length >= 50}
+                    className="h-4 w-4 rounded border-2 border-brutal-ink"
+                  />
+                  <span className="font-mono text-xs font-bold">{s.code}</span>
+                  <span className="min-w-0 truncate">{s.name}</span>
+                </label>
+              ))
+            )}
           </div>
         </div>
       </AdminFormModal>
