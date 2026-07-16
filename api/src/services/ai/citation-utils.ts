@@ -29,13 +29,17 @@ export interface BuiltCitation {
   sourceIndex: number;
   documentId: Types.ObjectId;
   documentTitle: string;
+  chunkIndex: number | null;
   pageNumber: number | null;
   sectionPath: string[];
   heading: string | null;
+  blockType: string;
+  extractionMode: string;
+  extractionConfidence: string;
   excerpt: string;
 }
 
-const CITATION_REF_RE = /\[(\d+)\]/g;
+const CITATION_REF_RE = /\[(?:source\s*)?(\d+)\]/gi;
 
 /** Extract unique source indices in order of first appearance. */
 export function parseCitedSourceIndices(text: string): number[] {
@@ -82,12 +86,34 @@ export function buildCitationsFromResponse(
       sourceIndex,
       documentId: chunk.documentId,
       documentTitle: titleMap.get(docIdStr) ?? "",
+      chunkIndex: chunk.chunkIndex ?? null,
       pageNumber: chunk.pageNumber ?? null,
       sectionPath: chunk.sectionPath,
       heading: chunk.displayHeading,
+      blockType: chunk.blockType,
+      extractionMode: chunk.extractionMode,
+      extractionConfidence: chunk.extractionConfidence,
       excerpt: (chunk.citationExcerpt ?? chunk.content).slice(0, excerptLength),
     });
   }
 
   return citations;
+}
+
+export function normalizeCitationMarkers(
+  assistantText: string,
+  chunks: RetrievedChunk[],
+): string {
+  const validSourceIndices = new Set(chunks.map((_, index) => index + 1));
+
+  return assistantText
+    .replace(CITATION_REF_RE, (match, rawIndex: string) => {
+      const index = Number.parseInt(rawIndex, 10);
+      if (!Number.isFinite(index) || !validSourceIndices.has(index)) return "";
+      return `[${index}]`;
+    })
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+([,.;:!?])/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

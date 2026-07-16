@@ -14,6 +14,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface CustomPdfViewerProps {
   url: string;
+  initialPage?: number;
 }
 
 type PanStart = {
@@ -23,7 +24,7 @@ type PanStart = {
   scrollTop: number;
 };
 
-export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
+export function CustomPdfViewer({ url, initialPage }: CustomPdfViewerProps) {
   const [numPages, setNumPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
@@ -36,7 +37,9 @@ export function CustomPdfViewer({ url }: CustomPdfViewerProps) {
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
-    setPageNumber(1);
+    const requestedPage =
+      initialPage && Number.isFinite(initialPage) ? Math.trunc(initialPage) : 1;
+    setPageNumber(Math.min(Math.max(1, requestedPage), numPages));
   }
 
   function changePage(offset: number) {

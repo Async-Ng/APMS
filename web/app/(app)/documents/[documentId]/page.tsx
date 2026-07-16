@@ -36,6 +36,7 @@ import {
   mimeLabel,
 } from "@/lib/mime";
 import {
+  useCitationContext,
   useDeleteDocument,
   useDocumentDownloadUrl,
   useToggleDocumentStar,
@@ -125,6 +126,14 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
+  const pageParam = searchParams.get("page");
+  const chunkIndexParam = searchParams.get("chunkIndex");
+  const citationPage =
+    pageParam && /^\d+$/.test(pageParam) ? Number.parseInt(pageParam, 10) : undefined;
+  const citationChunkIndex =
+    chunkIndexParam && /^\d+$/.test(chunkIndexParam)
+      ? Number.parseInt(chunkIndexParam, 10)
+      : null;
   const currentUser = useAuthStore((s) => s.user);
 
   const { data: doc, isLoading, isError } = useDocument(documentId);
@@ -144,6 +153,11 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
   );
   const [fetchUrl, setFetchUrl] = useState(false);
   const { data: withUrl } = useDocumentDownloadUrl(documentId, fetchUrl);
+  const {
+    data: citationContext,
+    isError: isCitationContextError,
+    isLoading: isCitationContextLoading,
+  } = useCitationContext(documentId, citationChunkIndex);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -181,7 +195,7 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
       return <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />;
     }
 
-    if (isPdf) return <CustomPdfViewer url={downloadUrl} />;
+    if (isPdf) return <CustomPdfViewer url={downloadUrl} initialPage={citationPage} />;
     if (isDocx) return <CustomDocxViewer url={downloadUrl} />;
     if (isPptx) {
       return (
@@ -299,6 +313,54 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
               </div>
 
               <hr className="my-4 border-brutal-ink/20" />
+
+              {/* Metadata rows */}
+              {from === "chat" && citationChunkIndex != null && (
+                <>
+                  <div className="rounded-xl border-2 border-brutal-ink bg-brutal-bg p-3 text-sm">
+                    <p className="font-heading text-xs font-extrabold uppercase tracking-widest text-brutal-muted">
+                      Nguồn trích dẫn
+                    </p>
+                    {isCitationContextLoading && (
+                      <p className="mt-2 text-xs text-brutal-muted">
+                        Đang tải nguồn trích dẫn...
+                      </p>
+                    )}
+                    {isCitationContextError && (
+                      <p className="mt-2 text-xs font-semibold text-brutal-danger">
+                        Nguồn không còn khả dụng.
+                      </p>
+                    )}
+                    {citationContext && (
+                      <div className="mt-2 space-y-2">
+                        {(citationContext.heading ||
+                          citationContext.pageNumber != null) && (
+                          <p className="text-xs font-semibold text-brutal-muted">
+                            {[
+                              citationContext.heading,
+                              citationContext.pageNumber != null
+                                ? `Trang ${citationContext.pageNumber}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
+                        {citationContext.sectionPath.length > 0 && (
+                          <p className="text-xs text-brutal-muted">
+                            {citationContext.sectionPath.join(" › ")}
+                          </p>
+                        )}
+                        <blockquote className="max-h-40 overflow-y-auto rounded-lg border border-brutal-ink/30 bg-brutal-surface p-2 text-xs leading-relaxed text-brutal-ink">
+                          {citationContext.excerpt}
+                        </blockquote>
+                      </div>
+                    )}
+                  </div>
+
+                  <hr className="my-4 border-brutal-ink/20" />
+                </>
+              )}
 
               {/* Metadata rows */}
               <dl className="space-y-3 text-sm">

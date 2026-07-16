@@ -5,9 +5,13 @@ const citationSchema = new Schema(
     sourceIndex: { type: Number, required: true },
     documentId: { type: Schema.Types.ObjectId, ref: "Document", required: true },
     documentTitle: { type: String, required: true },
+    chunkIndex: { type: Number, default: null },
     pageNumber: { type: Number, default: null },
     sectionPath: { type: [String], default: [] },
     heading: { type: String, default: null },
+    blockType: { type: String, default: "paragraph" },
+    extractionMode: { type: String, default: "text" },
+    extractionConfidence: { type: String, default: "medium" },
     excerpt: { type: String, required: true },
   },
   { _id: false },
@@ -44,12 +48,32 @@ export function toChatMessageResponse(message: ChatMessageDocument) {
       sourceIndex: c.sourceIndex,
       documentId: c.documentId.toString(),
       documentTitle: c.documentTitle,
+      chunkIndex: c.chunkIndex ?? null,
       pageNumber: c.pageNumber ?? null,
       sectionPath: c.sectionPath ?? [],
       heading: c.heading ?? null,
+      blockType: c.blockType ?? "paragraph",
+      extractionMode: c.extractionMode ?? "text",
+      extractionConfidence: c.extractionConfidence ?? "medium",
       excerpt: c.excerpt,
+      deepLink: buildCitationDeepLink({
+        documentId: c.documentId.toString(),
+        pageNumber: c.pageNumber ?? null,
+        chunkIndex: c.chunkIndex ?? null,
+      }),
     })),
     suggestedQuestions: message.suggestedQuestions ?? [],
     createdAt: message.createdAt,
   };
+}
+
+export function buildCitationDeepLink(input: {
+  documentId: string;
+  pageNumber?: number | null;
+  chunkIndex?: number | null;
+}): string {
+  const params = new URLSearchParams({ from: "chat" });
+  if (input.pageNumber != null) params.set("page", String(input.pageNumber));
+  if (input.chunkIndex != null) params.set("chunkIndex", String(input.chunkIndex));
+  return `/documents/${input.documentId}?${params.toString()}`;
 }

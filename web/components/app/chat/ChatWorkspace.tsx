@@ -11,6 +11,7 @@ import {
   filterVisibleCitations,
   isDeletedContextTitle,
 } from "@/lib/chat-visibility";
+import { getCitationKey } from "@/lib/chat-citations";
 import { cn } from "@/lib/cn";
 import { useCreateSession, chatKeys } from "@/lib/queries/chat";
 import { getUserErrorMessage } from "@/lib/errors";
@@ -27,10 +28,6 @@ import { ChatSourcePickerModal } from "./ChatSourcePickerModal";
 import { CitationPanel } from "./CitationPanel";
 
 type MobileTab = "sources" | "chat" | "citations";
-
-function citationKey(c: ChatCitation): string {
-  return `${c.documentId}-${c.pageNumber ?? "n"}-${c.excerpt.slice(0, 32)}`;
-}
 
 interface ChatWorkspaceProps {
   sessionId?: string;
@@ -137,7 +134,7 @@ export function ChatWorkspace({
     (message: ChatMessage, citation: ChatCitation) => {
       setActiveMessage(message);
       setSelectedCitation(citation);
-      setSelectedCitationKey(citationKey(citation));
+      setSelectedCitationKey(getCitationKey(citation));
       setMobileTab("citations");
     },
     [],
@@ -148,7 +145,7 @@ export function ChatWorkspace({
     if (message.citations.length > 0) {
       setSelectedCitation(message.citations[0] ?? null);
       setSelectedCitationKey(
-        message.citations[0] ? citationKey(message.citations[0]) : null,
+        message.citations[0] ? getCitationKey(message.citations[0]) : null,
       );
     }
     setMobileTab("citations");
@@ -164,7 +161,7 @@ export function ChatWorkspace({
           if (data.assistantMessage.citations.length > 0) {
             const first = data.assistantMessage.citations[0]!;
             setSelectedCitation(first);
-            setSelectedCitationKey(citationKey(first));
+            setSelectedCitationKey(getCitationKey(first));
             setMobileTab("citations");
           }
         },
@@ -354,7 +351,7 @@ export function ChatWorkspace({
               selectedCitation={selectedCitation}
               onSelectCitation={(c) => {
                 setSelectedCitation(c);
-                setSelectedCitationKey(citationKey(c));
+                setSelectedCitationKey(getCitationKey(c));
               }}
             />
           </aside>

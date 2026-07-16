@@ -32,6 +32,25 @@ interface UploadIntentResponse {
   expiresIn: number;
 }
 
+export interface CitationContext {
+  documentId: string;
+  documentTitle: string;
+  chunkIndex: number;
+  pageNumber: number | null;
+  sectionPath: string[];
+  heading: string | null;
+  blockType: string;
+  extractionMode: string;
+  extractionConfidence: string;
+  excerpt: string;
+  content: string;
+  locator: {
+    type: "page" | "section" | "chunk";
+    pageNumber: number | null;
+    chunkIndex: number;
+  };
+}
+
 /* ── Document queries ───────────────────────────────────────── */
 
 export function useDocument(documentId: string) {
@@ -64,6 +83,24 @@ export function useDocumentDownloadUrl(documentId: string, enabled: boolean) {
     },
     enabled,
     staleTime: 60_000, // presigned URLs are short-lived; don't cache too long
+  });
+}
+
+export function useCitationContext(
+  documentId: string,
+  chunkIndex: number | null,
+) {
+  return useQuery({
+    queryKey: ["documents", documentId, "citation-context", chunkIndex],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: CitationContext }>(
+        `/documents/${documentId}/citation-context`,
+        { params: { chunkIndex } },
+      );
+      return res.data.data;
+    },
+    enabled: !!documentId && chunkIndex != null,
+    retry: false,
   });
 }
 

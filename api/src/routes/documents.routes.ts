@@ -7,6 +7,7 @@ import { resolveUser } from "../middleware/resolveUser";
 import { validate } from "../middleware/validate";
 import { objectIdParamSchema } from "../validators/common.validator";
 import {
+  citationContextQuerySchema,
   createUploadIntentSchema,
   listDocumentsQuerySchema,
   updateDocumentSchema,
@@ -30,6 +31,11 @@ documentsRouter.post(
   "/:id/complete",
   validate({ params: objectIdParamSchema }),
   documentsController.completeUpload,
+);
+documentsRouter.get(
+  "/:id/citation-context",
+  validate({ params: objectIdParamSchema, query: citationContextQuerySchema }),
+  documentsController.getCitationContext,
 );
 documentsRouter.get(
   "/:id",

@@ -154,3 +154,5 @@ Atlas Vector Search index dimension must match `GEMINI_EMBEDDING_OUTPUT_DIMENSIO
 ## Chat Data
 
 Chat sessions and messages store prompt/response metadata, citations, and optional `suggestedQuestions` for assistant follow-up prompts. Chat context validation must use the same document-read access rules as document detail/search.
+
+Assistant message citations store `documentId`, `sourceIndex`, `chunkIndex`, optional `pageNumber`, structural context (`sectionPath`, `heading`), and an excerpt. `documentId + chunkIndex` links a citation back to the `document_chunks` source used for deep-link context; older messages may not have `chunkIndex` and fall back to document-level links.

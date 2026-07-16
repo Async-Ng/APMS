@@ -4,6 +4,7 @@ import { CornerDownRight, FileText } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
+import { getCitationKey } from "@/lib/chat-citations";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
 
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -19,10 +20,6 @@ interface ChatMessageListProps {
   onSelectMessage: (message: ChatMessage) => void;
   onSuggestionClick?: (question: string) => void;
   isSending?: boolean;
-}
-
-function citationKey(c: ChatCitation): string {
-  return `${c.documentId}-${c.pageNumber ?? "n"}-${c.excerpt.slice(0, 32)}`;
 }
 
 export function ChatMessageList({
@@ -118,7 +115,7 @@ export function ChatMessageList({
               {!isUser && message.citations.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5 border-t border-brutal-ink/20 pt-2">
                   {message.citations.map((citation, idx) => {
-                    const key = citationKey(citation);
+                    const key = getCitationKey(citation);
                     return (
                       <button
                         key={key}

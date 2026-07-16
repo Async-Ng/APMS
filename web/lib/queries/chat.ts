@@ -19,10 +19,15 @@ export interface ChatCitation {
   sourceIndex?: number;
   documentId: string;
   documentTitle: string;
+  chunkIndex: number | null;
   pageNumber: number | null;
   sectionPath?: string[];
   heading?: string | null;
+  blockType?: string;
+  extractionMode?: string;
+  extractionConfidence?: string;
   excerpt: string;
+  deepLink?: string;
 }
 
 export interface ChatSession {

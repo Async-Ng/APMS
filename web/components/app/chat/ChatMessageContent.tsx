@@ -90,6 +90,7 @@ export function ChatMessageContent({
       const label = `[${refIndex}]`;
 
       if (!citation || !onCitationClick) {
+        if (!isStreaming) return null;
         return <span className="font-bold text-brutal-secondary">{label}</span>;
       }
 
@@ -115,7 +116,7 @@ export function ChatMessageContent({
       ...markdownComponents,
       "citation-ref": CitationRef,
     };
-  }, [citations, onCitationClick]);
+  }, [citations, isStreaming, onCitationClick]);
 
   if (!content) {
     return (

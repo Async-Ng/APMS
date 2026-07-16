@@ -27,6 +27,10 @@ export const listDocumentsQuerySchema = z.object({
   match: z.enum(["auto", "exact", "related", "all"]).default("auto"),
 });
 
+export const citationContextQuerySchema = z.object({
+  chunkIndex: z.coerce.number().int().min(0),
+});
+
 export const updateDocumentSchema = z
   .object({
     title: z.string().trim().min(1).max(255).optional(),

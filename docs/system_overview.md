@@ -79,8 +79,9 @@ Search hoặc Chat
   -> Atlas Vector Search theo access scope
   -> Rerank/rewrite khi cần bằng Gemini lite model
   -> Gemini chat model sinh câu trả lời
+  -> Normalize citation markers theo retrieved chunks; loại marker không khớp nguồn hợp lệ
   -> Sinh suggested questions cho chat mode
-  -> Trả citations theo document/page/chunk và suggestedQuestions
+  -> Trả citations theo document/page/chunk kèm deep link và suggestedQuestions
 ```
 
 Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Câu trả lời ở mọi mode ưu tiên ngắn gọn, tự nhiên như hội thoại và dựa trên tài liệu được truy xuất; mode `chat` trả thêm tối đa 3 `suggestedQuestions`, còn các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).

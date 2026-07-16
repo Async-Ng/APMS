@@ -3,7 +3,12 @@ import type { Types } from "mongoose";
 
 import { loadEnv } from "../config/env";
 import { createAppError, ErrorCode } from "../errors/error-codes";
-import { ChatMessage, toChatMessageResponse, type ChatMessageDocument } from "../models/chat-message.model";
+import {
+  buildCitationDeepLink,
+  ChatMessage,
+  toChatMessageResponse,
+  type ChatMessageDocument,
+} from "../models/chat-message.model";
 import { ChatSession, toChatSessionResponse, type ChatSessionDocument } from "../models/chat-session.model";
 import { DocumentChunk } from "../models/document-chunk.model";
 import { Document } from "../models/document.model";
@@ -11,7 +16,11 @@ import { Folder } from "../models/folder.model";
 import type { UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
 import * as aiService from "./ai/ai.service";
-import { buildCitationsFromResponse, type RetrievedChunk } from "./ai/citation-utils";
+import {
+  buildCitationsFromResponse,
+  normalizeCitationMarkers,
+  type RetrievedChunk,
+} from "./ai/citation-utils";
 import {
   buildRetrievalDebugInfo,
   findLexicalChunks,
@@ -587,10 +596,19 @@ export async function getSession(user: UserDocument, sessionId: string) {
         sourceIndex: c.sourceIndex ?? 1,
         documentId: c.documentId.toString(),
         documentTitle: c.documentTitle,
+        chunkIndex: c.chunkIndex ?? null,
         pageNumber: c.pageNumber ?? null,
         sectionPath: c.sectionPath ?? [],
         heading: c.heading ?? null,
+        blockType: c.blockType ?? "paragraph",
+        extractionMode: c.extractionMode ?? "text",
+        extractionConfidence: c.extractionConfidence ?? "medium",
         excerpt: c.excerpt,
+        deepLink: buildCitationDeepLink({
+          documentId: c.documentId.toString(),
+          pageNumber: c.pageNumber ?? null,
+          chunkIndex: c.chunkIndex ?? null,
+        }),
       })),
       suggestedQuestions: m.suggestedQuestions ?? [],
       createdAt: m.createdAt,
@@ -971,6 +989,8 @@ export async function sendMessage(
     mapChatError(error);
   }
 
+  assistantText = normalizeCitationMarkers(assistantText, prepared.chunkResults);
+
   const builtCitations = buildCitationsFromResponse(
     assistantText,
     prepared.chunkResults,
@@ -1045,8 +1065,10 @@ export async function sendMessageStream(
     return;
   }
 
+  assistantText = normalizeCitationMarkers(assistantText.trim(), prepared.chunkResults);
+
   const builtCitations = buildCitationsFromResponse(
-    assistantText.trim(),
+    assistantText,
     prepared.chunkResults,
     prepared.titleMap,
   );
@@ -1060,7 +1082,7 @@ export async function sendMessageStream(
     const assistantMessage = await ChatMessage.create({
       sessionId: prepared.session._id,
       role: "assistant",
-      content: assistantText.trim(),
+      content: assistantText,
       citations: builtCitations,
       suggestedQuestions,
     });

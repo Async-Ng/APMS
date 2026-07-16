@@ -137,6 +137,7 @@ The API verifies the S3 object, updates quota, and moves the document into proce
 | Method | Path | Notes |
 | --- | --- | --- |
 | `GET` | `/api/documents/:id` | Read metadata; `?download=true` adds a presigned download URL (expires after 15 minutes, `S3_PRESIGN_EXPIRES_SECONDS`) when allowed |
+| `GET` | `/api/documents/:id/citation-context?chunkIndex=<n>` | Read chunk metadata/content for an AI citation deep link; uses the same read-access rule as document detail |
 | `PATCH` | `/api/documents/:id` | Owner updates `title`, `tags`, `folderId`, `courseSlotId`, `visibility` |
 | `DELETE` | `/api/documents/:id` | Owner soft delete |
 | `DELETE` | `/api/documents/:id/permanent` | Owner permanent delete from trash |
@@ -312,7 +313,7 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 - `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
 - `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
 - Answers prioritize concise, conversational first-pass responses across all modes; users can ask follow-up questions for deeper detail (FR-041).
-- Answers include `citations` referencing document, page, and section (FR-042, BR-023).
+- Answers include `citations` referencing document, page, section, `chunkIndex`, and `deepLink` (FR-042, BR-023). Citation markers in assistant text are normalized so unresolved `[n]`/`[Source n]` markers are removed instead of rendering as non-clickable citations.
 - Assistant messages include `suggestedQuestions: string[]`; chat mode may return up to 3 follow-up questions, while `summary`, `faq`, and `study_guide` return an empty array.
 - Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
 

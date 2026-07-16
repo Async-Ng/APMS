@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { getCitationKey } from "@/lib/chat-citations";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
 
 import { CitationDetail } from "./CitationDetail";
@@ -9,10 +10,6 @@ interface CitationPanelProps {
   message: ChatMessage | null;
   selectedCitation: ChatCitation | null;
   onSelectCitation: (citation: ChatCitation) => void;
-}
-
-function citationKey(c: ChatCitation): string {
-  return `${c.documentId}-${c.pageNumber ?? "n"}-${c.excerpt.slice(0, 32)}`;
 }
 
 export function CitationPanel({
@@ -36,9 +33,9 @@ export function CitationPanel({
         <>
           <ul className="max-h-40 shrink-0 space-y-1 overflow-y-auto">
             {citations.map((citation, idx) => {
-              const key = citationKey(citation);
+              const key = getCitationKey(citation);
               const isActive =
-                selectedCitation && citationKey(selectedCitation) === key;
+                selectedCitation && getCitationKey(selectedCitation) === key;
 
               return (
                 <li key={key}>

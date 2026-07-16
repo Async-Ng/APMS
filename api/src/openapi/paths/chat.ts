@@ -14,8 +14,17 @@ const citationSchema = z.object({
   sourceIndex: z.number().int().positive().openapi({ example: 1 }),
   documentId: z.string().openapi({ example: "507f1f77bcf86cd799439011" }),
   documentTitle: z.string().openapi({ example: "Kiến trúc Microservice" }),
+  chunkIndex: z.number().nullable().openapi({ example: 12 }),
   pageNumber: z.number().nullable().openapi({ example: 3 }),
+  sectionPath: z.array(z.string()).openapi({ example: ["1", "1.2"] }),
+  heading: z.string().nullable().openapi({ example: "1.2 Service boundaries" }),
+  blockType: z.string().openapi({ example: "paragraph" }),
+  extractionMode: z.string().openapi({ example: "text" }),
+  extractionConfidence: z.string().openapi({ example: "medium" }),
   excerpt: z.string().openapi({ example: "Microservice là một kiến trúc..." }),
+  deepLink: z.string().openapi({
+    example: "/documents/507f1f77bcf86cd799439011?from=chat&page=3&chunkIndex=12",
+  }),
 });
 
 const chatSessionSchema = registry.register(
