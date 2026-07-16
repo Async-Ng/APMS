@@ -89,12 +89,17 @@ Tài liệu này mô tả nội dung cho bộ slide báo cáo ngắn gọn của
 - Luồng 2 mô tả cách sinh viên tải lên, sắp xếp, chia sẻ và xử lý tài liệu trong thùng rác.
 - Luồng 3 mô tả cách sinh viên tìm tài liệu theo nội dung, xem tài liệu được công khai và đặt câu hỏi cho trợ lý AI.
 
-**Gợi ý hình ảnh:** chèn 3 activity diagram hoặc 3 thẻ đại diện cho 3 luồng.
+**Gợi ý hình ảnh:** chèn 3 flowchart draw.io riêng biệt, mỗi hình tương ứng một main flow.
 
 **Nguồn sơ đồ:**
-- `docs/diagrams/apms-activity-1.puml`
-- `docs/diagrams/apms-activity-2.puml`
-- `docs/diagrams/apms-activity-3.puml`
+- `docs/diagrams/apms-main-flow-1-access-profile-flowchart.png`
+- `docs/diagrams/apms-main-flow-2-document-lifecycle-flowchart.png`
+- `docs/diagrams/apms-main-flow-3-search-rag-citation-flowchart.png`
+
+**File nguồn có thể chỉnh sửa bằng draw.io:**
+- `docs/diagrams/apms-main-flow-1-access-profile-flowchart.drawio`
+- `docs/diagrams/apms-main-flow-2-document-lifecycle-flowchart.drawio`
+- `docs/diagrams/apms-main-flow-3-search-rag-citation-flowchart.drawio`
 
 ## Slide 6 - Kết luận và hướng phát triển
 
@@ -119,7 +124,7 @@ Tài liệu này mô tả nội dung cho bộ slide báo cáo ngắn gọn của
 - Dựng đúng 6 slide.
 - Không thêm lại các slide đã bỏ: System Architecture, Unified Document API, AI/RAG Pipeline, Demo/Testing/Results.
 - Mỗi slide chỉ nên có 4-6 ý chính, tránh quá nhiều chữ.
-- Slide 5 nên dùng sơ đồ hoặc activity diagrams để giảm chữ.
+- Slide 5 nên dùng các flowchart draw.io mới để giảm chữ.
 - Không dùng tên field, enum, API route hoặc từ viết kiểu code trên slide.
 - Có thể giữ tên công nghệ phổ biến khi cần, ví dụ Google/Cognito, PDF, DOCX, PPTX, AI.
 - Ưu tiên câu ngắn, dễ thuyết trình; mỗi bullet nên là một ý nghiệp vụ rõ ràng.

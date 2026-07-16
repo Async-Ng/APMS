@@ -1,65 +1,55 @@
-# APMS Core Business Activity Diagrams
+# APMS Main Flow Diagrams
 
-This document indexes the three core **student** business flows for APMS. The flows are expressed as UML Activity Diagrams with two swimlanes:
+Tài liệu này index **3 main flow chính của APMS** dùng để trình bày trong báo cáo và bảo vệ hội đồng. Các sơ đồ hiện dùng **draw.io flowchart chuẩn có swimlane**.
 
-| Position | Lane |
-|----------|------|
-| **Left** | Student |
-| **Right** | APMS System |
+**Business source:** [SRS.md](./SRS.md) §3.1-3.8 và [system_overview.md](./system_overview.md)
 
-**Business source:** [SRS.md](./SRS.md) §3.1-3.8
+## Quy Ước Sơ Đồ
 
-**Diagram source:** [diagrams/](./diagrams/)
+Mỗi flow được vẽ riêng thành một file `.drawio` editable và một file `.png` để chèn vào slide/báo cáo.
 
-## Rendering
+| Ký hiệu | Ý nghĩa |
+| --- | --- |
+| Terminator | Bắt đầu / kết thúc flow |
+| Manual Input | Thao tác của sinh viên hoặc admin |
+| Process | Bước APMS Web/API/Worker xử lý |
+| Decision | Điều kiện rẽ nhánh như quyền truy cập, quota, evidence gate |
+| Data Store | MongoDB/S3 data như users, documents, document_chunks |
+| Document | File học tập PDF/DOCX/PPTX |
+| External System | Google/Cognito, S3, Gemini, Atlas Vector Search |
 
-- Open the `.puml` file in VS Code with the [PlantUML](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml) extension, or
-- Paste the content into [plantuml.com/plantuml](https://www.plantuml.com/plantuml/uml)
-- Export PNG/SVG for slides or reports.
+Swimlane trong mỗi sơ đồ:
 
-PlantUML activity swimlanes (`|Lane name|`) keep the two vertical lanes aligned. The first declared lane (`Student`) appears on the left.
+| Lane | Vai trò |
+| --- | --- |
+| Người dùng / Admin | Điểm tương tác trực tiếp của sinh viên hoặc quản trị viên |
+| APMS Web / API / Worker | Logic xử lý chính của hệ thống |
+| External Services | Dịch vụ bên ngoài |
+| Database / Storage | Dữ liệu và lưu trữ |
 
-```text
-+---------------------+---------------------+
-|       Student       |     APMS System     |
-|       (left)        |       (right)       |
-+---------------------+---------------------+
-|  [student action]   |  [system action]    |
-|          |          |          ^          |
-|          +----------+----------+          |
-+---------------------+---------------------+
-```
-
----
-
-## Activity 1 - System Access and Academic Profile Setup
+## Flow 1 — Truy Cập Hệ Thống & Hồ Sơ Học Vụ
 
 **SRS:** FR-001-FR-012, BR-002
 
-The student authenticates with a Google account. APMS verifies whether the email is allowed to access the system. If access is allowed, the account is created or synchronized. When the student requests access to business functions, APMS checks whether the academic profile is completed. If not, the system provides active Curriculum options, the student submits the selected Curriculum, and APMS validates that it is active before saving the academic profile and marking it as **Completed**. The academic profile does not require semester or current-subject selection; specific courses are assigned during document upload or document update.
+Sinh viên đăng nhập bằng Google/Cognito. APMS kiểm tra domain/email được phép, đồng bộ user, yêu cầu chọn curriculum trong hồ sơ học vụ, sau đó đưa sinh viên vào Drive khi hồ sơ hợp lệ. Flow cũng thể hiện phần admin quản lý catalog, quota, user và access email.
 
-**File:** [diagrams/apms-activity-1.puml](./diagrams/apms-activity-1.puml)
+- **PNG:** [diagrams/apms-main-flow-1-access-profile-flowchart.png](./diagrams/apms-main-flow-1-access-profile-flowchart.png)
+- **Source:** [diagrams/apms-main-flow-1-access-profile-flowchart.drawio](./diagrams/apms-main-flow-1-access-profile-flowchart.drawio)
 
----
-
-## Activity 2 - Learning Document Management
+## Flow 2 — Vòng Đời Tài Liệu Học Tập
 
 **SRS:** FR-013-FR-034, FR-061; BR-006-BR-010, BR-015, BR-027
 
-The student accesses their personal document collection. APMS returns documents grouped by the courses/course slots associated with the Curriculum in the academic profile. The student may submit a document upload request with a file and a required course. APMS accepts only PDF, DOCX, or PPTX files, enforces the 50 MB file limit and storage quota, and verifies that the selected course belongs to the profile Curriculum. A valid document is created with default **private** visibility, processed in the background, and returned in the user document list grouped by course.
+Sinh viên upload PDF/DOCX/PPTX và bắt buộc chọn course slot. APMS validate loại file, quota và course slot, tạo presigned upload, lưu metadata, worker extract/chunk/embed, rồi đưa tài liệu về trạng thái ready trong Drive. Flow cũng thể hiện thao tác quản lý, chia sẻ read-only, public library, và các nhánh lỗi upload/extract.
 
-The flow also captures repeatable document operations: organization through folder/title/tags/star state, read-only sharing with users or email recipients, private/public visibility changes, trash, restore, and permanent deletion. Share invites expire after 7 days, and items in trash are permanently purged after 30 days.
+- **PNG:** [diagrams/apms-main-flow-2-document-lifecycle-flowchart.png](./diagrams/apms-main-flow-2-document-lifecycle-flowchart.png)
+- **Source:** [diagrams/apms-main-flow-2-document-lifecycle-flowchart.drawio](./diagrams/apms-main-flow-2-document-lifecycle-flowchart.drawio)
 
-**File:** [diagrams/apms-activity-2.puml](./diagrams/apms-activity-2.puml)
+## Flow 3 — Search & RAG Chat Có Citation
 
----
+**SRS:** FR-035-FR-045, FR-062; BR-005, BR-022, BR-025
 
-## Activity 3 - Knowledge Access and AI-Assisted Learning
+Sinh viên nhập search query hoặc câu hỏi Chat AI, chọn context, APMS kiểm tra quyền đọc, tạo query variants/embedding, retrieval bằng vector + lexical, rerank/evidence gate, rồi Gemini sinh câu trả lời có citation hợp lệ. Khi sinh viên click citation, document viewer mở đúng tài liệu/trang/chunk; PDF/DOCX highlight best-effort, PPTX mở đúng slide/text view.
 
-**SRS:** FR-035-FR-045, FR-062; BR-005
-
-The student requests knowledge access from documents. APMS limits results to documents the student can read: owned documents, shared documents, or public documents. The student may request a public document listing, run semantic document search, or start an AI assistant conversation session. Public discovery can prioritize documents from the academic profile Curriculum or return the broader public listing with academic filters. Semantic search runs only within readable scope.
-
-For AI assistant sessions, the student defines context and assistant mode, then submits a question. APMS enforces the 50-message daily limit, generates concise conversational answers with source citations, and includes follow-up suggestions in Q&A mode.
-
-**File:** [diagrams/apms-activity-3.puml](./diagrams/apms-activity-3.puml)
+- **PNG:** [diagrams/apms-main-flow-3-search-rag-citation-flowchart.png](./diagrams/apms-main-flow-3-search-rag-citation-flowchart.png)
+- **Source:** [diagrams/apms-main-flow-3-search-rag-citation-flowchart.drawio](./diagrams/apms-main-flow-3-search-rag-citation-flowchart.drawio)
