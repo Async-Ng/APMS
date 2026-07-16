@@ -45,6 +45,16 @@ const citationContextSchema = z.object({
   extractionConfidence: z.string(),
   excerpt: z.string(),
   content: z.string(),
+  pageChunks: z.array(
+    z.object({
+      chunkIndex: z.number().int().min(0),
+      content: z.string(),
+      heading: z.string().nullable(),
+      sectionPath: z.array(z.string()),
+      pageNumber: z.number().nullable(),
+      blockType: z.string(),
+    }),
+  ),
   locator: z.object({
     type: z.enum(["page", "section", "chunk"]),
     pageNumber: z.number().nullable(),

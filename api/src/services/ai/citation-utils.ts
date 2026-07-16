@@ -11,6 +11,10 @@ export interface RetrievedChunk {
   vectorScore?: number;
   /** Raw additive lexical boost score (unbounded), if this chunk matched the lexical pool. */
   lexicalScore?: number;
+  /** Score returned by the LLM reranker on a 0-10 scale, when available. */
+  rerankScore?: number;
+  /** Combined retrieval score used for context selection and debug output. */
+  hybridScore?: number;
   sectionPath: string[];
   displayHeading: string | null;
   blockType: string;
@@ -39,7 +43,22 @@ export interface BuiltCitation {
   excerpt: string;
 }
 
-const CITATION_REF_RE = /\[(?:source\s*)?(\d+)\]/gi;
+const CITATION_REF_RE = /\[(\d+)\]/g;
+const CITATION_GROUP_RE = /\[((?:(?:source\s*)?\d+\s*,?\s*)+)\]/gi;
+const CITATION_INDEX_RE = /(?:source\s*)?(\d+)/gi;
+
+function parseCitationGroup(rawGroup: string): number[] {
+  const indices: number[] = [];
+
+  for (const match of rawGroup.matchAll(CITATION_INDEX_RE)) {
+    const index = Number.parseInt(match[1] ?? "", 10);
+    if (Number.isFinite(index) && index > 0) {
+      indices.push(index);
+    }
+  }
+
+  return indices;
+}
 
 /** Extract unique source indices in order of first appearance. */
 export function parseCitedSourceIndices(text: string): number[] {
@@ -107,10 +126,12 @@ export function normalizeCitationMarkers(
   const validSourceIndices = new Set(chunks.map((_, index) => index + 1));
 
   return assistantText
-    .replace(CITATION_REF_RE, (match, rawIndex: string) => {
-      const index = Number.parseInt(rawIndex, 10);
-      if (!Number.isFinite(index) || !validSourceIndices.has(index)) return "";
-      return `[${index}]`;
+    .replace(CITATION_GROUP_RE, (_match, rawGroup: string) => {
+      const validIndices = parseCitationGroup(rawGroup).filter((index) =>
+        validSourceIndices.has(index),
+      );
+      if (validIndices.length === 0) return "";
+      return validIndices.map((index) => `[${index}]`).join(" ");
     })
     .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+([,.;:!?])/g, "$1")

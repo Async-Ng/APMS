@@ -86,7 +86,7 @@ export function ChatMessageContent({
 
     const CitationRef = (props: { index?: number | string }) => {
       const refIndex = Number(props.index);
-      const citation = citationBySource.get(refIndex) ?? citations[refIndex - 1];
+      const citation = citationBySource.get(refIndex);
       const label = `[${refIndex}]`;
 
       if (!citation || !onCitationClick) {

@@ -25,6 +25,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CustomDocxViewer } from "@/components/app/CustomDocxViewer";
 import { CustomOfficeViewer } from "@/components/app/CustomOfficeViewer";
 import { CustomPdfViewer } from "@/components/app/CustomPdfViewer";
+import { CustomPptxTextViewer } from "@/components/app/CustomPptxTextViewer";
 import { cn } from "@/lib/cn";
 import { buildDocumentBreadcrumbs } from "@/lib/drive/document-breadcrumbs";
 import { findSlotInCatalog } from "@/lib/drive/semester-view";
@@ -195,9 +196,44 @@ function DocumentDetailContent({ documentId }: { documentId: string }) {
       return <NoPreview mimeType={doc.mimeType} onDownload={handleDownload} />;
     }
 
-    if (isPdf) return <CustomPdfViewer url={downloadUrl} initialPage={citationPage} />;
-    if (isDocx) return <CustomDocxViewer url={downloadUrl} />;
+    if (isPdf) {
+      return (
+        <CustomPdfViewer
+          url={downloadUrl}
+          initialPage={citationContext?.pageNumber ?? citationPage}
+          citationContext={citationContext}
+        />
+      );
+    }
+    if (isDocx) {
+      return (
+        <CustomDocxViewer
+          url={downloadUrl}
+          citationContext={citationContext}
+        />
+      );
+    }
     if (isPptx) {
+      if (citationChunkIndex != null && isCitationContextLoading) {
+        return (
+          <div className="flex items-center justify-center rounded-xl border-2 border-brutal-ink bg-brutal-bg py-24">
+            <div className="text-center">
+              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-brutal-ink border-t-brutal-primary" />
+              <p className="text-sm text-brutal-muted">Đang tải nguồn trích dẫn...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (citationContext) {
+        return (
+          <CustomPptxTextViewer
+            citationContext={citationContext}
+            originalUrl={downloadUrl}
+          />
+        );
+      }
+
       return (
         <CustomOfficeViewer
           url={downloadUrl}

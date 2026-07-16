@@ -11,7 +11,6 @@ import {
   filterVisibleCitations,
   isDeletedContextTitle,
 } from "@/lib/chat-visibility";
-import { getCitationKey } from "@/lib/chat-citations";
 import { cn } from "@/lib/cn";
 import { useCreateSession, chatKeys } from "@/lib/queries/chat";
 import { getUserErrorMessage } from "@/lib/errors";
@@ -45,9 +44,6 @@ export function ChatWorkspace({
   const [mobileTab, setMobileTab] = useState<MobileTab>("chat");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<ChatCitation | null>(
-    null,
-  );
-  const [selectedCitationKey, setSelectedCitationKey] = useState<string | null>(
     null,
   );
   const [activeMessage, setActiveMessage] = useState<ChatMessage | null>(null);
@@ -134,7 +130,6 @@ export function ChatWorkspace({
     (message: ChatMessage, citation: ChatCitation) => {
       setActiveMessage(message);
       setSelectedCitation(citation);
-      setSelectedCitationKey(getCitationKey(citation));
       setMobileTab("citations");
     },
     [],
@@ -144,9 +139,6 @@ export function ChatWorkspace({
     setActiveMessage(message);
     if (message.citations.length > 0) {
       setSelectedCitation(message.citations[0] ?? null);
-      setSelectedCitationKey(
-        message.citations[0] ? getCitationKey(message.citations[0]) : null,
-      );
     }
     setMobileTab("citations");
   }, []);
@@ -161,7 +153,6 @@ export function ChatWorkspace({
           if (data.assistantMessage.citations.length > 0) {
             const first = data.assistantMessage.citations[0]!;
             setSelectedCitation(first);
-            setSelectedCitationKey(getCitationKey(first));
             setMobileTab("citations");
           }
         },
@@ -317,7 +308,6 @@ export function ChatWorkspace({
                   messages={visibleMessages}
                   isThinking={showThinking}
                   streamingMessageId={streamingMessageId}
-                  selectedCitationKey={selectedCitationKey}
                   activeMessageId={activeMessage?.id}
                   onSelectCitation={handleSelectCitation}
                   onSelectMessage={handleSelectMessage}
@@ -351,7 +341,6 @@ export function ChatWorkspace({
               selectedCitation={selectedCitation}
               onSelectCitation={(c) => {
                 setSelectedCitation(c);
-                setSelectedCitationKey(getCitationKey(c));
               }}
             />
           </aside>

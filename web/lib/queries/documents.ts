@@ -44,6 +44,14 @@ export interface CitationContext {
   extractionConfidence: string;
   excerpt: string;
   content: string;
+  pageChunks: Array<{
+    chunkIndex: number;
+    content: string;
+    heading: string | null;
+    sectionPath: string[];
+    pageNumber: number | null;
+    blockType: string;
+  }>;
   locator: {
     type: "page" | "section" | "chunk";
     pageNumber: number | null;

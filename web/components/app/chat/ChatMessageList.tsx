@@ -1,10 +1,9 @@
 "use client";
 
-import { CornerDownRight, FileText } from "lucide-react";
+import { CornerDownRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
-import { getCitationKey } from "@/lib/chat-citations";
 import type { ChatCitation, ChatMessage } from "@/lib/queries/chat";
 
 import { ChatMessageContent } from "./ChatMessageContent";
@@ -14,7 +13,6 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   isThinking?: boolean;
   streamingMessageId?: string | null;
-  selectedCitationKey?: string | null;
   activeMessageId?: string | null;
   onSelectCitation: (message: ChatMessage, citation: ChatCitation) => void;
   onSelectMessage: (message: ChatMessage) => void;
@@ -26,7 +24,6 @@ export function ChatMessageList({
   messages,
   isThinking = false,
   streamingMessageId = null,
-  selectedCitationKey,
   activeMessageId,
   onSelectCitation,
   onSelectMessage,
@@ -110,38 +107,6 @@ export function ChatMessageList({
                   isStreaming={message.id === streamingMessageId}
                   onCitationClick={(citation) => onSelectCitation(message, citation)}
                 />
-              )}
-
-              {!isUser && message.citations.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-brutal-ink/20 pt-2">
-                  {message.citations.map((citation, idx) => {
-                    const key = getCitationKey(citation);
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectCitation(message, citation);
-                        }}
-                        className={cn(
-                          "focus-brutal inline-flex max-w-full items-center gap-1 rounded-full border-2 border-brutal-ink px-2 py-0.5 text-left text-xs font-semibold transition-colors",
-                          selectedCitationKey === key
-                            ? "bg-brutal-primary text-white"
-                            : "bg-brutal-bg text-brutal-ink hover:bg-brutal-accent/30",
-                        )}
-                      >
-                        <FileText className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {citation.documentTitle}
-                          {citation.pageNumber != null &&
-                            ` · tr.${citation.pageNumber}`}
-                        </span>
-                        <span className="opacity-70">[{citation.sourceIndex ?? idx + 1}]</span>
-                      </button>
-                    );
-                  })}
-                </div>
               )}
 
               {showSuggestions && (

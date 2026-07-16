@@ -7,7 +7,14 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import {
+  CITATION_BLOCK_CLASS,
+  CITATION_HIGHLIGHT_CLASS,
+  citationNeedle,
+  findBestElement,
+} from "@/lib/citation-highlight";
 import { cn } from "@/lib/cn";
+import type { CitationContext } from "@/lib/queries/documents";
 
 // Set up the PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -15,6 +22,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface CustomPdfViewerProps {
   url: string;
   initialPage?: number;
+  citationContext?: CitationContext | null;
 }
 
 type PanStart = {
@@ -24,14 +32,20 @@ type PanStart = {
   scrollTop: number;
 };
 
-export function CustomPdfViewer({ url, initialPage }: CustomPdfViewerProps) {
+export function CustomPdfViewer({
+  url,
+  initialPage,
+  citationContext,
+}: CustomPdfViewerProps) {
   const [numPages, setNumPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [isPanning, setIsPanning] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pageWrapRef = useRef<HTMLDivElement>(null);
   const panStartRef = useRef<PanStart | null>(null);
+  const [hasCitationHighlight, setHasCitationHighlight] = useState(false);
 
   const panEnabled = scale > 1;
 
@@ -101,6 +115,37 @@ export function CustomPdfViewer({ url, initialPage }: CustomPdfViewerProps) {
     };
   }, [isPanning, stopPanning]);
 
+  useEffect(() => {
+    const needle = citationNeedle(citationContext);
+    const pageWrap = pageWrapRef.current;
+    if (!needle || !pageWrap) {
+      setHasCitationHighlight(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const spans = Array.from(
+        pageWrap.querySelectorAll<HTMLSpanElement>(".react-pdf__Page__textContent span"),
+      );
+
+      for (const span of spans) {
+        span.classList.remove(...CITATION_HIGHLIGHT_CLASS.split(" "));
+      }
+
+      const bestSpan = findBestElement(spans, needle);
+      if (bestSpan) {
+        bestSpan.classList.add(...CITATION_HIGHLIGHT_CLASS.split(" "));
+        bestSpan.scrollIntoView({ block: "center", inline: "center" });
+        setHasCitationHighlight(true);
+        return;
+      }
+
+      setHasCitationHighlight(false);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [citationContext, pageNumber, scale]);
+
   return (
     <div className="flex h-[70vh] min-w-0 w-full max-w-full flex-col overflow-hidden rounded-xl border-2 border-brutal-ink bg-brutal-surface shadow-brutal-sm">
       {/* Neo-brutalist Toolbar */}
@@ -162,6 +207,12 @@ export function CustomPdfViewer({ url, initialPage }: CustomPdfViewerProps) {
             Giữ chuột trái để kéo tài liệu
           </p>
         )}
+        {citationContext && !hasCitationHighlight && (
+          <div className={cn("mx-4 mb-2 p-2 text-xs", CITATION_BLOCK_CLASS)}>
+            <span className="font-bold">Nguồn trích dẫn:</span>{" "}
+            {citationContext.excerpt}
+          </div>
+        )}
       </div>
 
       {/* PDF Viewer Area */}
@@ -176,7 +227,7 @@ export function CustomPdfViewer({ url, initialPage }: CustomPdfViewerProps) {
         )}
       >
         <div className="box-border flex min-h-full min-w-full items-center justify-center p-6">
-          <div className="inline-block shrink-0">
+          <div ref={pageWrapRef} className="inline-block shrink-0">
             <Document
             file={url}
             onLoadSuccess={onDocumentLoadSuccess}

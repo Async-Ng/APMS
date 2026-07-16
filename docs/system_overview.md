@@ -75,9 +75,11 @@ Upload complete
   -> Lưu document_chunks vào MongoDB Atlas
 
 Search hoặc Chat
-  -> Embed query bằng Gemini
-  -> Atlas Vector Search theo access scope
-  -> Rerank/rewrite khi cần bằng Gemini lite model
+  -> Rewrite query theo lịch sử chat khi cần; tạo query variants và keyword query
+  -> Hybrid retrieval: Atlas Vector Search + lexical exact match theo access scope
+  -> Với summary/FAQ/study guide, bổ sung coverage chunks đại diện theo document/page/section
+  -> Chấm hybrid score, rerank bằng Gemini lite model, rồi chọn context đa dạng để tránh trùng cụm nguồn
+  -> Evidence gate: nếu nguồn truy xuất quá yếu hoặc không có context, trả lời rằng tài liệu chưa đủ thông tin
   -> Gemini chat model sinh câu trả lời
   -> Normalize citation markers theo retrieved chunks; loại marker không khớp nguồn hợp lệ
   -> Sinh suggested questions cho chat mode

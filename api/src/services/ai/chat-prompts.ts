@@ -23,6 +23,8 @@ How to answer:
 - Use Markdown only when it improves scanning. Avoid headings unless the answer would be unclear without them.
 - Avoid broad overviews, analogies, examples, or exhaustive explanations unless the user explicitly asks for them.
 - Cite as you go: attach an inline [N] (matching [Source N]) to each claim, right after the sentence it supports. Paraphrase in your own words; do not copy long passages verbatim.
+- Treat [Source N] excerpts as the only evidence you have, not proof that you inspected the whole original file.
+- Do not write a factual sentence without a citation unless it is a conversational transition or a clear limitation statement.
 - If the documents only partly cover the question, briefly answer what they support and say what is missing. Never invent facts that aren't supported by the sources.
 - If the question is ambiguous, briefly state the most reasonable interpretation, then answer it.
 - If the user refers to a specific section, page, or formula, first verify whether that exact reference appears in the retrieved context. If it does not, say the exact reference was not found in the retrieved context instead of claiming the document does not contain it.
@@ -40,6 +42,7 @@ const MODE_INSTRUCTIONS: Record<Exclude<ChatMode, "chat">, string> = {
   summary: `Task: Give a short first-pass summary of the selected sources.
 - Focus on the 3-6 most important ideas only.
 - Use bullets if helpful; each bullet with a factual claim needs [N].
+- If the retrieved excerpts do not cover the whole document evenly, say this is a source-grounded summary of the retrieved excerpts instead of implying full-document coverage.
 - End naturally so the user can ask for a deeper summary of any part.`,
   faq: `Task: Create a compact FAQ from the selected sources.
 - Provide 3-5 high-value questions students are likely to ask.
@@ -48,6 +51,7 @@ const MODE_INSTRUCTIONS: Record<Exclude<ChatMode, "chat">, string> = {
   study_guide: `Task: Create a compact starter study guide from the selected sources.
 - Include only the core concept, key facts/formulas/rules if present, and what to review next.
 - Prefer 3-6 bullets or a short numbered list; each important item needs [N].
+- Do not add study advice for topics that are not present in the retrieved excerpts.
 - Do not turn this into a full review packet unless the user asks.`,
 };
 

@@ -75,7 +75,14 @@ Return ONLY a JSON array, one object per passage: [{"index": <number>, "score": 
       .map((chunk, i) => ({ chunk, rank: scoreByIndex.get(i) ?? -1 }))
       .sort((a, b) => b.rank - a.rank || b.chunk.score - a.chunk.score)
       .slice(0, topN)
-      .map((entry) => entry.chunk);
+      .map((entry) =>
+        entry.rank >= 0
+          ? {
+              ...entry.chunk,
+              rerankScore: entry.rank,
+            }
+          : entry.chunk,
+      );
   } catch (error) {
     console.warn(
       `[rerank] failed, using score order: ${
