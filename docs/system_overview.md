@@ -1,4 +1,4 @@
-# System Overview
+﻿# System Overview
 
 Business rules: xem `docs/SRS.md` (FR/BR/NFR). APMS là hệ thống quản lý tài liệu học tập cá nhân và cộng đồng cho sinh viên. Backend hiện tại tập trung vào một surface tài liệu thống nhất: Documents.
 
@@ -19,6 +19,13 @@ Ba luồng nghiệp vụ chính được vẽ bằng UML Activity Diagram có sw
 | Vòng đời tài liệu học tập | `apms-main-flow-2-document-lifecycle-activity.png` | `apms-main-flow-2-document-lifecycle-activity.drawio` |
 | Search & RAG Chat có citation | `apms-main-flow-3-search-rag-citation-activity.png` | `apms-main-flow-3-search-rag-citation-activity.drawio` |
 
+Các main flow có thêm bộ sub-flow chi tiết để trình bày từng luồng vận hành thật:
+
+| Main flow | Sub-flow detail diagrams |
+| --- | --- |
+| System Access & Academic Profile | `apms-subflow-1a-login-access-activity.png`, `apms-subflow-1b-academic-profile-activity.png`, `apms-subflow-1c-admin-catalog-access-activity.png` |
+| Learning Document Lifecycle | `apms-subflow-2a-upload-processing-activity.png`, `apms-subflow-2b-drive-management-activity.png`, `apms-subflow-2c-share-public-trash-activity.png` |
+| Search & RAG Chat With Citations | `apms-subflow-3a-semantic-search-activity.png`, `apms-subflow-3b-rag-chat-answer-activity.png`, `apms-subflow-3c-citation-deep-link-activity.png` |
 ## C4 Model - C2 Container Diagram
 
 Sơ đồ C2 theo C4 Model mô tả các container chính của APMS và hệ thống ngoài mà chúng giao tiếp. Sơ đồ này dùng để trình bày kiến trúc ở mức container, không thay thế các main flow nghiệp vụ.
