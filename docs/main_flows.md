@@ -52,3 +52,31 @@ Sinh viên nhập search query hoặc câu hỏi Chat AI, chọn context, APMS k
 
 - **PNG:** [diagrams/apms-main-flow-3-search-rag-citation-activity.png](./diagrams/apms-main-flow-3-search-rag-citation-activity.png)
 - **Source:** [diagrams/apms-main-flow-3-search-rag-citation-activity.drawio](./diagrams/apms-main-flow-3-search-rag-citation-activity.drawio)
+
+## Detailed Sub-flow Diagrams
+
+Các sơ đồ dưới đây bóc tách 3 main flow thành những luồng vận hành thực tế nhỏ hơn. Chúng vẫn dùng UML Activity Diagram có swimlane và cùng notation với bộ main flow.
+
+### Flow 1 — System Access & Academic Profile
+
+| Sub-flow | Nội dung | PNG | Source |
+| --- | --- | --- | --- |
+| 1A — Login & Access Control | Google/Cognito login, allowlist/domain check, active user check, reject paths | [PNG](./diagrams/apms-subflow-1a-login-access-activity.png) | [drawio](./diagrams/apms-subflow-1a-login-access-activity.drawio) |
+| 1B — Academic Profile Setup | Load profile, choose curriculum, validate active curriculum, save profile, enter Drive | [PNG](./diagrams/apms-subflow-1b-academic-profile-activity.png) | [drawio](./diagrams/apms-subflow-1b-academic-profile-activity.drawio) |
+| 1C — Admin Catalog & Access Management | Admin role check, manage users/quota/access emails/catalog, integrity guards | [PNG](./diagrams/apms-subflow-1c-admin-catalog-access-activity.png) | [drawio](./diagrams/apms-subflow-1c-admin-catalog-access-activity.drawio) |
+
+### Flow 2 — Learning Document Lifecycle
+
+| Sub-flow | Nội dung | PNG | Source |
+| --- | --- | --- | --- |
+| 2A — Upload & Document Processing | Course-bound upload, validation, S3 upload, metadata, extract/chunk/embed, ready/fail | [PNG](./diagrams/apms-subflow-2a-upload-processing-activity.png) | [drawio](./diagrams/apms-subflow-2a-upload-processing-activity.drawio) |
+| 2B — Drive Management | Unified Drive listing, filter/sort/search, detail, read-only vs owner edit, star/move/update | [PNG](./diagrams/apms-subflow-2b-drive-management-activity.png) | [drawio](./diagrams/apms-subflow-2b-drive-management-activity.drawio) |
+| 2C — Sharing, Public Visibility & Trash | Read-only share/invite, revoke/public/trash/restore/permanent delete paths | [PNG](./diagrams/apms-subflow-2c-share-public-trash-activity.png) | [drawio](./diagrams/apms-subflow-2c-share-public-trash-activity.drawio) |
+
+### Flow 3 — Search & RAG Chat With Citations
+
+| Sub-flow | Nội dung | PNG | Source |
+| --- | --- | --- | --- |
+| 3A — Semantic Search | Query, scope, access filter, Gemini embedding, Atlas Vector Search, permitted results | [PNG](./diagrams/apms-subflow-3a-semantic-search-activity.png) | [drawio](./diagrams/apms-subflow-3a-semantic-search-activity.drawio) |
+| 3B — RAG Chat Answer Generation | Chat session, daily limit, context validation, retrieval/rerank, evidence gate, Gemini answer, citation normalization | [PNG](./diagrams/apms-subflow-3b-rag-chat-answer-activity.png) | [drawio](./diagrams/apms-subflow-3b-rag-chat-answer-activity.drawio) |
+| 3C — Citation Deep Link Opening | Citation context, document access, chunk lookup, viewer deep link, PDF/DOCX highlight, PPTX slide view | [PNG](./diagrams/apms-subflow-3c-citation-deep-link-activity.png) | [drawio](./diagrams/apms-subflow-3c-citation-deep-link-activity.drawio) |

@@ -1,54 +1,145 @@
-﻿<mxfile host="app.diagrams.net" modified="2026-07-16T00:00:00.000Z" agent="Codex" version="24.7.17">
+<mxfile host="app.diagrams.net" modified="2026-07-16T00:00:00.000Z" agent="Codex" version="24.7.17">
   <diagram id="apms-c2-container" name="APMS C2 Container">
-    <mxGraphModel dx="1900" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2000" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=none;" value="" vertex="1"><mxGeometry x="0" y="0" width="1900" height="1100" as="geometry" /></mxCell>
-        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=32;fontStyle=1;fontColor=#111827;align=center;" value="APMS - C2 Container Diagram" vertex="1"><mxGeometry x="350" y="35" width="1200" height="50" as="geometry" /></mxCell>
-        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=16;fontColor=#4b5563;align=center;" value="C4 Model Level 2: deployable/storage containers and APMS relationships with external systems." vertex="1"><mxGeometry x="350" y="90" width="1200" height="28" as="geometry" /></mxCell>
+        <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=none;" value="" vertex="1"><mxGeometry x="0" y="0" width="2000" height="1100" as="geometry" /></mxCell>
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=32;fontStyle=1;fontColor=#111827;align=center;" value="APMS - C2 Container Diagram" vertex="1"><mxGeometry x="400" y="35" width="1200" height="50" as="geometry" /></mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=16;fontColor=#4b5563;align=center;" value="C4 Model Level 2: deployable/storage containers and APMS relationships with external systems." vertex="1"><mxGeometry x="400" y="90" width="1200" height="28" as="geometry" /></mxCell>
 
-        <mxCell id="student" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=3;arcSize=12;fontSize=15;" value="Person&lt;br&gt;&lt;b&gt;Student&lt;/b&gt;&lt;br&gt;Upload, manage documents,&lt;br&gt;search and AI chat" vertex="1"><mxGeometry x="80" y="220" width="235" height="115" as="geometry" /></mxCell>
-        <mxCell id="admin" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=3;arcSize=12;fontSize=15;" value="Person&lt;br&gt;&lt;b&gt;Administrator&lt;/b&gt;&lt;br&gt;Manage users, quotas,&lt;br&gt;catalog and access emails" vertex="1"><mxGeometry x="80" y="500" width="235" height="115" as="geometry" /></mxCell>
+        <mxCell id="studentActor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=3;" value="" vertex="1"><mxGeometry x="145" y="190" width="80" height="110" as="geometry" /></mxCell>
+        <mxCell id="studentLabel" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=15;fontColor=#111827;align=center;verticalAlign=top;" value="Person&lt;br&gt;&lt;b&gt;Student&lt;/b&gt;&lt;br&gt;Upload, manage documents,&lt;br&gt;search and AI chat" vertex="1"><mxGeometry x="55" y="305" width="260" height="78" as="geometry" /></mxCell>
+        <mxCell id="adminActor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=3;" value="" vertex="1"><mxGeometry x="145" y="480" width="80" height="110" as="geometry" /></mxCell>
+        <mxCell id="adminLabel" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=15;fontColor=#111827;align=center;verticalAlign=top;" value="Person&lt;br&gt;&lt;b&gt;Administrator&lt;/b&gt;&lt;br&gt;Manage users, quotas,&lt;br&gt;catalog and access emails" vertex="1"><mxGeometry x="55" y="595" width="260" height="78" as="geometry" /></mxCell>
 
-        <mxCell id="boundary" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;strokeWidth=3;dashed=1;arcSize=10;fontSize=16;fontStyle=1;align=left;verticalAlign=top;spacingTop=18;spacingLeft=18;fontColor=#2563eb;" value="APMS Software System" vertex="1"><mxGeometry x="420" y="150" width="900" height="750" as="geometry" /></mxCell>
-        <mxCell id="web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Web App&lt;/b&gt;&lt;br&gt;Next.js / React&lt;br&gt;Drive, viewer, chat and admin UI" vertex="1"><mxGeometry x="520" y="245" width="260" height="130" as="geometry" /></mxCell>
-        <mxCell id="mobile" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Mobile App&lt;/b&gt;&lt;br&gt;Expo / React Native&lt;br&gt;Mobile UI for documents, search, chat and profile" vertex="1"><mxGeometry x="520" y="585" width="260" height="130" as="geometry" /></mxCell>
-        <mxCell id="api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;API Server&lt;/b&gt;&lt;br&gt;Express / TypeScript&lt;br&gt;Auth, documents, catalog, sharing, search and RAG chat" vertex="1"><mxGeometry x="930" y="330" width="290" height="145" as="geometry" /></mxCell>
-        <mxCell id="worker" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Document Processing Worker&lt;/b&gt;&lt;br&gt;Node.js / TypeScript&lt;br&gt;Extract Markdown, chunk and create embeddings" vertex="1"><mxGeometry x="930" y="630" width="290" height="140" as="geometry" /></mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;strokeWidth=3;dashed=1;arcSize=10;fontSize=16;fontStyle=1;align=left;verticalAlign=top;spacingTop=18;spacingLeft=18;fontColor=#2563eb;" value="APMS Software System" vertex="1"><mxGeometry x="430" y="150" width="970" height="760" as="geometry" /></mxCell>
+        <mxCell id="web" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Web App&lt;/b&gt;&lt;br&gt;Next.js / React&lt;br&gt;Drive, viewer, chat and admin UI" vertex="1"><mxGeometry x="520" y="225" width="255" height="120" as="geometry" /></mxCell>
+        <mxCell id="mobile" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Mobile App&lt;/b&gt;&lt;br&gt;Expo / React Native&lt;br&gt;Mobile UI for documents, search, chat and profile" vertex="1"><mxGeometry x="520" y="610" width="255" height="120" as="geometry" /></mxCell>
+        <mxCell id="api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;API Server&lt;/b&gt;&lt;br&gt;Express / TypeScript&lt;br&gt;Auth, documents, catalog, sharing, search and RAG chat" vertex="1"><mxGeometry x="950" y="255" width="280" height="130" as="geometry" /></mxCell>
+        <mxCell id="worker" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="Container&lt;br&gt;&lt;b&gt;Document Processing Worker&lt;/b&gt;&lt;br&gt;Node.js / TypeScript&lt;br&gt;Extract Markdown, chunk and create embeddings" vertex="1"><mxGeometry x="950" y="610" width="280" height="130" as="geometry" /></mxCell>
 
-        <mxCell id="cognito" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Amazon Cognito + Google Login&lt;/b&gt;&lt;br&gt;Identity provider, JWT session, admin group" vertex="1"><mxGeometry x="1460" y="180" width="300" height="115" as="geometry" /></mxCell>
-        <mxCell id="gemini" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Vertex AI Gemini&lt;/b&gt;&lt;br&gt;Embedding, chat generation and vision extraction" vertex="1"><mxGeometry x="1460" y="440" width="300" height="115" as="geometry" /></mxCell>
-        <mxCell id="ses" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Amazon SES&lt;/b&gt;&lt;br&gt;Invite email and notification email" vertex="1"><mxGeometry x="1460" y="700" width="300" height="105" as="geometry" /></mxCell>
-        <mxCell id="s3" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=14;" value="Object Storage&lt;br&gt;&lt;b&gt;Amazon S3&lt;/b&gt;&lt;br&gt;Original PDF/DOCX/PPTX files" vertex="1"><mxGeometry x="500" y="950" width="280" height="105" as="geometry" /></mxCell>
-        <mxCell id="mongo" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=14;" value="Database&lt;br&gt;&lt;b&gt;MongoDB Atlas&lt;/b&gt;&lt;br&gt;Users, catalog, documents, chunks, chat&lt;br&gt;+ Atlas Vector Search" vertex="1"><mxGeometry x="930" y="940" width="320" height="120" as="geometry" /></mxCell>
+        <mxCell id="cognito" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Amazon Cognito + Google Login&lt;/b&gt;&lt;br&gt;Identity provider, JWT session, admin group" vertex="1"><mxGeometry x="1580" y="180" width="300" height="115" as="geometry" /></mxCell>
+        <mxCell id="gemini" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Vertex AI Gemini&lt;/b&gt;&lt;br&gt;Embedding, chat generation and vision extraction" vertex="1"><mxGeometry x="1580" y="440" width="300" height="115" as="geometry" /></mxCell>
+        <mxCell id="ses" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;shadow=1;fontSize=14;" value="External System&lt;br&gt;&lt;b&gt;Amazon SES&lt;/b&gt;&lt;br&gt;Invite email and notification email" vertex="1"><mxGeometry x="1580" y="700" width="300" height="105" as="geometry" /></mxCell>
+        <mxCell id="s3" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=14;" value="Object Storage&lt;br&gt;&lt;b&gt;Amazon S3&lt;/b&gt;&lt;br&gt;Original PDF/DOCX/PPTX files" vertex="1"><mxGeometry x="500" y="955" width="280" height="105" as="geometry" /></mxCell>
+        <mxCell id="mongo" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=14;" value="Database&lt;br&gt;&lt;b&gt;MongoDB Atlas&lt;/b&gt;&lt;br&gt;Users, catalog, documents, chunks, chat&lt;br&gt;+ Atlas Vector Search" vertex="1"><mxGeometry x="950" y="940" width="320" height="120" as="geometry" /></mxCell>
 
-        <mxCell id="e1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses" edge="1" source="student" target="web"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e2" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses admin UI" edge="1" source="admin" target="web"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="370" y="558" /><mxPoint x="370" y="310" /></Array></mxGeometry></mxCell>
-        <mxCell id="e3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses" edge="1" source="student" target="mobile"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="350" y="278" /><mxPoint x="350" y="650" /></Array></mxGeometry></mxCell>
-        <mxCell id="e4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="HTTPS / REST" edge="1" source="web" target="api"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="HTTPS / REST" edge="1" source="mobile" target="api"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Process uploaded files" edge="1" source="api" target="worker"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses web UI" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="305" y="265" as="sourcePoint" />
+            <mxPoint x="520" y="265" as="targetPoint" />
+            <Array as="points"><mxPoint x="390" y="265" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses admin UI" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="305" y="555" as="sourcePoint" />
+            <mxPoint x="520" y="305" as="targetPoint" />
+            <Array as="points"><mxPoint x="375" y="555" /><mxPoint x="375" y="305" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="Uses mobile UI" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="305" y="290" as="sourcePoint" />
+            <mxPoint x="520" y="670" as="targetPoint" />
+            <Array as="points"><mxPoint x="405" y="290" /><mxPoint x="405" y="670" /></Array>
+          </mxGeometry>
+        </mxCell>
 
-        <mxCell id="e7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Google sign-in" edge="1" source="web" target="cognito"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="850" y="245" /><mxPoint x="1370" y="245" /></Array></mxGeometry></mxCell>
-        <mxCell id="e8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="JWT auth" edge="1" source="api" target="cognito"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1360" y="402" /><mxPoint x="1360" y="280" /></Array></mxGeometry></mxCell>
-        <mxCell id="e9" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Embedding / chat / vision" edge="1" source="api" target="gemini"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Embedding / vision" edge="1" source="worker" target="gemini"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1365" y="700" /><mxPoint x="1365" y="520" /></Array></mxGeometry></mxCell>
-        <mxCell id="e11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Send invite email" edge="1" source="api" target="ses"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1395" y="402" /><mxPoint x="1395" y="755" /></Array></mxGeometry></mxCell>
+        <mxCell id="e4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="HTTPS / REST" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="775" y="285" as="sourcePoint" />
+            <mxPoint x="950" y="305" as="targetPoint" />
+            <Array as="points"><mxPoint x="845" y="285" /><mxPoint x="845" y="305" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563eb;strokeWidth=2;endArrow=open;fontSize=12;" value="HTTPS / REST" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="775" y="670" as="sourcePoint" />
+            <mxPoint x="950" y="355" as="targetPoint" />
+            <Array as="points"><mxPoint x="885" y="670" /><mxPoint x="885" y="355" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Process uploaded files" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="340" as="sourcePoint" />
+            <mxPoint x="1230" y="675" as="targetPoint" />
+            <Array as="points"><mxPoint x="1320" y="340" /><mxPoint x="1320" y="675" /></Array>
+          </mxGeometry>
+        </mxCell>
 
-        <mxCell id="labelS3" parent="1" style="text;html=1;strokeColor=none;fillColor=#fff7ed;fontSize=12;fontColor=#92400e;align=center;" value="Presigned upload/download" vertex="1"><mxGeometry x="430" y="810" width="190" height="24" as="geometry" /></mxCell>
-        <mxCell id="e12" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=2;endArrow=open;fontSize=12;" value="" edge="1" source="api" target="s3"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="430" y="402" /><mxPoint x="430" y="1005" /></Array></mxGeometry></mxCell>
-        <mxCell id="labelReadS3" parent="1" style="text;html=1;strokeColor=none;fillColor=#fff7ed;fontSize=12;fontColor=#166534;align=center;" value="Read uploaded files" vertex="1"><mxGeometry x="705" y="850" width="155" height="24" as="geometry" /></mxCell>
-        <mxCell id="e13" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="" edge="1" source="worker" target="s3"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="700" /><mxPoint x="820" y="1020" /></Array></mxGeometry></mxCell>
-        <mxCell id="labelMongo" parent="1" style="text;html=1;strokeColor=none;fillColor=#fff7ed;fontSize=12;fontColor=#92400e;align=center;" value="Metadata, chunks, chat + vector search" vertex="1"><mxGeometry x="1245" y="810" width="240" height="24" as="geometry" /></mxCell>
-        <mxCell id="e14" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=2;endArrow=open;fontSize=12;" value="" edge="1" source="api" target="mongo"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1305" y="402" /><mxPoint x="1305" y="1000" /></Array></mxGeometry></mxCell>
-        <mxCell id="e15" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Store chunks and embeddings" edge="1" source="worker" target="mongo"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Google sign-in" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="775" y="245" as="sourcePoint" />
+            <mxPoint x="1580" y="230" as="targetPoint" />
+            <Array as="points"><mxPoint x="1500" y="245" /><mxPoint x="1500" y="230" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="JWT auth" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="285" as="sourcePoint" />
+            <mxPoint x="1580" y="265" as="targetPoint" />
+            <Array as="points"><mxPoint x="1530" y="285" /><mxPoint x="1530" y="265" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Embedding / chat / vision" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="320" as="sourcePoint" />
+            <mxPoint x="1580" y="475" as="targetPoint" />
+            <Array as="points"><mxPoint x="1450" y="320" /><mxPoint x="1450" y="475" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Embedding / vision" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="645" as="sourcePoint" />
+            <mxPoint x="1580" y="520" as="targetPoint" />
+            <Array as="points"><mxPoint x="1490" y="645" /><mxPoint x="1490" y="520" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6b7280;strokeWidth=2;endArrow=open;fontSize=12;" value="Send invite email" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="365" as="sourcePoint" />
+            <mxPoint x="1580" y="750" as="targetPoint" />
+            <Array as="points"><mxPoint x="1550" y="365" /><mxPoint x="1550" y="750" /></Array>
+          </mxGeometry>
+        </mxCell>
 
-        <mxCell id="legendTitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#111827;align=left;" value="Legend:" vertex="1"><mxGeometry x="80" y="940" width="80" height="24" as="geometry" /></mxCell>
-        <mxCell id="legendPerson" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=2;arcSize=12;fontSize=12;fontStyle=1;" value="Person" vertex="1"><mxGeometry x="175" y="928" width="100" height="40" as="geometry" /></mxCell>
-        <mxCell id="legendContainer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;fontSize=12;fontStyle=1;" value="Container" vertex="1"><mxGeometry x="290" y="928" width="110" height="40" as="geometry" /></mxCell>
-        <mxCell id="legendExternal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;fontSize=12;fontStyle=1;" value="External" vertex="1"><mxGeometry x="175" y="985" width="100" height="40" as="geometry" /></mxCell>
-        <mxCell id="legendData" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=12;fontStyle=1;" value="Data Store" vertex="1"><mxGeometry x="290" y="982" width="110" height="48" as="geometry" /></mxCell>
+        <mxCell id="e12" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=2;endArrow=open;fontSize=12;" value="Presigned upload/download" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="380" as="sourcePoint" />
+            <mxPoint x="640" y="955" as="targetPoint" />
+            <Array as="points"><mxPoint x="910" y="380" /><mxPoint x="910" y="865" /><mxPoint x="640" y="865" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Read uploaded files" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="690" as="sourcePoint" />
+            <mxPoint x="640" y="955" as="targetPoint" />
+            <Array as="points"><mxPoint x="830" y="690" /><mxPoint x="830" y="915" /><mxPoint x="640" y="915" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=2;endArrow=open;fontSize=12;" value="Metadata, chunks, chat + vector search" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="375" as="sourcePoint" />
+            <mxPoint x="1110" y="940" as="targetPoint" />
+            <Array as="points"><mxPoint x="1425" y="375" /><mxPoint x="1425" y="885" /><mxPoint x="1110" y="885" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#16a34a;strokeWidth=2;endArrow=open;fontSize=12;" value="Store chunks and embeddings" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1090" y="740" as="sourcePoint" />
+            <mxPoint x="1090" y="940" as="targetPoint" />
+            <Array as="points"><mxPoint x="1090" y="825" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="legendTitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#111827;align=left;" value="Legend:" vertex="1"><mxGeometry x="70" y="940" width="80" height="24" as="geometry" /></mxCell>
+        <mxCell id="legendPersonIcon" parent="1" style="shape=umlActor;html=1;outlineConnect=0;fillColor=#ffedd5;strokeColor=#f97316;strokeWidth=2;" value="" vertex="1"><mxGeometry x="170" y="922" width="35" height="48" as="geometry" /></mxCell>
+        <mxCell id="legendPerson" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#111827;align=left;" value="Person" vertex="1"><mxGeometry x="210" y="938" width="65" height="24" as="geometry" /></mxCell>
+        <mxCell id="legendContainer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=12;fontSize=12;fontStyle=1;" value="Container" vertex="1"><mxGeometry x="285" y="928" width="110" height="40" as="geometry" /></mxCell>
+        <mxCell id="legendExternal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6b7280;strokeWidth=2;arcSize=12;fontSize=12;fontStyle=1;" value="External" vertex="1"><mxGeometry x="165" y="985" width="100" height="40" as="geometry" /></mxCell>
+        <mxCell id="legendData" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d97706;strokeWidth=2;fontSize=12;fontStyle=1;" value="Data Store" vertex="1"><mxGeometry x="280" y="982" width="110" height="48" as="geometry" /></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
