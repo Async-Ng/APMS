@@ -6,6 +6,7 @@ import {
   Pressable,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -21,6 +22,8 @@ import {
   useCatalogCurricula,
   useCatalogCurriculumSemesters,
   useCatalogSemesters,
+  useEnrolledCourses,
+  type CatalogCourseSlot,
   type CatalogCurriculum,
   type CatalogSemester,
   type CatalogSubject,
@@ -40,8 +43,36 @@ function getFileIcon(mimeType: string): { name: keyof typeof Ionicons.glyphMap; 
   return { name: "document-outline", color: colors.muted };
 }
 
+function getCourseLabel(course: CatalogCourseSlot): string {
+  const semester = course.semester?.code ? `${course.semester.code} · ` : "";
+  return course.subject ? `${semester}${course.subject.code} - ${course.subject.name}` : "Môn học";
+}
+
+function getSemesterKey(course: CatalogCourseSlot): string {
+  return course.semester?.id ?? course.semester?.code ?? "unknown";
+}
+
+function getSemesterLabel(course: CatalogCourseSlot): string {
+  return course.semester?.code ?? "Chưa rõ kỳ";
+}
+
+function groupCoursesBySemester(courses: CatalogCourseSlot[]) {
+  const groups = new Map<string, { key: string; label: string; courses: CatalogCourseSlot[] }>();
+  for (const course of courses) {
+    const key = getSemesterKey(course);
+    const existing = groups.get(key);
+    if (existing) {
+      existing.courses.push(course);
+    } else {
+      groups.set(key, { key, label: getSemesterLabel(course), courses: [course] });
+    }
+  }
+  return Array.from(groups.values());
+}
+
 export default function LibraryScreen() {
   const router = useRouter();
+  const { profile, enrolledCourses } = useEnrolledCourses();
 
   // Search and Debounce
   const [search, setSearch] = useState("");
@@ -56,8 +87,9 @@ export default function LibraryScreen() {
     };
   }, [search]);
 
-  // Segment: "Gợi ý" (match: "auto") and "Duyệt" (match: "all")
+  // Segment: "Phù hợp" (match: "auto") and "Tất cả" (match: "all")
   const [segment, setSegment] = useState<"auto" | "all">("auto");
+  const [selectedSemesterGroupKey, setSelectedSemesterGroupKey] = useState<string | null>(null);
 
   // Filters state
   const [selectedCurriculum, setSelectedCurriculum] = useState<CatalogCurriculum | null>(null);
@@ -97,17 +129,6 @@ export default function LibraryScreen() {
       )
     : [];
 
-  // Reset semester/subject when curriculum changes
-  useEffect(() => {
-    setSelectedSemester(null);
-    setSelectedSubject(null);
-  }, [selectedCurriculum]);
-
-  // Reset subject when semester changes
-  useEffect(() => {
-    setSelectedSubject(null);
-  }, [selectedSemester]);
-
   // Query Public Documents
   const queryParams = {
     search: debouncedSearch || undefined,
@@ -119,18 +140,35 @@ export default function LibraryScreen() {
 
   const { data: publicData, isLoading, refetch, isRefetching } = usePublicDocuments(queryParams);
   const documents = publicData?.documents ?? [];
+  const semesterGroups = groupCoursesBySemester(enrolledCourses);
+  const selectedCourseSemesterKey =
+    selectedSubject && selectedSemester
+      ? semesterGroups.find((group) => group.courses.some((course) => course.subject?.id === selectedSubject.id && course.semester?.id === selectedSemester.id))?.key
+      : null;
+  const activeSemesterGroupKey =
+    selectedSemesterGroupKey ?? selectedCourseSemesterKey ?? semesterGroups[0]?.key ?? null;
+  const visibleCourseGroup =
+    semesterGroups.find((group) => group.key === activeSemesterGroupKey) ?? semesterGroups[0];
 
   // Build curriculum filter actions
   const curriculumActions: ActionItem[] = [
     {
       label: "Tất cả chương trình",
       icon: "layers-outline",
-      onPress: () => setSelectedCurriculum(null),
+      onPress: () => {
+        setSelectedCurriculum(null);
+        setSelectedSemester(null);
+        setSelectedSubject(null);
+      },
     },
     ...curricula.map((cur) => ({
       label: `${cur.code} - ${cur.name}`,
       icon: "book-outline" as const,
-      onPress: () => setSelectedCurriculum(cur),
+      onPress: () => {
+        setSelectedCurriculum(cur);
+        setSelectedSemester(null);
+        setSelectedSubject(null);
+      },
     })),
   ];
 
@@ -139,12 +177,18 @@ export default function LibraryScreen() {
     {
       label: "Tất cả kỳ học",
       icon: "calendar-outline",
-      onPress: () => setSelectedSemester(null),
+      onPress: () => {
+        setSelectedSemester(null);
+        setSelectedSubject(null);
+      },
     },
     ...semestersList.map((sem) => ({
       label: sem.name,
       icon: "time-outline" as const,
-      onPress: () => setSelectedSemester(sem),
+      onPress: () => {
+        setSelectedSemester(sem);
+        setSelectedSubject(null);
+      },
     })),
   ];
 
@@ -162,9 +206,19 @@ export default function LibraryScreen() {
     })),
   ];
 
+  function handlePickEnrolledCourse(course: CatalogCourseSlot) {
+    setSelectedSemesterGroupKey(getSemesterKey(course));
+    setSegment("all");
+    setSearch("");
+    setDebouncedSearch("");
+    setSelectedCurriculum(course.curriculum);
+    setSelectedSemester(course.semester);
+    setSelectedSubject(course.subject);
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <HeaderBar title="Thư viện công khai" subtitle="Tài liệu được chia sẻ công khai" />
+      <HeaderBar title="Thư viện công khai" subtitle="Tìm tài liệu công khai theo môn học" />
 
       {/* Search bar */}
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
@@ -179,10 +233,10 @@ export default function LibraryScreen() {
             borderRadius: 14,
             paddingHorizontal: 14,
             shadowColor: colors.ink,
-            shadowOffset: { width: 4, height: 4 },
+            shadowOffset: { width: 3, height: 3 },
             shadowOpacity: 1,
             shadowRadius: 0,
-            elevation: 4,
+            elevation: 3,
             minHeight: 52,
           }}
         >
@@ -190,7 +244,7 @@ export default function LibraryScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Tìm kiếm tài liệu công khai..."
+            placeholder="Tìm tên tài liệu, môn học hoặc nội dung..."
             placeholderTextColor={colors.muted}
             style={{ flex: 1, fontSize: 15, color: colors.ink, paddingVertical: 12 }}
             returnKeyType="search"
@@ -205,12 +259,134 @@ export default function LibraryScreen() {
         </View>
       </View>
 
-      {/* Segments: Gợi ý vs Duyệt */}
+      {profile?.isComplete && enrolledCourses.length > 0 && (
+        <View style={{ gap: 8, paddingBottom: 4 }}>
+          <View style={{ paddingHorizontal: 16 }}>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.muted }}>
+              MÔN TRONG CTĐT
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }} numberOfLines={1}>
+              {profile.curriculum?.code ?? "CTĐT"} · chạm vào môn để xem tài liệu công khai
+            </Text>
+          </View>
+          {semesterGroups.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 2 }}
+            >
+              {semesterGroups.map((group) => {
+                const active = group.key === activeSemesterGroupKey;
+                return (
+                  <Pressable
+                    key={group.key}
+                    onPress={() => setSelectedSemesterGroupKey(group.key)}
+                    style={({ pressed }) => ({
+                      minHeight: 40,
+                      borderWidth: 2,
+                      borderColor: colors.ink,
+                      borderRadius: 999,
+                      paddingHorizontal: 14,
+                      backgroundColor: active ? colors.fptBlue : pressed ? "#F0F0F0" : colors.surface,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    })}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Xem môn ${group.label}`}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "800",
+                        color: active ? colors.onBrand : colors.ink,
+                      }}
+                    >
+                      {group.label} · {group.courses.length}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+          {visibleCourseGroup && (
+            <View style={{ paddingHorizontal: 16 }}>
+              <Text style={{ fontSize: 12, fontWeight: "800", color: colors.fptBlue }}>
+                {visibleCourseGroup.label}
+              </Text>
+            </View>
+          )}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: 4 }}
+          >
+            {(visibleCourseGroup?.courses ?? enrolledCourses).map((course) => {
+              const selected =
+                segment === "all" &&
+                selectedCurriculum?.id === course.curriculum?.id &&
+                selectedSemester?.id === course.semester?.id &&
+                selectedSubject?.id === course.subject?.id;
+
+              return (
+                <Pressable
+                  key={course.id}
+                  onPress={() => handlePickEnrolledCourse(course)}
+                  style={({ pressed }) => ({
+                    width: 204,
+                    minHeight: 96,
+                    borderWidth: 3,
+                    borderColor: colors.ink,
+                    borderRadius: 14,
+                    padding: 12,
+                    gap: 6,
+                    backgroundColor: selected ? colors.fptOrange : colors.surface,
+                    shadowColor: colors.ink,
+                    shadowOffset: pressed ? { width: 0, height: 0 } : { width: 3, height: 3 },
+                    shadowOpacity: pressed ? 0 : 1,
+                    shadowRadius: 0,
+                    elevation: pressed ? 0 : 3,
+                    transform: pressed ? [{ translateX: 3 }, { translateY: 3 }] : [],
+                  })}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Xem tài liệu môn ${getCourseLabel(course)}`}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "800",
+                      color: selected ? colors.onBrand : colors.fptBlue,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {course.semester?.code ?? "Học kỳ"} · {course.subject?.code ?? "Môn học"}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 18,
+                      fontWeight: "800",
+                      color: selected ? colors.onBrand : colors.ink,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {course.subject?.name ?? "Môn học"}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Segments: Phù hợp vs Tất cả */}
       <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10 }}>
         <Pressable
           onPress={() => setSegment("auto")}
           style={({ pressed }) => ({
             flex: 1,
+            minHeight: 44,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
@@ -226,7 +402,7 @@ export default function LibraryScreen() {
         >
           <Ionicons name="sparkles-outline" size={16} color={segment === "auto" ? colors.onBrand : colors.ink} />
           <Text style={{ fontSize: 14, fontWeight: "700", color: segment === "auto" ? colors.onBrand : colors.ink }}>
-            Gợi ý
+            Phù hợp
           </Text>
         </Pressable>
 
@@ -234,6 +410,7 @@ export default function LibraryScreen() {
           onPress={() => setSegment("all")}
           style={({ pressed }) => ({
             flex: 1,
+            minHeight: 44,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
@@ -249,12 +426,12 @@ export default function LibraryScreen() {
         >
           <Ionicons name="grid-outline" size={16} color={segment === "all" ? colors.onBrand : colors.ink} />
           <Text style={{ fontSize: 14, fontWeight: "700", color: segment === "all" ? colors.onBrand : colors.ink }}>
-            Duyệt
+            Tất cả
           </Text>
         </Pressable>
       </View>
 
-      {/* Filters (only visible when Duyệt is selected) */}
+      {/* Filters (only visible when Tất cả is selected) */}
       {segment === "all" && (
         <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 10, marginBottom: 6 }}>
           {/* Curriculum Filter */}
@@ -262,6 +439,7 @@ export default function LibraryScreen() {
             onPress={() => setActiveSheet("curriculum")}
             style={{
               flex: 1,
+              minHeight: 44,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -269,7 +447,7 @@ export default function LibraryScreen() {
               borderWidth: 2,
               borderColor: colors.ink,
               borderRadius: 8,
-              paddingVertical: 6,
+              paddingVertical: 8,
               paddingHorizontal: 4,
               backgroundColor: selectedCurriculum ? "#FFE600" : colors.surface,
             }}
@@ -285,6 +463,7 @@ export default function LibraryScreen() {
             onPress={() => setActiveSheet("semester")}
             style={{
               flex: 1,
+              minHeight: 44,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -292,7 +471,7 @@ export default function LibraryScreen() {
               borderWidth: 2,
               borderColor: colors.ink,
               borderRadius: 8,
-              paddingVertical: 6,
+              paddingVertical: 8,
               paddingHorizontal: 4,
               backgroundColor: selectedSemester ? "#FFE600" : colors.surface,
             }}
@@ -309,6 +488,7 @@ export default function LibraryScreen() {
             disabled={!selectedCurriculum}
             style={{
               flex: 1,
+              minHeight: 44,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -316,7 +496,7 @@ export default function LibraryScreen() {
               borderWidth: 2,
               borderColor: colors.ink,
               borderRadius: 8,
-              paddingVertical: 6,
+              paddingVertical: 8,
               paddingHorizontal: 4,
               backgroundColor: selectedSubject ? "#FFE600" : colors.surface,
               opacity: selectedCurriculum ? 1 : 0.5,
@@ -353,7 +533,7 @@ export default function LibraryScreen() {
               title="Không tìm thấy tài liệu"
               description={
                 segment === "auto"
-                  ? "Hãy chắc chắn bạn đã cấu hình hồ sơ học thuật đầy đủ để nhận gợi ý."
+                  ? "Hoàn thành hồ sơ học thuật để APMS ưu tiên tài liệu phù hợp với chương trình học của bạn."
                   : "Không có tài liệu nào khớp với bộ lọc hiện tại của bạn."
               }
             />

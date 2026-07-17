@@ -70,6 +70,30 @@ export default function AcademicProfileScreen() {
       />
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+        {!isComplete && (
+          <View
+            style={{
+              borderWidth: 3,
+              borderColor: colors.ink,
+              borderRadius: 14,
+              backgroundColor: "#FFE600",
+              padding: 14,
+              shadowColor: colors.ink,
+              shadowOffset: { width: 3, height: 3 },
+              shadowOpacity: 1,
+              shadowRadius: 0,
+              elevation: 3,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "800", color: colors.ink, marginBottom: 4 }}>
+              Cần chọn chương trình học
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18, fontWeight: "600" }}>
+              APMS dùng thông tin này để hiện đúng môn học khi tải lên, tìm kiếm và xem thư viện.
+            </Text>
+          </View>
+        )}
+
         <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
           Hồ sơ học thuật chỉ cần Chương trình đào tạo. Khi tải tài liệu, bạn sẽ chọn môn cụ
           thể trong CTĐT đó.
@@ -87,6 +111,7 @@ export default function AcademicProfileScreen() {
               borderRadius: 12,
               paddingHorizontal: 14,
               paddingVertical: 12,
+              minHeight: 56,
               backgroundColor: colors.surface,
               flexDirection: "row",
               alignItems: "center",
@@ -101,8 +126,9 @@ export default function AcademicProfileScreen() {
                 flex: 1,
                 color: selectedCurriculum ? colors.ink : colors.muted,
                 fontWeight: selectedCurriculum ? "700" : "400",
+                lineHeight: 20,
               }}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {selectedCurriculum
                 ? `${selectedCurriculum.code} — ${selectedCurriculum.name}`

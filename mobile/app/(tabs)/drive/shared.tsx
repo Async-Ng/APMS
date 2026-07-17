@@ -163,6 +163,7 @@ function OutgoingGroup({ group }: { group: ShareByMeGroup }) {
                 onPress={() => revokeShare.mutate(share.id)}
                 disabled={revokeShare.isPending}
                 style={({ pressed }) => ({
+                  minHeight: 44,
                   borderWidth: 2,
                   borderColor: colors.error,
                   borderRadius: 8,
@@ -215,6 +216,7 @@ export default function SharedScreen() {
               key={t.id}
               onPress={() => setTab(t.id)}
               style={({ pressed }) => ({
+                minHeight: 44,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 6,

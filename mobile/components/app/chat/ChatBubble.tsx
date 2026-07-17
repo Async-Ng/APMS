@@ -9,7 +9,7 @@ interface ChatBubbleProps {
   content: string;
   createdAt?: string;
   citations?: Citation[];
-  onCitationPress?: (documentId: string) => void;
+  onCitationPress?: (citation: Citation) => void;
 }
 
 const markdownStyles = {
@@ -93,7 +93,7 @@ export function ChatBubble({
             }}
             onPress={() => {
               if (citations && citations[index - 1] && onCitationPress) {
-                onCitationPress(citations[index - 1].documentId);
+                onCitationPress(citations[index - 1]);
               }
             }}
           >

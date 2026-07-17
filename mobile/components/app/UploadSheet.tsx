@@ -1,4 +1,3 @@
-﻿import { isAxiosError } from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
@@ -54,15 +53,6 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
   const uploadDocument = useUploadDocument();
 
   useEffect(() => {
-    console.log("📋 Profile & Courses:", {
-      profileComplete: profile?.isComplete,
-      curriculumId: profile?.curriculum?.id,
-      enrolledCoursesCount: enrolledCourses.length,
-      selectedCourseSlotId: courseSlotId
-    });
-  }, [profile, enrolledCourses, courseSlotId]);
-
-  useEffect(() => {
     if (visible) {
       setStep("pick");
       setFile(null);
@@ -106,7 +96,6 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
     if (!file || !courseSlotId) return;
     setStep("uploading");
     setProgress(0);
-    console.log("🚀 Upload payload:", { courseSlotId, fileName: file.name, fileSize: file.size });
     try {
       await uploadDocument.mutateAsync({
         uri: file.uri,
@@ -120,21 +109,6 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
       });
       setStep("done");
     } catch (err) {
-      console.error("❌ Upload error:", err);
-      if (isAxiosError(err)) {
-        console.error("❌ API error details:", {
-          status: err.response?.status,
-          statusText: err.response?.statusText,
-          data: err.response?.data,
-          requestData: {
-            originalFilename: file.name,
-            mimeType: file.mimeType,
-            fileSizeBytes: file.size,
-            courseSlotId,
-            visibility,
-          }
-        });
-      }
       setErrorMsg(getErrorMessage(err, "Tải lên thất bại. Vui lòng thử lại."));
       setStep("error");
     }
@@ -156,30 +130,34 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleDismiss}>
-      <Pressable style={{ flex: 1 }} onPress={handleDismiss}>
+      <Animated.View
+        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
+      >
+        <Pressable
+          onPress={handleDismiss}
+          style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+          accessibilityRole="button"
+          accessibilityLabel="Đóng bảng tải lên"
+        />
         <Animated.View
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
+          style={{
+            backgroundColor: colors.bg,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderWidth: 3,
+            borderBottomWidth: 0,
+            borderColor: colors.ink,
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 16,
+            maxHeight: "85%",
+            transform: [{ translateY }],
+          }}
         >
-          <Pressable>
-            <Animated.View
-              style={{
-                backgroundColor: colors.bg,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                borderWidth: 3,
-                borderBottomWidth: 0,
-                borderColor: colors.ink,
-                paddingHorizontal: 20,
-                paddingBottom: insets.bottom + 16,
-                maxHeight: "85%",
-                transform: [{ translateY }],
-              }}
-            >
               <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false}>
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {(step === "pick" || step === "error") && (
                   <>
                     <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8, marginBottom: 4 }}>
@@ -213,9 +191,10 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                           <Text style={{ fontSize: 13, fontWeight: "700", color: colors.ink, marginBottom: 6 }}>
                             Môn học *
                           </Text>
-                                          <Pressable
+                          <Pressable
                             onPress={() => enrolledCourses.length > 0 && setShowCoursePicker(true)}
                             style={{
+                              minHeight: 52,
                               borderWidth: 2,
                               borderColor: colors.ink,
                               borderRadius: 12,
@@ -225,6 +204,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                               flexDirection: "row",
                               alignItems: "center",
                               justifyContent: "space-between",
+                              gap: 8,
                             }}
                             accessibilityRole="button"
                             accessibilityLabel="Chọn môn học"
@@ -236,7 +216,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                                 fontWeight: selectedCourse ? "700" : "400",
                                 flex: 1,
                               }}
-                              numberOfLines={1}
+                              numberOfLines={2}
                             >
                               {selectedCourse
                                 ? `${selectedCourse.semester?.code ? `${selectedCourse.semester.code} · ` : ""}${selectedCourse.subject?.code} — ${selectedCourse.subject?.name}`
@@ -406,10 +386,8 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                   <BrutalButton label="Huỷ" onPress={handleDismiss} variant="ghost" fullWidth />
                 </View>
               )}
-            </Animated.View>
-          </Pressable>
         </Animated.View>
-      </Pressable>
+      </Animated.View>
 
       <ActionSheet
         visible={showCoursePicker}

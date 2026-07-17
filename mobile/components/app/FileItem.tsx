@@ -13,6 +13,7 @@ interface FileItemProps {
   status: DocStatus;
   createdAt?: string;
   isStarred?: boolean;
+  courseLabel?: string | null;
   onPress: () => void;
   onLongPress: () => void;
 }
@@ -30,7 +31,17 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileItem({ title, mimeType, fileSizeBytes, status, createdAt, isStarred, onPress, onLongPress }: FileItemProps) {
+export function FileItem({
+  title,
+  mimeType,
+  fileSizeBytes,
+  status,
+  createdAt,
+  isStarred,
+  courseLabel,
+  onPress,
+  onLongPress,
+}: FileItemProps) {
   const icon = getFileIcon(mimeType);
 
   return (
@@ -75,6 +86,14 @@ export function FileItem({ title, mimeType, fileSizeBytes, status, createdAt, is
         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }} numberOfLines={1}>
           {title}
         </Text>
+        {courseLabel && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Ionicons name="school-outline" size={13} color={colors.fptBlue} />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.fptBlue }} numberOfLines={1}>
+              {courseLabel}
+            </Text>
+          </View>
+        )}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <StatusBadge status={status} createdAt={createdAt} />
           <Text style={{ fontSize: 11, color: colors.muted }}>{formatBytes(fileSizeBytes)}</Text>

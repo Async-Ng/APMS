@@ -17,9 +17,9 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopWidth: 3,
           borderTopColor: colors.ink,
-          paddingBottom: Platform.OS === "ios" ? 24 : 8,
-          paddingTop: 6,
-          height: Platform.OS === "ios" ? 84 : 64,
+          paddingBottom: Platform.OS === "ios" ? 24 : 14,
+          paddingTop: 8,
+          height: Platform.OS === "ios" ? 84 : 76,
           shadowColor: colors.ink,
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 1,
@@ -28,8 +28,8 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontWeight: "700",
-          fontSize: 11,
-          marginTop: 2,
+          fontSize: 10,
+          marginTop: 1,
         },
       }}
     >
@@ -54,7 +54,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Trò chuyện AI",
+          title: "Chat AI",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
           ),

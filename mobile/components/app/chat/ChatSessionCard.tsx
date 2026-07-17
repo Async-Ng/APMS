@@ -15,6 +15,7 @@ const CONTEXT_LABELS: Record<string, string> = {
   all: "Tất cả tài liệu",
   folder: "Thư mục",
   document: "Tài liệu",
+  documents: "Nhiều tài liệu",
 };
 
 function formatRelativeTime(dateStr: string): string {
@@ -28,6 +29,15 @@ function formatRelativeTime(dateStr: string): string {
   return `${d} ngày trước`;
 }
 
+function contextSummary(session: ChatSession): string | null {
+  if (session.contextLabel) return session.contextLabel;
+  if (session.contextDocuments?.length) {
+    if (session.contextDocuments.length === 1) return session.contextDocuments[0]?.title ?? null;
+    return `${session.contextDocuments[0]?.title ?? "Tài liệu"} + ${session.contextDocuments.length - 1} tài liệu`;
+  }
+  return null;
+}
+
 interface ChatSessionCardProps {
   session: ChatSession;
   onPress: () => void;
@@ -35,6 +45,8 @@ interface ChatSessionCardProps {
 }
 
 export function ChatSessionCard({ session, onPress, onLongPress }: ChatSessionCardProps) {
+  const summary = contextSummary(session);
+
   return (
     <Pressable
       onPress={onPress}
@@ -80,7 +92,12 @@ export function ChatSessionCard({ session, onPress, onLongPress }: ChatSessionCa
               {session.title}
             </Text>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
+          {summary && (
+            <Text style={{ marginTop: 3, fontSize: 12, fontWeight: "700", color: colors.muted }} numberOfLines={1}>
+              {summary}
+            </Text>
+          )}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 5 }}>
             <View
               style={{
                 backgroundColor:

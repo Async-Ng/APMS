@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, RefreshControl, SafeAreaView, Text } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, SafeAreaView, Text } from "react-native";
 
 import { ActionSheet } from "../../../components/app/ActionSheet";
 import { ChatSessionCard } from "../../../components/app/chat/ChatSessionCard";
+import { ChatSourcePickerSheet } from "../../../components/app/chat/ChatSourcePickerSheet";
 import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { HeaderBar } from "../../../components/ui/HeaderBar";
@@ -30,6 +31,7 @@ export default function ChatSessionsScreen() {
 
   const [actionTarget, setActionTarget] = useState<ChatSession | null>(null);
   const [renameTarget, setRenameTarget] = useState<ChatSession | null>(null);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
 
   useEffect(() => {
     if (params.contextType && params.contextId) {
@@ -50,10 +52,20 @@ export default function ChatSessionsScreen() {
   }, []);
 
   function handleNewChat() {
-    createSession.mutate(
-      { contextType: "all", title: "Cuộc trò chuyện mới" },
-      { onSuccess: (session) => router.push(`/(tabs)/chat/${session.id}`) },
-    );
+    setSourcePickerOpen(true);
+  }
+
+  function confirmDeleteSession(session: ChatSession) {
+    Alert.alert("Xóa cuộc trò chuyện?", `Cuộc trò chuyện "${session.title}" sẽ bị xóa khỏi danh sách.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => {
+          deleteSession.mutate(session.id, { onSuccess: () => setActionTarget(null) });
+        },
+      },
+    ]);
   }
 
   function handleRenameConfirm(title: string) {
@@ -83,15 +95,15 @@ export default function ChatSessionsScreen() {
               backgroundColor: colors.fptOrange,
               paddingHorizontal: 14,
               paddingVertical: 8,
-              minHeight: 40,
+              minHeight: 44,
               flexDirection: "row",
               gap: 6,
               ...pressedBrutalStyle(pressed),
             })}
-            accessibilityLabel="Trò chuyện mới"
+            accessibilityLabel="Chọn nguồn chat"
           >
-            <Ionicons name="add" size={16} color={colors.onBrand} />
-            <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 13 }}>Trò chuyện mới</Text>
+            <Ionicons name="folder-open-outline" size={16} color={colors.onBrand} />
+            <Text style={{ color: colors.onBrand, fontWeight: "700", fontSize: 13 }}>Chọn nguồn</Text>
           </Pressable>
         }
       />
@@ -111,8 +123,8 @@ export default function ChatSessionsScreen() {
             <EmptyState
               icon="chatbubble-outline"
               title="Chưa có cuộc trò chuyện"
-              description="Bắt đầu trò chuyện mới và hỏi bất cứ điều gì về tài liệu của bạn."
-              action={{ label: "Bắt đầu trò chuyện", onPress: handleNewChat }}
+              description="Chọn nguồn tài liệu rồi hỏi AI, tóm tắt, tạo FAQ hoặc ôn tập."
+              action={{ label: "Chọn nguồn chat", onPress: handleNewChat }}
             />
           }
           renderItem={({ item }) => (
@@ -164,11 +176,24 @@ export default function ChatSessionsScreen() {
             icon: "trash-outline",
             destructive: true,
             onPress: () => {
-              if (actionTarget) deleteSession.mutate(actionTarget.id);
+              if (actionTarget) confirmDeleteSession(actionTarget);
             },
           },
         ]}
         onDismiss={() => setActionTarget(null)}
+      />
+      <ChatSourcePickerSheet
+        visible={sourcePickerOpen}
+        loading={createSession.isPending}
+        onDismiss={() => setSourcePickerOpen(false)}
+        onCreate={(input) => {
+          createSession.mutate(input, {
+            onSuccess: (session) => {
+              setSourcePickerOpen(false);
+              router.push(`/(tabs)/chat/${session.id}`);
+            },
+          });
+        }}
       />
     </SafeAreaView>
   );

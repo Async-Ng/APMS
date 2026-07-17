@@ -9,6 +9,9 @@ export interface ChatSession {
   title: string;
   contextType: "all" | "folder" | "document" | "documents";
   contextId: string | null;
+  contextIds?: string[];
+  contextLabel?: string | null;
+  contextDocuments?: Array<{ id: string; title: string }>;
   isPinned: boolean;
   pinnedAt: string | null;
   createdAt: string;
@@ -16,10 +19,24 @@ export interface ChatSession {
 }
 
 export interface Citation {
+  sourceIndex?: number;
   documentId: string;
   documentTitle: string;
+  chunkIndex?: number | null;
   pageNumber: number | null;
+  sectionPath?: string[];
+  heading?: string | null;
+  blockType?: string;
+  extractionMode?: string;
+  extractionConfidence?: string;
   excerpt: string;
+  deepLink?: string;
+}
+
+export interface ContextDocumentStatus {
+  id: string;
+  status: "pending" | "processing" | "ready" | "failed";
+  chunkCount: number;
 }
 
 export interface ChatMessage {
@@ -28,12 +45,41 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   citations: Citation[];
+  suggestedQuestions?: string[];
   createdAt: string;
 }
 
 export interface SessionWithMessages extends ChatSession {
   messages: ChatMessage[];
 }
+
+export type ChatContextType = "all" | "folder" | "document" | "documents";
+export type ChatMode = "chat" | "summary" | "faq" | "study_guide";
+
+export interface CreateChatSessionInput {
+  title?: string;
+  contextType: ChatContextType;
+  contextId?: string;
+  contextIds?: string[];
+}
+
+export interface SendMessageInput {
+  sessionId: string;
+  content: string;
+  mode?: ChatMode;
+}
+
+export const CHAT_PRESET_LABELS: Record<Exclude<ChatMode, "chat">, string> = {
+  summary: "Tóm tắt",
+  faq: "FAQ",
+  study_guide: "Ôn tập",
+};
+
+export const CHAT_PRESET_CONTENT: Record<Exclude<ChatMode, "chat">, string> = {
+  summary: "Tóm tắt toàn bộ nội dung tài liệu đã chọn.",
+  faq: "Tạo bảng câu hỏi thường gặp (FAQ) từ tài liệu.",
+  study_guide: "Tạo hướng dẫn ôn tập từ tài liệu.",
+};
 
 export function useChatSessions() {
   return useQuery({
@@ -60,11 +106,7 @@ export function useChatSession(sessionId: string) {
 export function useCreateChatSession() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: {
-      title?: string;
-      contextType: "all" | "folder" | "document";
-      contextId?: string;
-    }) => {
+    mutationFn: async (data: CreateChatSessionInput) => {
       const res = await api.post<{ status: string; data: ChatSession }>("/chat/sessions", data);
       return res.data.data;
     },
@@ -116,6 +158,37 @@ export function useUpdateChatSession() {
   });
 }
 
+export function useChatContextStatus(documentIds: string[]) {
+  return useQuery({
+    queryKey: ["chat", "context-status", documentIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        documentIds.map(async (id) => {
+          try {
+            const res = await api.get<{
+              status: string;
+              data: { id: string; status: ContextDocumentStatus["status"]; chunkCount?: number };
+            }>(`/documents/${id}`);
+            return {
+              id,
+              status: res.data.data.status,
+              chunkCount: res.data.data.chunkCount ?? 0,
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return entries.filter((entry): entry is ContextDocumentStatus => entry !== null);
+    },
+    enabled: documentIds.length > 0,
+    refetchInterval: (query) =>
+      query.state.data?.some((doc) => doc.status === "pending" || doc.status === "processing")
+        ? 7000
+        : false,
+  });
+}
+
 interface SendMessageResult {
   userMessage: ChatMessage;
   assistantMessage: ChatMessage;
@@ -159,7 +232,7 @@ function parseSseEvents(buffer: string): {
  */
 function streamChatMessage(
   sessionId: string,
-  content: string,
+  input: { content: string; mode?: ChatMode },
   onChunk: (text: string) => void,
 ): Promise<SendMessageResult> {
   return new Promise((resolve, reject) => {
@@ -220,7 +293,7 @@ function streamChatMessage(
           reject(new Error("Network error"));
         }
       };
-      xhr.send(JSON.stringify({ content, mode: "chat" }));
+      xhr.send(JSON.stringify({ content: input.content, mode: input.mode ?? "chat" }));
     })();
   });
 }
@@ -228,9 +301,9 @@ function streamChatMessage(
 export function useSendMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
+    mutationFn: async ({ sessionId, content, mode = "chat" }: SendMessageInput) => {
       let streamedContent = "";
-      return streamChatMessage(sessionId, content, (text) => {
+      return streamChatMessage(sessionId, { content, mode }, (text) => {
         streamedContent += text;
         const queryKey = ["chat", "session", sessionId];
         const current = queryClient.getQueryData<SessionWithMessages>(queryKey);
@@ -245,17 +318,19 @@ export function useSendMessage() {
         queryClient.setQueryData<SessionWithMessages>(queryKey, { ...current, messages });
       });
     },
-    onMutate: async ({ sessionId, content }) => {
+    onMutate: async ({ sessionId, content, mode = "chat" }) => {
       const queryKey = ["chat", "session", sessionId];
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SessionWithMessages>(queryKey);
 
+      const displayContent = mode === "chat" ? content : (content.trim() || CHAT_PRESET_CONTENT[mode]);
       const optimisticUser: ChatMessage = {
         id: `optimistic-${Date.now()}`,
         sessionId,
         role: "user",
-        content,
+        content: displayContent,
         citations: [],
+        suggestedQuestions: [],
         createdAt: new Date().toISOString(),
       };
       const streamingAssistant: ChatMessage = {
@@ -264,6 +339,7 @@ export function useSendMessage() {
         role: "assistant",
         content: "",
         citations: [],
+        suggestedQuestions: [],
         createdAt: new Date().toISOString(),
       };
 
@@ -283,8 +359,10 @@ export function useSendMessage() {
             data.userMessage,
             data.assistantMessage,
           ],
+          updatedAt: data.assistantMessage.createdAt,
         };
       });
+      void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
     },
     onError: (err, { sessionId }, context) => {
       if (context?.previous) {

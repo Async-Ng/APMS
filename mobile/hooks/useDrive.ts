@@ -19,11 +19,19 @@ export interface DriveDocument {
   mimeType: string;
   fileSizeBytes: number;
   status: "pending" | "processing" | "ready" | "failed";
+  chunkCount?: number;
   isStarred: boolean;
   folderId: string | null;
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  courseSlot?: {
+    id: string;
+    semesterId: string;
+    semester?: { id: string; name: string; code: string } | null;
+    curriculum?: { id: string; name: string; code: string } | null;
+    subject?: { id: string; name: string; code: string } | null;
+  } | null;
 }
 
 export interface DriveData {

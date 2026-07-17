@@ -2,8 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
 import { colors } from "../../constants/colors";
-import { pressedBrutalStyle } from "../../lib/brutal-style";
-
 interface FolderItemProps {
   name: string;
   isStarred?: boolean;

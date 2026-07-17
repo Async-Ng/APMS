@@ -8,6 +8,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -97,30 +98,42 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     );
   }
 
-  const results = (searchQuery.data ?? []).filter((u) => !selected.find((s) => s.id === u.id));
+  const searchResults = searchQuery.data ?? [];
+  const results = searchResults.filter((u) => !selected.find((s) => s.id === u.id));
+  const showNoResults = debouncedQuery.trim().length >= 2 && !searchQuery.isFetching && searchResults.length === 0;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <Pressable style={{ flex: 1 }} onPress={onDismiss}>
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
           <Animated.View
-            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", opacity, justifyContent: "flex-end" }}
+            pointerEvents="none"
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              opacity,
+            }}
+          />
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={onDismiss}
+            accessibilityRole="button"
+            accessibilityLabel="Đóng chia sẻ"
+          />
+          <Animated.View
+            style={{
+              backgroundColor: colors.bg,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              borderWidth: 3,
+              borderBottomWidth: 0,
+              borderColor: colors.ink,
+              paddingHorizontal: 20,
+              paddingBottom: insets.bottom + 16,
+              maxHeight: 520,
+              transform: [{ translateY }],
+            }}
           >
-            <Pressable>
-              <Animated.View
-                style={{
-                  backgroundColor: colors.bg,
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
-                  borderWidth: 3,
-                  borderBottomWidth: 0,
-                  borderColor: colors.ink,
-                  paddingHorizontal: 20,
-                  paddingBottom: insets.bottom + 16,
-                  maxHeight: 520,
-                  transform: [{ translateY }],
-                }}
-              >
                 <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
                   <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
                 </View>
@@ -174,8 +187,11 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                           borderColor: colors.ink,
                           borderRadius: 999,
                           paddingHorizontal: 10,
-                          paddingVertical: 4,
+                          paddingVertical: 8,
+                          minHeight: 44,
                         }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Bỏ chọn ${u.displayName}`}
                       >
                         <Text style={{ fontSize: 12, fontWeight: "700", color: colors.onBrand }}>{u.displayName}</Text>
                         <Ionicons name="close" size={12} color={colors.onBrand} />
@@ -189,6 +205,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                     data={results}
                     keyExtractor={(u) => u.id}
                     style={{ maxHeight: 160 }}
+                    keyboardShouldPersistTaps="handled"
                     renderItem={({ item }) => (
                       <Pressable
                         onPress={() => toggleUser(item)}
@@ -228,6 +245,13 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                     )}
                   />
                 )}
+                {showNoResults && (
+                  <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                    <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
+                      Không tìm thấy người dùng phù hợp.
+                    </Text>
+                  </View>
+                )}
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                   <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
@@ -240,10 +264,8 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
                     style={{ flex: 1 }}
                   />
                 </View>
-              </Animated.View>
-            </Pressable>
           </Animated.View>
-        </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

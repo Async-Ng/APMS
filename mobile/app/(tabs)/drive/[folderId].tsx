@@ -32,6 +32,13 @@ type ActionTarget =
   | { kind: "document"; item: DriveDocument }
   | null;
 
+function getDocumentCourseLabel(document: DriveDocument): string | null {
+  const slot = document.courseSlot;
+  if (!slot?.subject) return null;
+  const semester = slot.semester?.code ? `${slot.semester.code} · ` : "";
+  return `${semester}${slot.subject.code}`;
+}
+
 export default function FolderScreen() {
   const { folderId, shared } = useLocalSearchParams<{ folderId: string; shared?: string }>();
   const isShared = shared === "1";
@@ -165,6 +172,7 @@ export default function FolderScreen() {
                   status={item.item.status}
                   createdAt={item.item.createdAt}
                   isStarred={item.item.isStarred}
+                  courseLabel={getDocumentCourseLabel(item.item)}
                   onPress={() => router.push(`/documents/${item.item.id}`)}
                   onLongPress={() => !isShared && setActionTarget({ kind: "document", item: item.item })}
                 />
@@ -175,7 +183,7 @@ export default function FolderScreen() {
                 icon="folder-open-outline"
                 title="Thư mục trống"
                 description={isShared ? "Chưa có nội dung trong thư mục này." : "Tải lên tệp hoặc tạo thư mục con tại đây."}
-                action={isShared ? undefined : { label: "Tải lên tệp", onPress: () => setShowUpload(true) }}
+                action={undefined}
               />
             );
           }}

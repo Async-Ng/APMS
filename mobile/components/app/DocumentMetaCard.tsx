@@ -144,7 +144,7 @@ export function DocumentMetaCard({ doc }: { doc: DocumentDetail }) {
             <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
               {doc.status === "failed"
                 ? "Không thể xử lý tài liệu này. Hãy thử tải lên lại."
-                : "Tài liệu đang được lập chỉ mục cho tìm kiếm ngữ nghĩa và trò chuyện AI."}
+                : "Tài liệu đang được chuẩn bị để tìm kiếm và hỏi đáp AI."}
             </Text>
           </View>
         </View>

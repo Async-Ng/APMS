@@ -19,6 +19,13 @@ type ActionTarget =
   | { kind: "document"; item: DriveDocument }
   | null;
 
+function getDocumentCourseLabel(document: DriveDocument): string | null {
+  const slot = document.courseSlot;
+  if (!slot?.subject) return null;
+  const semester = slot.semester?.code ? `${slot.semester.code} · ` : "";
+  return `${semester}${slot.subject.code}`;
+}
+
 export default function StarredScreen() {
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useStarred();
@@ -122,6 +129,7 @@ export default function StarredScreen() {
                   status={item.item.status}
                   createdAt={item.item.createdAt}
                   isStarred={item.item.isStarred}
+                  courseLabel={getDocumentCourseLabel(item.item)}
                   onPress={() => router.push(`/documents/${item.item.id}`)}
                   onLongPress={() => setActionTarget({ kind: "document", item: item.item })}
                 />

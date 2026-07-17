@@ -30,10 +30,10 @@ export function BreadcrumbNav({ items, onNavigate }: BreadcrumbNavProps) {
             onPress={() => onNavigate(item.id)}
             style={({ pressed }) => ({
               paddingHorizontal: 10,
-              paddingVertical: 6,
+              paddingVertical: 8,
               borderRadius: 8,
               backgroundColor: idx === items.length - 1 ? colors.fptOrange : pressed ? "#F0F0F0" : "transparent",
-              minHeight: 32,
+              minHeight: 44,
               justifyContent: "center",
             })}
           >

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Animated, Modal, Pressable, Text, View } from "react-native";
+import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../../constants/colors";
@@ -42,33 +42,38 @@ export function ActionSheet({ visible, title, subtitle, actions, onDismiss }: Ac
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
-      <Pressable style={{ flex: 1 }} onPress={onDismiss}>
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
         <Animated.View
+          pointerEvents="none"
           style={{
-            flex: 1,
+            ...StyleSheet.absoluteFillObject,
             backgroundColor: "rgba(0,0,0,0.45)",
             opacity,
-            justifyContent: "flex-end",
+          }}
+        />
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Đóng bảng thao tác"
+        />
+        <Animated.View
+          style={{
+            backgroundColor: colors.bg,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderWidth: 3,
+            borderBottomWidth: 0,
+            borderColor: colors.ink,
+            paddingBottom: insets.bottom + 8,
+            shadowColor: colors.ink,
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 1,
+            shadowRadius: 0,
+            elevation: 12,
+            transform: [{ translateY }],
           }}
         >
-          <Pressable>
-            <Animated.View
-              style={{
-                backgroundColor: colors.bg,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                borderWidth: 3,
-                borderBottomWidth: 0,
-                borderColor: colors.ink,
-                paddingBottom: insets.bottom + 8,
-                shadowColor: colors.ink,
-                shadowOffset: { width: 0, height: -4 },
-                shadowOpacity: 1,
-                shadowRadius: 0,
-                elevation: 12,
-                transform: [{ translateY }],
-              }}
-            >
               {/* Handle */}
               <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
@@ -136,10 +141,8 @@ export function ActionSheet({ visible, title, subtitle, actions, onDismiss }: Ac
                   <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Huỷ</Text>
                 </Pressable>
               </View>
-            </Animated.View>
-          </Pressable>
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
