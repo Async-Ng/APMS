@@ -137,6 +137,20 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/admin/users")}
                 badge="Admin"
               />
+              <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
+              <ProfileMenuItem
+                icon="albums-outline"
+                label="Danh mục học thuật"
+                subtitle="Chương trình, học kỳ, môn học, gán môn"
+                onPress={() => router.push("/admin/catalog")}
+              />
+              <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
+              <ProfileMenuItem
+                icon="mail-outline"
+                label="Email ngoại lệ"
+                subtitle="Quản lý danh sách email được cấp quyền"
+                onPress={() => router.push("/admin/access-emails")}
+              />
             </View>
           </View>
         )}

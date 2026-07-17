@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../../constants/colors";
@@ -66,6 +66,7 @@ export function ActionSheet({ visible, title, subtitle, actions, onDismiss }: Ac
             borderBottomWidth: 0,
             borderColor: colors.ink,
             paddingBottom: insets.bottom + 8,
+            maxHeight: "85%",
             shadowColor: colors.ink,
             shadowOffset: { width: 0, height: -4 },
             shadowOpacity: 1,
@@ -74,73 +75,79 @@ export function ActionSheet({ visible, title, subtitle, actions, onDismiss }: Ac
             transform: [{ translateY }],
           }}
         >
-              {/* Handle */}
-              <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
-                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
-              </View>
+          <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
+          </View>
 
-              {/* Header */}
-              <View style={{ paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: "#E5E5E5" }}>
-                <Text style={{ fontSize: 16, fontWeight: "800", color: colors.ink }}>{title}</Text>
-                {subtitle && <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>{subtitle}</Text>}
-              </View>
+          <View style={{ paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: "#E5E5E5" }}>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: colors.ink }} numberOfLines={2}>
+              {title}
+            </Text>
+            {subtitle && <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>{subtitle}</Text>}
+          </View>
 
-              {/* Actions */}
-              <View style={{ paddingVertical: 8 }}>
-                {actions.map((action, idx) => (
-                  <Pressable
-                    key={idx}
-                    onPress={() => { onDismiss(); action.onPress(); }}
-                    disabled={action.disabled}
-                    style={({ pressed }) => ({
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 14,
-                      paddingHorizontal: 20,
-                      paddingVertical: 14,
-                      backgroundColor: pressed ? "#F0F0F0" : "transparent",
-                      opacity: action.disabled ? 0.4 : 1,
-                      minHeight: 52,
-                    })}
-                    accessibilityRole="button"
-                    accessibilityLabel={action.label}
-                  >
-                    <Ionicons
-                      name={action.icon}
-                      size={22}
-                      color={action.destructive ? colors.error : colors.ink}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "600",
-                        color: action.destructive ? colors.error : colors.ink,
-                      }}
-                    >
-                      {action.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Cancel */}
-              <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
-                <Pressable
-                  onPress={onDismiss}
-                  style={({ pressed }) => ({
-                    backgroundColor: pressed ? "#E5E5E5" : colors.surface,
-                    borderWidth: 2,
-                    borderColor: colors.ink,
-                    borderRadius: 12,
-                    paddingVertical: 14,
-                    alignItems: "center",
-                    minHeight: 50,
-                    justifyContent: "center",
-                  })}
+          <ScrollView
+            style={{ flexShrink: 1 }}
+            contentContainerStyle={{ paddingVertical: 8 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+          >
+            {actions.map((action, idx) => (
+              <Pressable
+                key={`${action.label}-${idx}`}
+                onPress={() => {
+                  onDismiss();
+                  action.onPress();
+                }}
+                disabled={action.disabled}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  backgroundColor: pressed ? "#F0F0F0" : "transparent",
+                  opacity: action.disabled ? 0.4 : 1,
+                  minHeight: 52,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
+              >
+                <Ionicons name={action.icon} size={22} color={action.destructive ? colors.error : colors.ink} />
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: action.destructive ? colors.error : colors.ink,
+                  }}
+                  numberOfLines={2}
                 >
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Huỷ</Text>
-                </Pressable>
-              </View>
+                  {action.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+            <Pressable
+              onPress={onDismiss}
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? "#E5E5E5" : colors.surface,
+                borderWidth: 2,
+                borderColor: colors.ink,
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: "center",
+                minHeight: 50,
+                justifyContent: "center",
+              })}
+              accessibilityRole="button"
+              accessibilityLabel="Huỷ"
+            >
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>Huỷ</Text>
+            </Pressable>
+          </View>
         </Animated.View>
       </View>
     </Modal>

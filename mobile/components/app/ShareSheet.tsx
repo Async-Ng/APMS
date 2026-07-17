@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,10 +15,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { colors } from "../../constants/colors";
+import { useCreateShare } from "../../hooks/useShares";
 import { api } from "../../lib/api-client";
+import { getErrorMessage } from "../../lib/api-error";
+import { useToastStore } from "../../stores/toast-store";
 import { BrutalButton } from "../ui/BrutalButton";
 
 interface UserResult {
@@ -26,6 +29,8 @@ interface UserResult {
   email: string;
   avatarUrl: string | null;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface ShareSheetProps {
   visible: boolean;
@@ -41,6 +46,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
   const opacity = useRef(new Animated.Value(0)).current;
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<UserResult[]>([]);
+  const [pendingEmails, setPendingEmails] = useState<string[]>([]);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -48,6 +54,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     if (visible) {
       setQuery("");
       setSelected([]);
+      setPendingEmails([]);
       setDebouncedQuery("");
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -64,7 +71,9 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => setDebouncedQuery(query), 400);
-    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
   }, [query]);
 
   const searchQuery = useQuery({
@@ -79,18 +88,7 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     enabled: debouncedQuery.trim().length >= 2,
   });
 
-  const shareMutation = useMutation({
-    mutationFn: async () => {
-      await api.post("/shares", {
-        resourceType,
-        resourceId,
-        sharedWithUserIds: selected.map((u) => u.id),
-      });
-    },
-    onSuccess: () => {
-      onDismiss();
-    },
-  });
+  const createShare = useCreateShare();
 
   function toggleUser(user: UserResult) {
     setSelected((prev) =>
@@ -98,9 +96,51 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
     );
   }
 
+  function addPendingEmail(email: string) {
+    const normalized = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(normalized) || pendingEmails.includes(normalized)) return;
+    setPendingEmails((prev) => [...prev, normalized]);
+    setQuery("");
+  }
+
+  function removePendingEmail(email: string) {
+    setPendingEmails((prev) => prev.filter((e) => e !== email));
+  }
+
+  function handleShare() {
+    createShare.mutate(
+      {
+        resourceType,
+        resourceId,
+        sharedWithUserIds: selected.map((u) => u.id),
+        emails: pendingEmails,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.skipped > 0) {
+            useToastStore.getState().show(`Đã bỏ qua ${result.skipped} người nhận không hợp lệ`);
+          }
+          onDismiss();
+        },
+        onError: (err) => {
+          useToastStore.getState().show(getErrorMessage(err, "Chia sẻ thất bại. Vui lòng thử lại."));
+        },
+      },
+    );
+  }
+
   const searchResults = searchQuery.data ?? [];
   const results = searchResults.filter((u) => !selected.find((s) => s.id === u.id));
-  const showNoResults = debouncedQuery.trim().length >= 2 && !searchQuery.isFetching && searchResults.length === 0;
+  const normalizedQuery = debouncedQuery.trim().toLowerCase();
+  const showInviteByEmail =
+    normalizedQuery.length >= 3 &&
+    EMAIL_RE.test(normalizedQuery) &&
+    !searchQuery.isFetching &&
+    results.length === 0 &&
+    !pendingEmails.includes(normalizedQuery);
+  const showNoResults =
+    debouncedQuery.trim().length >= 2 && !searchQuery.isFetching && searchResults.length === 0 && !showInviteByEmail;
+  const totalRecipients = selected.length + pendingEmails.length;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
@@ -130,140 +170,210 @@ export function ShareSheet({ visible, resourceType, resourceId, resourceName, on
               borderColor: colors.ink,
               paddingHorizontal: 20,
               paddingBottom: insets.bottom + 16,
-              maxHeight: 520,
+              maxHeight: 560,
               transform: [{ translateY }],
             }}
           >
-                <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
-                  <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
-                </View>
+            <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
+            </View>
 
-                <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8 }}>
-                  Chia sẻ &ldquo;{resourceName}&rdquo;
-                </Text>
-                <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 16, marginTop: 2 }}>
-                  Tìm theo tên hoặc email
-                </Text>
+            <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 8 }} numberOfLines={2}>
+              Chia sẻ &ldquo;{resourceName}&rdquo;
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 16, marginTop: 2 }}>
+              Tìm theo tên hoặc email
+            </Text>
 
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                borderWidth: 3,
+                borderColor: colors.ink,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                backgroundColor: colors.surface,
+                marginBottom: 12,
+                minHeight: 48,
+              }}
+            >
+              <Ionicons name="search-outline" size={18} color={colors.muted} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Tìm người dùng..."
+                placeholderTextColor={colors.muted}
+                style={{ flex: 1, fontSize: 15, color: colors.ink }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              {searchQuery.isFetching && <ActivityIndicator size="small" color={colors.fptBlue} />}
+            </View>
+
+            {(selected.length > 0 || pendingEmails.length > 0) && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {selected.map((u) => (
+                  <Pressable
+                    key={u.id}
+                    onPress={() => toggleUser(u)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: colors.fptBlue,
+                      borderWidth: 2,
+                      borderColor: colors.ink,
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      minHeight: 44,
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Bỏ chọn ${u.displayName}`}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.onBrand }}>{u.displayName}</Text>
+                    <Ionicons name="close" size={12} color={colors.onBrand} />
+                  </Pressable>
+                ))}
+                {pendingEmails.map((email) => (
+                  <Pressable
+                    key={email}
+                    onPress={() => removePendingEmail(email)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: colors.surface,
+                      borderWidth: 2,
+                      borderColor: colors.fptOrange,
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      minHeight: 44,
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Bỏ email ${email}`}
+                  >
+                    <Ionicons name="mail-outline" size={12} color={colors.fptOrange} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink }}>{email}</Text>
+                    <Ionicons name="close" size={12} color={colors.ink} />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {showInviteByEmail && (
+              <Pressable
+                onPress={() => addPendingEmail(normalizedQuery)}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingVertical: 10,
+                  paddingHorizontal: 4,
+                  backgroundColor: pressed ? "#F0F0F0" : "transparent",
+                  borderRadius: 8,
+                  minHeight: 48,
+                  marginBottom: 8,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={`Mời qua email ${normalizedQuery}`}
+              >
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                    borderWidth: 3,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    borderWidth: 2,
                     borderColor: colors.ink,
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    backgroundColor: colors.surface,
-                    marginBottom: 12,
-                    minHeight: 48,
+                    backgroundColor: colors.fptOrange,
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  <Ionicons name="search-outline" size={18} color={colors.muted} />
-                  <TextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder="Tìm người dùng..."
-                    placeholderTextColor={colors.muted}
-                    style={{ flex: 1, fontSize: 15, color: colors.ink }}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                  {searchQuery.isFetching && <ActivityIndicator size="small" color={colors.fptBlue} />}
+                  <Ionicons name="mail-outline" size={16} color={colors.onBrand} />
                 </View>
-
-                {selected.length > 0 && (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                    {selected.map((u) => (
-                      <Pressable
-                        key={u.id}
-                        onPress={() => toggleUser(u)}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                          backgroundColor: colors.fptBlue,
-                          borderWidth: 2,
-                          borderColor: colors.ink,
-                          borderRadius: 999,
-                          paddingHorizontal: 10,
-                          paddingVertical: 8,
-                          minHeight: 44,
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Bỏ chọn ${u.displayName}`}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.onBrand }}>{u.displayName}</Text>
-                        <Ionicons name="close" size={12} color={colors.onBrand} />
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-
-                {results.length > 0 && (
-                  <FlatList
-                    data={results}
-                    keyExtractor={(u) => u.id}
-                    style={{ maxHeight: 160 }}
-                    keyboardShouldPersistTaps="handled"
-                    renderItem={({ item }) => (
-                      <Pressable
-                        onPress={() => toggleUser(item)}
-                        style={({ pressed }) => ({
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 12,
-                          paddingVertical: 10,
-                          paddingHorizontal: 4,
-                          backgroundColor: pressed ? "#F0F0F0" : "transparent",
-                          borderRadius: 8,
-                          minHeight: 48,
-                        })}
-                      >
-                        <View
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
-                            borderWidth: 2,
-                            borderColor: colors.ink,
-                            backgroundColor: colors.fptGreen,
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: "800", color: colors.onBrand }}>
-                            {item.displayName[0]?.toUpperCase() ?? "?"}
-                          </Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.ink }}>{item.displayName}</Text>
-                          <Text style={{ fontSize: 12, color: colors.muted }}>{item.email}</Text>
-                        </View>
-                        <Ionicons name="add-circle-outline" size={22} color={colors.fptGreen} />
-                      </Pressable>
-                    )}
-                  />
-                )}
-                {showNoResults && (
-                  <View style={{ paddingVertical: 16, alignItems: "center" }}>
-                    <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
-                      Không tìm thấy người dùng phù hợp.
-                    </Text>
-                  </View>
-                )}
-
-                <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                  <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
-                  <BrutalButton
-                    label={`Chia sẻ (${selected.length})`}
-                    onPress={() => shareMutation.mutate()}
-                    variant="secondary"
-                    loading={shareMutation.isPending}
-                    disabled={selected.length === 0}
-                    style={{ flex: 1 }}
-                  />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.ink }}>
+                    Mời qua email: {normalizedQuery}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.muted }}>
+                    Người này chưa có tài khoản, hệ thống sẽ gửi email mời
+                  </Text>
                 </View>
+                <Ionicons name="add-circle-outline" size={22} color={colors.fptOrange} />
+              </Pressable>
+            )}
+
+            {results.length > 0 && (
+              <FlatList
+                data={results}
+                keyExtractor={(u) => u.id}
+                style={{ maxHeight: 160 }}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => toggleUser(item)}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      paddingVertical: 10,
+                      paddingHorizontal: 4,
+                      backgroundColor: pressed ? "#F0F0F0" : "transparent",
+                      borderRadius: 8,
+                      minHeight: 48,
+                    })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Chọn ${item.displayName}`}
+                  >
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        borderWidth: 2,
+                        borderColor: colors.ink,
+                        backgroundColor: colors.fptGreen,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: "800", color: colors.onBrand }}>
+                        {item.displayName[0]?.toUpperCase() ?? "?"}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "700", color: colors.ink }}>{item.displayName}</Text>
+                      <Text style={{ fontSize: 12, color: colors.muted }}>{item.email}</Text>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={22} color={colors.fptGreen} />
+                  </Pressable>
+                )}
+              />
+            )}
+
+            {showNoResults && (
+              <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
+                  Không tìm thấy người dùng phù hợp.
+                </Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+              <BrutalButton label="Huỷ" onPress={onDismiss} variant="ghost" style={{ flex: 1 }} />
+              <BrutalButton
+                label={`Chia sẻ (${totalRecipients})`}
+                onPress={handleShare}
+                variant="secondary"
+                loading={createShare.isPending}
+                disabled={totalRecipients === 0}
+                style={{ flex: 1 }}
+              />
+            </View>
           </Animated.View>
         </View>
       </KeyboardAvoidingView>

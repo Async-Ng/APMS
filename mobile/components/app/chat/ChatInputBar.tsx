@@ -3,23 +3,27 @@ import { useRef } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { colors } from "../../../constants/colors";
-import { CHAT_PRESET_LABELS, type ChatMode } from "../../../hooks/useChat";
-
-type PresetMode = Exclude<ChatMode, "chat">;
+import { type ChatMode } from "../../../hooks/useChat";
 
 interface ChatInputBarProps {
   value: string;
   onChangeText: (text: string) => void;
   onSend: () => void;
-  onSendPreset?: (mode: PresetMode) => void;
   sending: boolean;
+  mode: ChatMode;
+  onModeChange: (mode: ChatMode) => void;
 }
 
-const PRESET_MODES: PresetMode[] = ["summary", "faq", "study_guide"];
+const MODE_OPTIONS: { value: ChatMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "chat", label: "Hỏi đáp", icon: "chatbubble-outline" },
+  { value: "summary", label: "Tóm tắt", icon: "reader-outline" },
+  { value: "faq", label: "FAQ", icon: "help-circle-outline" },
+  { value: "study_guide", label: "Ôn tập", icon: "school-outline" },
+];
 
-export function ChatInputBar({ value, onChangeText, onSend, onSendPreset, sending }: ChatInputBarProps) {
+export function ChatInputBar({ value, onChangeText, onSend, sending, mode, onModeChange }: ChatInputBarProps) {
   const inputRef = useRef<TextInput>(null);
-  const canSend = value.trim().length > 0 && !sending;
+  const canSend = (mode === "chat" ? value.trim().length > 0 : true) && !sending;
 
   return (
     <View
@@ -36,36 +40,36 @@ export function ChatInputBar({ value, onChangeText, onSend, onSendPreset, sendin
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ gap: 8, paddingHorizontal: 14, paddingBottom: 10 }}
       >
-        {PRESET_MODES.map((mode) => (
-          <Pressable
-            key={mode}
-            onPress={() => onSendPreset?.(mode)}
-            disabled={sending || !onSendPreset}
-            style={({ pressed }) => ({
-              minHeight: 40,
-              borderRadius: 999,
-              borderWidth: 2,
-              borderColor: colors.ink,
-              backgroundColor: pressed ? "#F0F0F0" : colors.bg,
-              paddingHorizontal: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              opacity: sending || !onSendPreset ? 0.55 : 1,
-            })}
-            accessibilityRole="button"
-            accessibilityLabel={CHAT_PRESET_LABELS[mode]}
-          >
-            <Ionicons
-              name={mode === "summary" ? "reader-outline" : mode === "faq" ? "help-circle-outline" : "school-outline"}
-              size={15}
-              color={colors.fptBlue}
-            />
-            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.ink }}>
-              {CHAT_PRESET_LABELS[mode]}
-            </Text>
-          </Pressable>
-        ))}
+        {MODE_OPTIONS.map((option) => {
+          const active = option.value === mode;
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onModeChange(option.value)}
+              disabled={sending}
+              style={({ pressed }) => ({
+                minHeight: 40,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 12,
+                borderRadius: 999,
+                borderWidth: 2,
+                borderColor: colors.ink,
+                backgroundColor: active ? colors.fptBlue : pressed ? "#F0F0F0" : colors.bg,
+                opacity: sending ? 0.5 : 1,
+              })}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Chế độ ${option.label}`}
+            >
+              <Ionicons name={option.icon} size={14} color={active ? colors.onBrand : colors.ink} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: active ? colors.onBrand : colors.ink }}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       <View
@@ -81,7 +85,7 @@ export function ChatInputBar({ value, onChangeText, onSend, onSendPreset, sendin
           ref={inputRef}
           value={value}
           onChangeText={onChangeText}
-          placeholder="Hỏi về tài liệu của bạn..."
+          placeholder={mode === "chat" ? "Hỏi về tài liệu của bạn..." : "Ghi chú thêm (không bắt buộc)..."}
           placeholderTextColor={colors.muted}
           multiline
           maxLength={2000}

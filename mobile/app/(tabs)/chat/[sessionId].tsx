@@ -9,10 +9,10 @@ import { ChatContextCard } from "../../../components/app/chat/ChatContextCard";
 import { ChatInputBar } from "../../../components/app/chat/ChatInputBar";
 import { CitationStrip } from "../../../components/app/chat/CitationCard";
 import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
+import { SuggestedQuestions } from "../../../components/app/chat/SuggestedQuestions";
 import { HeaderBar, HeaderIconButton } from "../../../components/ui/HeaderBar";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
-import { getErrorMessage } from "../../../lib/api-error";
 import {
   CHAT_PRESET_CONTENT,
   type ChatMessage,
@@ -24,6 +24,7 @@ import {
   useSendMessage,
   useUpdateChatSession,
 } from "../../../hooks/useChat";
+import { getErrorMessage } from "../../../lib/api-error";
 
 const CONTEXT_LABELS: Record<string, string> = {
   all: "Tất cả tài liệu",
@@ -32,7 +33,6 @@ const CONTEXT_LABELS: Record<string, string> = {
   documents: "Nhiều tài liệu",
 };
 
-type PresetMode = Exclude<ChatMode, "chat">;
 type RetryMessage = { content: string; mode: ChatMode } | null;
 
 export default function ChatSessionScreen() {
@@ -44,6 +44,7 @@ export default function ChatSessionScreen() {
   const deleteSession = useDeleteChatSession();
 
   const [input, setInput] = useState("");
+  const [mode, setMode] = useState<ChatMode>("chat");
   const [isSending, setIsSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -71,17 +72,21 @@ export default function ChatSessionScreen() {
     }
   }, [messages.length]);
 
-  async function submitMessage({ content, mode = "chat" }: { content: string; mode?: ChatMode }) {
+  async function submitMessage({ content, mode: nextMode }: { content: string; mode: ChatMode }) {
     const trimmed = content.trim();
-    if (!trimmed || isSending) return;
+    const finalContent =
+      nextMode === "chat"
+        ? trimmed
+        : trimmed || CHAT_PRESET_CONTENT[nextMode as Exclude<ChatMode, "chat">];
+    if (!finalContent || isSending) return;
 
-    if (mode === "chat") setInput("");
+    if (nextMode === "chat") setInput("");
     setSendError(null);
-    setRetryMessage({ content: trimmed, mode });
+    setRetryMessage({ content: finalContent, mode: nextMode });
     setIsSending(true);
 
     try {
-      await sendMessage.mutateAsync({ sessionId, content: trimmed, mode });
+      await sendMessage.mutateAsync({ sessionId, content: finalContent, mode: nextMode });
       setRetryMessage(null);
     } catch (err) {
       setSendError(getErrorMessage(err, "Gửi tin nhắn thất bại. Vui lòng thử lại."));
@@ -91,12 +96,8 @@ export default function ChatSessionScreen() {
     }
   }
 
-  function handleSend() {
-    void submitMessage({ content: input, mode: "chat" });
-  }
-
-  function handleSendPreset(mode: PresetMode) {
-    void submitMessage({ content: CHAT_PRESET_CONTENT[mode], mode });
+  function handleSend(overrideContent?: string) {
+    void submitMessage({ content: overrideContent ?? input, mode });
   }
 
   function handleRetry() {
@@ -227,9 +228,10 @@ export default function ChatSessionScreen() {
               }}
               ListEmptyComponent={<ChatEmptyState />}
               keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => {
+              renderItem={({ item, index }) => {
                 if (item.type === "thinking") return <ThinkingBubble />;
                 const msg = item.data;
+                const isLastAssistantMessage = msg.role === "assistant" && index === listItems.length - 1;
                 return (
                   <View style={{ gap: 10 }}>
                     <ChatBubble
@@ -242,11 +244,11 @@ export default function ChatSessionScreen() {
                     {msg.role === "assistant" && msg.citations.length > 0 && (
                       <CitationStrip citations={msg.citations} onPress={openCitation} />
                     )}
-                    {msg.role === "assistant" && (msg.suggestedQuestions?.length ?? 0) > 0 && (
+                    {isLastAssistantMessage && (
                       <SuggestedQuestions
                         questions={msg.suggestedQuestions ?? []}
                         disabled={isSending}
-                        onPress={(question) => void submitMessage({ content: question, mode: "chat" })}
+                        onSelect={(question) => void submitMessage({ content: question, mode: "chat" })}
                       />
                     )}
                   </View>
@@ -298,54 +300,13 @@ export default function ChatSessionScreen() {
         <ChatInputBar
           value={input}
           onChangeText={setInput}
-          onSend={handleSend}
-          onSendPreset={handleSendPreset}
+          onSend={() => handleSend()}
           sending={isSending}
+          mode={mode}
+          onModeChange={setMode}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-function SuggestedQuestions({
-  questions,
-  disabled,
-  onPress,
-}: {
-  questions: string[];
-  disabled: boolean;
-  onPress: (question: string) => void;
-}) {
-  return (
-    <View style={{ gap: 8, alignItems: "flex-start" }}>
-      <Text style={{ fontSize: 11, fontWeight: "800", color: colors.muted }}>Câu hỏi tiếp theo</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {questions.slice(0, 4).map((question) => (
-          <Pressable
-            key={question}
-            onPress={() => onPress(question)}
-            disabled={disabled}
-            style={({ pressed }) => ({
-              minHeight: 40,
-              maxWidth: "100%",
-              borderWidth: 2,
-              borderColor: colors.ink,
-              borderRadius: 999,
-              paddingHorizontal: 12,
-              justifyContent: "center",
-              backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-              opacity: disabled ? 0.55 : 1,
-            })}
-            accessibilityRole="button"
-            accessibilityLabel={`Gửi câu hỏi: ${question}`}
-          >
-            <Text style={{ maxWidth: 280, fontSize: 12, fontWeight: "700", color: colors.ink }} numberOfLines={2}>
-              {question}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
   );
 }
 
