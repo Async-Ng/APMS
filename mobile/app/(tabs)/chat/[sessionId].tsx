@@ -7,12 +7,14 @@ import { ChatBubble, ThinkingBubble } from "../../../components/app/chat/ChatBub
 import { ChatInputBar } from "../../../components/app/chat/ChatInputBar";
 import { CitationStrip } from "../../../components/app/chat/CitationCard";
 import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
+import { SuggestedQuestions } from "../../../components/app/chat/SuggestedQuestions";
 import { ActionSheet } from "../../../components/app/ActionSheet";
 import { HeaderBar, HeaderIconButton } from "../../../components/ui/HeaderBar";
 import { SkeletonList } from "../../../components/ui/SkeletonCard";
 import { colors } from "../../../constants/colors";
 import {
   type ChatMessage,
+  type ChatMode,
   useChatSession,
   useSendMessage,
   useUpdateChatSession,
@@ -33,6 +35,7 @@ export default function ChatSessionScreen() {
   const updateSession = useUpdateChatSession();
 
   const [input, setInput] = useState("");
+  const [mode, setMode] = useState<ChatMode>("chat");
   const [isSending, setIsSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -46,15 +49,16 @@ export default function ChatSessionScreen() {
     }
   }, [messages.length]);
 
-  async function handleSend() {
-    const content = input.trim();
-    if (!content || isSending) return;
+  async function handleSend(overrideContent?: string) {
+    const content = (overrideContent ?? input).trim();
+    if (isSending) return;
+    if (mode === "chat" && !content) return;
 
     setInput("");
     setIsSending(true);
 
     try {
-      await sendMessage.mutateAsync({ sessionId, content });
+      await sendMessage.mutateAsync({ sessionId, content, mode });
     } catch {
       // Error toast + cache rollback already handled in useSendMessage's onError.
     } finally {
@@ -146,9 +150,11 @@ export default function ChatSessionScreen() {
               flexGrow: 1,
             }}
             ListEmptyComponent={<ChatEmptyState />}
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               if (item.type === "thinking") return <ThinkingBubble />;
               const msg = item.data;
+              const isLastAssistantMessage =
+                msg.role === "assistant" && index === listItems.length - 1;
               return (
                 <View style={{ gap: 10 }}>
                   <ChatBubble
@@ -164,13 +170,27 @@ export default function ChatSessionScreen() {
                       onPress={(docId) => router.push(`/documents/${docId}`)}
                     />
                   )}
+                  {isLastAssistantMessage && (
+                    <SuggestedQuestions
+                      questions={msg.suggestedQuestions}
+                      disabled={isSending}
+                      onSelect={(question) => void handleSend(question)}
+                    />
+                  )}
                 </View>
               );
             }}
           />
         )}
 
-        <ChatInputBar value={input} onChangeText={setInput} onSend={handleSend} sending={isSending} />
+        <ChatInputBar
+          value={input}
+          onChangeText={setInput}
+          onSend={() => void handleSend()}
+          sending={isSending}
+          mode={mode}
+          onModeChange={setMode}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -130,8 +130,10 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
             originalFilename: file.name,
             mimeType: file.mimeType,
             fileSizeBytes: file.size,
+            folderId: folderId ?? null,
             courseSlotId,
             visibility,
+            title: file.name.replace(/\.[^.]+$/, ""),
           }
         });
       }
