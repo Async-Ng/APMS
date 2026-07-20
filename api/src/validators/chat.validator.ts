@@ -40,6 +40,15 @@ export const updateSessionSchema = z
     message: "At least one of title or isPinned is required",
   });
 
+export const editMessageSchema = z.object({
+  content: z.string().trim().min(1).max(10_000),
+});
+
+export const editMessageParamsSchema = z.object({
+  id: objectIdSchema,
+  messageId: objectIdSchema,
+});
+
 export const sendMessageSchema = z
   .object({
     content: z.string().trim().max(10_000).default(""),

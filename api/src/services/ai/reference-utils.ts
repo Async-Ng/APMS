@@ -195,6 +195,47 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+/** Vietnamese letters that share a base character, used for accent-insensitive matching. */
+const VI_CHAR_GROUPS: Record<string, string> = {
+  a: "aàáảãạăằắẳẵặâầấẩẫậ",
+  e: "eèéẻẽẹêềếểễệ",
+  i: "iìíỉĩị",
+  o: "oòóỏõọôồốổỗộơờớởỡợ",
+  u: "uùúủũụưừứửữự",
+  y: "yỳýỷỹỵ",
+  d: "dđ",
+};
+
+/**
+ * Lowercases and strips Vietnamese diacritics ("Phân tích" -> "phan tich") so
+ * lexical comparisons work no matter whether the user typed accents.
+ */
+export function foldDiacritics(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d");
+}
+
+/**
+ * Builds a regex source that matches the term accent-insensitively against
+ * NFC Vietnamese text ("phan tich" matches "Phân tích" and vice versa).
+ * Intended for case-insensitive matching (`$options: "i"` / flag `i`).
+ */
+export function accentInsensitiveRegexSource(term: string): string {
+  let source = "";
+  for (const char of foldDiacritics(term)) {
+    const group = VI_CHAR_GROUPS[char];
+    if (group) {
+      source += `[${group}]`;
+    } else {
+      source += char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return source;
+}
+
 function extractFormulaTokens(query: string): string[] {
   const rawMatches = query.match(/[A-Za-z]+(?:_[A-Za-z0-9]+|\d+)?(?:\s*=\s*[A-Za-z0-9_+\-*/()[\]]+)?/g) ?? [];
   return unique(

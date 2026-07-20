@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
 
 import { api } from "@/lib/api-client";
 import {
@@ -325,33 +326,101 @@ export function useChatContextStatus(documentIds: string[]) {
   });
 }
 
+/** True when the request failed because the user pressed Stop (AbortController). */
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function makeOptimisticMessages(sessionId: string, userContent: string) {
+  const optimisticUser: ChatMessage = {
+    id: `optimistic-${Date.now()}`,
+    sessionId,
+    role: "user",
+    content: userContent,
+    citations: [],
+    createdAt: new Date().toISOString(),
+  };
+  const streamingAssistant: ChatMessage = {
+    id: `streaming-${Date.now()}`,
+    sessionId,
+    role: "assistant",
+    content: "",
+    citations: [],
+    createdAt: new Date().toISOString(),
+  };
+  return { optimisticUser, streamingAssistant };
+}
+
+function makeChunkCacheUpdater(qc: QueryClient, sessionId: string) {
+  let streamedContent = "";
+  return (text: string) => {
+    streamedContent += text;
+    const current = qc.getQueryData<ChatSessionDetail>(chatKeys.session(sessionId));
+    if (!current) return;
+
+    const messages = [...current.messages];
+    const last = messages.at(-1);
+    if (last?.role === "assistant" && last.id.startsWith("streaming-")) {
+      messages[messages.length - 1] = { ...last, content: streamedContent };
+    }
+
+    qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+      ...current,
+      messages,
+    });
+  };
+}
+
+function finalizeStreamedExchange(
+  qc: QueryClient,
+  sessionId: string,
+  data: SendMessageResult,
+  context: { optimisticId?: string; streamingId?: string } | undefined,
+) {
+  const current = qc.getQueryData<ChatSessionDetail>(chatKeys.session(sessionId));
+  if (!current) return;
+
+  const withoutTransient = current.messages.filter(
+    (m) =>
+      m.id !== context?.optimisticId &&
+      m.id !== context?.streamingId &&
+      m.id !== data.userMessage.id,
+  );
+
+  qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+    ...current,
+    messages: [...withoutTransient, data.userMessage, data.assistantMessage],
+    updatedAt: data.assistantMessage.createdAt,
+  });
+
+  void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+}
+
+/**
+ * After Stop, the server persists the partial answer; refetch shortly after so
+ * the cache reconciles with what was actually saved.
+ */
+function reconcileAfterAbort(qc: QueryClient, sessionId: string) {
+  window.setTimeout(() => {
+    void qc.invalidateQueries({ queryKey: chatKeys.session(sessionId) });
+    void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+  }, 1000);
+}
+
 export function useSendMessage(sessionId: string) {
   const qc = useQueryClient();
-  return useMutation({
+  const abortRef = useRef<AbortController | null>(null);
+
+  const mutation = useMutation({
     mutationFn: async (input: SendMessageInput) => {
-      let streamedContent = "";
-
-      return streamChatMessage(sessionId, input, (text) => {
-        streamedContent += text;
-        const current = qc.getQueryData<ChatSessionDetail>(
-          chatKeys.session(sessionId),
-        );
-        if (!current) return;
-
-        const messages = [...current.messages];
-        const last = messages.at(-1);
-        if (last?.role === "assistant" && last.id.startsWith("streaming-")) {
-          messages[messages.length - 1] = {
-            ...last,
-            content: streamedContent,
-          };
-        }
-
-        qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
-          ...current,
-          messages,
-        });
-      });
+      const controller = new AbortController();
+      abortRef.current = controller;
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/messages/stream`,
+        { content: input.content, mode: input.mode ?? "chat" },
+        makeChunkCacheUpdater(qc, sessionId),
+        controller.signal,
+      );
     },
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: chatKeys.session(sessionId) });
@@ -365,23 +434,10 @@ export function useSendMessage(sessionId: string) {
           ? input.content.trim() || CHAT_PRESET_CONTENT[input.mode]
           : input.content;
 
-      const optimisticUser: ChatMessage = {
-        id: `optimistic-${Date.now()}`,
+      const { optimisticUser, streamingAssistant } = makeOptimisticMessages(
         sessionId,
-        role: "user",
-        content: displayContent,
-        citations: [],
-        createdAt: new Date().toISOString(),
-      };
-
-      const streamingAssistant: ChatMessage = {
-        id: `streaming-${Date.now()}`,
-        sessionId,
-        role: "assistant",
-        content: "",
-        citations: [],
-        createdAt: new Date().toISOString(),
-      };
+        displayContent,
+      );
 
       if (previous) {
         qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
@@ -392,35 +448,167 @@ export function useSendMessage(sessionId: string) {
 
       return { previous, optimisticId: optimisticUser.id, streamingId: streamingAssistant.id };
     },
-    onError: (_err, _input, context) => {
+    onError: (err, _input, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(qc, sessionId);
+        return;
+      }
       if (context?.previous) {
         qc.setQueryData(chatKeys.session(sessionId), context.previous);
       }
     },
     onSuccess: (data, _input, context) => {
-      const current = qc.getQueryData<ChatSessionDetail>(
-        chatKeys.session(sessionId),
-      );
-      if (!current) return;
-
-      const withoutOptimistic = current.messages.filter(
-        (m) =>
-          m.id !== context?.optimisticId && m.id !== context?.streamingId,
-      );
-
-      qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
-        ...current,
-        messages: [
-          ...withoutOptimistic,
-          data.userMessage,
-          data.assistantMessage,
-        ],
-        updatedAt: data.assistantMessage.createdAt,
-      });
-
-      void qc.invalidateQueries({ queryKey: chatKeys.sessions });
+      finalizeStreamedExchange(qc, sessionId, data, context);
+    },
+    onSettled: () => {
+      abortRef.current = null;
     },
   });
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  return { ...mutation, stop };
+}
+
+/** Regenerates the answer to the session's latest question (counts one daily turn). */
+export function useRegenerateMessage(sessionId: string) {
+  const qc = useQueryClient();
+  const abortRef = useRef<AbortController | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/regenerate/stream`,
+        {},
+        makeChunkCacheUpdater(qc, sessionId),
+        controller.signal,
+      );
+    },
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: chatKeys.session(sessionId) });
+
+      const previous = qc.getQueryData<ChatSessionDetail>(
+        chatKeys.session(sessionId),
+      );
+
+      const { streamingAssistant } = makeOptimisticMessages(sessionId, "");
+
+      if (previous) {
+        // Drop assistant answers after the last user message, then stream anew.
+        const lastUserIndex = previous.messages.findLastIndex(
+          (m) => m.role === "user",
+        );
+        const messages =
+          lastUserIndex >= 0
+            ? previous.messages.slice(0, lastUserIndex + 1)
+            : [...previous.messages];
+        qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+          ...previous,
+          messages: [...messages, streamingAssistant],
+        });
+      }
+
+      return { previous, streamingId: streamingAssistant.id };
+    },
+    onError: (err, _input, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(qc, sessionId);
+        return;
+      }
+      if (context?.previous) {
+        qc.setQueryData(chatKeys.session(sessionId), context.previous);
+      }
+    },
+    onSuccess: (data, _input, context) => {
+      finalizeStreamedExchange(qc, sessionId, data, context);
+    },
+    onSettled: () => {
+      abortRef.current = null;
+    },
+  });
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  return { ...mutation, stop };
+}
+
+export interface EditMessageInput {
+  messageId: string;
+  content: string;
+}
+
+/** Edits a sent question and re-asks it; messages after it are replaced. */
+export function useEditMessage(sessionId: string) {
+  const qc = useQueryClient();
+  const abortRef = useRef<AbortController | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async (input: EditMessageInput) => {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/messages/${input.messageId}/edit/stream`,
+        { content: input.content },
+        makeChunkCacheUpdater(qc, sessionId),
+        controller.signal,
+      );
+    },
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: chatKeys.session(sessionId) });
+
+      const previous = qc.getQueryData<ChatSessionDetail>(
+        chatKeys.session(sessionId),
+      );
+
+      const { optimisticUser, streamingAssistant } = makeOptimisticMessages(
+        sessionId,
+        input.content,
+      );
+
+      if (previous) {
+        const targetIndex = previous.messages.findIndex(
+          (m) => m.id === input.messageId,
+        );
+        const kept =
+          targetIndex >= 0
+            ? previous.messages.slice(0, targetIndex)
+            : [...previous.messages];
+        qc.setQueryData<ChatSessionDetail>(chatKeys.session(sessionId), {
+          ...previous,
+          messages: [...kept, optimisticUser, streamingAssistant],
+        });
+      }
+
+      return { previous, optimisticId: optimisticUser.id, streamingId: streamingAssistant.id };
+    },
+    onError: (err, _input, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(qc, sessionId);
+        return;
+      }
+      if (context?.previous) {
+        qc.setQueryData(chatKeys.session(sessionId), context.previous);
+      }
+    },
+    onSuccess: (data, _input, context) => {
+      finalizeStreamedExchange(qc, sessionId, data, context);
+    },
+    onSettled: () => {
+      abortRef.current = null;
+    },
+  });
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  return { ...mutation, stop };
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
@@ -456,21 +644,20 @@ function parseSseEvents(buffer: string): {
   return { events, rest };
 }
 
-async function streamChatMessage(
-  sessionId: string,
-  input: SendMessageInput,
+async function streamChatRequest(
+  path: string,
+  body: Record<string, unknown>,
   onChunk: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<SendMessageResult> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
   const headers = await getAuthHeaders();
 
-  const response = await fetch(`${baseUrl}/chat/sessions/${sessionId}/messages/stream`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      content: input.content,
-      mode: input.mode ?? "chat",
-    }),
+    body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
   });
 
   if (!response.ok) {

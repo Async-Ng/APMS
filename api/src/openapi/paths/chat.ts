@@ -267,4 +267,84 @@ export function registerChatPaths(): void {
       404: error404,
     },
   });
+
+  // POST /api/chat/sessions/:id/messages/stream
+  registry.registerPath({
+    method: "post",
+    path: "/api/chat/sessions/{id}/messages/stream",
+    tags: ["Chat"],
+    summary: "Send a message and stream the AI response (SSE)",
+    description:
+      "Same pipeline as /messages but streams the answer as Server-Sent Events: `user_message`, repeated `chunk` events (`{text}`), then `done` with the final SendMessageResult. If the client aborts the request mid-stream, generation stops and the partial answer is persisted with its citations.",
+    security: [...bearerSecurity],
+    request: {
+      params: objectIdParamSchema,
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              content: z.string().min(1).max(10_000).openapi({ example: "Kiến trúc microservice là gì?" }),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: { description: "SSE stream (text/event-stream)" },
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
+
+  // POST /api/chat/sessions/:id/regenerate/stream
+  registry.registerPath({
+    method: "post",
+    path: "/api/chat/sessions/{id}/regenerate/stream",
+    tags: ["Chat"],
+    summary: "Regenerate the answer to the latest question (SSE)",
+    description:
+      "Deletes the assistant answer(s) after the session's most recent user message and streams a new answer for it. Counts one turn toward the daily chat limit (BR-025). Same SSE event shape as /messages/stream.",
+    security: [...bearerSecurity],
+    request: { params: objectIdParamSchema },
+    responses: {
+      200: { description: "SSE stream (text/event-stream)" },
+      400: error400("Session has no user message to regenerate"),
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
+
+  // POST /api/chat/sessions/:id/messages/:messageId/edit/stream
+  registry.registerPath({
+    method: "post",
+    path: "/api/chat/sessions/{id}/messages/{messageId}/edit/stream",
+    tags: ["Chat"],
+    summary: "Edit a previously sent question and re-ask it (SSE)",
+    description:
+      "Replaces the target user message and every message after it with a new exchange using the edited content. Counts one turn toward the daily chat limit. Same SSE event shape as /messages/stream.",
+    security: [...bearerSecurity],
+    request: {
+      params: z.object({
+        id: z.string().openapi({ example: "507f1f77bcf86cd799439011" }),
+        messageId: z.string().openapi({ example: "507f1f77bcf86cd799439012" }),
+      }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              content: z.string().min(1).max(10_000).openapi({ example: "Giải thích lại phần service boundaries?" }),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: { description: "SSE stream (text/event-stream)" },
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
 }

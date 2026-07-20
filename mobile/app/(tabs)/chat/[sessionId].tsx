@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, Text, View } from "react-native";
@@ -8,6 +9,7 @@ import { ChatBubble, ThinkingBubble } from "../../../components/app/chat/ChatBub
 import { ChatContextCard } from "../../../components/app/chat/ChatContextCard";
 import { ChatInputBar } from "../../../components/app/chat/ChatInputBar";
 import { CitationStrip } from "../../../components/app/chat/CitationCard";
+import { EditMessageModal } from "../../../components/app/chat/EditMessageModal";
 import { RenameChatModal } from "../../../components/app/chat/RenameChatModal";
 import { SuggestedQuestions } from "../../../components/app/chat/SuggestedQuestions";
 import { HeaderBar, HeaderIconButton } from "../../../components/ui/HeaderBar";
@@ -21,10 +23,13 @@ import {
   useChatContextStatus,
   useChatSession,
   useDeleteChatSession,
+  useEditMessage,
+  useRegenerateMessage,
   useSendMessage,
   useUpdateChatSession,
 } from "../../../hooks/useChat";
 import { getErrorMessage } from "../../../lib/api-error";
+import { useToastStore } from "../../../stores/toast-store";
 
 const CONTEXT_LABELS: Record<string, string> = {
   all: "Tất cả tài liệu",
@@ -40,8 +45,11 @@ export default function ChatSessionScreen() {
   const router = useRouter();
   const { data: session, isLoading } = useChatSession(sessionId);
   const sendMessage = useSendMessage();
+  const regenerateMessage = useRegenerateMessage();
+  const editMessage = useEditMessage();
   const updateSession = useUpdateChatSession();
   const deleteSession = useDeleteChatSession();
+  const showToast = useToastStore((state) => state.show);
 
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<ChatMode>("chat");
@@ -50,7 +58,13 @@ export default function ChatSessionScreen() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [retryMessage, setRetryMessage] = useState<RetryMessage>(null);
+  const [messageActionsFor, setMessageActionsFor] = useState<ChatMessage | null>(null);
+  const [editTarget, setEditTarget] = useState<ChatMessage | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const isAtBottomRef = useRef(true);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+
+  const isGenerating = isSending || regenerateMessage.isPending || editMessage.isPending;
 
   const messages = session?.messages ?? [];
   const contextDocumentIds = useMemo(() => {
@@ -66,11 +80,40 @@ export default function ChatSessionScreen() {
   const { data: contextStatuses = [] } = useChatContextStatus(contextDocumentIds);
   const contextProcessing = contextStatuses.some((doc) => doc.status === "pending" || doc.status === "processing");
 
+  // Follow new content only while the user is at the bottom, so scrolling up
+  // to reread is never fought by the stream.
+  const lastMessageLength = messages.at(-1)?.content.length ?? 0;
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && isAtBottomRef.current) {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [messages.length]);
+  }, [messages.length, lastMessageLength]);
+
+  function handleStop() {
+    sendMessage.stop();
+    regenerateMessage.stop();
+    editMessage.stop();
+  }
+
+  async function handleCopyMessage(message: ChatMessage) {
+    setMessageActionsFor(null);
+    await Clipboard.setStringAsync(message.content);
+    showToast("Đã sao chép nội dung tin nhắn.");
+  }
+
+  function handleRegenerate() {
+    setMessageActionsFor(null);
+    if (isGenerating) return;
+    setSendError(null);
+    regenerateMessage.mutate({ sessionId });
+  }
+
+  function handleEditSubmit(content: string) {
+    if (!editTarget || isGenerating) return;
+    setSendError(null);
+    editMessage.mutate({ sessionId, messageId: editTarget.id, content });
+    setEditTarget(null);
+  }
 
   async function submitMessage({ content, mode: nextMode }: { content: string; mode: ChatMode }) {
     const trimmed = content.trim();
@@ -78,7 +121,7 @@ export default function ChatSessionScreen() {
       nextMode === "chat"
         ? trimmed
         : trimmed || CHAT_PRESET_CONTENT[nextMode as Exclude<ChatMode, "chat">];
-    if (!finalContent || isSending) return;
+    if (!finalContent || isGenerating) return;
 
     if (nextMode === "chat") setInput("");
     setSendError(null);
@@ -130,6 +173,43 @@ export default function ChatSessionScreen() {
     ]);
   }
 
+  const lastAssistantId = messages.findLast((m) => m.role === "assistant")?.id;
+
+  const messageActions = messageActionsFor
+    ? [
+        {
+          label: "Sao chép nội dung",
+          icon: "copy-outline" as const,
+          onPress: () => void handleCopyMessage(messageActionsFor),
+        },
+        ...(messageActionsFor.role === "assistant" &&
+        messageActionsFor.id === lastAssistantId &&
+        !isGenerating
+          ? [
+              {
+                label: "Tạo lại câu trả lời (tính 1 lượt)",
+                icon: "refresh-outline" as const,
+                onPress: handleRegenerate,
+              },
+            ]
+          : []),
+        ...(messageActionsFor.role === "user" &&
+        !isGenerating &&
+        !messageActionsFor.id.startsWith("optimistic-")
+          ? [
+              {
+                label: "Sửa câu hỏi & gửi lại",
+                icon: "pencil-outline" as const,
+                onPress: () => {
+                  setMessageActionsFor(null);
+                  setEditTarget(messageActionsFor);
+                },
+              },
+            ]
+          : []),
+      ]
+    : [];
+
   type ListItem =
     | { type: "message"; key: string; data: ChatMessage }
     | { type: "thinking"; key: string };
@@ -160,6 +240,22 @@ export default function ChatSessionScreen() {
             { onSuccess: () => setRenameOpen(false) },
           );
         }}
+      />
+
+      <EditMessageModal
+        visible={!!editTarget}
+        initialContent={editTarget?.content ?? ""}
+        loading={editMessage.isPending}
+        onDismiss={() => setEditTarget(null)}
+        onConfirm={handleEditSubmit}
+      />
+
+      <ActionSheet
+        visible={!!messageActionsFor}
+        title={messageActionsFor?.role === "user" ? "Câu hỏi của bạn" : "Câu trả lời của trợ lý"}
+        subtitle="Tin nhắn"
+        actions={messageActions}
+        onDismiss={() => setMessageActionsFor(null)}
       />
 
       <ActionSheet
@@ -216,45 +312,87 @@ export default function ChatSessionScreen() {
                 onOpenDocument={(id) => router.push(`/documents/${id}`)}
               />
             )}
-            <FlatList
-              ref={flatListRef}
-              data={listItems}
-              keyExtractor={(item) => item.key}
-              contentContainerStyle={{
-                padding: 16,
-                gap: 16,
-                paddingBottom: 20,
-                flexGrow: 1,
-              }}
-              ListEmptyComponent={<ChatEmptyState />}
-              keyboardShouldPersistTaps="handled"
-              renderItem={({ item, index }) => {
-                if (item.type === "thinking") return <ThinkingBubble />;
-                const msg = item.data;
-                const isLastAssistantMessage = msg.role === "assistant" && index === listItems.length - 1;
-                return (
-                  <View style={{ gap: 10 }}>
-                    <ChatBubble
-                      role={msg.role}
-                      content={msg.content}
-                      createdAt={msg.createdAt}
-                      citations={msg.citations}
-                      onCitationPress={openCitation}
-                    />
-                    {msg.role === "assistant" && msg.citations.length > 0 && (
-                      <CitationStrip citations={msg.citations} onPress={openCitation} />
-                    )}
-                    {isLastAssistantMessage && (
-                      <SuggestedQuestions
-                        questions={msg.suggestedQuestions ?? []}
-                        disabled={isSending}
-                        onSelect={(question) => void submitMessage({ content: question, mode: "chat" })}
+            <View style={{ flex: 1 }}>
+              <FlatList
+                ref={flatListRef}
+                data={listItems}
+                keyExtractor={(item) => item.key}
+                contentContainerStyle={{
+                  padding: 16,
+                  gap: 16,
+                  paddingBottom: 20,
+                  flexGrow: 1,
+                }}
+                ListEmptyComponent={<ChatEmptyState />}
+                keyboardShouldPersistTaps="handled"
+                onScroll={({ nativeEvent }) => {
+                  const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+                  const distance =
+                    contentSize.height - contentOffset.y - layoutMeasurement.height;
+                  const atBottom = distance <= 80;
+                  isAtBottomRef.current = atBottom;
+                  setShowScrollDown(!atBottom && contentSize.height > layoutMeasurement.height);
+                }}
+                scrollEventThrottle={100}
+                renderItem={({ item, index }) => {
+                  if (item.type === "thinking") return <ThinkingBubble />;
+                  const msg = item.data;
+                  const isLastAssistantMessage = msg.role === "assistant" && index === listItems.length - 1;
+                  const isStreamingThis = msg.id.startsWith("streaming-");
+                  return (
+                    <View style={{ gap: 10 }}>
+                      <ChatBubble
+                        role={msg.role}
+                        content={msg.content}
+                        createdAt={msg.createdAt}
+                        citations={msg.citations}
+                        onCitationPress={openCitation}
+                        onLongPress={
+                          isStreamingThis ? undefined : () => setMessageActionsFor(msg)
+                        }
                       />
-                    )}
-                  </View>
-                );
-              }}
-            />
+                      {msg.role === "assistant" && msg.citations.length > 0 && (
+                        <CitationStrip citations={msg.citations} onPress={openCitation} />
+                      )}
+                      {isLastAssistantMessage && (
+                        <SuggestedQuestions
+                          questions={msg.suggestedQuestions ?? []}
+                          disabled={isGenerating}
+                          onSelect={(question) => void submitMessage({ content: question, mode: "chat" })}
+                        />
+                      )}
+                    </View>
+                  );
+                }}
+              />
+              {showScrollDown && (
+                <Pressable
+                  onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                  style={({ pressed }) => ({
+                    position: "absolute",
+                    bottom: 12,
+                    alignSelf: "center",
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    borderWidth: 2.5,
+                    borderColor: colors.ink,
+                    backgroundColor: pressed ? "#F0F0F0" : colors.surface,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: colors.ink,
+                    shadowOffset: { width: 2, height: 2 },
+                    shadowOpacity: 1,
+                    shadowRadius: 0,
+                    elevation: 3,
+                  })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cuộn xuống cuối"
+                >
+                  <Ionicons name="arrow-down" size={18} color={colors.ink} />
+                </Pressable>
+              )}
+            </View>
           </>
         )}
 
@@ -301,7 +439,8 @@ export default function ChatSessionScreen() {
           value={input}
           onChangeText={setInput}
           onSend={() => handleSend()}
-          sending={isSending}
+          onStop={handleStop}
+          sending={isGenerating}
           mode={mode}
           onModeChange={setMode}
         />

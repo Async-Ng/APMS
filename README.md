@@ -24,7 +24,7 @@ APMS is a student knowledge-management system for academic documents. It lets us
 - Folder workspace: owned documents and folders keep a Drive-like hierarchy through `/api/folders` and `view=my`.
 - Sharing: `/api/shares` remains available for direct read-only sharing of documents and folders.
 - Academic discovery: public document listing supports curriculum, semester, subject, and match filters.
-- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search; chat answers are streamed with clickable source citations, document-viewer deep links, and follow-up suggestions, and are limited to 50 questions per user per day.
+- Search and chat: semantic search and RAG chat use Gemini embeddings plus MongoDB Atlas Vector Search; chat answers are streamed with clickable source citations, document-viewer deep links, and follow-up suggestions, and are limited to 50 turns per user per day (regenerating or editing a question also counts). Users can stop a streaming answer (keeping the partial result), regenerate the latest answer, edit and resend a question, and copy messages; untitled sessions are auto-titled from the first exchange, and the web app renders LaTeX math (KaTeX) and syntax-highlighted code.
 - Admin access control: active/disabled users, email-domain allowlist, exact-email exceptions, and promote/demote admin role (Cognito group + MongoDB).
 
 Removed API surfaces: `/api/drive`, `/api/library`, and `/api/forum` are no longer mounted. They are replaced by the unified `/api/documents` API.

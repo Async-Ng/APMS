@@ -113,6 +113,8 @@ Search hoặc Chat
 
 Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Câu trả lời ở mọi mode ưu tiên ngắn gọn, tự nhiên như hội thoại và dựa trên tài liệu được truy xuất; mode `chat` trả thêm tối đa 3 `suggestedQuestions`, còn các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
 
+Trải nghiệm hội thoại: user có thể dừng câu trả lời đang stream (phần đã sinh vẫn được lưu kèm citation — FR-063), tạo lại câu trả lời gần nhất hoặc sửa & gửi lại một câu hỏi (thay lịch sử phía sau, mỗi lần sinh lại tính 1 lượt/ngày — FR-064), và session `all` chưa đặt tên được tự đặt tiêu đề từ lượt trao đổi đầu (FR-065). Web render công thức toán bằng KaTeX và tô màu cú pháp code bằng highlight.js.
+
 ## Non-Functional Notes
 
 - Giới hạn & chính sách (xem SRS):

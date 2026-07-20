@@ -29,6 +29,9 @@ const chatMessageSchema = new Schema(
     content: { type: String, required: true },
     citations: { type: [citationSchema], default: [] },
     suggestedQuestions: { type: [String], default: [] },
+    // True when this assistant answer replaced a previous one (regenerate).
+    // Regenerations count toward the daily chat limit (BR-025).
+    isRegeneration: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

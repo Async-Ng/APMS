@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { colors } from "../../../constants/colors";
@@ -10,6 +10,8 @@ interface ChatBubbleProps {
   createdAt?: string;
   citations?: Citation[];
   onCitationPress?: (citation: Citation) => void;
+  /** Long-press opens the message action sheet (copy / regenerate / edit). */
+  onLongPress?: () => void;
 }
 
 const markdownStyles = {
@@ -68,6 +70,7 @@ export function ChatBubble({
   createdAt,
   citations = [],
   onCitationPress,
+  onLongPress,
 }: ChatBubbleProps) {
   const isUser = role === "user";
 
@@ -140,8 +143,11 @@ export function ChatBubble({
           <Text style={{ fontSize: 11, fontWeight: "700", color: colors.muted }}>APMS Assistant</Text>
         </View>
       )}
-      <View
-        style={{
+      <Pressable
+        onLongPress={onLongPress}
+        delayLongPress={300}
+        disabled={!onLongPress}
+        style={({ pressed }) => ({
           backgroundColor: isUser ? colors.fptBlue : colors.surface,
           borderWidth: 2.5,
           borderColor: colors.ink,
@@ -155,14 +161,15 @@ export function ChatBubble({
           shadowOpacity: 1,
           shadowRadius: 0,
           elevation: 3,
-        }}
+          opacity: pressed && onLongPress ? 0.85 : 1,
+        })}
       >
         {isUser ? (
           <Text style={{ fontSize: 15, color: colors.onBrand, lineHeight: 22 }}>{content}</Text>
         ) : (
           <Markdown style={markdownStyles} rules={rules}>{formattedContent}</Markdown>
         )}
-      </View>
+      </Pressable>
       {createdAt && (
         <Text style={{ fontSize: 10, color: colors.muted }}>
           {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
 
 import { api } from "../lib/api-client";
 import { getErrorMessage } from "../lib/api-error";
@@ -225,15 +226,28 @@ function parseSseEvents(buffer: string): {
   return { events, rest };
 }
 
+/** True when the request failed because the user pressed Stop. */
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function makeAbortError(): Error {
+  const error = new Error("Đã dừng tạo câu trả lời.");
+  error.name = "AbortError";
+  return error;
+}
+
 /**
  * Reads the SSE stream via XMLHttpRequest progress events — React Native's
  * fetch() does not reliably expose a readable response body, but `xhr.responseText`
  * grows incrementally and fires `readystatechange` at readyState 3 (LOADING).
+ * `registerAbort` receives a function that cancels the request (Stop button).
  */
-function streamChatMessage(
-  sessionId: string,
-  input: { content: string; mode?: ChatMode },
+function streamChatRequest(
+  path: string,
+  body: Record<string, unknown>,
   onChunk: (text: string) => void,
+  registerAbort?: (abort: () => void) => void,
 ): Promise<SendMessageResult> {
   return new Promise((resolve, reject) => {
     void (async () => {
@@ -241,7 +255,7 @@ function streamChatMessage(
       const headers = await getAuthHeaders();
 
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `${baseUrl}/chat/sessions/${sessionId}/messages/stream`);
+      xhr.open("POST", `${baseUrl}${path}`);
       for (const [key, value] of Object.entries(headers)) {
         xhr.setRequestHeader(key, value);
       }
@@ -250,6 +264,13 @@ function streamChatMessage(
       let buffer = "";
       let result: SendMessageResult | null = null;
       let settled = false;
+
+      registerAbort?.(() => {
+        if (settled) return;
+        settled = true;
+        reject(makeAbortError());
+        xhr.abort();
+      });
 
       xhr.onreadystatechange = () => {
         if (xhr.readyState >= 3 && xhr.responseText.length > processedLength) {
@@ -293,30 +314,99 @@ function streamChatMessage(
           reject(new Error("Network error"));
         }
       };
-      xhr.send(JSON.stringify({ content: input.content, mode: input.mode ?? "chat" }));
+      xhr.send(JSON.stringify(body));
     })();
   });
 }
 
+function makeChunkCacheUpdater(queryClient: QueryClient, sessionId: string) {
+  let streamedContent = "";
+  return (text: string) => {
+    streamedContent += text;
+    const queryKey = ["chat", "session", sessionId];
+    const current = queryClient.getQueryData<SessionWithMessages>(queryKey);
+    if (!current) return;
+
+    const messages = [...current.messages];
+    const last = messages.at(-1);
+    if (last?.role === "assistant" && last.id.startsWith("streaming-")) {
+      messages[messages.length - 1] = { ...last, content: streamedContent };
+    }
+
+    queryClient.setQueryData<SessionWithMessages>(queryKey, { ...current, messages });
+  };
+}
+
+function makeOptimisticMessages(sessionId: string, userContent: string) {
+  const optimisticUser: ChatMessage = {
+    id: `optimistic-${Date.now()}`,
+    sessionId,
+    role: "user",
+    content: userContent,
+    citations: [],
+    suggestedQuestions: [],
+    createdAt: new Date().toISOString(),
+  };
+  const streamingAssistant: ChatMessage = {
+    id: `streaming-${Date.now()}`,
+    sessionId,
+    role: "assistant",
+    content: "",
+    citations: [],
+    suggestedQuestions: [],
+    createdAt: new Date().toISOString(),
+  };
+  return { optimisticUser, streamingAssistant };
+}
+
+function finalizeStreamedExchange(
+  queryClient: QueryClient,
+  sessionId: string,
+  data: SendMessageResult,
+  context: { optimisticId?: string; streamingId?: string } | undefined,
+) {
+  queryClient.setQueryData<SessionWithMessages>(["chat", "session", sessionId], (old) => {
+    if (!old) return old;
+    return {
+      ...old,
+      messages: [
+        ...old.messages.filter(
+          (m) =>
+            m.id !== context?.optimisticId &&
+            m.id !== context?.streamingId &&
+            m.id !== data.userMessage.id,
+        ),
+        data.userMessage,
+        data.assistantMessage,
+      ],
+      updatedAt: data.assistantMessage.createdAt,
+    };
+  });
+  void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+}
+
+/** After Stop, the server persists the partial answer — refetch to reconcile. */
+function reconcileAfterAbort(queryClient: QueryClient, sessionId: string) {
+  setTimeout(() => {
+    void queryClient.invalidateQueries({ queryKey: ["chat", "session", sessionId] });
+    void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+  }, 1000);
+}
+
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  return useMutation({
+  const abortRef = useRef<(() => void) | null>(null);
+
+  const mutation = useMutation({
     mutationFn: async ({ sessionId, content, mode = "chat" }: SendMessageInput) => {
-      let streamedContent = "";
-      return streamChatMessage(sessionId, { content, mode }, (text) => {
-        streamedContent += text;
-        const queryKey = ["chat", "session", sessionId];
-        const current = queryClient.getQueryData<SessionWithMessages>(queryKey);
-        if (!current) return;
-
-        const messages = [...current.messages];
-        const last = messages.at(-1);
-        if (last?.role === "assistant" && last.id.startsWith("streaming-")) {
-          messages[messages.length - 1] = { ...last, content: streamedContent };
-        }
-
-        queryClient.setQueryData<SessionWithMessages>(queryKey, { ...current, messages });
-      });
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/messages/stream`,
+        { content, mode },
+        makeChunkCacheUpdater(queryClient, sessionId),
+        (abort) => {
+          abortRef.current = abort;
+        },
+      );
     },
     onMutate: async ({ sessionId, content, mode = "chat" }) => {
       const queryKey = ["chat", "session", sessionId];
@@ -324,24 +414,7 @@ export function useSendMessage() {
       const previous = queryClient.getQueryData<SessionWithMessages>(queryKey);
 
       const displayContent = mode === "chat" ? content : (content.trim() || CHAT_PRESET_CONTENT[mode]);
-      const optimisticUser: ChatMessage = {
-        id: `optimistic-${Date.now()}`,
-        sessionId,
-        role: "user",
-        content: displayContent,
-        citations: [],
-        suggestedQuestions: [],
-        createdAt: new Date().toISOString(),
-      };
-      const streamingAssistant: ChatMessage = {
-        id: `streaming-${Date.now()}`,
-        sessionId,
-        role: "assistant",
-        content: "",
-        citations: [],
-        suggestedQuestions: [],
-        createdAt: new Date().toISOString(),
-      };
+      const { optimisticUser, streamingAssistant } = makeOptimisticMessages(sessionId, displayContent);
 
       queryClient.setQueryData<SessionWithMessages>(queryKey, (old) =>
         old ? { ...old, messages: [...old.messages, optimisticUser, streamingAssistant] } : old,
@@ -350,25 +423,146 @@ export function useSendMessage() {
       return { previous, optimisticId: optimisticUser.id, streamingId: streamingAssistant.id };
     },
     onSuccess: (data, { sessionId }, context) => {
-      queryClient.setQueryData<SessionWithMessages>(["chat", "session", sessionId], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          messages: [
-            ...old.messages.filter((m) => m.id !== context?.optimisticId && m.id !== context?.streamingId),
-            data.userMessage,
-            data.assistantMessage,
-          ],
-          updatedAt: data.assistantMessage.createdAt,
-        };
-      });
-      void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+      finalizeStreamedExchange(queryClient, sessionId, data, context);
     },
     onError: (err, { sessionId }, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(queryClient, sessionId);
+        return;
+      }
       if (context?.previous) {
         queryClient.setQueryData(["chat", "session", sessionId], context.previous);
       }
       useToastStore.getState().show(getErrorMessage(err, "Gửi tin nhắn thất bại. Vui lòng thử lại."));
     },
+    onSettled: () => {
+      abortRef.current = null;
+    },
   });
+
+  const stop = useCallback(() => {
+    abortRef.current?.();
+  }, []);
+
+  return { ...mutation, stop };
+}
+
+/** Regenerates the answer to the session's latest question (counts one daily turn). */
+export function useRegenerateMessage() {
+  const queryClient = useQueryClient();
+  const abortRef = useRef<(() => void) | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async ({ sessionId }: { sessionId: string }) => {
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/regenerate/stream`,
+        {},
+        makeChunkCacheUpdater(queryClient, sessionId),
+        (abort) => {
+          abortRef.current = abort;
+        },
+      );
+    },
+    onMutate: async ({ sessionId }) => {
+      const queryKey = ["chat", "session", sessionId];
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SessionWithMessages>(queryKey);
+
+      const { streamingAssistant } = makeOptimisticMessages(sessionId, "");
+
+      queryClient.setQueryData<SessionWithMessages>(queryKey, (old) => {
+        if (!old) return old;
+        const lastUserIndex = old.messages.findLastIndex((m) => m.role === "user");
+        const kept = lastUserIndex >= 0 ? old.messages.slice(0, lastUserIndex + 1) : [...old.messages];
+        return { ...old, messages: [...kept, streamingAssistant] };
+      });
+
+      return { previous, streamingId: streamingAssistant.id };
+    },
+    onSuccess: (data, { sessionId }, context) => {
+      finalizeStreamedExchange(queryClient, sessionId, data, context);
+    },
+    onError: (err, { sessionId }, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(queryClient, sessionId);
+        return;
+      }
+      if (context?.previous) {
+        queryClient.setQueryData(["chat", "session", sessionId], context.previous);
+      }
+      useToastStore.getState().show(getErrorMessage(err, "Tạo lại câu trả lời thất bại. Vui lòng thử lại."));
+    },
+    onSettled: () => {
+      abortRef.current = null;
+    },
+  });
+
+  const stop = useCallback(() => {
+    abortRef.current?.();
+  }, []);
+
+  return { ...mutation, stop };
+}
+
+export interface EditMessageInput {
+  sessionId: string;
+  messageId: string;
+  content: string;
+}
+
+/** Edits a sent question and re-asks it; messages after it are replaced. */
+export function useEditMessage() {
+  const queryClient = useQueryClient();
+  const abortRef = useRef<(() => void) | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async ({ sessionId, messageId, content }: EditMessageInput) => {
+      return streamChatRequest(
+        `/chat/sessions/${sessionId}/messages/${messageId}/edit/stream`,
+        { content },
+        makeChunkCacheUpdater(queryClient, sessionId),
+        (abort) => {
+          abortRef.current = abort;
+        },
+      );
+    },
+    onMutate: async ({ sessionId, messageId, content }) => {
+      const queryKey = ["chat", "session", sessionId];
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SessionWithMessages>(queryKey);
+
+      const { optimisticUser, streamingAssistant } = makeOptimisticMessages(sessionId, content);
+
+      queryClient.setQueryData<SessionWithMessages>(queryKey, (old) => {
+        if (!old) return old;
+        const targetIndex = old.messages.findIndex((m) => m.id === messageId);
+        const kept = targetIndex >= 0 ? old.messages.slice(0, targetIndex) : [...old.messages];
+        return { ...old, messages: [...kept, optimisticUser, streamingAssistant] };
+      });
+
+      return { previous, optimisticId: optimisticUser.id, streamingId: streamingAssistant.id };
+    },
+    onSuccess: (data, { sessionId }, context) => {
+      finalizeStreamedExchange(queryClient, sessionId, data, context);
+    },
+    onError: (err, { sessionId }, context) => {
+      if (isAbortError(err)) {
+        reconcileAfterAbort(queryClient, sessionId);
+        return;
+      }
+      if (context?.previous) {
+        queryClient.setQueryData(["chat", "session", sessionId], context.previous);
+      }
+      useToastStore.getState().show(getErrorMessage(err, "Sửa câu hỏi thất bại. Vui lòng thử lại."));
+    },
+    onSettled: () => {
+      abortRef.current = null;
+    },
+  });
+
+  const stop = useCallback(() => {
+    abortRef.current?.();
+  }, []);
+
+  return { ...mutation, stop };
 }

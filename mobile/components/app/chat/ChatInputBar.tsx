@@ -9,6 +9,7 @@ interface ChatInputBarProps {
   value: string;
   onChangeText: (text: string) => void;
   onSend: () => void;
+  onStop?: () => void;
   sending: boolean;
   mode: ChatMode;
   onModeChange: (mode: ChatMode) => void;
@@ -21,9 +22,10 @@ const MODE_OPTIONS: { value: ChatMode; label: string; icon: keyof typeof Ionicon
   { value: "study_guide", label: "Ôn tập", icon: "school-outline" },
 ];
 
-export function ChatInputBar({ value, onChangeText, onSend, sending, mode, onModeChange }: ChatInputBarProps) {
+export function ChatInputBar({ value, onChangeText, onSend, onStop, sending, mode, onModeChange }: ChatInputBarProps) {
   const inputRef = useRef<TextInput>(null);
   const canSend = (mode === "chat" ? value.trim().length > 0 : true) && !sending;
+  const showStop = sending && !!onStop;
 
   return (
     <View
@@ -107,30 +109,50 @@ export function ChatInputBar({ value, onChangeText, onSend, sending, mode, onMod
           blurOnSubmit={false}
           onSubmitEditing={onSend}
         />
-        <Pressable
-          onPress={onSend}
-          disabled={!canSend}
-          style={({ pressed }) => ({
-            width: 46,
-            height: 46,
-            borderRadius: 14,
-            borderWidth: 3,
-            borderColor: colors.ink,
-            backgroundColor: canSend ? colors.fptOrange : "#E5E5E5",
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: colors.ink,
-            shadowOffset: pressed || !canSend ? { width: 0, height: 0 } : { width: 3, height: 3 },
-            shadowOpacity: pressed || !canSend ? 0 : 1,
-            shadowRadius: 0,
-            elevation: pressed || !canSend ? 0 : 3,
-            transform: pressed && canSend ? [{ translateX: 3 }, { translateY: 3 }] : [],
-          })}
-          accessibilityLabel="Gửi tin nhắn"
-          accessibilityRole="button"
-        >
-          <Ionicons name="arrow-up" size={22} color={canSend ? colors.onBrand : colors.muted} />
-        </Pressable>
+        {showStop ? (
+          <Pressable
+            onPress={onStop}
+            style={({ pressed }) => ({
+              width: 46,
+              height: 46,
+              borderRadius: 14,
+              borderWidth: 3,
+              borderColor: colors.ink,
+              backgroundColor: pressed ? "#F0F0F0" : colors.surface,
+              alignItems: "center",
+              justifyContent: "center",
+            })}
+            accessibilityLabel="Dừng tạo câu trả lời"
+            accessibilityRole="button"
+          >
+            <Ionicons name="stop" size={20} color={colors.ink} />
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={onSend}
+            disabled={!canSend}
+            style={({ pressed }) => ({
+              width: 46,
+              height: 46,
+              borderRadius: 14,
+              borderWidth: 3,
+              borderColor: colors.ink,
+              backgroundColor: canSend ? colors.fptOrange : "#E5E5E5",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: colors.ink,
+              shadowOffset: pressed || !canSend ? { width: 0, height: 0 } : { width: 3, height: 3 },
+              shadowOpacity: pressed || !canSend ? 0 : 1,
+              shadowRadius: 0,
+              elevation: pressed || !canSend ? 0 : 3,
+              transform: pressed && canSend ? [{ translateX: 3 }, { translateY: 3 }] : [],
+            })}
+            accessibilityLabel="Gửi tin nhắn"
+            accessibilityRole="button"
+          >
+            <Ionicons name="arrow-up" size={22} color={canSend ? colors.onBrand : colors.muted} />
+          </Pressable>
+        )}
       </View>
     </View>
   );

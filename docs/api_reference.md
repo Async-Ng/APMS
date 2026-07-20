@@ -309,13 +309,17 @@ Embeddings are created with Vertex AI `gemini-embedding-001` at 1024 dimensions 
 | `DELETE` | `/api/chat/sessions/:id` | Delete a session |
 | `POST` | `/api/chat/sessions/:id/messages` | Ask a question; returns answer + citations + suggestedQuestions |
 | `POST` | `/api/chat/sessions/:id/messages/stream` | Same, streamed incrementally; final `done` event includes suggestedQuestions (FR-045) |
+| `POST` | `/api/chat/sessions/:id/regenerate/stream` | Regenerate the answer to the latest user message; replaces prior assistant answer(s), counts one daily turn (FR-064) |
+| `POST` | `/api/chat/sessions/:id/messages/:messageId/edit/stream` | Edit a sent user message and re-ask; the message and everything after it are replaced (FR-064) |
 
 - `contextType`: `all | folder | document | documents` selects the grounding scope (FR-040). `contextId` is required for `folder`/`document`; `contextIds` (1–20) for `documents`.
 - `mode`: `chat | summary | faq | study_guide` (FR-043). In `chat` mode `content` is required (BR-024); max 10,000 chars.
 - Answers prioritize concise, conversational first-pass responses across all modes; users can ask follow-up questions for deeper detail (FR-041).
 - Answers include `citations` referencing document, page, section, `chunkIndex`, and `deepLink` (FR-042, BR-023). Citation markers in assistant text are normalized so unresolved `[n]`/`[Source n]` markers are removed instead of rendering as non-clickable citations.
 - Assistant messages include `suggestedQuestions: string[]`; chat mode may return up to 3 follow-up questions, while `summary`, `faq`, and `study_guide` return an empty array.
-- Each user is limited to 50 chat questions per day (counted across all sessions since 00:00 UTC, role `user`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
+- Streaming endpoints emit SSE events `user_message`, `chunk` (`{text}`), then `done`. If the client aborts the request mid-stream (stop button), generation is cancelled server-side and the partial answer — if any — is persisted with its citations (FR-063).
+- Sessions with `contextType: all` still titled `New conversation` are auto-titled from the first exchange after the answer completes (FR-065); a user-chosen title is never overwritten.
+- Each user is limited to 50 chat turns per day (counted across all sessions since 00:00 UTC: `user` messages plus assistant messages flagged `isRegeneration`); exceeding it returns `429 CHAT_DAILY_LIMIT` (FR-062, FR-064, BR-025). Setting `CHAT_DAILY_LIMIT_PER_USER=0` disables the limit.
 
 ## Migration Notes
 

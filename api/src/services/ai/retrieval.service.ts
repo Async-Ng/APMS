@@ -1,7 +1,12 @@
 import type { Types } from "mongoose";
 
 import { DocumentChunk } from "../../models/document-chunk.model";
-import { analyzeQuery, type QueryAnalysis } from "./reference-utils";
+import {
+  accentInsensitiveRegexSource,
+  analyzeQuery,
+  foldDiacritics,
+  type QueryAnalysis,
+} from "./reference-utils";
 import type { RetrievedChunk } from "./citation-utils";
 
 const LEXICAL_LIMIT = 16;
@@ -29,9 +34,12 @@ function buildLexicalOrClauses(analysis: ReturnType<typeof analyzeQuery>): Recor
     clauses.push({ queryText: { $regex: escapeRegex(token), $options: "i" } });
   }
 
+  // Accent-insensitive so Vietnamese queries typed without diacritics
+  // ("phan tich") still match accented document text ("Phân tích").
   for (const term of analysis.lexicalTerms.slice(0, 8)) {
-    clauses.push({ content: { $regex: escapeRegex(term), $options: "i" } });
-    clauses.push({ displayHeading: { $regex: escapeRegex(term), $options: "i" } });
+    const source = accentInsensitiveRegexSource(term);
+    clauses.push({ content: { $regex: source, $options: "i" } });
+    clauses.push({ displayHeading: { $regex: source, $options: "i" } });
   }
 
   return clauses;
@@ -57,8 +65,9 @@ function lexicalBoost(
   for (const token of analysis.formulaTokens) {
     if (chunk.queryText.includes(token)) score += 1.25;
   }
+  const foldedQueryText = foldDiacritics(chunk.queryText);
   for (const term of analysis.lexicalTerms) {
-    if (chunk.queryText.includes(term.toLowerCase())) score += 0.5;
+    if (foldedQueryText.includes(foldDiacritics(term))) score += 0.5;
   }
   return score;
 }
