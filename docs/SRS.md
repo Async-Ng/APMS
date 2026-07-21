@@ -157,10 +157,12 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 - Tìm kiếm tài liệu theo ngữ nghĩa trong phạm vi tài liệu người dùng được phép xem.
 
 **Trò chuyện AI**
-- Tạo và quản lý các phiên trò chuyện (đổi tên, ghim, xóa).
+- Tạo và quản lý các phiên trò chuyện (đổi tên, ghim, xóa); phiên chưa đặt tên được tự đặt tiêu đề từ lượt trao đổi đầu tiên.
 - Đặt câu hỏi và nhận câu trả lời ngắn gọn theo kiểu hội thoại kèm trích dẫn từ tài liệu, sau đó có thể hỏi tiếp để khai thác sâu hơn.
+- Dừng câu trả lời đang sinh (giữ lại phần đã sinh), tạo lại câu trả lời gần nhất, sửa và gửi lại câu hỏi đã gửi, sao chép nội dung tin nhắn.
 - Chọn ngữ cảnh trò chuyện: toàn bộ tài liệu, một thư mục, một hoặc nhiều tài liệu.
 - Các chế độ hỗ trợ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập.
+- Trên web, câu trả lời hiển thị được công thức toán (LaTeX) và code có tô màu cú pháp.
 
 **Quản trị**
 - Xem thống kê tổng quan.
@@ -326,7 +328,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-035 | Hệ thống phải cho phép người dùng xem danh sách tài liệu công khai. |
-| FR-036 | Hệ thống phải cho phép lọc tài liệu công khai theo ngành, học kỳ và môn học. |
+| FR-036 | Hệ thống phải cho phép lọc tài liệu công khai theo ngành, học kỳ, môn học và người đăng. |
 | FR-037 | Hệ thống phải cho phép người dùng xem chi tiết tài liệu công khai. |
 
 ### 3.7 Tìm kiếm
@@ -341,12 +343,15 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-040 | Hệ thống phải cho phép người dùng tạo phiên trò chuyện với ngữ cảnh: toàn bộ tài liệu, một thư mục, một tài liệu, hoặc nhiều tài liệu. |
-| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh; các câu trả lời ưu tiên ngắn gọn, tự nhiên như hội thoại và kèm gợi ý câu hỏi tiếp theo ở chế độ hỏi đáp. |
-| FR-042 | Hệ thống phải đính kèm trích dẫn nguồn (tài liệu, trang, đoạn) vào câu trả lời. |
+| FR-041 | Hệ thống phải cho phép người dùng gửi câu hỏi và nhận câu trả lời từ trợ lý AI dựa trên tài liệu trong ngữ cảnh; các câu trả lời ưu tiên ngắn gọn, tự nhiên như hội thoại và kèm gợi ý câu hỏi tiếp theo ở chế độ hỏi đáp. Khi nguồn truy xuất không đủ tin cậy, hệ thống phải nêu rõ tài liệu chưa đủ thông tin thay vì suy diễn. |
+| FR-042 | Hệ thống phải đính kèm trích dẫn nguồn (tài liệu, trang, đoạn) vào câu trả lời; khi metadata nguồn khả dụng, trích dẫn phải mở được về đúng tài liệu và vị trí nguồn tương ứng. |
 | FR-043 | Hệ thống phải hỗ trợ các chế độ: hỏi đáp, tóm tắt, câu hỏi thường gặp, hướng dẫn ôn tập. |
 | FR-044 | Hệ thống phải cho phép người dùng xem danh sách phiên, đổi tên, ghim/bỏ ghim và xóa phiên trò chuyện. Phiên có ngữ cảnh tài liệu hoặc thư mục đã xóa (thùng rác) hoặc không còn tồn tại không hiển thị trong danh sách. |
 | FR-045 | Hệ thống phải hỗ trợ trả lời theo luồng (hiển thị dần) cho trải nghiệm trò chuyện. |
 | FR-062 | Hệ thống phải giới hạn mỗi người dùng tối đa 50 lượt hỏi trợ lý AI mỗi ngày và từ chối khi vượt giới hạn. |
+| FR-063 | Hệ thống phải cho phép người dùng dừng (stop) câu trả lời đang được sinh; phần nội dung đã sinh được giữ lại trong phiên kèm trích dẫn tương ứng. |
+| FR-064 | Hệ thống phải cho phép người dùng tạo lại (regenerate) câu trả lời cho câu hỏi gần nhất và sửa rồi gửi lại (edit) một câu hỏi đã gửi; các tin nhắn phía sau tin được sửa/tạo lại bị thay thế bằng lượt trao đổi mới. Mỗi lần sinh lại câu trả lời tính 1 lượt vào giới hạn ngày (BR-025). |
+| FR-065 | Hệ thống phải tự đặt tiêu đề phiên từ nội dung lượt trao đổi đầu tiên khi phiên dùng ngữ cảnh toàn bộ tài liệu và chưa được người dùng đặt tên; tiêu đề do người dùng đặt không bị ghi đè. |
 
 ### 3.9 Quản trị — Người dùng và Email truy cập
 
@@ -611,6 +616,7 @@ Không có yêu cầu phần cứng chuyên dụng. Người dùng truy cập qu
 | Vai trò tin nhắn | Người dùng hoặc Trợ lý | ✅ | — |
 | Nội dung & Trích dẫn | Nội dung tin nhắn và nguồn tham chiếu | ✅ (nội dung) | — |
 | Gợi ý câu hỏi tiếp theo | Các câu hỏi follow-up do trợ lý đề xuất sau câu trả lời ở chế độ hỏi đáp | ❌ | Tối đa 3 câu |
+| Đánh dấu tạo lại | Tin nhắn trợ lý được tạo lại thay cho câu trả lời trước | ❌ | Mặc định: không; mỗi lần tạo lại tính 1 lượt/ngày |
 
 #### Đối tượng: Email truy cập ngoại lệ
 | Thuộc tính | Ý nghĩa | Bắt buộc | Ràng buộc |
@@ -745,10 +751,10 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 
 | ID | Quy tắc | Hệ quả khi vi phạm |
 |----|---------|-------------------|
-| BR-022 | Câu trả lời của trợ lý AI chỉ dựa trên tài liệu trong ngữ cảnh mà người dùng được phép xem. | — |
+| BR-022 | Câu trả lời của trợ lý AI chỉ dựa trên tài liệu trong ngữ cảnh mà người dùng được phép xem; nếu bằng chứng truy xuất không đủ, trợ lý phải nói không đủ thông tin thay vì tạo câu trả lời không có căn cứ. | — |
 | BR-023 | Câu trả lời phải kèm trích dẫn nguồn khi có. | — |
 | BR-024 | Ở chế độ hỏi đáp, câu hỏi không được để trống. | Từ chối gửi. |
-| BR-025 | Mỗi người dùng tối đa 50 lượt hỏi trợ lý AI mỗi ngày. | Từ chối khi vượt giới hạn trong ngày. |
+| BR-025 | Mỗi người dùng tối đa 50 lượt hỏi trợ lý AI mỗi ngày; mỗi lần sinh câu trả lời đều tính 1 lượt, bao gồm tạo lại (regenerate) và sửa rồi gửi lại (edit) câu hỏi. | Từ chối khi vượt giới hạn trong ngày. |
 | BR-026 | Phiên trò chuyện gắn ngữ cảnh tài liệu/thư mục đã xóa hoặc không còn tồn tại không hiển thị trong danh sách; truy cập trực tiếp hoặc gửi tin mới bị từ chối. | Ẩn khỏi danh sách; từ chối mở/gửi tin. |
 
 ---
@@ -804,6 +810,8 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 1. Người dùng mở Trò chuyện AI, tạo phiên với ngữ cảnh mong muốn.
 2. Nhập câu hỏi và gửi.
 3. Hệ thống trả lời (hiển thị dần) theo dạng ngắn gọn, tự nhiên như hội thoại, kèm trích dẫn nguồn và gợi ý câu hỏi tiếp theo ở chế độ hỏi đáp.
+- **A1** Người dùng nhấn Dừng khi câu trả lời đang sinh: hệ thống dừng sinh và giữ lại phần đã sinh kèm trích dẫn.
+- **A2** Người dùng tạo lại câu trả lời gần nhất hoặc sửa và gửi lại một câu hỏi: hệ thống thay các tin nhắn phía sau bằng lượt trao đổi mới (tính 1 lượt trong ngày).
 - **E1** Câu hỏi để trống ở chế độ hỏi đáp: hệ thống không gửi.
 
 ### UC-006: Quản trị viên quản lý chương trình đào tạo
@@ -935,6 +943,14 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 - [ ] AC-041-02: Khi gửi câu hỏi trống ở chế độ hỏi đáp, hệ thống không gửi.
 - [ ] AC-044-01: Khi tài liệu hoặc thư mục ngữ cảnh của phiên đã vào thùng rác hoặc bị xóa vĩnh viễn, phiên không còn trong danh sách; mở URL trực tiếp hoặc gửi tin mới bị từ chối.
 - [ ] AC-041-03: Khi người dùng hỏi ở chế độ hỏi đáp, phản hồi ưu tiên ngắn gọn, tự nhiên như hội thoại và trả tối đa 3 gợi ý câu hỏi tiếp theo.
+- [ ] AC-041-04: Khi hệ thống không tìm được nguồn đủ tin cậy trong ngữ cảnh, phản hồi phải nêu rằng tài liệu được chọn chưa có đủ thông tin để trả lời chính xác.
+- [ ] AC-042-01: Khi câu trả lời hiển thị marker trích dẫn dạng `[n]`, marker đó phải mở được chi tiết nguồn; marker không khớp với nguồn truy xuất hợp lệ không được hiển thị như trích dẫn.
+- [ ] AC-042-02: Khi người dùng mở trích dẫn có vị trí trang, hệ thống mở tài liệu tương ứng và điều hướng tới trang nguồn nếu định dạng xem trước hỗ trợ.
+- [ ] AC-063-01: Khi người dùng nhấn Dừng lúc câu trả lời đang sinh, phần đã sinh được giữ lại trong phiên (tải lại vẫn còn) kèm trích dẫn tương ứng.
+- [ ] AC-064-01: Khi người dùng tạo lại câu trả lời gần nhất, câu trả lời cũ bị thay thế và số lượt còn lại trong ngày giảm thêm 1.
+- [ ] AC-064-02: Khi người dùng sửa và gửi lại một câu hỏi, câu hỏi cũ cùng mọi tin nhắn phía sau bị thay bằng lượt trao đổi mới.
+- [ ] AC-064-03: Khi người dùng đã hết lượt trong ngày, tạo lại/sửa gửi lại bị từ chối như một câu hỏi mới (ERR-007).
+- [ ] AC-065-01: Khi phiên ngữ cảnh toàn bộ tài liệu chưa được đặt tên hoàn tất lượt hỏi đầu tiên, tiêu đề phiên được tự đặt theo nội dung; tiêu đề do người dùng tự đổi không bị ghi đè.
 
 ---
 
@@ -944,7 +960,7 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 
 | Loại | Dải ID |
 |------|--------|
-| Yêu cầu chức năng | FR-001 đến FR-062 |
+| Yêu cầu chức năng | FR-001 đến FR-065 |
 | Yêu cầu phi chức năng | NFR-P/S/A/SC/R |
 | Quy tắc nghiệp vụ | BR-001 đến BR-027 |
 | Tình huống sử dụng | UC-001 đến UC-008 |

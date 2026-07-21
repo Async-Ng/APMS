@@ -1,0 +1,41 @@
+{
+  "$comment": "Golden set cho eval RAG chat (pnpm eval). Thay các case mẫu bên dưới bằng câu hỏi thật trên tài liệu đã upload của tài khoản eval. expectedDocumentTitles phải khớp đúng title tài liệu trong hệ thống (dùng để đo retrieval hit). expectedKeywords: các từ/cụm bắt buộc xuất hiện trong câu trả lời (so khớp không phân biệt hoa thường và dấu tiếng Việt). expectedAnswer: đáp án chuẩn ngắn gọn để LLM-judge chấm đúng/sai. Đặt expectNoAnswer=true cho câu hỏi NẰM NGOÀI tài liệu — hệ thống phải từ chối thay vì bịa.",
+  "cases": [
+    {
+      "id": "sample-definition",
+      "question": "Khái niệm kiến trúc microservice là gì?",
+      "contextType": "all",
+      "expectedDocumentTitles": ["<Tên tài liệu chứa đáp án — sửa lại cho khớp>"],
+      "expectedKeywords": ["microservice", "dịch vụ"],
+      "expectedAnswer": "Kiến trúc chia ứng dụng thành các dịch vụ nhỏ độc lập, giao tiếp qua API.",
+      "expectNoAnswer": false
+    },
+    {
+      "id": "sample-section-lookup",
+      "question": "Mục 2.1 của tài liệu nói về nội dung gì?",
+      "contextType": "all",
+      "expectedDocumentTitles": ["<Tên tài liệu chứa đáp án — sửa lại cho khớp>"],
+      "expectedKeywords": [],
+      "expectedAnswer": "<Tóm tắt đáp án chuẩn của mục 2.1>",
+      "expectNoAnswer": false
+    },
+    {
+      "id": "sample-no-diacritics",
+      "question": "phan tich yeu cau la gi",
+      "contextType": "all",
+      "expectedDocumentTitles": ["<Tên tài liệu chứa đáp án — sửa lại cho khớp>"],
+      "expectedKeywords": ["yêu cầu"],
+      "expectedAnswer": "<Đáp án chuẩn về phân tích yêu cầu>",
+      "expectNoAnswer": false
+    },
+    {
+      "id": "sample-out-of-scope",
+      "question": "Giá Bitcoin hôm nay là bao nhiêu?",
+      "contextType": "all",
+      "expectedDocumentTitles": [],
+      "expectedKeywords": [],
+      "expectedAnswer": "",
+      "expectNoAnswer": true
+    }
+  ]
+}

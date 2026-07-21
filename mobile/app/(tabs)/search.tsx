@@ -31,7 +31,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <HeaderBar title="Tìm kiếm" subtitle="Tìm kiếm ngữ nghĩa trong tài liệu của bạn" />
+      <HeaderBar title="Tìm kiếm" subtitle="Tìm tên file, môn học và nội dung trong tài liệu" />
 
       {/* Search bar */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
@@ -58,7 +58,7 @@ export default function SearchScreen() {
             ref={inputRef}
             value={query}
             onChangeText={setQuery}
-            placeholder="Hỏi bất cứ điều gì về tài liệu của bạn..."
+            placeholder="Tìm tài liệu, khái niệm hoặc đoạn nội dung..."
             placeholderTextColor={colors.muted}
             style={{ flex: 1, fontSize: 15, color: colors.ink, paddingVertical: 12 }}
             returnKeyType="search"

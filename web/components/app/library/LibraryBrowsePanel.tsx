@@ -23,6 +23,8 @@ interface LibraryBrowsePanelProps {
   onFiltersChange: (filters: LibraryFilterState) => void;
   page: number;
   onPageChange: (page: number) => void;
+  ownerId?: string;
+  onOwnerClick?: (owner: { id: string; name: string }) => void;
 }
 
 export function LibraryBrowsePanel({
@@ -30,6 +32,8 @@ export function LibraryBrowsePanel({
   onFiltersChange,
   page,
   onPageChange,
+  ownerId,
+  onOwnerClick,
 }: LibraryBrowsePanelProps) {
   const [view, setView] = useState<ViewMode>("list");
   const router = useRouter();
@@ -39,6 +43,7 @@ export function LibraryBrowsePanel({
     page,
     limit: PAGE_LIMIT,
     ...browseFiltersToQueryParams(filters),
+    ownerId,
   });
 
   const errorCode = getUserErrorCode(error);
@@ -78,6 +83,7 @@ export function LibraryBrowsePanel({
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
+          onOwnerClick={onOwnerClick}
         />
       ) : (
         <PublicDocumentList
@@ -85,6 +91,7 @@ export function LibraryBrowsePanel({
           isLoading={isLoading}
           isError={isError}
           onRetry={() => void refetch()}
+          onOwnerClick={onOwnerClick}
         />
       )}
 

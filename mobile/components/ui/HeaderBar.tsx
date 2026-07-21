@@ -59,13 +59,14 @@ interface HeaderIconButtonProps {
   size?: number;
 }
 
-export function HeaderIconButton({ icon, onPress, accessibilityLabel, size = 36 }: HeaderIconButtonProps) {
+export function HeaderIconButton({ icon, onPress, accessibilityLabel, size = 44 }: HeaderIconButtonProps) {
+  const touchSize = Math.max(size, 44);
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        width: size,
-        height: size,
+        width: touchSize,
+        height: touchSize,
         borderRadius: 10,
         borderWidth: 2,
         borderColor: colors.ink,

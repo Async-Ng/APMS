@@ -9,6 +9,7 @@ import { ProfileMenuItem } from "../../components/app/ProfileMenuItem";
 import { ProfileUserCard } from "../../components/app/ProfileUserCard";
 import { HeaderBar } from "../../components/ui/HeaderBar";
 import { colors } from "../../constants/colors";
+import { useAcademicProfile } from "../../hooks/useCatalog";
 import { brutalCardStyle } from "../../lib/brutal-style";
 import { api } from "../../lib/api-client";
 import { useAuthStore, type AppUser } from "../../stores/auth-store";
@@ -24,6 +25,8 @@ export default function ProfileScreen() {
   const [updatingName, setUpdatingName] = useState(false);
 
   const isAdmin = user?.role === "admin";
+  const academicProfile = useAcademicProfile();
+  const academicProfileComplete = academicProfile.data?.isComplete ?? false;
 
   const adminStatsQuery = useQuery({
     queryKey: ["admin", "stats"],
@@ -100,8 +103,15 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="school-outline"
               label="Hồ sơ học thuật"
-              subtitle="Chương trình đào tạo"
+              subtitle={
+                academicProfileComplete
+                  ? academicProfile.data?.curriculum
+                    ? `${academicProfile.data.curriculum.code} · ${academicProfile.data.curriculum.name}`
+                    : "Chương trình đào tạo"
+                  : "Cần chọn chương trình học để hiện đúng môn"
+              }
               onPress={() => router.push("/profile/academic")}
+              badge={academicProfileComplete ? undefined : "Cần làm"}
             />
           </View>
 
@@ -126,6 +136,20 @@ export default function ProfileScreen() {
                 subtitle="Xem và quản lý tất cả tài khoản"
                 onPress={() => router.push("/admin/users")}
                 badge="Admin"
+              />
+              <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
+              <ProfileMenuItem
+                icon="albums-outline"
+                label="Danh mục học thuật"
+                subtitle="Chương trình, học kỳ, môn học, gán môn"
+                onPress={() => router.push("/admin/catalog")}
+              />
+              <View style={{ height: 1, backgroundColor: "#E5E5E5", marginHorizontal: 16 }} />
+              <ProfileMenuItem
+                icon="mail-outline"
+                label="Email ngoại lệ"
+                subtitle="Quản lý danh sách email được cấp quyền"
+                onPress={() => router.push("/admin/access-emails")}
               />
             </View>
           </View>
@@ -163,7 +187,7 @@ export default function ProfileScreen() {
             });
             setUser(res.data.data);
             setShowEditName(false);
-          } catch (err) {
+          } catch {
             Alert.alert("Lỗi", "Không thể cập nhật tên hiển thị. Vui lòng thử lại.");
           } finally {
             setUpdatingName(false);

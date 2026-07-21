@@ -18,6 +18,10 @@ export const CONTEXT_CHUNKS = 10;
 export const VECTOR_SEARCH_CANDIDATES = 220;
 export const MIN_CHUNK_SCORE = 0.55;
 export const CONTEXT_CHUNK_MAX_CHARS = 1500;
-export const HISTORY_MESSAGES = 6;
+export const HISTORY_MESSAGES = 12;
 /** Number of adjacent chunks (by chunkIndex) to merge around each retrieved chunk. */
 export const NEIGHBOR_WINDOW = 1;
+/** Max query variants used by hybrid retrieval. */
+export const QUERY_VARIANTS = 3;
+/** Max representative chunks added for summary/FAQ/study-guide coverage. */
+export const COVERAGE_CHUNKS = 8;

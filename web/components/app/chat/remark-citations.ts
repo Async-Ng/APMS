@@ -2,8 +2,22 @@ import type { Parent, Text } from "mdast";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 
-// Matches `[1]`, `[Source 1]`, `[source1]`, `[SOURCE  12]`, etc.
-export const CITATION_REF_RE = /\[(?:source\s*)?(\d+)\]/gi;
+// Matches `[1]`, `[1, 2]`, `[Source 1]`, `[Source 1, Source 2]`, etc.
+export const CITATION_REF_RE = /\[((?:(?:source\s*)?\d+\s*,?\s*)+)\]/gi;
+const CITATION_INDEX_RE = /(?:source\s*)?(\d+)/gi;
+
+function parseCitationIndices(rawGroup: string): number[] {
+  const indices: number[] = [];
+
+  for (const match of rawGroup.matchAll(CITATION_INDEX_RE)) {
+    const citationIndex = Number.parseInt(match[1] ?? "", 10);
+    if (Number.isFinite(citationIndex) && citationIndex > 0) {
+      indices.push(citationIndex);
+    }
+  }
+
+  return indices;
+}
 
 /**
  * Splits text nodes on citation references and replaces each reference with a
@@ -26,14 +40,20 @@ export const remarkCitations: Plugin = () => (tree) => {
         newNodes.push({ type: "text", value: node.value.slice(lastIndex, start) });
       }
 
-      const citationIndex = Number.parseInt(match[1] ?? "", 10);
-      if (Number.isFinite(citationIndex)) {
-        newNodes.push({
-          type: "citationRef",
-          data: {
-            hName: "citation-ref",
-            hProperties: { index: citationIndex },
-          },
+      const citationIndices = parseCitationIndices(match[1] ?? "");
+      if (citationIndices.length > 0) {
+        citationIndices.forEach((citationIndex, citationPosition) => {
+          if (citationPosition > 0) {
+            newNodes.push({ type: "text", value: " " });
+          }
+
+          newNodes.push({
+            type: "citationRef",
+            data: {
+              hName: "citation-ref",
+              hProperties: { index: citationIndex },
+            },
+          });
         });
       } else {
         newNodes.push({ type: "text", value: match[0] });

@@ -4,6 +4,7 @@ import { ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
+import { getCitationDeepLink } from "@/lib/chat-citations";
 import type { ChatCitation } from "@/lib/queries/chat";
 
 interface CitationDetailProps {
@@ -49,7 +50,7 @@ export function CitationDetail({ citation }: CitationDetailProps) {
         {citation.excerpt}
       </blockquote>
 
-      <Link href={`/documents/${citation.documentId}`}>
+      <Link href={getCitationDeepLink(citation)}>
         <BrutalButton variant="primary" className="w-full">
           <ExternalLink className="h-4 w-4" />
           Mở tài liệu

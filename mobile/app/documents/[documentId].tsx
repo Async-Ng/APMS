@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Alert, Linking, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 
 import { ActionSheet, type ActionItem } from "../../components/app/ActionSheet";
 import { DocumentMetaCard, getMimeLabel } from "../../components/app/DocumentMetaCard";
@@ -34,6 +34,20 @@ export default function DocumentDetailScreen() {
     if (doc?.downloadUrl) {
       void Linking.openURL(doc.downloadUrl);
     }
+  }
+
+  function confirmDeleteCurrentDocument() {
+    if (!doc) return;
+    Alert.alert("Xóa tài liệu này?", `Tài liệu "${doc.title}" sẽ được chuyển vào thùng rác.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => {
+          deleteDocument.mutate(doc.id, { onSuccess: () => router.back() });
+        },
+      },
+    ]);
   }
 
   const actions: ActionItem[] = doc
@@ -86,9 +100,7 @@ export default function DocumentDetailScreen() {
           label: "Xóa",
           icon: "trash-outline" as keyof typeof Ionicons.glyphMap,
           destructive: true,
-          onPress: () => {
-            deleteDocument.mutate(doc.id, { onSuccess: () => router.back() });
-          },
+          onPress: confirmDeleteCurrentDocument,
         },
       ]
     : [];

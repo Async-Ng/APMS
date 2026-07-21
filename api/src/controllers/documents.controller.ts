@@ -7,7 +7,10 @@ import * as trashPurgeService from "../services/trash-purge.service";
 import { sendSuccess } from "../utils/apiResponse";
 import { catchAsync } from "../utils/catchAsync";
 import { getRouteParam } from "../utils/params";
-import type { listDocumentsQuerySchema } from "../validators/document.validator";
+import type {
+  citationContextQuerySchema,
+  listDocumentsQuerySchema,
+} from "../validators/document.validator";
 import type { z } from "zod";
 
 function requireUser(req: Request) {
@@ -42,6 +45,18 @@ export const getDocument = catchAsync(async (req: Request, res: Response): Promi
   });
   sendSuccess(res, data);
 });
+
+export const getCitationContext = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const query = req.validatedQuery as z.infer<typeof citationContextQuerySchema>;
+    const data = await documentService.getCitationContext(
+      requireUser(req),
+      getRouteParam(req, "id"),
+      query.chunkIndex,
+    );
+    sendSuccess(res, data);
+  },
+);
 
 export const updateDocument = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const data = await documentService.updateDocument(

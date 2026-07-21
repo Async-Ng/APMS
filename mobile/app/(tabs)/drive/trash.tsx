@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
 
 import { ActionSheet, type ActionItem } from "../../../components/app/ActionSheet";
 import { FolderItem } from "../../../components/app/FolderItem";
@@ -32,6 +32,28 @@ export default function TrashScreen() {
   const documents = data?.documents ?? [];
   const isEmpty = !isLoading && folders.length === 0 && documents.length === 0;
 
+  function confirmPermanentDeleteFolder(folder: DriveFolder) {
+    Alert.alert("Xóa vĩnh viễn thư mục?", `Không thể khôi phục "${folder.name}" sau thao tác này.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa vĩnh viễn",
+        style: "destructive",
+        onPress: () => permanentDeleteFolder.mutate(folder.id),
+      },
+    ]);
+  }
+
+  function confirmPermanentDeleteDocument(document: DriveDocument) {
+    Alert.alert("Xóa vĩnh viễn tài liệu?", `Không thể khôi phục "${document.title}" sau thao tác này.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa vĩnh viễn",
+        style: "destructive",
+        onPress: () => permanentDeleteDocument.mutate(document.id),
+      },
+    ]);
+  }
+
   function buildActions(target: ActionTarget): ActionItem[] {
     if (!target) return [];
     if (target.kind === "folder") {
@@ -45,7 +67,7 @@ export default function TrashScreen() {
           label: "Xóa vĩnh viễn",
           icon: "trash-outline",
           destructive: true,
-          onPress: () => permanentDeleteFolder.mutate(target.item.id),
+          onPress: () => confirmPermanentDeleteFolder(target.item),
         },
       ];
     }
@@ -59,7 +81,7 @@ export default function TrashScreen() {
         label: "Xóa vĩnh viễn",
         icon: "trash-outline",
         destructive: true,
-        onPress: () => permanentDeleteDocument.mutate(target.item.id),
+        onPress: () => confirmPermanentDeleteDocument(target.item),
       },
     ];
   }

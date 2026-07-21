@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { objectIdParamSchema } from "../../validators/common.validator";
 import {
+  citationContextQuerySchema,
   createUploadIntentSchema,
   listDocumentsQuerySchema,
   updateDocumentSchema,
@@ -11,7 +12,10 @@ import {
   documentSuccessResponseSchema,
   uploadIntentSuccessResponseSchema,
 } from "../schemas/document";
-import { permanentDeleteSuccessResponseSchema } from "../schemas/common";
+import {
+  permanentDeleteSuccessResponseSchema,
+  successEnvelope,
+} from "../schemas/common";
 import {
   bearerSecurity,
   error400,
@@ -28,6 +32,40 @@ const downloadQuerySchema = z.object({
     description: "When true, includes presigned downloadUrl in response",
   }),
 });
+
+const citationContextSchema = z.object({
+  documentId: z.string(),
+  documentTitle: z.string(),
+  chunkIndex: z.number().int().min(0),
+  pageNumber: z.number().nullable(),
+  sectionPath: z.array(z.string()),
+  heading: z.string().nullable(),
+  blockType: z.string(),
+  extractionMode: z.string(),
+  extractionConfidence: z.string(),
+  excerpt: z.string(),
+  content: z.string(),
+  pageChunks: z.array(
+    z.object({
+      chunkIndex: z.number().int().min(0),
+      content: z.string(),
+      heading: z.string().nullable(),
+      sectionPath: z.array(z.string()),
+      pageNumber: z.number().nullable(),
+      blockType: z.string(),
+    }),
+  ),
+  locator: z.object({
+    type: z.enum(["page", "section", "chunk"]),
+    pageNumber: z.number().nullable(),
+    chunkIndex: z.number().int().min(0),
+  }),
+});
+
+const citationContextSuccessResponseSchema = successEnvelope(
+  citationContextSchema,
+  "CitationContext",
+);
 
 export function registerDocumentsPaths(): void {
   registry.registerPath({
@@ -84,6 +122,27 @@ export function registerDocumentsPaths(): void {
     responses: {
       200: jsonResponse(documentSuccessResponseSchema, "Upload completed"),
       400: error400("Upload not pending or S3 verification failed"),
+      401: error401,
+      403: error403,
+      404: error404,
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/api/documents/{id}/citation-context",
+    tags: ["Documents"],
+    summary: "Get citation context for a document chunk",
+    description:
+      "Returns the chunk metadata and excerpt used by AI citations. Uses the same document read access rule as document detail.",
+    security: [...bearerSecurity],
+    request: {
+      params: idParams,
+      query: citationContextQuerySchema,
+    },
+    responses: {
+      200: jsonResponse(citationContextSuccessResponseSchema, "Citation context"),
+      400: error400("Validation error"),
       401: error401,
       403: error403,
       404: error404,

@@ -1,12 +1,55 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import { Check, Copy } from "lucide-react";
+import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+
+import "katex/dist/katex.min.css";
+import "highlight.js/styles/github.css";
 
 import { cn } from "@/lib/cn";
 import type { ChatCitation } from "@/lib/queries/chat";
 import { remarkCitations } from "./remark-citations";
 
-const remarkPlugins = [remarkGfm, remarkCitations];
+// remarkMath must run before remarkCitations so `[N]` inside formulas stays math.
+const remarkPlugins = [remarkGfm, remarkMath, remarkCitations];
+const rehypePlugins = [rehypeKatex, rehypeHighlight];
+
+function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const preRef = useRef<HTMLPreElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = preRef.current?.innerText ?? "";
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  }, []);
+
+  return (
+    <div className="relative mb-2 last:mb-0">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="focus-brutal absolute right-1.5 top-1.5 z-10 inline-flex items-center gap-1 rounded border border-brutal-ink/30 bg-brutal-surface px-1.5 py-0.5 text-[10px] font-semibold text-brutal-muted hover:text-brutal-ink"
+        title="Sao chép code"
+        aria-label="Sao chép code"
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </button>
+      <pre
+        ref={preRef}
+        className="overflow-x-auto rounded-lg border-2 border-brutal-ink bg-brutal-bg p-2 pr-10 font-mono text-xs"
+      >
+        {children}
+      </pre>
+    </div>
+  );
+}
 
 const markdownComponents: Components = {
   p: ({ children }) => <p className="mb-2 leading-relaxed last:mb-0">{children}</p>,
@@ -15,16 +58,16 @@ const markdownComponents: Components = {
   ul: ({ children }) => <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>,
   ol: ({ children }) => <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>,
   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-  code: ({ children }) => (
-    <code className="rounded border border-brutal-ink/20 bg-brutal-bg px-1 py-0.5 font-mono text-xs">
-      {children}
-    </code>
-  ),
-  pre: ({ children }) => (
-    <pre className="mb-2 overflow-x-auto rounded-lg border-2 border-brutal-ink bg-brutal-bg p-2 font-mono text-xs last:mb-0">
-      {children}
-    </pre>
-  ),
+  code: ({ children, className }) =>
+    className ? (
+      // Fenced block code: keep hljs classes so syntax colors apply.
+      <code className={cn(className, "font-mono text-xs")}>{children}</code>
+    ) : (
+      <code className="rounded border border-brutal-ink/20 bg-brutal-bg px-1 py-0.5 font-mono text-xs">
+        {children}
+      </code>
+    ),
+  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
   a: ({ children, href }) => (
     <a
       href={href}
@@ -86,10 +129,11 @@ export function ChatMessageContent({
 
     const CitationRef = (props: { index?: number | string }) => {
       const refIndex = Number(props.index);
-      const citation = citationBySource.get(refIndex) ?? citations[refIndex - 1];
+      const citation = citationBySource.get(refIndex);
       const label = `[${refIndex}]`;
 
       if (!citation || !onCitationClick) {
+        if (!isStreaming) return null;
         return <span className="font-bold text-brutal-secondary">{label}</span>;
       }
 
@@ -115,7 +159,7 @@ export function ChatMessageContent({
       ...markdownComponents,
       "citation-ref": CitationRef,
     };
-  }, [citations, onCitationClick]);
+  }, [citations, isStreaming, onCitationClick]);
 
   if (!content) {
     return (
@@ -129,7 +173,11 @@ export function ChatMessageContent({
 
   return (
     <div className="text-sm font-medium leading-relaxed">
-      <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        components={components}
+      >
         {content}
       </ReactMarkdown>
       {isStreaming && (

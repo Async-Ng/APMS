@@ -4,12 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import {
+  CITATION_BLOCK_CLASS,
+  citationNeedle,
+  findBestElement,
+  highlightFirstTextMatch,
+} from "@/lib/citation-highlight";
+import type { CitationContext } from "@/lib/queries/documents";
 
 interface CustomDocxViewerProps {
   url: string;
+  citationContext?: CitationContext | null;
 }
 
-export function CustomDocxViewer({ url }: CustomDocxViewerProps) {
+export function CustomDocxViewer({ url, citationContext }: CustomDocxViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +62,27 @@ export function CustomDocxViewer({ url }: CustomDocxViewerProps) {
       cancelled = true;
     };
   }, [url]);
+
+  useEffect(() => {
+    if (loading || error) return;
+
+    const container = containerRef.current;
+    const needle = citationNeedle(citationContext);
+    if (!container || !needle) return;
+
+    const candidates = Array.from(
+      container.querySelectorAll<HTMLElement>("p, table, li, h1, h2, h3, h4, div"),
+    ).filter((element) => (element.textContent ?? "").trim().length > 0);
+
+    const bestElement = findBestElement(candidates, needle);
+    if (!bestElement) return;
+
+    const highlighted = highlightFirstTextMatch(bestElement, needle);
+    if (!highlighted) {
+      bestElement.classList.add(...CITATION_BLOCK_CLASS.split(" "));
+    }
+    bestElement.scrollIntoView({ block: "center", inline: "nearest" });
+  }, [citationContext, error, loading]);
 
   return (
     <div

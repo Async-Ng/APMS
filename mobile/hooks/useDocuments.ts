@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 
 import { api } from "../lib/api-client";
 
@@ -94,7 +93,16 @@ export function useToggleDocumentStar() {
 export function useUpdateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; title?: string; tags?: string[]; folderId?: string | null; visibility?: "private" | "public" }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      title?: string;
+      tags?: string[];
+      folderId?: string | null;
+      visibility?: "private" | "public";
+    }) => {
       const res = await api.patch(`/documents/${id}`, data);
       return res.data;
     },
@@ -106,10 +114,53 @@ export function useUpdateDocument() {
 }
 
 interface UploadIntent {
-  id: string;
+  document: { id: string };
   uploadUrl: string;
   s3Key: string;
   expiresIn: number;
+}
+
+function shortS3Response(text: string): string {
+  return text.replace(/\s+/g, " ").trim().slice(0, 240);
+}
+
+function uploadBlobToS3({
+  uploadUrl,
+  blob,
+  mimeType,
+  onProgress,
+}: {
+  uploadUrl: string;
+  blob: Blob;
+  mimeType: string;
+  onProgress?: (pct: number) => void;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", mimeType);
+    xhr.responseType = "text";
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve();
+        return;
+      }
+      const detail = typeof xhr.responseText === "string" ? shortS3Response(xhr.responseText) : "";
+      reject(new Error(`Tải lên S3 thất bại (${xhr.status})${detail ? `: ${detail}` : ""}`));
+    };
+
+    xhr.onerror = () => reject(new Error("Tải lên S3 thất bại do lỗi mạng."));
+    xhr.ontimeout = () => reject(new Error("Tải lên S3 quá thời gian chờ."));
+    xhr.send(blob);
+  });
 }
 
 export function useUploadDocument() {
@@ -143,39 +194,17 @@ export function useUploadDocument() {
         visibility,
         title: name.replace(/\.[^.]+$/, ""),
       });
-      const { id, uploadUrl } = intentRes.data.data;
+      const { document, uploadUrl } = intentRes.data.data;
 
       const fileResponse = await fetch(uri);
       const rawBlob = await fileResponse.blob();
-      // RN's XHR sends the wire Content-Type from blob.type, not from the header set
-      // below. fetch(uri).blob() on a file:// URI often yields an empty/generic type,
-      // which then mismatches the mimeType the server signed into the presigned URL
-      // and causes a 403 SignatureDoesNotMatch. Re-stamp the blob's type so they agree.
+      // RN's XHR sends the wire Content-Type from blob.type. fetch(uri).blob()
+      // can produce an empty/generic type, so stamp the blob to match the intent.
       const blob = rawBlob.slice(0, rawBlob.size, mimeType);
-      try {
-        await axios.put(uploadUrl, blob, {
-          headers: { "Content-Type": mimeType },
-          responseType: "text",
-          onUploadProgress: (e) => {
-            if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
-          },
-        });
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const xml = typeof err.response?.data === "string" ? err.response.data : "";
-          const code = /<Code>(.*?)<\/Code>/.exec(xml)?.[1];
-          const message = /<Message>(.*?)<\/Message>/.exec(xml)?.[1];
-          throw new Error(
-            `Tải lên S3 thất bại (${err.response?.status ?? "?"}${code ? ` ${code}` : ""}): ${
-              message ?? err.message
-            }`,
-          );
-        }
-        throw err;
-      }
+      await uploadBlobToS3({ uploadUrl, blob, mimeType, onProgress });
 
-      await api.post(`/documents/${id}/complete`);
-      return id;
+      await api.post(`/documents/${document.id}/complete`);
+      return document.id;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["drive"] });
@@ -202,7 +231,7 @@ export interface PublicDocument extends DocumentDetail {
 }
 
 export interface PublicDocumentsResponse {
-  folders: any[];
+  folders: unknown[];
   documents: PublicDocument[];
   pagination: {
     page: number;

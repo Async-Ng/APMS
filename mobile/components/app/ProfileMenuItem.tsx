@@ -52,7 +52,11 @@ export function ProfileMenuItem({ icon, label, subtitle, onPress, destructive = 
         <Text style={{ fontSize: 15, fontWeight: "600", color: destructive ? colors.error : colors.ink }}>
           {label}
         </Text>
-        {subtitle && <Text style={{ fontSize: 12, color: colors.muted }}>{subtitle}</Text>}
+        {subtitle && (
+          <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 16 }} numberOfLines={2}>
+            {subtitle}
+          </Text>
+        )}
       </View>
       {badge && (
         <View

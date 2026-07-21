@@ -27,8 +27,9 @@ export async function chatWithContext(
 export async function* chatWithContextStream(
   systemPrompt: string,
   messages: ChatTurn[],
+  abortSignal?: AbortSignal,
 ): AsyncGenerator<string> {
-  yield* geminiProvider.chatWithContextStream(systemPrompt, messages);
+  yield* geminiProvider.chatWithContextStream(systemPrompt, messages, abortSignal);
 }
 
 export async function generateLite(

@@ -1,4 +1,4 @@
-# System Overview
+﻿# System Overview
 
 Business rules: xem `docs/SRS.md` (FR/BR/NFR). APMS là hệ thống quản lý tài liệu học tập cá nhân và cộng đồng cho sinh viên. Backend hiện tại tập trung vào một surface tài liệu thống nhất: Documents.
 
@@ -8,6 +8,31 @@ Business rules: xem `docs/SRS.md` (FR/BR/NFR). APMS là hệ thống quản lý 
 - Giữ dữ liệu riêng tư an toàn qua owner/share access.
 - Cho phép tài liệu public được khám phá trong toàn hệ thống, ưu tiên theo hồ sơ học vụ.
 - Hỗ trợ semantic search và RAG chat có trích dẫn từ tài liệu được phép đọc.
+
+## Main Flow Diagrams
+
+Ba luồng nghiệp vụ chính được vẽ bằng UML Activity Diagram có swimlane trong `docs/diagrams`:
+
+| Flow | PNG dùng cho báo cáo | Source chỉnh sửa |
+| --- | --- | --- |
+| Truy cập hệ thống & hồ sơ học vụ | `apms-main-flow-1-access-profile-activity.png` | `apms-main-flow-1-access-profile-activity.drawio` |
+| Vòng đời tài liệu học tập | `apms-main-flow-2-document-lifecycle-activity.png` | `apms-main-flow-2-document-lifecycle-activity.drawio` |
+| Search & RAG Chat có citation | `apms-main-flow-3-search-rag-citation-activity.png` | `apms-main-flow-3-search-rag-citation-activity.drawio` |
+
+Các main flow có thêm bộ sub-flow chi tiết để trình bày từng luồng vận hành thật:
+
+| Main flow | Sub-flow detail diagrams |
+| --- | --- |
+| System Access & Academic Profile | `apms-subflow-1a-login-access-activity.png`, `apms-subflow-1b-academic-profile-activity.png`, `apms-subflow-1c-admin-catalog-access-activity.png` |
+| Learning Document Lifecycle | `apms-subflow-2a-upload-processing-activity.png`, `apms-subflow-2b-drive-management-activity.png`, `apms-subflow-2c-share-public-trash-activity.png` |
+| Search & RAG Chat With Citations | `apms-subflow-3a-semantic-search-activity.png`, `apms-subflow-3b-rag-chat-answer-activity.png`, `apms-subflow-3c-citation-deep-link-activity.png` |
+## C4 Model - C2 Container Diagram
+
+Sơ đồ C2 theo C4 Model mô tả các container chính của APMS và hệ thống ngoài mà chúng giao tiếp. Sơ đồ này dùng để trình bày kiến trúc ở mức container, không thay thế các main flow nghiệp vụ.
+
+| Diagram | PNG dùng cho báo cáo | Source chỉnh sửa |
+| --- | --- | --- |
+| APMS C2 Container Diagram | `apms-c2-container.png` | `apms-c2-container.drawio` |
 
 ## Các Khối Chính
 
@@ -75,15 +100,20 @@ Upload complete
   -> Lưu document_chunks vào MongoDB Atlas
 
 Search hoặc Chat
-  -> Embed query bằng Gemini
-  -> Atlas Vector Search theo access scope
-  -> Rerank/rewrite khi cần bằng Gemini lite model
+  -> Rewrite query theo lịch sử chat khi cần; tạo query variants và keyword query
+  -> Hybrid retrieval: Atlas Vector Search + lexical exact match theo access scope
+  -> Với summary/FAQ/study guide, bổ sung coverage chunks đại diện theo document/page/section
+  -> Chấm hybrid score, rerank bằng Gemini lite model, rồi chọn context đa dạng để tránh trùng cụm nguồn
+  -> Evidence gate: nếu nguồn truy xuất quá yếu hoặc không có context, trả lời rằng tài liệu chưa đủ thông tin
   -> Gemini chat model sinh câu trả lời
+  -> Normalize citation markers theo retrieved chunks; loại marker không khớp nguồn hợp lệ
   -> Sinh suggested questions cho chat mode
-  -> Trả citations theo document/page/chunk và suggestedQuestions
+  -> Trả citations theo document/page/chunk kèm deep link và suggestedQuestions
 ```
 
 Chat tạo session với `contextType` `all | folder | document | documents` (FR-040) và hỗ trợ mode `chat | summary | faq | study_guide` (FR-043). Câu trả lời ở mọi mode ưu tiên ngắn gọn, tự nhiên như hội thoại và dựa trên tài liệu được truy xuất; mode `chat` trả thêm tối đa 3 `suggestedQuestions`, còn các preset mode trả mảng gợi ý rỗng. Mỗi user giới hạn 50 lượt hỏi/ngày (FR-062). Access của search/chat dùng cùng rule với document detail: owner đọc tài liệu của mình, recipient đọc tài liệu được share, active user đọc tài liệu public (BR-022).
+
+Trải nghiệm hội thoại: user có thể dừng câu trả lời đang stream (phần đã sinh vẫn được lưu kèm citation — FR-063), tạo lại câu trả lời gần nhất hoặc sửa & gửi lại một câu hỏi (thay lịch sử phía sau, mỗi lần sinh lại tính 1 lượt/ngày — FR-064), và session `all` chưa đặt tên được tự đặt tiêu đề từ lượt trao đổi đầu (FR-065). Web render công thức toán bằng KaTeX và tô màu cú pháp code bằng highlight.js.
 
 ## Non-Functional Notes
 

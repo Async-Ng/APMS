@@ -21,9 +21,26 @@ export function Fab({ actions }: FabProps) {
 
   return (
     <>
-      {open && <Pressable style={{ position: "absolute", inset: 0 }} onPress={() => setOpen(false)} />}
       {open && (
-        <View style={{ position: "absolute", bottom: 90, right: 20, gap: 12, alignItems: "flex-end" }}>
+        <Pressable
+          style={{ position: "absolute", inset: 0, zIndex: 20 }}
+          onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Đóng menu thêm mục"
+        />
+      )}
+      {open && (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 158,
+            right: 20,
+            gap: 12,
+            alignItems: "flex-end",
+            zIndex: 30,
+            elevation: 30,
+          }}
+        >
           {actions.map((action) => (
             <Pressable
               key={action.label}
@@ -41,6 +58,8 @@ export function Fab({ actions }: FabProps) {
                 borderRadius: 14,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
+                minHeight: 52,
+                maxWidth: 240,
                 shadowColor: colors.ink,
                 shadowOffset: pressed ? { width: 0, height: 0 } : { width: 4, height: 4 },
                 shadowOpacity: pressed ? 0 : 1,
@@ -52,7 +71,9 @@ export function Fab({ actions }: FabProps) {
               accessibilityLabel={action.label}
             >
               <Ionicons name={action.icon} size={18} color={colors.onBrand} />
-              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }}>{action.label}</Text>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.onBrand }} numberOfLines={2}>
+                {action.label}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -68,6 +89,8 @@ export function Fab({ actions }: FabProps) {
           height: 56,
           borderRadius: 18,
           backgroundColor: open ? colors.ink : colors.fptOrange,
+          zIndex: 40,
+          elevation: 40,
           ...pressedBrutalStyle(pressed),
         })}
         accessibilityLabel="Thêm mục"

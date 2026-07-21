@@ -7,10 +7,10 @@ import { BrutalCard } from "@/components/ui/BrutalCard";
 import { scrollToSection } from "@/lib/scroll-to-section";
 
 const navLinks = [
-  { label: "Tính năng", sectionId: "hero" },
-  { label: "Tài liệu", sectionId: "catalog" },
-  { label: "Tiến độ", sectionId: "progress" },
-  { label: "Đánh giá", sectionId: "testimonials" },
+  { label: "Tổng quan", sectionId: "overview" },
+  { label: "Cách dùng", sectionId: "workflow" },
+  { label: "Tính năng", sectionId: "features" },
+  { label: "Quyền riêng tư", sectionId: "rules" },
 ] as const;
 
 function FptStripe() {

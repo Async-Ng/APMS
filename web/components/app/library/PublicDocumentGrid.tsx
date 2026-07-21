@@ -15,6 +15,7 @@ interface PublicDocumentGridProps {
   isError?: boolean;
   onRetry?: () => void;
   emptyDescription?: string;
+  onOwnerClick?: (owner: { id: string; name: string }) => void;
 }
 
 export function PublicDocumentGrid({
@@ -24,6 +25,7 @@ export function PublicDocumentGrid({
   isError,
   onRetry,
   emptyDescription = "Thử nới bộ lọc hoặc quay lại sau khi có tài liệu mới được chia sẻ.",
+  onOwnerClick,
 }: PublicDocumentGridProps) {
   if (isLoading) {
     return <SkeletonGrid count={6} />;
@@ -63,6 +65,7 @@ export function PublicDocumentGrid({
           key={doc.id}
           doc={doc}
           variant={variant}
+          onOwnerClick={onOwnerClick}
         />
       ))}
     </div>

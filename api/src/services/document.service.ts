@@ -8,6 +8,7 @@ import {
   toDocumentResponse,
   type DocumentDocument,
 } from "../models/document.model";
+import { DocumentChunk } from "../models/document-chunk.model";
 import { Folder } from "../models/folder.model";
 import { User, type UserDocument } from "../models/user.model";
 import { parseObjectId } from "../utils/objectId";
@@ -198,6 +199,62 @@ export async function getDocument(
   }
 
   return toDocumentResponse(document, extras);
+}
+
+export async function getCitationContext(
+  user: UserDocument,
+  documentId: string,
+  chunkIndex: number,
+) {
+  const document = await findReadableDocument(user._id, parseObjectId(documentId));
+  const chunk = await DocumentChunk.findOne({
+    documentId: document._id,
+    chunkIndex,
+  }).lean();
+
+  if (!chunk) {
+    throw createAppError(ErrorCode.DOCUMENT_NOT_FOUND, 404);
+  }
+
+  const pageNumber = chunk.pageNumber ?? null;
+  const sectionPath = chunk.sectionPath ?? [];
+  const heading = chunk.displayHeading ?? null;
+  const locatorType = pageNumber != null ? "page" : sectionPath.length > 0 ? "section" : "chunk";
+  const pageChunksQuery =
+    pageNumber != null
+      ? { documentId: document._id, pageNumber }
+      : { documentId: document._id, chunkIndex };
+  const pageChunks = await DocumentChunk.find(pageChunksQuery)
+    .sort({ chunkIndex: 1 })
+    .select("chunkIndex content pageNumber sectionPath displayHeading blockType")
+    .lean();
+
+  return {
+    documentId: document._id.toString(),
+    documentTitle: document.title,
+    chunkIndex: chunk.chunkIndex,
+    pageNumber,
+    sectionPath,
+    heading,
+    blockType: chunk.blockType ?? "paragraph",
+    extractionMode: chunk.extractionMode ?? "text",
+    extractionConfidence: chunk.extractionConfidence ?? "medium",
+    excerpt: chunk.content.slice(0, 300),
+    content: chunk.content,
+    pageChunks: pageChunks.map((pageChunk) => ({
+      chunkIndex: pageChunk.chunkIndex,
+      content: pageChunk.content,
+      heading: pageChunk.displayHeading ?? null,
+      sectionPath: pageChunk.sectionPath ?? [],
+      pageNumber: pageChunk.pageNumber ?? null,
+      blockType: pageChunk.blockType ?? "paragraph",
+    })),
+    locator: {
+      type: locatorType,
+      pageNumber,
+      chunkIndex: chunk.chunkIndex,
+    },
+  };
 }
 
 export async function updateDocument(

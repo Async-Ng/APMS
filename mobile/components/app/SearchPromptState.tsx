@@ -27,9 +27,9 @@ export function SearchPromptState({ onPickSuggestion }: { onPickSuggestion: (q: 
       >
         <Ionicons name="search" size={36} color={colors.onBrand} />
       </View>
-      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, textAlign: "center" }}>Tìm kiếm ngữ nghĩa</Text>
+      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink, textAlign: "center" }}>Tìm trong tài liệu</Text>
       <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", lineHeight: 20 }}>
-        Đặt câu hỏi bằng ngôn ngữ tự nhiên — APMS tìm các đoạn liên quan nhất trong tài liệu của bạn.
+        Đặt câu hỏi như khi hỏi bạn học - APMS sẽ tìm các đoạn liên quan nhất trong tài liệu của bạn.
       </Text>
       {SUGGESTIONS.map((q) => (
         <Pressable

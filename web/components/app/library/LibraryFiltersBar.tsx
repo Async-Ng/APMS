@@ -1,7 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 import { BrutalButton } from "@/components/ui/BrutalButton";
 import {
@@ -14,7 +13,6 @@ import type { PublicDocumentSort } from "@/lib/queries/public-documents";
 import { cn } from "@/lib/cn";
 
 export interface LibraryFilterState {
-  search: string;
   curriculumId: string;
   semesterId: string;
   subjectId: string;
@@ -22,7 +20,6 @@ export interface LibraryFilterState {
 }
 
 export const DEFAULT_LIBRARY_FILTERS: LibraryFilterState = {
-  search: "",
   curriculumId: "",
   semesterId: "",
   subjectId: "",
@@ -45,7 +42,7 @@ const SORT_OPTIONS: { value: PublicDocumentSort; label: string }[] = [
 ];
 
 const FILTER_SELECT_CLASS =
-  "focus-brutal mt-1 block w-full max-w-full truncate rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink";
+  "focus-brutal mt-1 block w-auto min-w-[7rem] max-w-full truncate rounded-lg border-2 border-brutal-ink bg-brutal-bg px-2 py-2 text-sm font-medium text-brutal-ink";
 
 export function LibraryFiltersBar({
   filters,
@@ -53,14 +50,6 @@ export function LibraryFiltersBar({
   defaultSort = "newest",
   mode,
 }: LibraryFiltersBarProps) {
-  const [localSearch, setLocalSearch] = useState(filters.search);
-  const [prevSearch, setPrevSearch] = useState(filters.search);
-
-  if (filters.search !== prevSearch) {
-    setPrevSearch(filters.search);
-    setLocalSearch(filters.search);
-  }
-
   const isSuggested = mode === "suggested";
   const { data: curricula } = useCatalogCurricula();
   const { data: profile } = useAcademicProfile();
@@ -76,16 +65,6 @@ export function LibraryFiltersBar({
     effectiveCurriculumId,
     filters.semesterId || undefined,
   );
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (localSearch !== filters.search) {
-        onChange({ ...filters, search: localSearch });
-      }
-    }, 300);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce search only
-  }, [localSearch]);
 
   const semesterOptions =
     curriculumSemesters
@@ -120,40 +99,19 @@ export function LibraryFiltersBar({
 
   function clearFilters() {
     onChange({ ...DEFAULT_LIBRARY_FILTERS, sort: defaultSort });
-    setLocalSearch("");
   }
 
   const hasActiveFilters =
-    filters.search ||
     (!isSuggested && filters.curriculumId) ||
     filters.semesterId ||
     filters.subjectId ||
     filters.sort !== defaultSort;
 
-  const gridClass = isSuggested
-    ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_7rem_9rem_7rem] lg:items-end"
-    : "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_9rem_7rem] lg:items-end";
-
   return (
-    <div className="space-y-3 rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
-      <div className={gridClass}>
-        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brutal-muted"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="Tìm theo tên tài liệu…"
-            className="focus-brutal w-full rounded-xl border-2 border-brutal-ink bg-brutal-bg py-2.5 pl-9 pr-4 text-sm outline-none"
-            aria-label="Tìm tài liệu"
-          />
-        </div>
-
+    <div className="rounded-xl border-2 border-brutal-ink bg-brutal-surface p-4 shadow-brutal-sm">
+      <div className="flex flex-wrap items-end gap-3">
         {!isSuggested && (
-          <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+          <label className="relative z-10 min-w-[9rem] text-xs font-bold text-brutal-muted">
             CTĐT
             <select
               value={filters.curriculumId}
@@ -176,7 +134,7 @@ export function LibraryFiltersBar({
           </label>
         )}
 
-        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+        <label className="relative z-10 min-w-[7rem] text-xs font-bold text-brutal-muted">
           Học kỳ
           <select
             value={filters.semesterId}
@@ -197,7 +155,7 @@ export function LibraryFiltersBar({
           </select>
         </label>
 
-        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+        <label className="relative z-10 min-w-[9rem] text-xs font-bold text-brutal-muted">
           Môn
           <select
             value={filters.subjectId}
@@ -214,7 +172,7 @@ export function LibraryFiltersBar({
           </select>
         </label>
 
-        <label className="relative z-10 min-w-0 text-xs font-bold text-brutal-muted">
+        <label className="relative z-10 min-w-[7rem] text-xs font-bold text-brutal-muted">
           Sắp xếp
           <select
             value={filters.sort}
@@ -228,13 +186,11 @@ export function LibraryFiltersBar({
             ))}
           </select>
         </label>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
         {!isSuggested && (
           <BrutalButton
             variant="secondary"
-            className="w-auto! shrink-0 px-3 py-1.5 text-xs"
+            className="w-auto! shrink-0 px-3 py-2 text-xs"
             onClick={applyMyProfile}
             disabled={!profile?.isComplete}
             title={
@@ -251,7 +207,7 @@ export function LibraryFiltersBar({
             type="button"
             onClick={clearFilters}
             className={cn(
-              "focus-brutal inline-flex items-center gap-1 rounded-lg border-2 border-brutal-ink px-3 py-1.5 text-xs font-bold hover:bg-brutal-bg",
+              "focus-brutal inline-flex shrink-0 items-center gap-1 rounded-lg border-2 border-brutal-ink px-3 py-2 text-xs font-bold hover:bg-brutal-bg",
             )}
           >
             <X className="h-3.5 w-3.5" />
@@ -259,7 +215,7 @@ export function LibraryFiltersBar({
           </button>
         )}
         {!isSuggested && profile && !profile.isComplete && (
-          <p className="text-xs text-brutal-muted">
+          <p className="max-w-xs self-center text-xs text-brutal-muted">
             Cập nhật hồ sơ học thuật để lọc nhanh theo CTĐT của bạn.
           </p>
         )}
@@ -274,7 +230,6 @@ export function suggestedFiltersToQueryParams(
 ) {
   const narrow = filters.semesterId || filters.subjectId;
   return {
-    search: filters.search || undefined,
     curriculumId: narrow ? profileCurriculumId : undefined,
     semesterId: filters.semesterId || undefined,
     subjectId: filters.subjectId || undefined,
@@ -284,7 +239,6 @@ export function suggestedFiltersToQueryParams(
 
 export function browseFiltersToQueryParams(filters: LibraryFilterState) {
   return {
-    search: filters.search || undefined,
     curriculumId: filters.curriculumId || undefined,
     semesterId: filters.semesterId || undefined,
     subjectId: filters.subjectId || undefined,

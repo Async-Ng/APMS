@@ -33,6 +33,64 @@ const NUMBERED_HEADING_RE = /^(\d+(?:\.\d+)*)(?:\.)?\s+(.+)$/;
 const CHAPTER_HEADING_RE = /^(chuong|chapter)\s+(\d+)(?:[.:]?\s*(.*))?$/i;
 const PAGE_REF_RE = /\b(?:trang|page)\s+(\d+)\b/i;
 const SECTION_REF_RE = /\b(?:muc|mục|phan|phần|section|sec\.)?\s*(\d+(?:\.\d+)+)(?:\.)?\b/i;
+const LEXICAL_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "by",
+  "for",
+  "from",
+  "how",
+  "in",
+  "is",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "what",
+  "with",
+  "ai",
+  "apms",
+  "có",
+  "co",
+  "của",
+  "cua",
+  "dẫn",
+  "dan",
+  "được",
+  "duoc",
+  "gì",
+  "gi",
+  "hỏi",
+  "hoi",
+  "hướng",
+  "huong",
+  "không",
+  "khong",
+  "là",
+  "la",
+  "làm",
+  "lam",
+  "liệu",
+  "lieu",
+  "này",
+  "nay",
+  "những",
+  "nhung",
+  "theo",
+  "trả",
+  "tra",
+  "trong",
+  "tài",
+  "tai",
+  "và",
+  "va",
+  "về",
+  "ve",
+]);
 
 export interface HeadingInfo {
   sectionPath: string[];
@@ -137,12 +195,57 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+/** Vietnamese letters that share a base character, used for accent-insensitive matching. */
+const VI_CHAR_GROUPS: Record<string, string> = {
+  a: "aàáảãạăằắẳẵặâầấẩẫậ",
+  e: "eèéẻẽẹêềếểễệ",
+  i: "iìíỉĩị",
+  o: "oòóỏõọôồốổỗộơờớởỡợ",
+  u: "uùúủũụưừứửữự",
+  y: "yỳýỷỹỵ",
+  d: "dđ",
+};
+
+/**
+ * Lowercases and strips Vietnamese diacritics ("Phân tích" -> "phan tich") so
+ * lexical comparisons work no matter whether the user typed accents.
+ */
+export function foldDiacritics(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d");
+}
+
+/**
+ * Builds a regex source that matches the term accent-insensitively against
+ * NFC Vietnamese text ("phan tich" matches "Phân tích" and vice versa).
+ * Intended for case-insensitive matching (`$options: "i"` / flag `i`).
+ */
+export function accentInsensitiveRegexSource(term: string): string {
+  let source = "";
+  for (const char of foldDiacritics(term)) {
+    const group = VI_CHAR_GROUPS[char];
+    if (group) {
+      source += `[${group}]`;
+    } else {
+      source += char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return source;
+}
+
 function extractFormulaTokens(query: string): string[] {
   const rawMatches = query.match(/[A-Za-z]+(?:_[A-Za-z0-9]+|\d+)?(?:\s*=\s*[A-Za-z0-9_+\-*/()[\]]+)?/g) ?? [];
   return unique(
     rawMatches
       .map((value) => normalizeMathQueryableText(value))
-      .filter((value) => value.length >= 2),
+      .filter(
+        (value) =>
+          value.length >= 2 &&
+          (value.includes("=") || /_[0-9a-z]+/.test(value) || /\d/.test(value)),
+      ),
   );
 }
 
@@ -154,7 +257,7 @@ function extractLexicalTerms(query: string): string[] {
     .toLowerCase()
     .split(/[^\p{L}\p{N}_.=]+/u)
     .map((term) => term.trim())
-    .filter((term) => term.length >= 2);
+    .filter((term) => term.length >= 2 && !LEXICAL_STOPWORDS.has(term));
 
   return unique([...sectionTerm, ...formulaTerms, ...plainTerms]).slice(0, 12);
 }

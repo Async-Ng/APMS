@@ -1,132 +1,123 @@
-# Khung Nội Dung Slide Báo Cáo APMS
+# APMS Report Slide Outline
 
-Tài liệu này mô tả nội dung cho bộ slide báo cáo ngắn gọn của dự án **APMS - Academic Personal Management System**. Bộ slide gồm đúng 6 slide, tập trung vào giới thiệu dự án, vấn đề, phạm vi, quy tắc nghiệp vụ, luồng nghiệp vụ chính và kết luận.
+This document defines the content outline for a concise 6-slide report deck for **APMS - Academic Personal Management System**. The deck presents APMS as a structured academic document workspace with controlled access, semantic search, RAG Chat, and verifiable source citations.
 
-## Slide 1 - Trang bìa
+## Slide 1 - APMS: Personal Academic Document Hub
 
-**Tiêu đề:** APMS - Academic Personal Management System  
-**Phụ đề:** Hệ thống quản lý tài liệu học tập cá nhân cho sinh viên
+**Title:** APMS - Academic Personal Management System
+**Subtitle:** Organize learning materials by curriculum and course, search inside documents, and ask AI with verifiable citations.
 
-**Nội dung:**
-- Môn học / đồ án: WDP301
-- Nhóm thực hiện: [Tên nhóm]
-- Thành viên: [Danh sách thành viên]
-- Giảng viên hướng dẫn: [Tên GVHD]
-- Thời gian: [Học kỳ / năm]
+**Key points:**
+- APMS helps students store, organize, and reuse learning documents in one workspace.
+- Documents are connected to the student's academic profile and course structure.
+- The system supports PDF, DOCX, and PPTX learning materials.
+- AI answers are grounded in documents the user is allowed to read.
+- Citations can open the original source location when metadata is available.
 
-**Gợi ý hình ảnh:** biểu tượng tài liệu, thư mục, tìm kiếm hoặc AI.
+**Visual suggestion:** APMS name/logo with three signals: document management, semantic search, and source citation.
 
-## Slide 2 - Vấn đề và mục tiêu
+## Slide 2 - Problem And Objectives
 
-**Tiêu đề:** Vấn đề và mục tiêu
+**Current problems:**
+- Learning materials are scattered across personal drives, chat groups, and classroom channels.
+- Students need a clearer way to organize documents by curriculum and course.
+- Searching inside PDF, DOCX, and PPTX files is slow and manual.
+- Shared materials need controlled read access, not uncontrolled file forwarding.
+- AI answers are hard to trust if the source cannot be checked.
 
-**Vấn đề hiện tại:**
-- Tài liệu học tập bị phân tán ở nhiều nơi.
-- Khó phân loại theo chương trình đào tạo, học kỳ và môn học.
-- Khó tìm kiếm nội dung bên trong file.
-- Chia sẻ tài liệu thiếu kiểm soát quyền truy cập.
-- Sinh viên cần công cụ hỗ trợ hỏi đáp, tóm tắt và ôn tập bằng AI.
+**APMS objectives:**
+- Bring academic documents into one structured workspace.
+- Require course-based document organization so materials remain searchable and meaningful.
+- Support personal documents, read-only sharing, and public discovery.
+- Provide semantic search and RAG Chat over readable documents.
+- Reduce unsupported AI answers by using evidence checks and source citations.
 
-**Mục tiêu của hệ thống:**
-- Gom tài liệu học tập vào một hệ thống thống nhất.
-- Mỗi tài liệu được liên kết với một môn học cụ thể trong chương trình đào tạo.
-- Hỗ trợ quản lý, chia sẻ, tìm kiếm và hỏi đáp với trợ lý AI kèm nguồn tham khảo từ tài liệu.
-- Cung cấp công cụ quản trị người dùng và danh mục học thuật.
+## Slide 3 - Users And System Scope
 
-## Slide 3 - Phạm vi và người dùng
+**Primary users:**
+- **Student:** signs in, completes an academic profile, uploads documents, manages Drive items, shares materials, searches content, and asks AI questions.
+- **Administrator:** manages users, quotas, access emails, curricula, semesters, subjects, and course slots.
 
-**Tiêu đề:** Phạm vi và người dùng
+**In scope:**
+- Google/Cognito sign-in with allowed domains and approved exception emails.
+- Academic profile based on curriculum selection.
+- Upload and processing for PDF, DOCX, and PPTX files.
+- Personal Drive, shared documents, public discovery, starred items, and trash.
+- Semantic search and RAG Chat with source citations.
+- Citation opening to the correct document, page/slide, and chunk when metadata is available.
 
-**Phạm vi chức năng:**
-- Đăng nhập bằng Google/Cognito.
-- Thiết lập hồ sơ học thuật của sinh viên.
-- Quản lý tài liệu và thư mục học tập.
-- Chia sẻ tài liệu cho người khác xem nhưng không cho chỉnh sửa.
-- Cho phép người dùng hợp lệ xem tài liệu được công khai trong hệ thống.
-- Tìm kiếm tài liệu theo ý nghĩa nội dung.
-- Hỏi đáp với trợ lý AI có nguồn tham khảo từ tài liệu.
-- Quản trị người dùng và danh mục học thuật.
+**Out of scope:**
+- Editing the original file content inside APMS.
+- Real-time collaborative editing.
+- Grade management or LMS/FAP replacement.
+- Forum discussions, comments, or classroom social features.
 
-**Ngoài phạm vi:**
-- Không chỉnh sửa trực tiếp nội dung file.
-- Không cộng tác chỉnh sửa theo thời gian thực.
-- Không quản lý điểm hoặc tích hợp LMS/FAP.
-- Không có bình luận hoặc diễn đàn thảo luận.
+## Slide 4 - Key Business Rules
 
-**Người dùng chính:**
-- **Sinh viên:** tải lên và quản lý tài liệu học tập cá nhân, sắp xếp theo thư mục và môn học, tìm kiếm nội dung cần học, đặt câu hỏi cho trợ lý AI dựa trên tài liệu đã lưu.
-- **Quản trị viên:** quản lý danh sách người dùng, email hoặc tên miền được phép truy cập, chương trình đào tạo, học kỳ, môn học và dữ liệu nền để sinh viên sử dụng hệ thống đúng cấu trúc.
+**Rules to highlight:**
+- Users can access APMS only through allowed school domains or approved exception emails.
+- Students must complete a valid curriculum-based academic profile.
+- Each uploaded document must be attached to a valid course slot in the student's curriculum.
+- Supported file types are PDF, DOCX, and PPTX; each file can be up to 50 MB.
+- The default storage quota is 500 MB per user.
+- New documents start as personal materials; owners can share read-only, publish for discovery, or move items to trash.
+- Trash is a soft-delete area with automatic cleanup after 30 days.
+- AI Chat is limited to 50 messages per user per day.
+- AI answers must use readable sources; displayed citation markers must resolve to valid citations.
 
-## Slide 4 - Quy tắc nghiệp vụ chính
+**Visual suggestion:** A two-column table: `Business rule` / `Meaning for users`.
 
-**Tiêu đề:** Quy tắc nghiệp vụ chính
+## Slide 5 - Three Main Business Flows
 
-**Nội dung:**
-- Mỗi tài liệu tải lên phải gắn với một môn học cụ thể.
-- File hỗ trợ gồm PDF, DOCX và PPTX.
-- Mỗi file có dung lượng tối đa 50 MB.
-- Mỗi người dùng có hạn mức lưu trữ mặc định 500 MB.
-- Tài liệu có hai chế độ hiển thị: chỉ người được phép xem hoặc mọi người dùng hợp lệ trong hệ thống có thể xem.
-- Tài liệu mới tải lên mặc định chỉ chủ sở hữu xem được.
-- Người được chia sẻ chỉ được xem, không được chỉnh sửa.
-- Lời mời chia sẻ hết hạn sau 7 ngày.
-- Tài liệu trong thùng rác quá 30 ngày sẽ bị xóa vĩnh viễn.
-- Trợ lý AI giới hạn 50 lượt hỏi cho mỗi người dùng trong một ngày.
+**Flow overview:**
+- **Flow 1 - System Access & Academic Profile:** Google sign-in -> access check -> user sync -> curriculum selection -> Drive access.
+- **Flow 2 - Learning Document Lifecycle:** Upload document -> validate file, quota, and course -> store file and metadata -> extract, chunk, and embed -> ready in Drive -> share, publish, or trash.
+- **Flow 3 - Search & RAG Chat With Citations:** Search or ask a question -> check read access -> retrieve and rerank sources -> pass evidence gate -> generate answer with citations -> open the cited source.
 
-**Gợi ý hình ảnh:** bảng 2 cột: Quy tắc / Giá trị.
+**Main diagrams for the slide:**
+- `docs/diagrams/apms-main-flow-1-access-profile-activity.png`
+- `docs/diagrams/apms-main-flow-2-document-lifecycle-activity.png`
+- `docs/diagrams/apms-main-flow-3-search-rag-citation-activity.png`
 
-## Slide 5 - Luồng nghiệp vụ chính
+**Detailed diagrams for backup explanation:**
+- Flow 1 sub-flows: `apms-subflow-1a-login-access-activity.png`, `apms-subflow-1b-academic-profile-activity.png`, `apms-subflow-1c-admin-catalog-access-activity.png`
+- Flow 2 sub-flows: `apms-subflow-2a-upload-processing-activity.png`, `apms-subflow-2b-drive-management-activity.png`, `apms-subflow-2c-share-public-trash-activity.png`
+- Flow 3 sub-flows: `apms-subflow-3a-semantic-search-activity.png`, `apms-subflow-3b-rag-chat-answer-activity.png`, `apms-subflow-3c-citation-deep-link-activity.png`
 
-**Tiêu đề:** Luồng nghiệp vụ chính
+**Speaker note:** The main diagrams show the end-to-end business flows. The sub-flow diagrams are appendix material for explaining operational details if the council asks for a deeper walkthrough.
 
-**Nội dung:**
-- **Luồng 1:** Đăng nhập và thiết lập hồ sơ học thuật.
-- **Luồng 2:** Quản lý tài liệu học tập.
-- **Luồng 3:** Tìm kiếm tri thức và học với trợ lý AI.
+## Slide 6 - Conclusion And Future Work
 
-**Ghi chú thuyết trình:**
-- Luồng 1 mô tả cách sinh viên đăng nhập và hoàn tất hồ sơ học thuật.
-- Luồng 2 mô tả cách sinh viên tải lên, sắp xếp, chia sẻ và xử lý tài liệu trong thùng rác.
-- Luồng 3 mô tả cách sinh viên tìm tài liệu theo nội dung, xem tài liệu được công khai và đặt câu hỏi cho trợ lý AI.
+**Conclusion:**
+- APMS gives students a structured workspace for academic documents.
+- Curriculum and course-based organization makes learning materials easier to manage and retrieve.
+- Access control supports personal documents, read-only sharing, and public discovery.
+- Semantic search and RAG Chat turn uploaded materials into searchable knowledge.
+- Citation deep links make AI answers easier to verify from the original source.
+- Evidence checks reduce the risk of unsupported AI responses.
 
-**Gợi ý hình ảnh:** chèn 3 activity diagram hoặc 3 thẻ đại diện cho 3 luồng.
+**Future work:**
+- Expand automated testing for API, web, mobile, and RAG quality.
+- Improve exact highlight behavior for PDF and DOCX citations.
+- Refine PPTX citation viewing and slide-level navigation.
+- Add dashboards for document, search, and AI usage insights.
+- Optimize embedding and chat performance and cost.
+- Continue improving mobile and administrative experiences.
 
-**Nguồn sơ đồ:**
-- `docs/diagrams/apms-activity-1.puml`
-- `docs/diagrams/apms-activity-2.puml`
-- `docs/diagrams/apms-activity-3.puml`
+## Internal Presentation Notes
 
-## Slide 6 - Kết luận và hướng phát triển
+- Keep the main deck to exactly 6 slides.
+- Each slide should use 4-6 concise points; avoid dense paragraphs.
+- Use the 3 main UML Activity diagrams on Slide 5.
+- Use the 9 sub-flow diagrams only as appendix/detail slides when more explanation is needed.
+- Use the C4 C2 Container Diagram (`docs/diagrams/apms-c2-container.png`) as an architecture backup, not as a replacement for the business-flow slide.
+- Do not add fake metrics, testimonials, or unverified claims.
+- Do not describe Drive, Library, and Forum as separate APMS products.
+- Avoid code-style field names, enum values, or API routes in visible slide content.
+- Keep the tone clear, professional, and suitable for a project defense session.
 
-**Tiêu đề:** Kết luận và hướng phát triển
+## Assumptions
 
-**Kết luận:**
-- APMS giúp sinh viên quản lý tài liệu học tập có cấu trúc.
-- Hệ thống kết hợp quản lý tài liệu, chia sẻ tài liệu, danh mục học thuật, tìm kiếm theo ý nghĩa nội dung và trợ lý AI.
-- Cơ chế phân quyền giúp bảo vệ tài liệu riêng tư của sinh viên.
-- Trợ lý AI có nguồn tham khảo hỗ trợ sinh viên học tập và ôn tập hiệu quả hơn.
-
-**Hướng phát triển:**
-- Cải thiện chất lượng xử lý tài liệu.
-- Tối ưu tốc độ tìm kiếm, hỏi đáp và chi phí AI.
-- Bổ sung kiểm thử tự động.
-- Hoàn thiện trải nghiệm trên thiết bị di động.
-- Nâng cấp trang quản trị.
-- Thêm thống kê và phân tích về tài liệu, lượt tìm kiếm và mức sử dụng AI.
-
-## Hướng Dẫn Thiết Kế Cho Agent
-
-- Dựng đúng 6 slide.
-- Không thêm lại các slide đã bỏ: System Architecture, Unified Document API, AI/RAG Pipeline, Demo/Testing/Results.
-- Mỗi slide chỉ nên có 4-6 ý chính, tránh quá nhiều chữ.
-- Slide 5 nên dùng sơ đồ hoặc activity diagrams để giảm chữ.
-- Không dùng tên field, enum, API route hoặc từ viết kiểu code trên slide.
-- Có thể giữ tên công nghệ phổ biến khi cần, ví dụ Google/Cognito, PDF, DOCX, PPTX, AI.
-- Ưu tiên câu ngắn, dễ thuyết trình; mỗi bullet nên là một ý nghiệp vụ rõ ràng.
-- Phong cách: chuyên nghiệp, rõ ràng, phù hợp báo cáo đồ án.
-
-## Giả định
-
-- "Slice" được hiểu là "slide".
-- Các slide bị bỏ là slide 6, 7, 8, 9 trong bản 10-slide trước đó.
-- Slide 10 cũ được giữ lại và đánh số lại thành Slide 6.
+- This file is a content outline, not a generated PowerPoint file.
+- The primary report deck remains 6 slides.
+- Diagram sources stay editable in draw.io under `docs/diagrams/`.

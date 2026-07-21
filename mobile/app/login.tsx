@@ -13,7 +13,7 @@ import { useAuthStore } from "../stores/auth-store";
 const features: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "document-text-outline", text: "Lưu trữ tài liệu PDF, DOCX, PPTX theo cây thư mục riêng" },
   { icon: "sparkles-outline", text: "Trò chuyện với AI dựa trên chính tài liệu của bạn, có trích dẫn rõ ràng" },
-  { icon: "shield-checkmark-outline", text: "Đăng nhập an toàn qua Google & Amazon Cognito" },
+  { icon: "shield-checkmark-outline", text: "Đăng nhập an toàn bằng Google" },
 ];
 
 export default function LoginScreen() {
@@ -96,7 +96,7 @@ export default function LoginScreen() {
           size="lg"
         />
         <Text style={{ textAlign: "center", color: colors.muted, fontSize: 11 }}>
-          Đăng nhập bảo mật qua Amazon Cognito
+          Tài khoản của bạn được bảo vệ trong quá trình đăng nhập
         </Text>
       </>
     );

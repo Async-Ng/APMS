@@ -15,7 +15,14 @@ import { cn } from "@/lib/cn";
 import { useCreateSession, chatKeys } from "@/lib/queries/chat";
 import { getUserErrorMessage } from "@/lib/errors";
 import type { ChatCitation, ChatMessage, SendMessageInput } from "@/lib/queries/chat";
-import { useChatContextStatus, useChatSession, useSendMessage } from "@/lib/queries/chat";
+import {
+  isAbortError,
+  useChatContextStatus,
+  useChatSession,
+  useEditMessage,
+  useRegenerateMessage,
+  useSendMessage,
+} from "@/lib/queries/chat";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ChatComposer } from "./ChatComposer";
@@ -27,10 +34,6 @@ import { ChatSourcePickerModal } from "./ChatSourcePickerModal";
 import { CitationPanel } from "./CitationPanel";
 
 type MobileTab = "sources" | "chat" | "citations";
-
-function citationKey(c: ChatCitation): string {
-  return `${c.documentId}-${c.pageNumber ?? "n"}-${c.excerpt.slice(0, 32)}`;
-}
 
 interface ChatWorkspaceProps {
   sessionId?: string;
@@ -50,9 +53,6 @@ export function ChatWorkspace({
   const [selectedCitation, setSelectedCitation] = useState<ChatCitation | null>(
     null,
   );
-  const [selectedCitationKey, setSelectedCitationKey] = useState<string | null>(
-    null,
-  );
   const [activeMessage, setActiveMessage] = useState<ChatMessage | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const createSession = useCreateSession();
@@ -61,6 +61,10 @@ export function ChatWorkspace({
     isNewChat ? undefined : sessionId,
   );
   const sendMessage = useSendMessage(sessionId ?? "");
+  const regenerateMessage = useRegenerateMessage(sessionId ?? "");
+  const editMessage = useEditMessage(sessionId ?? "");
+  const isGenerating =
+    sendMessage.isPending || regenerateMessage.isPending || editMessage.isPending;
 
   const contextDocumentIds =
     session?.contextType === "document" && session.contextId
@@ -137,7 +141,6 @@ export function ChatWorkspace({
     (message: ChatMessage, citation: ChatCitation) => {
       setActiveMessage(message);
       setSelectedCitation(citation);
-      setSelectedCitationKey(citationKey(citation));
       setMobileTab("citations");
     },
     [],
@@ -147,41 +150,75 @@ export function ChatWorkspace({
     setActiveMessage(message);
     if (message.citations.length > 0) {
       setSelectedCitation(message.citations[0] ?? null);
-      setSelectedCitationKey(
-        message.citations[0] ? citationKey(message.citations[0]) : null,
-      );
     }
     setMobileTab("citations");
   }, []);
 
-  const handleSend = useCallback(
-    (input: SendMessageInput) => {
-      if (!sessionId) return;
-      setSendError(null);
-      sendMessage.mutate(input, {
-        onSuccess: (data) => {
-          setActiveMessage(data.assistantMessage);
-          if (data.assistantMessage.citations.length > 0) {
-            const first = data.assistantMessage.citations[0]!;
-            setSelectedCitation(first);
-            setSelectedCitationKey(citationKey(first));
-            setMobileTab("citations");
-          }
-        },
-        onError: (err) => {
-          setSendError(getUserErrorMessage(err));
-        },
-      });
+  const handleStreamSuccess = useCallback(
+    (data: { assistantMessage: ChatMessage }) => {
+      setActiveMessage(data.assistantMessage);
+      if (data.assistantMessage.citations.length > 0) {
+        const first = data.assistantMessage.citations[0]!;
+        setSelectedCitation(first);
+        setMobileTab("citations");
+      }
     },
-    [sessionId, sendMessage],
+    [],
   );
 
+  const handleStreamError = useCallback((err: unknown) => {
+    if (isAbortError(err)) return;
+    setSendError(getUserErrorMessage(err));
+  }, []);
+
+  const handleSend = useCallback(
+    (input: SendMessageInput) => {
+      if (!sessionId || isGenerating) return;
+      setSendError(null);
+      sendMessage.mutate(input, {
+        onSuccess: handleStreamSuccess,
+        onError: handleStreamError,
+      });
+    },
+    [sessionId, isGenerating, sendMessage, handleStreamSuccess, handleStreamError],
+  );
+
+  const handleRegenerate = useCallback(() => {
+    if (!sessionId || isGenerating) return;
+    setSendError(null);
+    regenerateMessage.mutate(undefined, {
+      onSuccess: handleStreamSuccess,
+      onError: handleStreamError,
+    });
+  }, [sessionId, isGenerating, regenerateMessage, handleStreamSuccess, handleStreamError]);
+
+  const handleEditMessage = useCallback(
+    (messageId: string, content: string) => {
+      if (!sessionId || isGenerating) return;
+      setSendError(null);
+      editMessage.mutate(
+        { messageId, content },
+        {
+          onSuccess: handleStreamSuccess,
+          onError: handleStreamError,
+        },
+      );
+    },
+    [sessionId, isGenerating, editMessage, handleStreamSuccess, handleStreamError],
+  );
+
+  const handleStop = useCallback(() => {
+    sendMessage.stop();
+    regenerateMessage.stop();
+    editMessage.stop();
+  }, [sendMessage, regenerateMessage, editMessage]);
+
   const streamingMessageId =
-    sendMessage.isPending && session
+    isGenerating && session
       ? (session.messages.findLast((m) => m.id.startsWith("streaming-"))?.id ?? null)
       : null;
 
-  const showThinking = sendMessage.isPending && !streamingMessageId;
+  const showThinking = isGenerating && !streamingMessageId;
 
   const tabClass = (tab: MobileTab) =>
     cn(
@@ -320,14 +357,15 @@ export function ChatWorkspace({
                   messages={visibleMessages}
                   isThinking={showThinking}
                   streamingMessageId={streamingMessageId}
-                  selectedCitationKey={selectedCitationKey}
                   activeMessageId={activeMessage?.id}
                   onSelectCitation={handleSelectCitation}
                   onSelectMessage={handleSelectMessage}
                   onSuggestionClick={(question) =>
                     handleSend({ content: question, mode: "chat" })
                   }
-                  isSending={sendMessage.isPending}
+                  onRegenerate={handleRegenerate}
+                  onEditMessage={handleEditMessage}
+                  isSending={isGenerating}
                 />
                 {sendError && (
                   <div className="shrink-0 px-4 pb-2">
@@ -336,7 +374,8 @@ export function ChatWorkspace({
                 )}
                 <ChatComposer
                   onSend={handleSend}
-                  isPending={sendMessage.isPending}
+                  onStop={handleStop}
+                  isPending={isGenerating}
                 />
               </>
             )}
@@ -354,7 +393,6 @@ export function ChatWorkspace({
               selectedCitation={selectedCitation}
               onSelectCitation={(c) => {
                 setSelectedCitation(c);
-                setSelectedCitationKey(citationKey(c));
               }}
             />
           </aside>

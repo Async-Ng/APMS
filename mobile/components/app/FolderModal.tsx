@@ -5,6 +5,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -68,13 +69,16 @@ export function FolderModal({
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)" }} onPress={onDismiss}>
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" }} />
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={onDismiss}
+            accessibilityRole="button"
+            accessibilityLabel="Đóng tạo thư mục"
+          />
           <Animated.View
             style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
               backgroundColor: colors.bg,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
@@ -86,7 +90,6 @@ export function FolderModal({
               transform: [{ translateY }],
             }}
           >
-            <Pressable>
               <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.muted, opacity: 0.4 }} />
               </View>
@@ -129,9 +132,9 @@ export function FolderModal({
                     key={c}
                     onPress={() => setColor(c)}
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
                       backgroundColor: c,
                       borderWidth: color === c ? 3 : 1.5,
                       borderColor: color === c ? colors.ink : "transparent",
@@ -164,9 +167,8 @@ export function FolderModal({
                   style={{ flex: 1 }}
                 />
               </View>
-            </Pressable>
           </Animated.View>
-        </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

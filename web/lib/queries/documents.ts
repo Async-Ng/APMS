@@ -32,6 +32,33 @@ interface UploadIntentResponse {
   expiresIn: number;
 }
 
+export interface CitationContext {
+  documentId: string;
+  documentTitle: string;
+  chunkIndex: number;
+  pageNumber: number | null;
+  sectionPath: string[];
+  heading: string | null;
+  blockType: string;
+  extractionMode: string;
+  extractionConfidence: string;
+  excerpt: string;
+  content: string;
+  pageChunks: Array<{
+    chunkIndex: number;
+    content: string;
+    heading: string | null;
+    sectionPath: string[];
+    pageNumber: number | null;
+    blockType: string;
+  }>;
+  locator: {
+    type: "page" | "section" | "chunk";
+    pageNumber: number | null;
+    chunkIndex: number;
+  };
+}
+
 /* ── Document queries ───────────────────────────────────────── */
 
 export function useDocument(documentId: string) {
@@ -67,6 +94,24 @@ export function useDocumentDownloadUrl(documentId: string, enabled: boolean) {
   });
 }
 
+export function useCitationContext(
+  documentId: string,
+  chunkIndex: number | null,
+) {
+  return useQuery({
+    queryKey: ["documents", documentId, "citation-context", chunkIndex],
+    queryFn: async () => {
+      const res = await api.get<{ status: string; data: CitationContext }>(
+        `/documents/${documentId}/citation-context`,
+        { params: { chunkIndex } },
+      );
+      return res.data.data;
+    },
+    enabled: !!documentId && chunkIndex != null,
+    retry: false,
+  });
+}
+
 /* ── Public documents (Thư viện công khai) ───────────────────── */
 
 export interface PublicDocumentsParams {
@@ -78,6 +123,7 @@ export interface PublicDocumentsParams {
   curriculumId?: string;
   semesterId?: string;
   subjectId?: string;
+  ownerId?: string;
 }
 
 export function usePublicDocuments(
@@ -98,6 +144,7 @@ export function usePublicDocuments(
       if (listParams.curriculumId) query.curriculumId = listParams.curriculumId;
       if (listParams.semesterId) query.semesterId = listParams.semesterId;
       if (listParams.subjectId) query.subjectId = listParams.subjectId;
+      if (listParams.ownerId) query.ownerId = listParams.ownerId;
 
       const res = await api.get<{ status: string; data: DriveContents }>(
         "/documents",

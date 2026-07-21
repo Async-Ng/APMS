@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { Alert } from "react-native";
 
 import { type ActionItem } from "../components/app/ActionSheet";
 import { type DriveDocument, type DriveFolder } from "./useDrive";
@@ -24,6 +25,28 @@ export function useDriveItemActions(
   const deleteDocument = useDeleteDocument();
   const toggleDocumentStar = useToggleDocumentStar();
 
+  function confirmDeleteFolder(folder: DriveFolder) {
+    Alert.alert("Xóa thư mục này?", `Thư mục "${folder.name}" sẽ được chuyển vào thùng rác.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => deleteFolder.mutate(folder.id),
+      },
+    ]);
+  }
+
+  function confirmDeleteDocument(doc: DriveDocument) {
+    Alert.alert("Xóa tài liệu này?", `Tài liệu "${doc.title}" sẽ được chuyển vào thùng rác.`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => deleteDocument.mutate(doc.id),
+      },
+    ]);
+  }
+
   function buildFolderActions(folder: DriveFolder): ActionItem[] {
     return [
       {
@@ -46,7 +69,7 @@ export function useDriveItemActions(
         label: "Xóa",
         icon: "trash-outline",
         destructive: true,
-        onPress: () => deleteFolder.mutate(folder.id),
+        onPress: () => confirmDeleteFolder(folder),
       },
     ];
   }
@@ -87,7 +110,7 @@ export function useDriveItemActions(
         label: "Xóa",
         icon: "trash-outline",
         destructive: true,
-        onPress: () => deleteDocument.mutate(doc.id),
+        onPress: () => confirmDeleteDocument(doc),
       },
     ];
   }

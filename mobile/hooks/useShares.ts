@@ -107,6 +107,27 @@ export function useRevokeShare() {
   });
 }
 
+export interface CreateShareResult {
+  created: ShareRecord[];
+  skipped: number;
+}
+
+export function useCreateShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      resourceType: "folder" | "document";
+      resourceId: string;
+      sharedWithUserIds?: string[];
+      emails?: string[];
+    }) => {
+      const res = await api.post<{ status: string; data: CreateShareResult }>("/shares", body);
+      return res.data.data;
+    },
+    onSuccess: () => invalidateShareQueries(qc),
+  });
+}
+
 export function getResourceLabel(group: ShareByMeGroup): string {
   if (!group.resource) return "Mục đã xóa";
   if (group.resource.type === "folder") return group.resource.data.name;

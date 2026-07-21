@@ -66,3 +66,27 @@ export const sendMessageStream = catchAsync(async (req: Request, res: Response):
     { debug },
   );
 });
+
+export const regenerateLastMessageStream = catchAsync(
+  async (req: Request, res: Response): Promise<void> => {
+    const debug = req.get("x-apms-ai-debug") === "1";
+    await chatService.regenerateLastMessageStream(
+      requireUser(req),
+      getRouteParam(req, "id"),
+      res,
+      { debug },
+    );
+  },
+);
+
+export const editMessageStream = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const debug = req.get("x-apms-ai-debug") === "1";
+  await chatService.editMessageStream(
+    requireUser(req),
+    getRouteParam(req, "id"),
+    getRouteParam(req, "messageId"),
+    req.body.content as string,
+    res,
+    { debug },
+  );
+});

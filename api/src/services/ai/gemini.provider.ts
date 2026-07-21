@@ -236,6 +236,7 @@ async function* tryChatStreamWithModel(
   modelName: string,
   systemPrompt: string,
   messages: ChatTurn[],
+  abortSignal?: AbortSignal,
 ): AsyncGenerator<string> {
   const stream = await ai.models.generateContentStream({
     model: modelName,
@@ -243,6 +244,7 @@ async function* tryChatStreamWithModel(
     config: {
       systemInstruction: systemPrompt,
       ...chatGenerationConfig(),
+      ...(abortSignal ? { abortSignal } : {}),
     },
   });
 
@@ -392,6 +394,7 @@ export async function generateLite(
 export async function* chatWithContextStream(
   systemPrompt: string,
   messages: ChatTurn[],
+  abortSignal?: AbortSignal,
 ): AsyncGenerator<string> {
   const env = loadEnv();
   const ai = getVertexClient();
@@ -416,7 +419,13 @@ export async function* chatWithContextStream(
   for (const modelName of modelsToTry) {
     try {
       let yielded = false;
-      for await (const delta of tryChatStreamWithModel(ai, modelName, systemPrompt, messages)) {
+      for await (const delta of tryChatStreamWithModel(
+        ai,
+        modelName,
+        systemPrompt,
+        messages,
+        abortSignal,
+      )) {
         yielded = true;
         yield delta;
       }
@@ -430,6 +439,9 @@ export async function* chatWithContextStream(
       }
       return;
     } catch (error) {
+      if (abortSignal?.aborted) {
+        throw error;
+      }
       if (isQuotaError(error)) {
         console.warn(`[gemini] Model "${modelName}" quota exceeded, trying next fallback...`);
         lastError = error;

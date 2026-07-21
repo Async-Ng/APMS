@@ -33,7 +33,7 @@ const variantText: Record<Variant, string> = {
 };
 
 const sizeStyle = {
-  sm: { minHeight: 36, paddingHorizontal: 14, fontSize: 13 },
+  sm: { minHeight: 44, paddingHorizontal: 14, fontSize: 13 },
   md: { minHeight: 44, paddingHorizontal: 20, fontSize: 15 },
   lg: { minHeight: 52, paddingHorizontal: 24, fontSize: 16 },
 };
