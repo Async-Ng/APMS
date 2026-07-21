@@ -11,6 +11,8 @@ export function createApp() {
   const app = express();
   const env = loadEnv();
 
+  app.set("trust proxy", env.NODE_ENV === "production" ? 1 : false);
+
   app.use(
     cors({
       origin: env.NODE_ENV === "production" ? [env.APP_URL] : "*",
