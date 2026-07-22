@@ -3,29 +3,13 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { BrutalButton } from "../ui/BrutalButton";
+import { LoadingScreen } from "../ui/LoadingScreen";
 import { colors } from "../../constants/colors";
 import { brutalCardStyle } from "../../lib/brutal-style";
 import { useAuthStore } from "../../stores/auth-store";
 
 interface RequireAuthProps {
   children: ReactNode;
-}
-
-function AuthLoading() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.bg,
-        gap: 12,
-      }}
-    >
-      <Text style={{ fontSize: 16, fontWeight: "800", color: colors.ink }}>Đang xác thực...</Text>
-      <Text style={{ fontSize: 13, color: colors.muted }}>Vui lòng đợi trong giây lát.</Text>
-    </View>
-  );
 }
 
 export function RequireAuth({ children }: RequireAuthProps) {
@@ -51,7 +35,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
   }
 
   if (isLoading) {
-    return <AuthLoading />;
+    return <LoadingScreen />;
   }
 
   if (error) {
@@ -78,5 +62,5 @@ export function RequireAuth({ children }: RequireAuthProps) {
     );
   }
 
-  return <AuthLoading />;
+  return <LoadingScreen />;
 }

@@ -20,6 +20,7 @@ import {
   type ChatMessage,
   type ChatMode,
   type Citation,
+  isChatDailyLimitError,
   useChatContextStatus,
   useChatSession,
   useDeleteChatSession,
@@ -57,6 +58,7 @@ export default function ChatSessionScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [sendErrorIsDailyLimit, setSendErrorIsDailyLimit] = useState(false);
   const [retryMessage, setRetryMessage] = useState<RetryMessage>(null);
   const [messageActionsFor, setMessageActionsFor] = useState<ChatMessage | null>(null);
   const [editTarget, setEditTarget] = useState<ChatMessage | null>(null);
@@ -105,12 +107,14 @@ export default function ChatSessionScreen() {
     setMessageActionsFor(null);
     if (isGenerating) return;
     setSendError(null);
+    setSendErrorIsDailyLimit(false);
     regenerateMessage.mutate({ sessionId });
   }
 
   function handleEditSubmit(content: string) {
     if (!editTarget || isGenerating) return;
     setSendError(null);
+    setSendErrorIsDailyLimit(false);
     editMessage.mutate({ sessionId, messageId: editTarget.id, content });
     setEditTarget(null);
   }
@@ -125,6 +129,7 @@ export default function ChatSessionScreen() {
 
     if (nextMode === "chat") setInput("");
     setSendError(null);
+    setSendErrorIsDailyLimit(false);
     setRetryMessage({ content: finalContent, mode: nextMode });
     setIsSending(true);
 
@@ -133,6 +138,7 @@ export default function ChatSessionScreen() {
       setRetryMessage(null);
     } catch (err) {
       setSendError(getErrorMessage(err, "Gửi tin nhắn thất bại. Vui lòng thử lại."));
+      setSendErrorIsDailyLimit(isChatDailyLimitError(err));
     } finally {
       setIsSending(false);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
@@ -320,7 +326,7 @@ export default function ChatSessionScreen() {
                   paddingBottom: 20,
                   flexGrow: 1,
                 }}
-                ListEmptyComponent={<ChatEmptyState />}
+                ListEmptyComponent={<ChatEmptyState onSelect={handleSend} disabled={isGenerating} />}
                 keyboardShouldPersistTaps="handled"
                 onScroll={({ nativeEvent }) => {
                   const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
@@ -408,27 +414,33 @@ export default function ChatSessionScreen() {
               gap: 10,
             }}
           >
-            <Ionicons name="alert-circle-outline" size={18} color="#B91C1C" />
+            <Ionicons
+              name={sendErrorIsDailyLimit ? "time-outline" : "alert-circle-outline"}
+              size={18}
+              color="#B91C1C"
+            />
             <Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: "#7F1D1D" }}>{sendError}</Text>
-            <Pressable
-              onPress={handleRetry}
-              disabled={!retryMessage || isSending}
-              style={({ pressed }) => ({
-                minHeight: 36,
-                borderWidth: 2,
-                borderColor: colors.ink,
-                borderRadius: 10,
-                paddingHorizontal: 10,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: pressed ? "#F0F0F0" : colors.surface,
-                opacity: !retryMessage || isSending ? 0.55 : 1,
-              })}
-              accessibilityRole="button"
-              accessibilityLabel="Thử gửi lại"
-            >
-              <Text style={{ fontSize: 12, fontWeight: "800", color: colors.ink }}>Thử lại</Text>
-            </Pressable>
+            {!sendErrorIsDailyLimit && (
+              <Pressable
+                onPress={handleRetry}
+                disabled={!retryMessage || isSending}
+                style={({ pressed }) => ({
+                  minHeight: 36,
+                  borderWidth: 2,
+                  borderColor: colors.ink,
+                  borderRadius: 10,
+                  paddingHorizontal: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: pressed ? "#F0F0F0" : colors.surface,
+                  opacity: !retryMessage || isSending ? 0.55 : 1,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel="Thử gửi lại"
+              >
+                <Text style={{ fontSize: 12, fontWeight: "800", color: colors.ink }}>Thử lại</Text>
+              </Pressable>
+            )}
           </View>
         )}
 
@@ -446,7 +458,13 @@ export default function ChatSessionScreen() {
   );
 }
 
-function ChatEmptyState() {
+const DEFAULT_SUGGESTED_QUESTIONS = [
+  "Tóm tắt nội dung chính của tài liệu này",
+  "Liệt kê các khái niệm quan trọng cần nhớ",
+  "Giải thích phần khó hiểu nhất bằng ví dụ đơn giản",
+];
+
+function ChatEmptyState({ onSelect, disabled }: { onSelect: (question: string) => void; disabled?: boolean }) {
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 }}>
       <View
@@ -475,6 +493,9 @@ function ChatEmptyState() {
       <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center", marginTop: 6, lineHeight: 18, paddingHorizontal: 20 }}>
         Hỏi bất cứ điều gì về tài liệu của bạn. Mỗi câu trả lời đều dựa trên phạm vi tài liệu đã chọn.
       </Text>
+      <View style={{ marginTop: 20, paddingHorizontal: 20, width: "100%" }}>
+        <SuggestedQuestions questions={DEFAULT_SUGGESTED_QUESTIONS} onSelect={onSelect} disabled={disabled} />
+      </View>
     </View>
   );
 }

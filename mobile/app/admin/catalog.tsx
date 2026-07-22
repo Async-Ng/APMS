@@ -202,20 +202,22 @@ export default function AdminCatalogScreen() {
               <EmptyState icon="link-outline" title="Chưa có môn học nào được gán" description="Gán môn học vào chương trình và học kỳ để sinh viên có thể chọn." />
             }
             renderItem={({ item }) => (
-              <Pressable
-                onLongPress={() => confirmArchiveSlot(item)}
-                style={{ ...brutalCardStyle, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 }}
-              >
+              <View style={{ ...brutalCardStyle, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>{item.subject?.name ?? "?"}</Text>
                   <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
                     {item.curriculum?.code ?? "?"} · {item.semester?.code ?? "?"}
                   </Text>
                 </View>
-                <Pressable onPress={() => confirmArchiveSlot(item)} hitSlop={8}>
+                <Pressable
+                  onPress={() => confirmArchiveSlot(item)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Lưu trữ môn học này"
+                >
                   <Ionicons name="trash-outline" size={20} color={colors.error} />
                 </Pressable>
-              </Pressable>
+              </View>
             )}
           />
         )

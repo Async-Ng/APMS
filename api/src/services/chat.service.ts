@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { Types } from "mongoose";
 
 import { loadEnv } from "../config/env";
+import { AppError } from "../errors/AppError";
 import { createAppError, ErrorCode } from "../errors/error-codes";
 import {
   buildCitationDeepLink,
@@ -1198,6 +1199,7 @@ function beginSseResponse(res: Response): void {
 function writeSseError(res: Response, error: unknown): void {
   writeSse(res, "error", {
     message: error instanceof Error ? error.message : String(error),
+    ...(error instanceof AppError && error.code ? { code: error.code } : {}),
   });
   res.end();
 }

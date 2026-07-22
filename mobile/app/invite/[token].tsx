@@ -7,6 +7,7 @@ import { colors } from "../../constants/colors";
 import { brutalCardStyle } from "../../lib/brutal-style";
 import { getErrorMessage } from "../../lib/api-error";
 import { useAcceptInvite, useInvitePreview } from "../../hooks/useInvite";
+import { setPendingInviteToken } from "../../lib/inviteStorage";
 import { useAuthStore } from "../../stores/auth-store";
 
 export default function InviteScreen() {
@@ -79,7 +80,15 @@ export default function InviteScreen() {
                 <Text style={{ fontSize: 13, color: colors.muted, textAlign: "center" }}>
                   Đăng nhập bằng {invite.email} để chấp nhận lời mời này.
                 </Text>
-                <BrutalButton label="Đăng nhập" onPress={() => router.push("/login")} variant="secondary" fullWidth />
+                <BrutalButton
+                  label="Đăng nhập"
+                  onPress={() => {
+                    if (token) void setPendingInviteToken(token);
+                    router.push("/login");
+                  }}
+                  variant="secondary"
+                  fullWidth
+                />
               </View>
             ) : (
               <View style={{ width: "100%", gap: 10, marginTop: 8 }}>

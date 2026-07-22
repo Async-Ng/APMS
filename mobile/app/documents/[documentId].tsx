@@ -81,10 +81,21 @@ export default function DocumentDetailScreen() {
                 label: doc.visibility === "public" ? "Chuyển thành Riêng tư" : "Chuyển thành Công khai",
                 icon: (doc.visibility === "public" ? "eye-off-outline" : "eye-outline") as keyof typeof Ionicons.glyphMap,
                 onPress: () => {
-                  updateDoc.mutate({
-                    id: doc.id,
-                    visibility: doc.visibility === "public" ? "private" : "public",
-                  });
+                  if (doc.visibility === "public") {
+                    updateDoc.mutate({ id: doc.id, visibility: "private" });
+                    return;
+                  }
+                  Alert.alert(
+                    "Chuyển thành Công khai?",
+                    `Mọi người dùng trong hệ thống sẽ có thể tìm thấy và xem tài liệu "${doc.title}".`,
+                    [
+                      { text: "Huỷ", style: "cancel" },
+                      {
+                        text: "Chuyển Công khai",
+                        onPress: () => updateDoc.mutate({ id: doc.id, visibility: "public" }),
+                      },
+                    ],
+                  );
                 },
               },
             ]

@@ -231,6 +231,22 @@ export function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
+/** True when the daily chat limit (BR-025, 50 messages/user/day) blocked this request. */
+export function isChatDailyLimitError(error: unknown): boolean {
+  return error instanceof Error && (error as Error & { code?: string }).code === "CHAT_DAILY_LIMIT";
+}
+
+function makeStreamHttpError(status: number, responseText: string): Error {
+  try {
+    const body = JSON.parse(responseText) as { code?: string; message?: string };
+    const error = new Error(body.message ?? `Request failed: ${status}`) as Error & { code?: string };
+    if (body.code) error.code = body.code;
+    return error;
+  } catch {
+    return new Error(`Request failed: ${status}`);
+  }
+}
+
 function makeAbortError(): Error {
   const error = new Error("Đã dừng tạo câu trả lời.");
   error.name = "AbortError";
@@ -289,7 +305,11 @@ function streamChatRequest(
                 result = payload as unknown as SendMessageResult;
               } else if (event === "error" && !settled) {
                 settled = true;
-                reject(new Error(typeof payload.message === "string" ? payload.message : "Stream failed"));
+                const error = new Error(
+                  typeof payload.message === "string" ? payload.message : "Stream failed",
+                ) as Error & { code?: string };
+                if (typeof payload.code === "string") error.code = payload.code;
+                reject(error);
                 xhr.abort();
               }
             } catch {
@@ -304,7 +324,7 @@ function streamChatRequest(
             if (result) resolve(result);
             else reject(new Error("Stream ended without a final response"));
           } else {
-            reject(new Error(`Request failed: ${xhr.status}`));
+            reject(makeStreamHttpError(xhr.status, xhr.responseText));
           }
         }
       };
