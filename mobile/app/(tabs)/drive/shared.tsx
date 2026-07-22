@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, SafeAreaView, Text, View } from "react-native";
 
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { HeaderBar } from "../../../components/ui/HeaderBar";
@@ -160,7 +160,16 @@ function OutgoingGroup({ group }: { group: ShareByMeGroup }) {
                 </Text>
               </View>
               <Pressable
-                onPress={() => revokeShare.mutate(share.id)}
+                onPress={() =>
+                  Alert.alert(
+                    "Thu hồi chia sẻ?",
+                    `${share.sharedWithUser?.displayName ?? share.sharedWithUser?.email ?? "Người dùng này"} sẽ không còn truy cập được nữa.`,
+                    [
+                      { text: "Huỷ", style: "cancel" },
+                      { text: "Thu hồi", style: "destructive", onPress: () => revokeShare.mutate(share.id) },
+                    ],
+                  )
+                }
                 disabled={revokeShare.isPending}
                 style={({ pressed }) => ({
                   minHeight: 44,

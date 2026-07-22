@@ -36,11 +36,21 @@ export default function AdminAccessEmailsScreen() {
   const updateEntry = useUpdateAccessEmail();
   const deactivateEntry = useDeactivateAccessEmail();
 
-  function handleToggleActive(id: string, isActive: boolean) {
-    updateEntry.mutate(
-      { id, body: { isActive } },
-      { onError: (err) => useToastStore.getState().show(getErrorMessage(err, "Cập nhật thất bại.")) },
-    );
+  function handleToggleActive(id: string, email: string, isActive: boolean) {
+    const commit = () =>
+      updateEntry.mutate(
+        { id, body: { isActive } },
+        { onError: (err) => useToastStore.getState().show(getErrorMessage(err, "Cập nhật thất bại.")) },
+      );
+
+    if (!isActive) {
+      Alert.alert("Tắt quyền truy cập?", `"${email}" sẽ không thể đăng nhập bằng ngoại lệ này nữa.`, [
+        { text: "Huỷ", style: "cancel" },
+        { text: "Tắt", style: "destructive", onPress: commit },
+      ]);
+      return;
+    }
+    commit();
   }
 
   function handleDeactivate(id: string, email: string) {
@@ -159,7 +169,7 @@ export default function AdminAccessEmailsScreen() {
                 </Text>
               ) : null}
             </View>
-            <Pressable onPress={() => handleToggleActive(item.id, !item.isActive)} hitSlop={8}>
+            <Pressable onPress={() => handleToggleActive(item.id, item.email, !item.isActive)} hitSlop={8}>
               <Ionicons name={item.isActive ? "toggle" : "toggle-outline"} size={30} color={item.isActive ? colors.fptGreen : colors.muted} />
             </Pressable>
             <Pressable onPress={() => handleDeactivate(item.id, item.email)} hitSlop={8}>

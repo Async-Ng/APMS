@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, SafeAreaView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, SafeAreaView, Text, View } from "react-native";
 
 import { ActionSheet, type ActionItem } from "../../components/app/ActionSheet";
 import { BrutalButton } from "../../components/ui/BrutalButton";
@@ -17,7 +17,7 @@ import { useToastStore } from "../../stores/toast-store";
 
 export default function AcademicProfileScreen() {
   const router = useRouter();
-  const { data: curricula } = useCatalogCurricula();
+  const { data: curricula, isLoading: curriculaLoading } = useCatalogCurricula();
   const { data: profile } = useAcademicProfile();
 
   const [curriculumId, setCurriculumId] = useState<string | null>(null);
@@ -104,7 +104,14 @@ export default function AcademicProfileScreen() {
             Chương trình đào tạo
           </Text>
           <Pressable
-            onPress={() => (curricula?.length ?? 0) > 0 && setShowCurriculumPicker(true)}
+            onPress={() => {
+              if (curriculaLoading) return;
+              if ((curricula?.length ?? 0) === 0) {
+                useToastStore.getState().show("Chưa có chương trình đào tạo nào.");
+                return;
+              }
+              setShowCurriculumPicker(true);
+            }}
             style={{
               borderWidth: 2,
               borderColor: colors.ink,
@@ -120,20 +127,24 @@ export default function AcademicProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Chọn Chương trình đào tạo"
           >
-            <Text
-              style={{
-                fontSize: 14,
-                flex: 1,
-                color: selectedCurriculum ? colors.ink : colors.muted,
-                fontWeight: selectedCurriculum ? "700" : "400",
-                lineHeight: 20,
-              }}
-              numberOfLines={2}
-            >
-              {selectedCurriculum
-                ? `${selectedCurriculum.code} — ${selectedCurriculum.name}`
-                : "Chọn Chương trình đào tạo…"}
-            </Text>
+            {curriculaLoading ? (
+              <ActivityIndicator size="small" color={colors.fptBlue} />
+            ) : (
+              <Text
+                style={{
+                  fontSize: 14,
+                  flex: 1,
+                  color: selectedCurriculum ? colors.ink : colors.muted,
+                  fontWeight: selectedCurriculum ? "700" : "400",
+                  lineHeight: 20,
+                }}
+                numberOfLines={2}
+              >
+                {selectedCurriculum
+                  ? `${selectedCurriculum.code} — ${selectedCurriculum.name}`
+                  : "Chọn Chương trình đào tạo…"}
+              </Text>
+            )}
             <Ionicons name="chevron-down" size={18} color={colors.muted} />
           </Pressable>
         </View>

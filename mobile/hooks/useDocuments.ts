@@ -124,22 +124,38 @@ function shortS3Response(text: string): string {
   return text.replace(/\s+/g, " ").trim().slice(0, 240);
 }
 
+function makeUploadAbortError(): Error {
+  const error = new Error("Đã hủy tải lên.");
+  error.name = "AbortError";
+  return error;
+}
+
 function uploadBlobToS3({
   uploadUrl,
   blob,
   mimeType,
   onProgress,
+  registerAbort,
 }: {
   uploadUrl: string;
   blob: Blob;
   mimeType: string;
   onProgress?: (pct: number) => void;
+  registerAbort?: (abort: () => void) => void;
 }): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", mimeType);
     xhr.responseType = "text";
+
+    let settled = false;
+    registerAbort?.(() => {
+      if (settled) return;
+      settled = true;
+      xhr.abort();
+      reject(makeUploadAbortError());
+    });
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -148,6 +164,8 @@ function uploadBlobToS3({
     };
 
     xhr.onload = () => {
+      if (settled) return;
+      settled = true;
       if (xhr.status >= 200 && xhr.status < 300) {
         onProgress?.(100);
         resolve();
@@ -157,10 +175,23 @@ function uploadBlobToS3({
       reject(new Error(`Tải lên S3 thất bại (${xhr.status})${detail ? `: ${detail}` : ""}`));
     };
 
-    xhr.onerror = () => reject(new Error("Tải lên S3 thất bại do lỗi mạng."));
-    xhr.ontimeout = () => reject(new Error("Tải lên S3 quá thời gian chờ."));
+    xhr.onerror = () => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Tải lên S3 thất bại do lỗi mạng."));
+    };
+    xhr.ontimeout = () => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Tải lên S3 quá thời gian chờ."));
+    };
     xhr.send(blob);
   });
+}
+
+/** True when an upload was cancelled by the user (Cancel button). */
+export function isUploadAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 export function useUploadDocument() {
@@ -175,6 +206,7 @@ export function useUploadDocument() {
       courseSlotId,
       visibility,
       onProgress,
+      registerAbort,
     }: {
       uri: string;
       name: string;
@@ -184,6 +216,7 @@ export function useUploadDocument() {
       courseSlotId: string;
       visibility: "private" | "public";
       onProgress?: (pct: number) => void;
+      registerAbort?: (abort: () => void) => void;
     }) => {
       const intentRes = await api.post<{ status: string; data: UploadIntent }>("/documents/upload-intents", {
         originalFilename: name,
@@ -201,7 +234,7 @@ export function useUploadDocument() {
       // RN's XHR sends the wire Content-Type from blob.type. fetch(uri).blob()
       // can produce an empty/generic type, so stamp the blob to match the intent.
       const blob = rawBlob.slice(0, rawBlob.size, mimeType);
-      await uploadBlobToS3({ uploadUrl, blob, mimeType, onProgress });
+      await uploadBlobToS3({ uploadUrl, blob, mimeType, onProgress, registerAbort });
 
       await api.post(`/documents/${document.id}/complete`);
       return document.id;
