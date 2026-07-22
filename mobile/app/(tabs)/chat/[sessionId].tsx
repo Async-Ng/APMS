@@ -149,11 +149,8 @@ export default function ChatSessionScreen() {
   }
 
   function openCitation(citation: Citation) {
-    if (citation.deepLink) {
-      router.push(citation.deepLink as never);
-      return;
-    }
-    router.push(`/documents/${citation.documentId}`);
+    const params = citation.pageNumber != null ? `?page=${citation.pageNumber}` : "";
+    router.push(`/documents/${citation.documentId}/view${params}` as never);
   }
 
   function confirmDeleteSession() {

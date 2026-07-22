@@ -29,11 +29,19 @@ export default function DocumentDetailScreen() {
   const [showRename, setShowRename] = useState(false);
 
   const isOwner = doc?.ownerId === user?.id;
+  const isPdf = doc?.mimeType.includes("pdf") ?? false;
+
+  function handleOpenDocument() {
+    if (!doc) return;
+    if (isPdf) {
+      router.push(`/documents/${doc.id}/view` as never);
+      return;
+    }
+    if (doc.downloadUrl) void Linking.openURL(doc.downloadUrl);
+  }
 
   function handleOpenExternal() {
-    if (doc?.downloadUrl) {
-      void Linking.openURL(doc.downloadUrl);
-    }
+    if (doc?.downloadUrl) void Linking.openURL(doc.downloadUrl);
   }
 
   function confirmDeleteCurrentDocument() {
@@ -134,7 +142,7 @@ export default function DocumentDetailScreen() {
         <View style={{ gap: 12 }}>
           {doc.downloadUrl && (
             <Pressable
-              onPress={handleOpenExternal}
+              onPress={handleOpenDocument}
               style={({ pressed }) => ({
                 ...brutalCtaStyle,
                 backgroundColor: colors.fptBlue,
