@@ -134,7 +134,7 @@ export function Sidebar({
     }
 
     return NAV_ITEMS;
-  }, [adminStats?.totalUsers, showAdminNav]);
+  }, [adminStats, showAdminNav]);
 
   const isActive = (item: NavItem) => {
     if (showAdminNav && item.tabId) {
