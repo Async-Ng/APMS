@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { Types } from "mongoose";
 
 import { loadEnv } from "../config/env";
+import { AppError } from "../errors/AppError";
 import { createAppError, ErrorCode } from "../errors/error-codes";
 import {
   buildCitationDeepLink,
@@ -57,13 +58,13 @@ import {
   getDocumentIdsInFolderTree,
   getSharedDocumentIds,
 } from "./share.service";
+import { chatTurnCreatedSince, startOfUtcDay } from "../utils/chat-turn";
 
 async function assertChatDailyLimit(userId: Types.ObjectId): Promise<void> {
   const limit = loadEnv().CHAT_DAILY_LIMIT_PER_USER;
   if (limit === 0) return;
 
-  const startOfDay = new Date();
-  startOfDay.setUTCHours(0, 0, 0, 0);
+  const startOfDay = startOfUtcDay();
 
   const sessionIds = await ChatSession.find({ userId }).distinct("_id");
   if (sessionIds.length === 0) return;
@@ -72,8 +73,7 @@ async function assertChatDailyLimit(userId: Types.ObjectId): Promise<void> {
   // user message; a regenerate creates an assistant message flagged isRegeneration.
   const count = await ChatMessage.countDocuments({
     sessionId: { $in: sessionIds },
-    createdAt: { $gte: startOfDay },
-    $or: [{ role: "user" }, { role: "assistant", isRegeneration: true }],
+    ...chatTurnCreatedSince(startOfDay),
   });
 
   if (count >= limit) {
@@ -1198,6 +1198,7 @@ function beginSseResponse(res: Response): void {
 function writeSseError(res: Response, error: unknown): void {
   writeSse(res, "error", {
     message: error instanceof Error ? error.message : String(error),
+    ...(error instanceof AppError && error.code ? { code: error.code } : {}),
   });
   res.end();
 }

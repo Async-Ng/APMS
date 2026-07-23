@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/auth-store";
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "admin";
 
   const savedDisplayName = user?.displayName ?? "";
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -25,8 +26,8 @@ export default function ProfilePage() {
     data: curricula,
     isLoading: isCurriculaLoading,
     isError: isCurriculaError,
-  } = useCatalogCurricula();
-  const { data: profile } = useAcademicProfile();
+  } = useCatalogCurricula({ enabled: !isAdmin });
+  const { data: profile } = useAcademicProfile({ enabled: !isAdmin });
 
   const [curriculumId, setCurriculumId] = useState("");
   const [academicError, setAcademicError] = useState<string | null>(null);
@@ -67,7 +68,9 @@ export default function ProfilePage() {
               Hồ sơ của tôi
             </h1>
             <p className="text-sm text-brutal-muted">
-              Cập nhật tên hiển thị và chương trình đào tạo để Drive và Thư viện gợi ý đúng CTĐT.
+              {isAdmin
+                ? "Cập nhật tên hiển thị."
+                : "Cập nhật tên hiển thị và chương trình đào tạo để Drive và Thư viện gợi ý đúng CTĐT."}
             </p>
           </div>
         </div>
@@ -138,114 +141,116 @@ export default function ProfilePage() {
           )}
         </BrutalCard>
 
-        <BrutalCard className="min-w-0">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-brutal-ink" aria-hidden="true" />
-              <h2 className="font-heading text-lg font-extrabold text-brutal-ink">
-                Hồ sơ học thuật
-              </h2>
-            </div>
-
-            <div
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border-2 border-brutal-ink px-2 py-1 text-xs font-extrabold",
-                isAcademicComplete ? "bg-brutal-primary text-white" : "bg-brutal-bg text-brutal-ink",
-              )}
-              aria-label={isAcademicComplete ? "Hồ sơ đã hoàn thành" : "Hồ sơ chưa hoàn thành"}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-              {isAcademicComplete ? "Đã hoàn thành" : "Chưa hoàn thành"}
-            </div>
-          </div>
-
-          {academicSuccess && (
-            <p
-              role="status"
-              className="mb-3 rounded-xl border-2 border-brutal-ink bg-brutal-primary px-3 py-2 text-sm font-semibold text-white"
-            >
-              {academicSuccess}
-            </p>
-          )}
-          {academicError && <ErrorAlert message={academicError} className="mb-3" />}
-          {isCurriculaError && (
-            <ErrorAlert
-              message="Không tải được danh sách CTĐT. Vui lòng thử lại sau."
-              className="mb-3"
-            />
-          )}
-          {updateAcademic.isError && (
-            <ErrorAlert
-              message={getUserErrorMessage(updateAcademic.error)}
-              className="mb-3"
-            />
-          )}
-
-          <div className="space-y-4">
-            {isCurriculaLoading ? (
-              <p className="text-sm text-brutal-muted">Đang tải danh sách CTĐT…</p>
-            ) : curricula?.length === 0 ? (
-              <p className="text-sm text-brutal-muted">
-                Chưa có CTĐT nào. Liên hệ quản trị viên.
-              </p>
-            ) : (
-              <div className="min-w-0">
-                <label
-                  htmlFor="profile-curriculum"
-                  className="block text-xs font-bold text-brutal-muted"
-                >
-                  Chương trình đào tạo
-                </label>
-                <select
-                  id="profile-curriculum"
-                  value={effectiveCurriculumId}
-                  onChange={(e) => {
-                    setAcademicError(null);
-                    setAcademicSuccess(null);
-                    setCurriculumId(e.target.value);
-                  }}
-                  className="focus-brutal mt-1 block w-full min-w-0 max-w-full truncate rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
-                >
-                  <option value="">Chọn CTĐT</option>
-                  {curricula?.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.code} — {m.name}
-                    </option>
-                  ))}
-                </select>
+        {!isAdmin && (
+          <BrutalCard className="min-w-0">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-brutal-ink" aria-hidden="true" />
+                <h2 className="font-heading text-lg font-extrabold text-brutal-ink">
+                  Hồ sơ học thuật
+                </h2>
               </div>
+
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border-2 border-brutal-ink px-2 py-1 text-xs font-extrabold",
+                  isAcademicComplete ? "bg-brutal-primary text-white" : "bg-brutal-bg text-brutal-ink",
+                )}
+                aria-label={isAcademicComplete ? "Hồ sơ đã hoàn thành" : "Hồ sơ chưa hoàn thành"}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                {isAcademicComplete ? "Đã hoàn thành" : "Chưa hoàn thành"}
+              </div>
+            </div>
+
+            {academicSuccess && (
+              <p
+                role="status"
+                className="mb-3 rounded-xl border-2 border-brutal-ink bg-brutal-primary px-3 py-2 text-sm font-semibold text-white"
+              >
+                {academicSuccess}
+              </p>
+            )}
+            {academicError && <ErrorAlert message={academicError} className="mb-3" />}
+            {isCurriculaError && (
+              <ErrorAlert
+                message="Không tải được danh sách CTĐT. Vui lòng thử lại sau."
+                className="mb-3"
+              />
+            )}
+            {updateAcademic.isError && (
+              <ErrorAlert
+                message={getUserErrorMessage(updateAcademic.error)}
+                className="mb-3"
+              />
             )}
 
-            <div className="flex justify-end">
-              <BrutalButton
-                className="w-auto shrink-0"
-                variant="secondary"
-                loading={updateAcademic.isPending}
-                onClick={() => {
-                  setAcademicError(null);
-                  setAcademicSuccess(null);
-                  if (!effectiveCurriculumId) {
-                    setAcademicError("Vui lòng chọn CTĐT.");
-                    return;
-                  }
-                  updateAcademic.mutate(
-                    {
-                      curriculumId: effectiveCurriculumId,
-                    },
-                    {
-                      onSuccess: () => {
-                        setCurriculumId("");
-                        setAcademicSuccess("Đã lưu hồ sơ học thuật.");
+            <div className="space-y-4">
+              {isCurriculaLoading ? (
+                <p className="text-sm text-brutal-muted">Đang tải danh sách CTĐT…</p>
+              ) : curricula?.length === 0 ? (
+                <p className="text-sm text-brutal-muted">
+                  Chưa có CTĐT nào. Liên hệ quản trị viên.
+                </p>
+              ) : (
+                <div className="min-w-0">
+                  <label
+                    htmlFor="profile-curriculum"
+                    className="block text-xs font-bold text-brutal-muted"
+                  >
+                    Chương trình đào tạo
+                  </label>
+                  <select
+                    id="profile-curriculum"
+                    value={effectiveCurriculumId}
+                    onChange={(e) => {
+                      setAcademicError(null);
+                      setAcademicSuccess(null);
+                      setCurriculumId(e.target.value);
+                    }}
+                    className="focus-brutal mt-1 block w-full min-w-0 max-w-full truncate rounded-xl border-2 border-brutal-ink bg-brutal-bg px-3 py-2.5 text-sm font-medium text-brutal-ink"
+                  >
+                    <option value="">Chọn CTĐT</option>
+                    {curricula?.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.code} — {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <BrutalButton
+                  className="w-auto shrink-0"
+                  variant="secondary"
+                  loading={updateAcademic.isPending}
+                  onClick={() => {
+                    setAcademicError(null);
+                    setAcademicSuccess(null);
+                    if (!effectiveCurriculumId) {
+                      setAcademicError("Vui lòng chọn CTĐT.");
+                      return;
+                    }
+                    updateAcademic.mutate(
+                      {
+                        curriculumId: effectiveCurriculumId,
                       },
-                    },
-                  );
-                }}
-              >
-                Lưu hồ sơ
-              </BrutalButton>
+                      {
+                        onSuccess: () => {
+                          setCurriculumId("");
+                          setAcademicSuccess("Đã lưu hồ sơ học thuật.");
+                        },
+                      },
+                    );
+                  }}
+                >
+                  Lưu hồ sơ
+                </BrutalButton>
+              </div>
             </div>
-          </div>
-        </BrutalCard>
+          </BrutalCard>
+        )}
       </main>
     </div>
   );

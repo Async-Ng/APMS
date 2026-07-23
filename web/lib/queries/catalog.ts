@@ -54,7 +54,7 @@ export interface AcademicProfile {
   isComplete: boolean;
 }
 
-export function useCatalogCurricula() {
+export function useCatalogCurricula(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["catalog", "curricula"],
     queryFn: async () => {
@@ -63,6 +63,7 @@ export function useCatalogCurricula() {
       );
       return res.data.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -110,7 +111,7 @@ export function useCatalogCourseSlots(
   });
 }
 
-export function useAcademicProfile() {
+export function useAcademicProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["users", "me", "academic-profile"],
     queryFn: async () => {
@@ -119,5 +120,6 @@ export function useAcademicProfile() {
       );
       return res.data.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }

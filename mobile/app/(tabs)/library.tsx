@@ -536,6 +536,11 @@ export default function LibraryScreen() {
                   ? "Hoàn thành hồ sơ học thuật để APMS ưu tiên tài liệu phù hợp với chương trình học của bạn."
                   : "Không có tài liệu nào khớp với bộ lọc hiện tại của bạn."
               }
+              action={
+                segment === "auto"
+                  ? { label: "Cập nhật hồ sơ học vụ", onPress: () => router.push("/profile/academic") }
+                  : undefined
+              }
             />
           }
           renderItem={({ item }) => {

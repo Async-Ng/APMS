@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, SafeAreaView, Text, TextInput, View } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { AdminUserCard, type AdminUser } from "../../components/app/AdminUserCard";
@@ -89,7 +89,24 @@ export default function AdminUsersScreen() {
         renderItem={({ item }) => (
           <AdminUserCard
             user={item}
-            onToggleDisable={() => toggleDisable.mutate({ id: item.id, isDisabled: !item.isDisabled })}
+            onToggleDisable={() => {
+              if (item.isDisabled) {
+                toggleDisable.mutate({ id: item.id, isDisabled: false });
+                return;
+              }
+              Alert.alert(
+                "Khóa tài khoản này?",
+                `${item.displayName} (${item.email}) sẽ không thể đăng nhập cho đến khi được mở khóa lại.`,
+                [
+                  { text: "Huỷ", style: "cancel" },
+                  {
+                    text: "Khóa tài khoản",
+                    style: "destructive",
+                    onPress: () => toggleDisable.mutate({ id: item.id, isDisabled: true }),
+                  },
+                ],
+              );
+            }}
           />
         )}
       />

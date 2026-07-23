@@ -130,15 +130,20 @@ export function AccessEmailsPanel() {
         />
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <AdminSearchBar
-            value={search}
-            onChange={handleSearch}
-            placeholder="Tìm email hoặc ghi chú…"
-            id="access-email-search"
-          />
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc trạng thái">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+        <AdminSearchBar
+          value={search}
+          onChange={handleSearch}
+          placeholder="Tìm email hoặc ghi chú…"
+          id="access-email-search"
+          className="w-full md:max-w-[220px] md:shrink-0"
+        />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-nowrap">
+          <div
+            className="flex shrink-0 gap-1.5"
+            role="group"
+            aria-label="Lọc trạng thái"
+          >
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.id}
@@ -148,7 +153,7 @@ export function AccessEmailsPanel() {
                   setPage(1);
                 }}
                 className={cn(
-                  "focus-brutal rounded-lg border-2 border-brutal-ink px-3 py-1.5 text-xs font-bold",
+                  "focus-brutal shrink-0 whitespace-nowrap rounded-lg border-2 border-brutal-ink px-2.5 py-1 text-xs font-bold",
                   statusFilter === f.id
                     ? "bg-brutal-primary text-brutal-on-brand"
                     : "bg-brutal-surface hover:bg-brutal-bg",
@@ -158,11 +163,16 @@ export function AccessEmailsPanel() {
               </button>
             ))}
           </div>
+          <BrutalButton
+            variant="primary"
+            size="sm"
+            className="w-full shrink-0 sm:w-auto md:ml-auto"
+            onClick={() => setBulkOpen(true)}
+          >
+            <MailPlus className="h-4 w-4" aria-hidden="true" />
+            Thêm email
+          </BrutalButton>
         </div>
-        <BrutalButton variant="primary" onClick={() => setBulkOpen(true)}>
-          <MailPlus className="mr-2 h-4 w-4" />
-          Thêm email
-        </BrutalButton>
       </div>
 
       <AdminTableShell ariaLabel="Bảng email truy cập">

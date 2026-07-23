@@ -1,9 +1,8 @@
 import { getCurrentUser } from "aws-amplify/auth";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
 
-import { colors } from "../constants/colors";
+import { LoadingScreen } from "../components/ui/LoadingScreen";
 import "../lib/amplify";
 
 export default function Index() {
@@ -16,11 +15,7 @@ export default function Index() {
   }, []);
 
   if (state === "checking") {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
-        <ActivityIndicator size="large" color={colors.fptBlue} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return <Redirect href={state === "auth" ? "/(tabs)/drive" : "/login"} />;

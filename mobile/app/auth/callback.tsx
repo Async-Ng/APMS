@@ -7,6 +7,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { colors } from "../../constants/colors";
 import { brutalCardStyle } from "../../lib/brutal-style";
 import "../../lib/amplify";
+import { clearPendingInviteToken, getPendingInviteToken } from "../../lib/inviteStorage";
 import { useAuthStore } from "../../stores/auth-store";
 
 export default function AuthCallbackScreen() {
@@ -23,7 +24,9 @@ export default function AuthCallbackScreen() {
         const session = await fetchAuthSession({ forceRefresh: true });
 
         if (!session.tokens?.idToken) {
-          setError("Đăng nhập không thành công. Vui lòng thử lại.");
+          setError(
+            "Đăng nhập không thành công. Chỉ tài khoản email @fpt.edu.vn hoặc @fe.edu.vn được phép đăng nhập.",
+          );
           return;
         }
 
@@ -40,6 +43,13 @@ export default function AuthCallbackScreen() {
           const authError =
             useAuthStore.getState().error ?? "Không thể xác thực tài khoản. Vui lòng thử lại.";
           setError(authError);
+          return;
+        }
+
+        const pendingInviteToken = await getPendingInviteToken();
+        if (pendingInviteToken) {
+          await clearPendingInviteToken();
+          router.replace(`/invite/${pendingInviteToken}` as never);
           return;
         }
 

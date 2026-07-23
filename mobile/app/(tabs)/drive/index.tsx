@@ -437,7 +437,7 @@ export default function DriveRoot() {
                     ? "Tải tài liệu lên và chọn đúng môn học để APMS gom vào nhóm này."
                     : "Tải lên tài liệu đầu tiên hoặc tạo thư mục để bắt đầu."
                 }
-                action={undefined}
+                action={{ label: "Tải lên tài liệu", onPress: () => setShowUpload(true) }}
               />
             );
           }}

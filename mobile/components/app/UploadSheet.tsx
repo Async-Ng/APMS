@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../../constants/colors";
 import { useEnrolledCourses } from "../../hooks/useCatalog";
-import { useUploadDocument } from "../../hooks/useDocuments";
+import { isUploadAbortError, useUploadDocument } from "../../hooks/useDocuments";
 import { getErrorMessage } from "../../lib/api-error";
 import { useToastStore } from "../../stores/toast-store";
 import { BrutalButton } from "../ui/BrutalButton";
@@ -61,6 +61,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
 
   const { profile, enrolledCourses, isLoading: profileLoading } = useEnrolledCourses();
   const uploadDocument = useUploadDocument();
+  const abortUploadRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -118,12 +119,24 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
         courseSlotId,
         visibility,
         onProgress: setProgress,
+        registerAbort: (abort) => {
+          abortUploadRef.current = abort;
+        },
       });
       setStep("done");
     } catch (err) {
+      abortUploadRef.current = null;
+      if (isUploadAbortError(err)) {
+        setStep("pick");
+        return;
+      }
       setErrorMsg(getErrorMessage(err, "Tải lên thất bại. Vui lòng thử lại."));
       setStep("error");
     }
+  }
+
+  function handleCancelUpload() {
+    abortUploadRef.current?.();
   }
 
   function handleDismiss() {
@@ -368,6 +381,7 @@ export function UploadSheet({ visible, folderId, onDismiss }: UploadSheetProps) 
                   <View style={{ height: "100%", width: `${progress}%`, backgroundColor: colors.fptGreen }} />
                 </View>
                 <Text style={{ fontSize: 13, color: colors.muted }}>{progress}%</Text>
+                <BrutalButton label="Hủy tải lên" onPress={handleCancelUpload} variant="ghost" fullWidth />
               </View>
             )}
 

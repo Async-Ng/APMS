@@ -29,11 +29,19 @@ export default function DocumentDetailScreen() {
   const [showRename, setShowRename] = useState(false);
 
   const isOwner = doc?.ownerId === user?.id;
+  const isPdf = doc?.mimeType.includes("pdf") ?? false;
+
+  function handleOpenDocument() {
+    if (!doc) return;
+    if (isPdf) {
+      router.push(`/documents/${doc.id}/view` as never);
+      return;
+    }
+    if (doc.downloadUrl) void Linking.openURL(doc.downloadUrl);
+  }
 
   function handleOpenExternal() {
-    if (doc?.downloadUrl) {
-      void Linking.openURL(doc.downloadUrl);
-    }
+    if (doc?.downloadUrl) void Linking.openURL(doc.downloadUrl);
   }
 
   function confirmDeleteCurrentDocument() {
@@ -73,10 +81,21 @@ export default function DocumentDetailScreen() {
                 label: doc.visibility === "public" ? "Chuyển thành Riêng tư" : "Chuyển thành Công khai",
                 icon: (doc.visibility === "public" ? "eye-off-outline" : "eye-outline") as keyof typeof Ionicons.glyphMap,
                 onPress: () => {
-                  updateDoc.mutate({
-                    id: doc.id,
-                    visibility: doc.visibility === "public" ? "private" : "public",
-                  });
+                  if (doc.visibility === "public") {
+                    updateDoc.mutate({ id: doc.id, visibility: "private" });
+                    return;
+                  }
+                  Alert.alert(
+                    "Chuyển thành Công khai?",
+                    `Mọi người dùng trong hệ thống sẽ có thể tìm thấy và xem tài liệu "${doc.title}".`,
+                    [
+                      { text: "Huỷ", style: "cancel" },
+                      {
+                        text: "Chuyển Công khai",
+                        onPress: () => updateDoc.mutate({ id: doc.id, visibility: "public" }),
+                      },
+                    ],
+                  );
                 },
               },
             ]
@@ -134,7 +153,7 @@ export default function DocumentDetailScreen() {
         <View style={{ gap: 12 }}>
           {doc.downloadUrl && (
             <Pressable
-              onPress={handleOpenExternal}
+              onPress={handleOpenDocument}
               style={({ pressed }) => ({
                 ...brutalCtaStyle,
                 backgroundColor: colors.fptBlue,

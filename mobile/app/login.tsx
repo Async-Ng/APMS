@@ -8,6 +8,7 @@ import { BrutalButton } from "../components/ui/BrutalButton";
 import { colors } from "../constants/colors";
 import { brutalCardStyle } from "../lib/brutal-style";
 import "../lib/amplify";
+import { clearPendingInviteToken, getPendingInviteToken } from "../lib/inviteStorage";
 import { useAuthStore } from "../stores/auth-store";
 
 const features: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
@@ -27,9 +28,16 @@ export default function LoginScreen() {
   }, [fetchMe]);
 
   useEffect(() => {
-    if (!isAuthLoading && user) {
+    if (isAuthLoading || !user) return;
+    void (async () => {
+      const pendingInviteToken = await getPendingInviteToken();
+      if (pendingInviteToken) {
+        await clearPendingInviteToken();
+        router.replace(`/invite/${pendingInviteToken}` as never);
+        return;
+      }
       router.replace("/(tabs)/drive");
-    }
+    })();
   }, [isAuthLoading, user, router]);
 
   async function handleGoogleSignIn() {
@@ -71,7 +79,17 @@ export default function LoginScreen() {
           </View>
           <BrutalButton
             label={`Tiếp tục với ${user.displayName}`}
-            onPress={() => router.replace("/(tabs)/drive")}
+            onPress={() =>
+              void (async () => {
+                const pendingInviteToken = await getPendingInviteToken();
+                if (pendingInviteToken) {
+                  await clearPendingInviteToken();
+                  router.replace(`/invite/${pendingInviteToken}` as never);
+                  return;
+                }
+                router.replace("/(tabs)/drive");
+              })()
+            }
             variant="primary"
             fullWidth
             size="lg"

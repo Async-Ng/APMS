@@ -66,7 +66,9 @@ export default function AuthCallbackPage() {
           }
         }
 
-        router.replace("/drive");
+        const landing =
+          currentUser.role === "admin" ? "/admin" : "/drive";
+        router.replace(landing);
       } catch {
         setError("Không thể hoàn tất đăng nhập. Vui lòng thử lại.");
       }
