@@ -9,6 +9,31 @@ export const documentsByStatusSchema = z.object({
   failed: z.number().int(),
 });
 
+export const documentsByVisibilitySchema = z.object({
+  private: z.number().int(),
+  public: z.number().int(),
+});
+
+export const aiTurnsDaySchema = z.object({
+  date: z.string(),
+  turns: z.number().int(),
+});
+
+export const topStorageUserSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  email: z.string().email(),
+  storageUsedBytes: z.number().int(),
+  storageQuotaBytes: z.number().int(),
+});
+
+export const topSubjectByDocumentsSchema = z.object({
+  subjectId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  documentCount: z.number().int(),
+});
+
 export const systemStatsDataSchema = z.object({
   totalUsers: z.number().int(),
   activeUsers: z.number().int(),
@@ -17,6 +42,12 @@ export const systemStatsDataSchema = z.object({
   documentsByStatus: documentsByStatusSchema,
   totalDocuments: z.number().int(),
   totalFolders: z.number().int(),
+  aiTurnsToday: z.number().int(),
+  aiDistinctUsersToday: z.number().int(),
+  aiTurnsLast7Days: z.array(aiTurnsDaySchema),
+  documentsByVisibility: documentsByVisibilitySchema,
+  topUsersByStorage: z.array(topStorageUserSchema),
+  topSubjectsByDocuments: z.array(topSubjectByDocumentsSchema),
 });
 
 export const systemStatsSuccessResponseSchema = successEnvelope(

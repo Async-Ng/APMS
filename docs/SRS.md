@@ -358,6 +358,18 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | ID | Yêu cầu chức năng |
 |----|------------------|
 | FR-046 | Hệ thống phải cho phép quản trị viên xem thống kê tổng quan của hệ thống. |
+
+**Chi tiết FR-046 — Thống kê tổng quan:**
+
+| Thuộc tính | Nội dung |
+|------------|---------|
+| Actor | Quản trị viên |
+| Màn hình | Quản trị → Tổng quan |
+| Dữ liệu hiển thị | Người dùng (tổng / hoạt động / vô hiệu); thư mục và tài liệu chưa xóa (theo trạng thái xử lý và chế độ hiển thị private/public); tổng dung lượng đã dùng; lượt hỏi AI hôm nay theo UTC (cùng quy tắc đếm BR-025) kèm số người dùng đã chat; chuỗi 7 ngày lượt AI; top 5 người dùng theo dung lượng; top 5 môn học theo số tài liệu. |
+| Nguồn | `GET /api/admin/stats` |
+
+| ID | Yêu cầu chức năng |
+|----|------------------|
 | FR-047 | Hệ thống phải cho phép quản trị viên xem và tìm kiếm danh sách người dùng (có phân trang). |
 | FR-048 | Hệ thống phải cho phép quản trị viên cập nhật hạn mức lưu trữ, vai trò và trạng thái vô hiệu hóa của người dùng. |
 | FR-049 | Hệ thống phải cho phép quản trị viên xem, tìm kiếm và lọc danh sách email truy cập ngoại lệ theo trạng thái. |

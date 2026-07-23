@@ -275,6 +275,11 @@ Updates the signed-in user's academic profile. Only `curriculumId` is required; 
 
 Admin academic CRUD under `/api/admin`:
 
+- `GET /api/admin/stats` — system overview for the admin dashboard. Counts documents/folders with `deletedAt: null` (excludes trash). Response `data` includes:
+  - Users: `totalUsers`, `activeUsers`, `disabledUsers`, `totalStorageUsedBytes`
+  - Content: `totalDocuments`, `totalFolders`, `documentsByStatus` (`pending|processing|ready|failed`), `documentsByVisibility` (`private|public`)
+  - AI (UTC day, same turn rules as BR-025): `aiTurnsToday`, `aiDistinctUsersToday`, `aiTurnsLast7Days` (`[{ date: "YYYY-MM-DD", turns }]`, always length 7)
+  - Rankings: `topUsersByStorage` (top 5: `id`, `displayName`, `email`, `storageUsedBytes`, `storageQuotaBytes`), `topSubjectsByDocuments` (top 5: `subjectId`, `code`, `name`, `documentCount`)
 - `GET/POST/PATCH/DELETE /api/admin/curricula`
 - `GET/POST/PATCH/DELETE /api/admin/semesters`
 - `GET/POST/DELETE /api/admin/curricula/:curriculumId/semesters` (when listing, inactive curricula are allowed so admins can inspect archived CTĐT)
