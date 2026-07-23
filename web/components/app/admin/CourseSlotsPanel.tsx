@@ -137,7 +137,10 @@ export function CourseSlotsPanel({
   const colCount = hideCurriculumColumn ? 4 : 5;
 
   const activeCurricula = curricula?.filter((m) => m.isActive) ?? [];
-  const activeSubjects = subjects?.filter((s) => s.isActive) ?? [];
+  const activeSubjects = useMemo(
+    () => subjects?.filter((s) => s.isActive) ?? [],
+    [subjects],
+  );
   const semesterOptions = useMemo(
     () =>
       formCurriculumSemesters?.filter((l) => l.isActive && l.semester).map((l) => l.semester!) ?? [],

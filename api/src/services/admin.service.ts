@@ -1,13 +1,21 @@
 import { createAppError, ErrorCode } from "../errors/error-codes";
+import { ChatMessage } from "../models/chat-message.model";
 import { Document as ApmsDocument } from "../models/document.model";
 import { Folder } from "../models/folder.model";
 import { User, type UserDocument, type UserRole } from "../models/user.model";
+import {
+  chatTurnCreatedSince,
+  lastNUtcDateKeys,
+  startOfUtcDay,
+} from "../utils/chat-turn";
+import { parseObjectId } from "../utils/objectId";
 import { toUserResponse } from "./auth.service";
 import {
   addUserToAdminGroup,
   removeUserFromAdminGroup,
 } from "./cognito-admin.service";
-import { parseObjectId } from "../utils/objectId";
+
+const NOT_DELETED = { deletedAt: null };
 
 export async function listUsers(options: {
   page: number;
@@ -137,6 +145,15 @@ export async function updateUser(
 }
 
 export async function getSystemStats() {
+  const startOfToday = startOfUtcDay();
+  const sevenDayKeys = lastNUtcDateKeys(7);
+  const sevenDaysAgo = startOfUtcDay();
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
+
+  const chatSessionsCollection = "chatsessions";
+  const courseSlotsCollection = "courseslots";
+  const subjectsCollection = "subjects";
+
   const [
     totalUsers,
     activeUsers,
@@ -145,6 +162,11 @@ export async function getSystemStats() {
     documentsByStatus,
     totalDocuments,
     totalFolders,
+    documentsByVisibility,
+    topUsers,
+    aiTodayAgg,
+    aiLast7Agg,
+    topSubjectsAgg,
   ] = await Promise.all([
     User.countDocuments(),
     User.countDocuments({ isDisabled: false }),
@@ -153,10 +175,109 @@ export async function getSystemStats() {
       { $group: { _id: null, total: { $sum: "$storageUsedBytes" } } },
     ]),
     ApmsDocument.aggregate<{ _id: string; count: number }>([
+      { $match: NOT_DELETED },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]),
-    ApmsDocument.countDocuments(),
-    Folder.countDocuments(),
+    ApmsDocument.countDocuments(NOT_DELETED),
+    Folder.countDocuments(NOT_DELETED),
+    ApmsDocument.aggregate<{ _id: string; count: number }>([
+      { $match: NOT_DELETED },
+      { $group: { _id: "$visibility", count: { $sum: 1 } } },
+    ]),
+    User.find()
+      .sort({ storageUsedBytes: -1 })
+      .limit(5)
+      .select("displayName email storageUsedBytes storageQuotaBytes")
+      .lean(),
+    ChatMessage.aggregate<{
+      aiTurnsToday: number;
+      distinctUsersToday: number;
+    }>([
+      { $match: chatTurnCreatedSince(startOfToday) },
+      {
+        $lookup: {
+          from: chatSessionsCollection,
+          localField: "sessionId",
+          foreignField: "_id",
+          as: "session",
+        },
+      },
+      { $unwind: "$session" },
+      {
+        $group: {
+          _id: null,
+          aiTurnsToday: { $sum: 1 },
+          distinctUserIds: { $addToSet: "$session.userId" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          aiTurnsToday: 1,
+          distinctUsersToday: { $size: "$distinctUserIds" },
+        },
+      },
+    ]),
+    ChatMessage.aggregate<{ _id: string; turns: number }>([
+      { $match: chatTurnCreatedSince(sevenDaysAgo) },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" },
+          },
+          turns: { $sum: 1 },
+        },
+      },
+    ]),
+    ApmsDocument.aggregate<{
+      subjectId: unknown;
+      code: string;
+      name: string;
+      documentCount: number;
+    }>([
+      {
+        $match: {
+          ...NOT_DELETED,
+          courseSlotId: { $ne: null },
+        },
+      },
+      { $group: { _id: "$courseSlotId", docCount: { $sum: 1 } } },
+      {
+        $lookup: {
+          from: courseSlotsCollection,
+          localField: "_id",
+          foreignField: "_id",
+          as: "slot",
+        },
+      },
+      { $unwind: "$slot" },
+      {
+        $group: {
+          _id: "$slot.subjectId",
+          documentCount: { $sum: "$docCount" },
+        },
+      },
+      { $sort: { documentCount: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: subjectsCollection,
+          localField: "_id",
+          foreignField: "_id",
+          as: "subject",
+        },
+      },
+      { $unwind: "$subject" },
+      {
+        $project: {
+          _id: 0,
+          subjectId: "$_id",
+          code: "$subject.code",
+          name: "$subject.name",
+          documentCount: 1,
+        },
+      },
+    ]),
   ]);
 
   const documentsByStatusMap = {
@@ -172,6 +293,25 @@ export async function getSystemStats() {
     }
   }
 
+  const documentsByVisibilityMap = {
+    private: 0,
+    public: 0,
+  };
+
+  for (const item of documentsByVisibility) {
+    if (item._id === "private" || item._id === "public") {
+      documentsByVisibilityMap[item._id] = item.count;
+    }
+  }
+
+  const turnsByDate = new Map(aiLast7Agg.map((row) => [row._id, row.turns]));
+  const aiTurnsLast7Days = sevenDayKeys.map((date) => ({
+    date,
+    turns: turnsByDate.get(date) ?? 0,
+  }));
+
+  const aiToday = aiTodayAgg[0];
+
   return {
     totalUsers,
     activeUsers,
@@ -180,5 +320,22 @@ export async function getSystemStats() {
     documentsByStatus: documentsByStatusMap,
     totalDocuments,
     totalFolders,
+    aiTurnsToday: aiToday?.aiTurnsToday ?? 0,
+    aiDistinctUsersToday: aiToday?.distinctUsersToday ?? 0,
+    aiTurnsLast7Days,
+    documentsByVisibility: documentsByVisibilityMap,
+    topUsersByStorage: topUsers.map((u) => ({
+      id: u._id.toString(),
+      displayName: u.displayName,
+      email: u.email,
+      storageUsedBytes: u.storageUsedBytes,
+      storageQuotaBytes: u.storageQuotaBytes,
+    })),
+    topSubjectsByDocuments: topSubjectsAgg.map((row) => ({
+      subjectId: String(row.subjectId),
+      code: row.code,
+      name: row.name,
+      documentCount: row.documentCount,
+    })),
   };
 }

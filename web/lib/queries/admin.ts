@@ -24,11 +24,31 @@ export interface AdminStats {
   totalDocuments: number;
   totalFolders: number;
   documentsByStatus: {
-    pending?: number;
-    processing?: number;
-    ready?: number;
-    failed?: number;
+    pending: number;
+    processing: number;
+    ready: number;
+    failed: number;
   };
+  aiTurnsToday: number;
+  aiDistinctUsersToday: number;
+  aiTurnsLast7Days: Array<{ date: string; turns: number }>;
+  documentsByVisibility: {
+    private: number;
+    public: number;
+  };
+  topUsersByStorage: Array<{
+    id: string;
+    displayName: string;
+    email: string;
+    storageUsedBytes: number;
+    storageQuotaBytes: number;
+  }>;
+  topSubjectsByDocuments: Array<{
+    subjectId: string;
+    code: string;
+    name: string;
+    documentCount: number;
+  }>;
 }
 
 export interface AdminUser {
@@ -54,7 +74,7 @@ interface AdminUsersApiResponse {
 
 /* ── Admin queries ──────────────────────────────────────────── */
 
-export function useAdminStats() {
+export function useAdminStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: async () => {
@@ -63,6 +83,7 @@ export function useAdminStats() {
       );
       return res.data.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 

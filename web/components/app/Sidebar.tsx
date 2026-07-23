@@ -2,33 +2,50 @@
 
 import { signOut } from "aws-amplify/auth";
 import {
+  GraduationCap,
   HardDrive,
   Globe,
+  LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   MessageSquare,
   PanelLeftClose,
   Share2,
-  ShieldCheck,
   Trash2,
   User2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import {
+  ADMIN_TABS,
+  parseAdminTab,
+  type AdminTabId,
+} from "@/components/app/admin/admin-tabs";
 import { StorageBar } from "@/components/ui/StorageBar";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/cn";
+import { useAdminStats } from "@/lib/queries/admin";
 import { useAuthStore } from "@/stores/auth-store";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
-  adminOnly?: boolean;
+  badge?: number;
+  tabId?: AdminTabId;
 }
+
+const ADMIN_TAB_ICONS: Record<AdminTabId, React.ReactNode> = {
+  overview: <LayoutDashboard className="h-5 w-5 shrink-0" />,
+  users: <Users className="h-5 w-5 shrink-0" />,
+  "access-emails": <Mail className="h-5 w-5 shrink-0" />,
+  academic: <GraduationCap className="h-5 w-5 shrink-0" />,
+};
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -61,12 +78,6 @@ const NAV_ITEMS: NavItem[] = [
     href: "/trash",
     icon: <Trash2 className="h-5 w-5 shrink-0" />,
   },
-  {
-    label: "Quản trị",
-    href: "/admin",
-    icon: <ShieldCheck className="h-5 w-5 shrink-0" />,
-    adminOnly: true,
-  },
 ];
 
 function formatDisplayName(user: { displayName: string; email: string }): string {
@@ -91,9 +102,15 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, clearUser } = useAuthStore();
+
+  const showAdminNav = user?.role === "admin";
+  const { data: adminStats } = useAdminStats({ enabled: showAdminNav });
+  const activeAdminTab = parseAdminTab(searchParams.get("tab"));
+  const homeHref = showAdminNav ? "/admin?tab=overview" : "/drive";
 
   const handleSignOut = useCallback(async () => {
     await signOut();
@@ -102,18 +119,41 @@ export function Sidebar({
     router.replace("/login");
   }, [clearUser, queryClient, router]);
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.adminOnly || user?.role === "admin",
-  );
+  const visibleItems = useMemo((): NavItem[] => {
+    if (showAdminNav) {
+      return ADMIN_TABS.map((tab) => ({
+        label: tab.label,
+        href: `/admin?tab=${tab.id}`,
+        icon: ADMIN_TAB_ICONS[tab.id],
+        tabId: tab.id,
+        badge:
+          tab.id === "users" && adminStats?.totalUsers
+            ? adminStats.totalUsers
+            : undefined,
+      }));
+    }
 
-  const isActive = (href: string) => {
-    if (href === "/drive") {
+    return NAV_ITEMS;
+  }, [adminStats, showAdminNav]);
+
+  const isActive = (item: NavItem) => {
+    if (showAdminNav && item.tabId) {
+      if (pathname.startsWith("/admin/curricula")) {
+        return item.tabId === "academic";
+      }
+      if (!pathname.startsWith("/admin")) {
+        return false;
+      }
+      return activeAdminTab === item.tabId;
+    }
+
+    if (item.href === "/drive") {
       return pathname === "/drive" || pathname.startsWith("/drive/");
     }
-    if (href === "/library") {
+    if (item.href === "/library") {
       return pathname.startsWith("/library") || pathname.startsWith("/forum");
     }
-    return pathname.startsWith(href);
+    return pathname.startsWith(item.href);
   };
 
   return (
@@ -152,7 +192,7 @@ export function Sidebar({
         >
           {!isCollapsed && (
             <Link
-              href="/drive"
+              href={homeHref}
               className="focus-brutal flex items-center gap-2 rounded"
               onClick={onClose}
             >
@@ -184,10 +224,13 @@ export function Sidebar({
         </div>
 
         {/* Nav items */}
-        <nav aria-label="Điều hướng Drive" className="flex-1 overflow-y-auto py-3">
+        <nav
+          aria-label={showAdminNav ? "Điều hướng quản trị" : "Điều hướng Drive"}
+          className="flex-1 overflow-y-auto py-3"
+        >
           <ul className="space-y-1 px-2">
             {visibleItems.map((item) => {
-              const active = isActive(item.href);
+              const active = isActive(item);
               const link = (
                 <Link
                   href={item.href}
@@ -203,13 +246,25 @@ export function Sidebar({
                 >
                   {item.icon}
                   {!isCollapsed && (
-                    <span className="truncate">{item.label}</span>
+                    <>
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span
+                          className={cn(
+                            "rounded-full border-2 border-brutal-ink px-1.5 py-0.5 text-xs tabular-nums",
+                            active ? "bg-brutal-on-brand/20" : "bg-brutal-bg",
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
                   )}
                 </Link>
               );
 
               return (
-                <li key={item.href}>
+                <li key={item.tabId ?? item.href}>
                   {isCollapsed ? (
                     <Tooltip content={item.label} side="right">
                       {link}
@@ -223,8 +278,8 @@ export function Sidebar({
           </ul>
         </nav>
 
-        {/* Storage bar */}
-        {!isCollapsed && user && (
+        {/* Storage bar (student surfaces only) */}
+        {!isCollapsed && user && !showAdminNav && (
           <div className="border-t-2 border-brutal-ink py-3">
             <StorageBar
               usedBytes={user.storageUsedBytes}

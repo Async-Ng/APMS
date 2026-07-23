@@ -330,7 +330,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthLoading && user) {
-      router.replace("/drive");
+      router.replace(user.role === "admin" ? "/admin" : "/drive");
     }
   }, [isAuthLoading, user, router]);
 
@@ -349,7 +349,7 @@ export default function LoginPage() {
   }
 
   function handleContinue() {
-    router.push("/drive");
+    router.push(user?.role === "admin" ? "/admin" : "/drive");
   }
 
   const showEnrollmentCta = !isAuthLoading && !user;

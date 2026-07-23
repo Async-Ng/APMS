@@ -2,6 +2,9 @@
 
 import "@/lib/amplify";
 
+import { Suspense } from "react";
+
+import { AdminHomeGate } from "@/components/app/AdminHomeGate";
 import { AppShellProvider, useAppShell } from "@/components/app/AppShellContext";
 import { OnboardingGate } from "@/components/app/onboarding/AcademicProfileWizard";
 import { RequireAuth } from "@/components/app/RequireAuth";
@@ -13,12 +16,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-dvh min-h-0 overflow-hidden bg-brutal-bg">
-      <Sidebar
-        isOpen={isMobileOpen}
-        isCollapsed={isCollapsed}
-        onClose={closeMobileMenu}
-        onToggleCollapse={toggleCollapse}
-      />
+      <Suspense fallback={null}>
+        <Sidebar
+          isOpen={isMobileOpen}
+          isCollapsed={isCollapsed}
+          onClose={closeMobileMenu}
+          onToggleCollapse={toggleCollapse}
+        />
+      </Suspense>
 
       <div
         className={cn(
@@ -28,6 +33,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             : "lg:pl-[var(--sidebar-width)]",
         )}
       >
+        <AdminHomeGate />
         {children}
         <OnboardingGate />
       </div>

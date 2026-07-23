@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* next/font CSS vars must be inlined so Tailwind resolves them at runtime */
+@theme inline {
+  --font-heading: var(--font-heading-face), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme {
   --color-fpt-blue: #2b8fd4;
   --color-fpt-orange: #f37021;
@@ -18,9 +24,6 @@
   --color-brutal-muted: #334155;
   --color-brutal-danger: #e53e3e;
   --color-brutal-danger-hover: #c53030;
-
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --shadow-brutal: 3px 3px 0 0 #1a1a1a;
   --shadow-brutal-lg: 5px 5px 0 0 #1a1a1a;

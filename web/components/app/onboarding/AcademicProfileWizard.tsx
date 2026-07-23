@@ -12,6 +12,7 @@ import {
   type AcademicProfile,
 } from "@/lib/queries/catalog";
 import { useUpdateAcademicProfile } from "@/lib/queries/users";
+import { useAuthStore } from "@/stores/auth-store";
 
 const ONBOARDING_SKIP_KEY = "apms-onboarding-skipped";
 
@@ -139,6 +140,7 @@ export function AcademicProfileWizard({
 }
 
 export function OnboardingGate() {
+  const user = useAuthStore((state) => state.user);
   const { data: profile, isLoading } = useAcademicProfile();
   const [skipped, setSkipped] = useState(
     () =>
@@ -148,7 +150,12 @@ export function OnboardingGate() {
   const [dismissed, setDismissed] = useState(false);
 
   const shouldShow =
-    !isLoading && profile && !profile.isComplete && !skipped && !dismissed;
+    user?.role !== "admin" &&
+    !isLoading &&
+    profile &&
+    !profile.isComplete &&
+    !skipped &&
+    !dismissed;
 
   if (!shouldShow) return null;
 
