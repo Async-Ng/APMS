@@ -54,7 +54,7 @@ interface AdminUsersApiResponse {
 
 /* ── Admin queries ──────────────────────────────────────────── */
 
-export function useAdminStats() {
+export function useAdminStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: async () => {
@@ -63,6 +63,7 @@ export function useAdminStats() {
       );
       return res.data.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 

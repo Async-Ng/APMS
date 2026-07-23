@@ -2,37 +2,24 @@
 
 import { ShieldCheck } from "lucide-react";
 import { redirect, useSearchParams } from "next/navigation";
-import { useState } from "react";
 
 import { AccessEmailsPanel } from "@/components/app/admin/AccessEmailsPanel";
 import { AcademicAdminPanel } from "@/components/app/admin/AcademicAdminPanel";
 import { AdminOverviewPanel } from "@/components/app/admin/AdminOverviewPanel";
-import { AdminTabs, type AdminTabId } from "@/components/app/admin/AdminTabs";
+import { parseAdminTab } from "@/components/app/admin/admin-tabs";
 import { UsersTable } from "@/components/app/UsersTable";
 import { Topbar } from "@/components/app/Topbar";
-import { useAdminStats } from "@/lib/queries/admin";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const searchParams = useSearchParams();
-
-  const [activeTab, setActiveTab] = useState<AdminTabId>(() => {
-    const initial = searchParams.get("tab");
-    if (initial === "overview" || initial === "users" || initial === "access-emails" || initial === "academic") {
-      return initial;
-    }
-    return "overview";
-  });
-  const { data: stats } = useAdminStats();
+  const activeTab = parseAdminTab(searchParams.get("tab"));
 
   if (!isLoading && user && user.role !== "admin") {
     redirect("/drive");
   }
-
-  const badges: Partial<Record<AdminTabId, number>> = {};
-  if (stats?.totalUsers) badges.users = stats.totalUsers;
 
   return (
     <>
@@ -53,12 +40,9 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <AdminTabs active={activeTab} onChange={setActiveTab} badges={badges} />
-
         <section
           id="panel-overview"
-          role="tabpanel"
-          aria-labelledby="tab-overview"
+          aria-label="Tổng quan"
           tabIndex={0}
           hidden={activeTab !== "overview"}
           className="outline-none"
@@ -68,8 +52,7 @@ export default function AdminPage() {
 
         <section
           id="panel-users"
-          role="tabpanel"
-          aria-labelledby="tab-users"
+          aria-label="Người dùng"
           tabIndex={0}
           hidden={activeTab !== "users"}
           className="outline-none"
@@ -89,8 +72,7 @@ export default function AdminPage() {
 
         <section
           id="panel-access-emails"
-          role="tabpanel"
-          aria-labelledby="tab-access-emails"
+          aria-label="Email truy cập"
           tabIndex={0}
           hidden={activeTab !== "access-emails"}
           className="outline-none"
@@ -110,8 +92,7 @@ export default function AdminPage() {
 
         <section
           id="panel-academic"
-          role="tabpanel"
-          aria-labelledby="tab-academic"
+          aria-label="Học thuật"
           tabIndex={0}
           hidden={activeTab !== "academic"}
           className="outline-none"

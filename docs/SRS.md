@@ -246,7 +246,7 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 | Điều kiện thực hiện | Người dùng chưa đăng nhập. |
 | Người dùng thực hiện | Nhấn nút đăng nhập bằng Google và hoàn tất xác thực với Google. |
 | Dữ liệu cần nhập | Tài khoản Google (qua cửa sổ đăng nhập của Google). |
-| Kết quả thành công | Hệ thống ghi nhận phiên, đồng bộ hồ sơ và chuyển người dùng vào "Drive của tôi". |
+| Kết quả thành công | Hệ thống ghi nhận phiên, đồng bộ hồ sơ và chuyển người dùng vào "Drive của tôi"; quản trị viên được chuyển vào "Quản trị". |
 | Ngoại lệ | Nếu email không được phép, hệ thống từ chối với thông báo không có quyền truy cập; nếu kiểm tra quyền truy cập gặp sự cố, hệ thống báo lỗi tạm thời và yêu cầu thử lại. |
 
 ### 3.2 Hồ sơ cá nhân và hồ sơ học thuật
@@ -447,23 +447,30 @@ Hệ thống tích hợp với các dịch vụ bên ngoài:
 
 ### 5.1 User Interface
 
-Hệ thống cung cấp ứng dụng web và ứng dụng di động. Cấu trúc điều hướng chính (web) gồm thanh bên với các mục:
+Hệ thống cung cấp ứng dụng web và ứng dụng di động. Cấu trúc điều hướng chính (web) trên thanh bên phụ thuộc vai trò:
 
+**Người dùng (sinh viên):**
 - **Drive của tôi** → Quản lý tài liệu và thư mục cá nhân.
 - **Đã gắn sao** → Tài liệu/thư mục đã đánh dấu sao.
 - **Đã chia sẻ** → Mục được chia sẻ với tôi và tôi đã chia sẻ.
 - **Thư viện công khai** → Xem tài liệu công khai.
 - **Trò chuyện AI** → Hỏi đáp với trợ lý AI.
 - **Thùng rác** → Mục đã xóa tạm thời.
-- **Quản trị** (chỉ quản trị viên) → Thống kê, người dùng, email truy cập, danh mục học thuật.
 - **Hồ sơ của tôi** → Thông tin cá nhân và hồ sơ học thuật.
+
+**Quản trị viên:**
+- **Tổng quan** → Thống kê hệ thống.
+- **Người dùng** → Quản lý tài khoản.
+- **Email truy cập** → Email truy cập ngoại lệ.
+- **Học thuật** → Danh mục học thuật (CTĐT, học kỳ, môn học).
+- Thanh bên không hiển thị các mục dành cho sinh viên (Drive, chia sẻ, thư viện, trò chuyện AI, thùng rác, hồ sơ trên menu). Hồ sơ cá nhân vẫn mở được từ khối tài khoản ở đáy thanh bên và chỉ gồm thông tin cá nhân (email, tên hiển thị) — không có khối hồ sơ học thuật / chọn CTĐT. Truy cập URL các màn hình sinh viên được chuyển về khu Quản trị.
 
 **Nguyên tắc giao diện chung:**
 - Người dùng phải đăng nhập trước khi truy cập bất kỳ tính năng nào.
 - Nội dung và menu hiển thị phụ thuộc vai trò người dùng.
 - Thao tác quan trọng (xóa, thu hồi chia sẻ) cần xác nhận.
 - Hệ thống phải thông báo rõ kết quả mỗi thao tác (thành công hoặc lỗi).
-- Thanh dung lượng hiển thị mức lưu trữ đã dùng so với hạn mức.
+- Thanh dung lượng hiển thị mức lưu trữ đã dùng so với hạn mức (chỉ trên giao diện người dùng/sinh viên).
 
 ### 5.2 API Interface
 
@@ -914,7 +921,8 @@ Phiên trò chuyện ── (gồm) ── N Tin nhắn ── (kèm) ── N T
 ## 11. ACCEPTANCE CRITERIA
 
 ### Đăng nhập (FR-001, FR-002)
-- [ ] AC-001-01: Khi người dùng có email được phép đăng nhập thành công, hệ thống chuyển vào "Drive của tôi".
+- [ ] AC-001-01: Khi người dùng (sinh viên) có email được phép đăng nhập thành công, hệ thống chuyển vào "Drive của tôi".
+- [ ] AC-001-01a: Khi quản trị viên đăng nhập thành công, hệ thống chuyển vào "Quản trị".
 - [ ] AC-001-02: Khi email không thuộc tên miền được phép và không có trong danh sách ngoại lệ, hệ thống từ chối với thông báo không có quyền.
 - [ ] AC-001-03: Khi tài khoản bị vô hiệu hóa, hệ thống từ chối mọi thao tác nghiệp vụ.
 

@@ -19,7 +19,7 @@
   --color-brutal-danger: #e53e3e;
   --color-brutal-danger-hover: #c53030;
 
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading-face), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --shadow-brutal: 3px 3px 0 0 #1a1a1a;
